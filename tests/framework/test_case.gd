@@ -31,6 +31,32 @@ func eq(actual: Variant, expected: Variant, msg := "") -> bool:
 	return same
 
 
+## Starts a Godot process of this project with a script; returns
+## OS.execute_with_pipe()'s {stdio, stderr, pid} with non-blocking pipes.
+func spawn_godot(script: String, user_args: Array) -> Dictionary:
+	var args := ["--headless", "--audio-driver", "Dummy", "--path", ProjectSettings.globalize_path("res://"), "-s", script, "--"]
+	args.append_array(user_args)
+	return OS.execute_with_pipe(OS.get_executable_path(), args, false)
+
+
+## Reads the process output until a line starting with `prefix`; returns it,
+## or "" if the process ended or the time ran out first. Never blocks forever
+## (Godot's pipes do not report the end of a dead child's output).
+func read_until(p: Dictionary, prefix: String, timeout_ms := 10000) -> String:
+	var io: FileAccess = p["stdio"]
+	var deadline := Time.get_ticks_msec() + timeout_ms
+	while Time.get_ticks_msec() < deadline:
+		var line := io.get_line()
+		if line != "":
+			if line.begins_with(prefix):
+				return line
+			continue
+		if not OS.is_process_running(p["pid"]):
+			return ""
+		OS.delay_msec(5)
+	return ""
+
+
 ## A clean directory for this test, as an absolute path.
 func tmp_dir() -> String:
 	var dir := ProjectSettings.globalize_path("user://test_tmp/" + current.replace("::", "/"))

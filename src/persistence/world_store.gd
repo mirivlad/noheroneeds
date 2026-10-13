@@ -4,7 +4,7 @@ extends RefCounted
 ## not know game rules. Writes that must land together go inside
 ## begin()/commit(); a failed commit is rolled back and reported.
 
-const SCHEMA_VERSION := 1
+const SCHEMA_VERSION := 2
 
 ## MIGRATIONS[n] upgrades schema version n to n + 1. Never edit a published
 ## step: add a new one. Step 0 creates the first schema.
@@ -17,6 +17,11 @@ const MIGRATIONS: Array = [
 		"CREATE TABLE inventories(owner TEXT PRIMARY KEY, data BLOB NOT NULL) WITHOUT ROWID",
 		"CREATE TABLE requests(actor TEXT NOT NULL, request_id TEXT NOT NULL, tick INTEGER NOT NULL, result BLOB NOT NULL, PRIMARY KEY(actor, request_id)) WITHOUT ROWID",
 		"CREATE INDEX requests_by_tick ON requests(tick)",
+	],
+	# 1 -> 2: characters as this world knows them, apart from their place in it.
+	[
+		"CREATE TABLE characters(character_id TEXT PRIMARY KEY, owner TEXT NOT NULL, data BLOB NOT NULL) WITHOUT ROWID",
+		"CREATE TABLE world_characters(character_id TEXT PRIMARY KEY, data BLOB NOT NULL) WITHOUT ROWID",
 	],
 ]
 
@@ -147,6 +152,31 @@ func all_inventory_owners() -> PackedStringArray:
 	for row: Dictionary in _db.query_result:
 		out.append(row["owner"])
 	return out
+
+
+# --- characters ----------------------------------------------------------
+
+## The portable part as held by this world, and the key that owns it.
+func put_character(character_id: String, owner: String, data: PackedByteArray) -> bool:
+	return _exec_b("INSERT INTO characters(character_id, owner, data) VALUES(?, ?, ?) ON CONFLICT(character_id) DO UPDATE SET owner=excluded.owner, data=excluded.data",
+		[character_id, owner, data])
+
+
+## {owner, data} or {} if this world has never seen the character.
+func get_character(character_id: String) -> Dictionary:
+	_db.query_with_bindings("SELECT owner, data FROM characters WHERE character_id=?", [character_id])
+	return _db.query_result[0] if _db.query_result.size() else {}
+
+
+## Where the character is in this world (location, position...).
+func put_world_character(character_id: String, data: PackedByteArray) -> bool:
+	return _exec_b("INSERT INTO world_characters(character_id, data) VALUES(?, ?) ON CONFLICT(character_id) DO UPDATE SET data=excluded.data",
+		[character_id, data])
+
+
+func get_world_character(character_id: String) -> PackedByteArray:
+	_db.query_with_bindings("SELECT data FROM world_characters WHERE character_id=?", [character_id])
+	return _db.query_result[0]["data"] if _db.query_result.size() else PackedByteArray()
 
 
 # --- processed requests (idempotency ledger) -----------------------------

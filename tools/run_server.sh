@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Dedicated server. Usage: tools/run_server.sh [--world=PATH] [--port=N] [--max-players=N] ...
+# (options: see src/server/server_main.gd). Env: GODOT (binary, default "godot").
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+"$ROOT/tools/fetch_addons.sh"
+exec "${GODOT:-godot}" --headless --audio-driver Dummy --path "$ROOT" -s res://src/server/server_main.gd -- "$@"

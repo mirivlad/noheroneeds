@@ -43,6 +43,24 @@ var _prune_before := -1
 var max_batches_in_flight := 2
 var _closed := false
 
+## Where characters appear the first time they enter this world.
+var spawn_location := "surface"
+var spawn_position := Vector2i.ZERO
+## Characters in the world right now:
+## id -> {"location", "pos": Vector2i, "name", "appearance"}
+var present := {}
+## Characters this world knows: id -> {"owner", "data": portable data}
+var _characters := {}
+var _dirty_characters := {}
+var _dirty_world_characters := {}
+## Places of characters that left this session: their last write may still be
+## on its way to the disk, and the read connection would see an older one.
+var _left_places := {}
+## chunk key -> revision, raised on every change; clients compare it
+var _chunk_rev := {}
+## chunk key -> [revision, encoded bytes], shared by all clients
+var _encoded := {}
+
 
 ## Opens a world: a read connection here, a write connection on the writer thread.
 static func open(db_path: String, registry: ContentRegistry, options := {}) -> ServerWorld:
@@ -107,6 +125,90 @@ func inventory(owner: String) -> Inventory:
 	return inv
 
 
+## A character arrives. The first time, its profile becomes this world's copy
+## (its inventory moves into the world's inventories); later the world's own
+## copy is used and only the owner is checked. "" on success, else a reason.
+## What a second server does with a character it already knows from
+## elsewhere (move or copy) is open (Q-01); this is the single-world case.
+func enter(owner: String, c: PortableCharacter) -> String:
+	var id := c.character_id
+	var known := _known_character(id)
+	if known.is_empty():
+		var data := c.to_data()
+		data["inventory"] = Inventory.new().to_data()
+		known = {"owner": owner, "data": data}
+		_characters[id] = known
+		_dirty_characters[id] = true
+		for item: String in c.inventory.stacks:
+			grant(id, item, c.inventory.stacks[item])
+	elif known["owner"] != owner:
+		return "not_owner"
+	if present.has(id):
+		return "already_present"
+	var place := {"location": spawn_location, "x": spawn_position.x, "y": spawn_position.y}
+	var stored := store.get_world_character(id)
+	if _left_places.has(id):
+		place = _left_places[id]
+		_left_places.erase(id)
+	elif not stored.is_empty():
+		place = Cbor.decode(stored).value
+	var data: Dictionary = known["data"]
+	present[id] = {"location": String(place["location"]), "pos": Vector2i(int(place["x"]), int(place["y"])),
+		"name": data["name"], "appearance": data["appearance"]}
+	_dirty_world_characters[id] = true
+	return ""
+
+
+func leave(id: String) -> void:
+	if present.has(id):
+		var p: Dictionary = present[id]
+		_left_places[id] = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y}
+		_dirty_world_characters[id] = true
+		flush_state()  # its last position goes out with this batch
+		present.erase(id)
+
+
+func move_character(id: String, pos: Vector2i) -> void:
+	var p: Dictionary = present[id]
+	if p["pos"] != pos:
+		p["pos"] = pos
+		_dirty_world_characters[id] = true
+
+
+## Whether a cell of a location blocks walking.
+func is_solid(location: String, x: int, y: int) -> bool:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	var part := chunk(location, cx, cy).get_cell("structure", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
+	return part != "" and bool(content.get_def(part).get("solid", true))
+
+
+func chunk_revision(location: String, cx: int, cy: int) -> int:
+	return _chunk_rev.get(chunk_key(location, cx, cy), 0)
+
+
+## The chunk as clients receive it, encoded once per revision.
+func encoded_chunk(location: String, cx: int, cy: int) -> PackedByteArray:
+	var key := chunk_key(location, cx, cy)
+	var rev: int = _chunk_rev.get(key, 0)
+	var cached: Array = _encoded.get(key, [])
+	if cached.is_empty() or cached[0] != rev:
+		cached = [rev, ChunkCodec.encode(chunk(location, cx, cy))]
+		_encoded[key] = cached
+	return cached[1]
+
+
+func _known_character(id: String) -> Dictionary:
+	if _characters.has(id):
+		return _characters[id]
+	var row := store.get_character(id)
+	if row.is_empty():
+		return {}
+	var known := {"owner": String(row["owner"]), "data": Cbor.decode(row["data"]).value}
+	_characters[id] = known
+	return known
+
+
 ## Gives items outside of any request (world setup, tests).
 func grant(owner: String, content_id: String, n: int) -> void:
 	inventory(owner).add(content_id, n)
@@ -145,7 +247,8 @@ func handle(actor: String, request: Dictionary) -> void:
 ## Returns at once; acknowledgements come out of poll() after the commit.
 ## If the writer is behind, the changes wait for a later call unless forced.
 func commit_async(force := false) -> void:
-	if _pending.is_empty() and _dirty_chunks.is_empty() and _dirty_inventories.is_empty() and _prune_before < 0:
+	if _pending.is_empty() and _dirty_chunks.is_empty() and _dirty_inventories.is_empty() \
+			and _dirty_characters.is_empty() and _prune_before < 0:
 		return
 	if not force and writer.queued_operations() >= max_batches_in_flight:
 		return
@@ -157,6 +260,9 @@ func commit_async(force := false) -> void:
 		b.inventories.append([owner, inventory(owner).to_data()])
 	for p: Array in _pending:
 		b.requests.append([p[0], p[1], tick, (p[2] as Dictionary).duplicate(true)])
+	for id: String in _dirty_characters:
+		b.characters.append([id, _characters[id]["owner"], (_characters[id]["data"] as Dictionary).duplicate(true)])
+	_dirty_characters.clear()
 	b.prune_before = _prune_before
 	_prune_before = -1
 	_dirty_chunks.clear()
@@ -187,9 +293,14 @@ func sync() -> bool:
 ## Hands changed entity state to the writer (encoded there). At most `limit`
 ## entities per call (-1: all), so the server can spread the work over ticks.
 func flush_state(limit := -1) -> void:
-	if _dirty_entities.is_empty():
+	if _dirty_entities.is_empty() and _dirty_world_characters.is_empty():
 		return
 	var b := StoreWriter.Batch.new()
+	for id: String in _dirty_world_characters.keys():
+		if present.has(id):
+			var p: Dictionary = present[id]
+			b.world_characters.append([id, {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y}])
+		_dirty_world_characters.erase(id)
 	for id: String in _dirty_entities.keys():
 		if limit >= 0 and b.entities.size() >= limit:
 			break
@@ -244,6 +355,11 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 	return {"ok": false, "reason": "unknown_type"}
 
 
+func _changed(key: String) -> void:
+	_dirty_chunks[key] = true
+	_chunk_rev[key] = _chunk_rev.get(key, 0) + 1
+
+
 func _cell(r: Dictionary) -> Array:
 	var x := int(r.get("x", 0))
 	var y := int(r.get("y", 0))
@@ -268,7 +384,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 		inv.remove(id, int(costs[id]))
 	c.set_cell("structure", at[3], at[4], part)
 	c.set_props(at[3], at[4], {"owner": actor})
-	_dirty_chunks[chunk_key(at[0], at[1], at[2])] = true
+	_changed(chunk_key(at[0], at[1], at[2]))
 	_dirty_inventories[actor] = true
 	return {"ok": true}
 
@@ -286,11 +402,11 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "unknown_part"}
 	c.set_cell("structure", at[3], at[4], "")
 	c.set_props(at[3], at[4], {})
+	_changed(chunk_key(at[0], at[1], at[2]))
 	var costs := content.structure_cost(part)
 	var inv := inventory(actor)
 	for id: String in costs:
 		inv.add(id, int(costs[id]))
-	_dirty_chunks[chunk_key(at[0], at[1], at[2])] = true
 	_dirty_inventories[actor] = true
 	return {"ok": true, "part": part}
 

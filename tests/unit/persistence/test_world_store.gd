@@ -35,6 +35,25 @@ func test_data_survives_reopen() -> void:
 	t.close()
 
 
+func test_schema_constant_matches_migrations() -> void:
+	eq(WorldStore.SCHEMA_VERSION, WorldStore.MIGRATIONS.size())
+
+
+## A world made by the first build (schema 1) opens in this one with its data.
+func test_real_upgrade_from_schema_1() -> void:
+	var dir := tmp_dir()
+	var s := _open(dir, {"migrations": WorldStore.MIGRATIONS.slice(0, 1)})
+	eq(s.schema_version(), 1)
+	s.put_inventory("p1", Cbor.encode({"base:stone": 5}))
+	s.close()
+	var t := _open(dir)
+	eq(t.schema_version(), WorldStore.SCHEMA_VERSION)
+	eq(Cbor.decode(t.get_inventory("p1")).value, {"base:stone": 5}, "old data kept")
+	check(t.put_character("c1", "owner-key", Cbor.encode({"name": "x"})), "new table works: " + t.last_error)
+	check(FileAccess.file_exists(t.backup_path), "backup of the schema 1 world")
+	t.close()
+
+
 func test_rollback_leaves_nothing() -> void:
 	var s := _open(tmp_dir())
 	s.begin()
@@ -65,11 +84,11 @@ func test_migration_backs_up_first_and_keeps_data() -> void:
 	var steps: Array = WorldStore.MIGRATIONS.duplicate()
 	steps.append(["ALTER TABLE inventories ADD COLUMN note TEXT NOT NULL DEFAULT ''"])
 	var t := _open(dir, {"migrations": steps})
-	eq(t.schema_version(), 2)
+	eq(t.schema_version(), WorldStore.MIGRATIONS.size() + 1)
 	eq(Cbor.decode(t.get_inventory("p1")).value, {"base:stone": 5}, "data kept")
 	check(t.backup_path != "" and FileAccess.file_exists(t.backup_path), "backup made: " + t.backup_path)
 	t.close()
 	var old := WorldStore.new()
 	check(old.open(t.backup_path), old.last_error)
-	eq(old.schema_version(), 1, "backup is the old version")
+	eq(old.schema_version(), WorldStore.MIGRATIONS.size(), "backup is the old version")
 	old.close()

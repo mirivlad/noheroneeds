@@ -21,8 +21,13 @@ class Batch:
 	var inventories: Array = []
 	## [actor, request_id, tick, result Dictionary]
 	var requests: Array = []
-	## [id, location, cx, cy, kind, data Dictionary] — a state batch has only these
+	## [character_id, owner, portable data Dictionary]
+	var characters: Array = []
+	## [id, location, cx, cy, kind, data Dictionary] — a state batch has only
+	## these and world_characters
 	var entities: Array = []
+	## [character_id, world state Dictionary]
+	var world_characters: Array = []
 	## Delete processed requests older than this tick (-1: no pruning).
 	var prune_before := -1
 
@@ -55,7 +60,8 @@ func submit(batch: Batch) -> int:
 	_mutex.lock()
 	batch.id = _next_id
 	_next_id += 1
-	if batch.chunks.is_empty() and batch.inventories.is_empty() and batch.requests.is_empty() and batch.prune_before < 0:
+	if batch.chunks.is_empty() and batch.inventories.is_empty() and batch.requests.is_empty() \
+			and batch.characters.is_empty() and batch.prune_before < 0:
 		_state.append(batch)
 	else:
 		_ops.append(batch)
@@ -166,8 +172,12 @@ func _write(b: Batch) -> bool:
 		ok = ok and _store.put_inventory(inv[0], Cbor.encode(inv[1]))
 	for r: Array in b.requests:
 		ok = ok and _store.put_request(r[0], r[1], r[2], Cbor.encode(r[3]))
+	for c: Array in b.characters:
+		ok = ok and _store.put_character(c[0], c[1], Cbor.encode(c[2]))
 	for e: Array in b.entities:
 		ok = ok and _store.put_entity(e[0], e[1], e[2], e[3], e[4], Cbor.encode(e[5]))
+	for wc: Array in b.world_characters:
+		ok = ok and _store.put_world_character(wc[0], Cbor.encode(wc[1]))
 	if b.prune_before >= 0:
 		ok = ok and _store.prune_requests(b.prune_before)
 	if not ok:

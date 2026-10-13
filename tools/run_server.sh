@@ -4,4 +4,6 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 "$ROOT/tools/fetch_addons.sh"
-exec "${GODOT:-godot}" --headless --audio-driver Dummy --path "$ROOT" -s res://src/server/server_main.gd -- "$@"
+CONSOLE=()
+[[ -t 0 ]] && CONSOLE=(--console)  # type "stop" to stop cleanly
+exec "${GODOT:-godot}" --headless --audio-driver Dummy --path "$ROOT" -s res://src/server/server_main.gd -- "${CONSOLE[@]}" "$@"

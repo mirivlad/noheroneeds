@@ -1,0 +1,15 @@
+; godot-sqlite v4.9 (MIT, https://github.com/2shady4u/godot-sqlite), desktop platforms only.
+; The binaries are not in git: tools/fetch_addons.sh downloads the pinned release.
+[configuration]
+
+entry_symbol = "sqlite_library_init"
+compatibility_minimum = "4.7"
+
+[libraries]
+
+macos.debug = "res://addons/godot-sqlite/bin/libgdsqlite.macos.template_debug.framework"
+macos.release = "res://addons/godot-sqlite/bin/libgdsqlite.macos.template_release.framework"
+windows.debug.x86_64 = "res://addons/godot-sqlite/bin/libgdsqlite.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/godot-sqlite/bin/libgdsqlite.windows.template_release.x86_64.dll"
+linux.debug.x86_64 = "res://addons/godot-sqlite/bin/libgdsqlite.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://addons/godot-sqlite/bin/libgdsqlite.linux.template_release.x86_64.so"

@@ -13,7 +13,16 @@ extends RefCounted
 ## changing entity state to the writer; the server calls it periodically
 ## (or a slice at a time), never every tick.
 
+const SURFACE := "surface"
+
 var content: ContentRegistry
+## Makes surface chunks nobody has visited (null if the content has no biomes).
+var generator: SurfaceGenerator
+var loader := ChunkLoader.new()
+var world_seed := 0
+## Chunks the simulation had to load or generate itself because the loader
+## had not brought them yet (each one costs tick time).
+var sync_loads := 0
 ## Requests are remembered at least this many ticks for idempotency.
 var request_memory_ticks := 20 * 60 * 30
 var tick := 0
@@ -44,7 +53,7 @@ var max_batches_in_flight := 2
 var _closed := false
 
 ## Where characters appear the first time they enter this world.
-var spawn_location := "surface"
+var spawn_location := SURFACE
 var spawn_position := Vector2i.ZERO
 ## Characters in the world right now:
 ## id -> {"location", "pos": Vector2i, "name", "appearance"}
@@ -62,18 +71,35 @@ var _chunk_rev := {}
 var _encoded := {}
 
 
-## Opens a world: a read connection here, a write connection on the writer thread.
+## Opens a world: a read connection here, a write connection on the writer
+## thread, another read connection on the chunk loader thread.
+## options: those of WorldStore.open, plus "seed" for a new world.
 static func open(db_path: String, registry: ContentRegistry, options := {}) -> ServerWorld:
 	var s := WorldStore.new()
 	if not s.open(db_path, options):
 		push_error(s.last_error)
 		return null
+	if s.read_meta("seed") == "":
+		var seed_value := int(options.get("seed", randi()))
+		if not (s.write_meta("seed", str(seed_value)) and s.write_meta("world_id", Uuid.v4())):
+			push_error(s.last_error)
+			s.close()
+			return null
 	var w := StoreWriter.new()
 	if not w.start(db_path, options):
 		push_error(w.last_error())
 		s.close()
 		return null
-	return ServerWorld.new(s, registry, w)
+	var world := ServerWorld.new(s, registry, w)
+	world.world_seed = int(s.read_meta("seed"))
+	var g := SurfaceGenerator.new(world.world_seed, registry)
+	world.generator = g if g.can_generate() else null
+	var lg := SurfaceGenerator.new(world.world_seed, registry) if world.generator else null
+	if not world.loader.start(db_path, lg):
+		w.stop()
+		s.close()
+		return null
+	return world
 
 
 func _init(read_store: WorldStore, registry: ContentRegistry, store_writer: StoreWriter) -> void:
@@ -87,6 +113,7 @@ func close() -> void:
 	if _closed:
 		return
 	_closed = true
+	loader.stop()
 	sync()
 	writer.stop()
 	store.close()
@@ -97,6 +124,7 @@ func abandon() -> void:
 	if _closed:
 		return
 	_closed = true
+	loader.stop()
 	writer.stop()
 	store.close()
 
@@ -105,15 +133,44 @@ static func chunk_key(location: String, cx: int, cy: int) -> String:
 	return "%s|%d|%d" % [location, cx, cy]
 
 
+## A chunk, loaded or generated now if the loader has not brought it yet.
 func chunk(location: String, cx: int, cy: int) -> Chunk:
 	var key := chunk_key(location, cx, cy)
 	var c: Chunk = _chunks.get(key)
 	if c == null:
 		var data := store.get_chunk(location, cx, cy)
-		c = ChunkCodec.decode(data) if not data.is_empty() else Chunk.new()
-		assert(c != null, "corrupt chunk %s: %s" % [key, ChunkCodec.last_error])
+		if not data.is_empty():
+			c = ChunkCodec.decode(data)
+			assert(c != null, "corrupt chunk %s: %s" % [key, ChunkCodec.last_error])
+		elif location == SURFACE and generator:
+			c = generator.generate(cx, cy)
+			_dirty_chunks[key] = true  # generated once, then kept whole
+		else:
+			c = Chunk.new()
 		_chunks[key] = c
+		sync_loads += 1
 	return c
+
+
+func has_chunk(location: String, cx: int, cy: int) -> bool:
+	return _chunks.has(chunk_key(location, cx, cy))
+
+
+## Asks the loader thread for a chunk that is not in memory yet.
+func prefetch(location: String, cx: int, cy: int) -> void:
+	if not _chunks.has(chunk_key(location, cx, cy)):
+		loader.request(location, cx, cy)
+
+
+## Takes chunks the loader finished (call every tick).
+func poll_loaded() -> void:
+	for r: Array in loader.take_ready():
+		var key := chunk_key(r[0], r[1], r[2])
+		if _chunks.has(key):
+			continue  # loaded meanwhile by chunk(); the same content
+		_chunks[key] = r[3]
+		if r[4]:
+			_dirty_chunks[key] = true
 
 
 func inventory(owner: String) -> Inventory:
@@ -179,8 +236,7 @@ func move_character(id: String, pos: Vector2i) -> void:
 func is_solid(location: String, x: int, y: int) -> bool:
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)
-	var part := chunk(location, cx, cy).get_cell("structure", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
-	return part != "" and bool(content.get_def(part).get("solid", true))
+	return Terrain.is_solid(chunk(location, cx, cy), x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content)
 
 
 func chunk_revision(location: String, cx: int, cy: int) -> int:
@@ -355,6 +411,17 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 	return {"ok": false, "reason": "unknown_type"}
 
 
+func _someone_stands_on(location: String, x: int, y: int) -> bool:
+	for id: String in present:
+		var p: Dictionary = present[id]
+		var pos: Vector2i = p["pos"]
+		if p["location"] == location \
+				and pos.x + Movement.HALF_X > x * Movement.UNIT and pos.x - Movement.HALF_X < (x + 1) * Movement.UNIT \
+				and pos.y + Movement.HALF_Y > y * Movement.UNIT and pos.y - Movement.HALF_Y < (y + 1) * Movement.UNIT:
+			return true
+	return false
+
+
 func _changed(key: String) -> void:
 	_dirty_chunks[key] = true
 	_chunk_rev[key] = _chunk_rev.get(key, 0) + 1
@@ -376,6 +443,10 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	var c := chunk(at[0], at[1], at[2])
 	if c.get_cell("structure", at[3], at[4]) != "":
 		return {"ok": false, "reason": "occupied"}
+	if Terrain.is_solid(c, at[3], at[4], content):
+		return {"ok": false, "reason": "blocked"}  # water, a tree...
+	if _someone_stands_on(at[0], int(r.get("x", 0)), int(r.get("y", 0))):
+		return {"ok": false, "reason": "someone_there"}
 	var costs := content.structure_cost(part)
 	var inv := inventory(actor)
 	if not inv.has_all(costs):

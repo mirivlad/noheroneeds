@@ -65,8 +65,10 @@ func step() -> void:
 				if _sessions.has(e.peer):
 					_on_message(_sessions[e.peer], Protocol.decode(e.data, true))
 	world.tick = tick
+	world.poll_loaded()
 	for s: Session in _sessions.values():
 		if s.state == "playing":
+			_prefetch(s)
 			_apply_input(s)
 	world.commit_async()
 	world.flush_state(STATE_ROWS_PER_TICK)
@@ -181,6 +183,17 @@ func _apply_input(s: Session) -> void:
 		var loc: String = p["location"]
 		world.move_character(s.character_id, Movement.step(p["pos"], e[1], e[2],
 			func(x: int, y: int) -> bool: return world.is_solid(loc, x, y)))
+
+
+## Keeps one ring of chunks beyond what the client sees loading in advance.
+func _prefetch(s: Session) -> void:
+	var p: Dictionary = world.present[s.character_id]
+	var cell := Movement.cell_of(p["pos"])
+	var mc := Vector2i(floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
+	var r := view_chunks + 1
+	for cy in range(mc.y - r, mc.y + r + 1):
+		for cx in range(mc.x - r, mc.x + r + 1):
+			world.prefetch(p["location"], cx, cy)
 
 
 func _send_snapshot(s: Session) -> void:

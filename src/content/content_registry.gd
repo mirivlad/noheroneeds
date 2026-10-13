@@ -186,6 +186,23 @@ func _validate() -> void:
 					errors.append("%s: max below min" % id)
 			"achievement":
 				pass
+			"ground", "plant":
+				d["solid"] = bool(d.get("solid", false))
+			"generator":
+				for f: String in ["water", "shore"]:
+					if kind_of(String(d.get(f, ""))) != "ground":
+						errors.append("%s: '%s' must be a ground" % [id, f])
+				_check_weights(id, "shore_cover", d.get("shore_cover", {}), ["plant"], false)
+				d["shore_cover_density"] = float(d.get("shore_cover_density", 0.0))
+				d["spawn_clearing"] = int(d.get("spawn_clearing", 0))
+				d["water_threshold"] = float(d.get("water_threshold", 0.5))
+				d["shore_width"] = float(d.get("shore_width", 0.0))
+			"biome":
+				_check_weights(id, "ground", d.get("ground"), ["ground"])
+				_check_weights(id, "cover", d.get("cover", {}), ["plant"], false)
+				d["cover_density"] = float(d.get("cover_density", 0.0))
+				if d["cover_density"] < 0.0 or d["cover_density"] > 1.0:
+					errors.append("%s: cover_density must be within 0..1" % id)
 			var other:
 				errors.append("%s: unknown kind '%s'" % [id, other])
 
@@ -200,6 +217,19 @@ func _check_amounts(id: String, field: String, amounts: Variant, required: bool)
 			errors.append("%s: '%s' refers to '%s', which is not an item" % [id, field, ref])
 		elif int(amounts[ref]) < 1:
 			errors.append("%s: '%s' needs a positive count of '%s'" % [id, field, ref])
+
+
+## {content id: weight} where every id is one of `kinds`; weights become floats.
+func _check_weights(id: String, field: String, weights: Variant, kinds: Array, required := true) -> void:
+	if typeof(weights) != TYPE_DICTIONARY or (required and (weights as Dictionary).is_empty()):
+		errors.append("%s: '%s' must map ids to weights" % [id, field])
+		return
+	for ref: Variant in weights:
+		weights[ref] = float(weights[ref])
+		if not kinds.has(kind_of(String(ref))):
+			errors.append("%s: '%s' refers to '%s', which is not a %s" % [id, field, ref, "/".join(kinds)])
+		elif float(weights[ref]) <= 0.0:
+			errors.append("%s: '%s' weight of '%s' must be positive" % [id, field, ref])
 
 
 func _check_strings(id: String, field: String, list: Variant) -> void:

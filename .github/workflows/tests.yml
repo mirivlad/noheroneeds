@@ -1,0 +1,28 @@
+name: tests
+on:
+  push:
+  pull_request:
+jobs:
+  headless:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GODOT_VERSION: 4.7.2-stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Godot and addons
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            addons/godot-sqlite/bin
+          key: godot-${{ env.GODOT_VERSION }}-${{ hashFiles('tools/fetch_addons.sh') }}
+      - name: Install Godot
+        run: |
+          if [ ! -x ~/godot/godot ]; then
+            mkdir -p ~/godot && cd ~/godot
+            curl -fsSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+            unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}_linux.x86_64" godot && rm godot.zip
+          fi
+      - name: Run tests
+        run: GODOT=~/godot/godot tools/run_tests.sh

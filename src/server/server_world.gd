@@ -1,22 +1,25 @@
 class_name ServerWorld
 extends RefCounted
-## Authoritative world state in memory, backed by a WorldStore (ADR-0005).
+## Authoritative world state in memory, backed by the world database (ADR-0005).
 ##
 ## Requests carry a request_id chosen by the client. A request is applied
 ## once: a repeat (resent packet, reconnect) gets the original result and
 ## changes nothing. Results are acknowledged only after the batch holding
 ## their changes is committed, so an acknowledged change survives a crash.
 ##
-## flush_operations() commits the changed chunks, inventories and processed
-## requests in one transaction. flush_state() writes frequently changing
-## entity state; the server calls it periodically, not every tick.
+## The simulation never waits for the disk. commit_async() snapshots what
+## changed into a batch for the StoreWriter thread; poll() releases the
+## acknowledgements of committed batches. flush_state() hands frequently
+## changing entity state to the writer; the server calls it periodically
+## (or a slice at a time), never every tick.
 
-## Content id -> {material id: count}. Stand-in until the content registry exists.
-var part_costs := {}
+var content: ContentRegistry
 ## Requests are remembered at least this many ticks for idempotency.
 var request_memory_ticks := 20 * 60 * 30
 var tick := 0
+## Read connection of the simulation thread.
 var store: WorldStore
+var writer: StoreWriter
 
 var _chunks := {}
 var _inventories := {}
@@ -26,15 +29,58 @@ var _dirty_inventories := {}
 var _dirty_entities := {}
 ## "actor|request_id" -> result, for requests processed in this session
 var _results := {}
-## [actor, request_id, result] applied but not yet committed
+## [actor, request_id, result] applied but not yet handed to the writer
 var _pending: Array = []
-var _pending_keys := {}
+## keys of requests not yet committed (pending or in a batch being written)
+var _uncommitted := {}
+## batch id -> [[actor, request_id, result], ...] waiting for the commit
+var _in_flight := {}
 ## [actor, request_id, result] ready to send to clients
 var _outbox: Array = []
+var _prune_before := -1
+## While this many batches wait for the writer, commit_async() holds new
+## changes back; they go out together in the next batch (backpressure).
+var max_batches_in_flight := 2
+var _closed := false
 
 
-func _init(world_store: WorldStore) -> void:
-	store = world_store
+## Opens a world: a read connection here, a write connection on the writer thread.
+static func open(db_path: String, registry: ContentRegistry, options := {}) -> ServerWorld:
+	var s := WorldStore.new()
+	if not s.open(db_path, options):
+		push_error(s.last_error)
+		return null
+	var w := StoreWriter.new()
+	if not w.start(db_path, options):
+		push_error(w.last_error())
+		s.close()
+		return null
+	return ServerWorld.new(s, registry, w)
+
+
+func _init(read_store: WorldStore, registry: ContentRegistry, store_writer: StoreWriter) -> void:
+	store = read_store
+	content = registry
+	writer = store_writer
+
+
+## Commits everything outstanding, stops the writer, closes both connections.
+func close() -> void:
+	if _closed:
+		return
+	_closed = true
+	sync()
+	writer.stop()
+	store.close()
+
+
+## Stops without committing what is not yet handed to the writer (tests of crashes).
+func abandon() -> void:
+	if _closed:
+		return
+	_closed = true
+	writer.stop()
+	store.close()
 
 
 static func chunk_key(location: String, cx: int, cy: int) -> String:
@@ -92,54 +138,67 @@ func handle(actor: String, request: Dictionary) -> void:
 	var result := _apply(actor, request)
 	_results[key] = result
 	_pending.append([actor, rid, result])
-	_pending_keys[key] = true
+	_uncommitted[key] = true
 
 
-## Commits applied requests. Returns false (and keeps everything pending,
-## acknowledging nothing) if the database refused the transaction.
-func flush_operations() -> bool:
-	if _pending.is_empty() and _dirty_chunks.is_empty() and _dirty_inventories.is_empty():
-		return true
-	if not store.begin():
-		return false
-	var ok := true
+## Hands everything changed since the last call to the writer as one batch.
+## Returns at once; acknowledgements come out of poll() after the commit.
+## If the writer is behind, the changes wait for a later call unless forced.
+func commit_async(force := false) -> void:
+	if _pending.is_empty() and _dirty_chunks.is_empty() and _dirty_inventories.is_empty() and _prune_before < 0:
+		return
+	if not force and writer.queued_operations() >= max_batches_in_flight:
+		return
+	var b := StoreWriter.Batch.new()
 	for key: String in _dirty_chunks:
 		var p := key.split("|")
-		ok = ok and store.put_chunk(p[0], int(p[1]), int(p[2]), ChunkCodec.encode(_chunks[key]))
+		b.chunks.append([p[0], int(p[1]), int(p[2]), (_chunks[key] as Chunk).snapshot()])
 	for owner: String in _dirty_inventories:
-		ok = ok and store.put_inventory(owner, Cbor.encode(inventory(owner).to_data()))
+		b.inventories.append([owner, inventory(owner).to_data()])
 	for p: Array in _pending:
-		ok = ok and store.put_request(p[0], p[1], tick, Cbor.encode(p[2]))
-	if not ok:
-		store.rollback()
-		return false
-	if not store.commit():
-		return false
+		b.requests.append([p[0], p[1], tick, (p[2] as Dictionary).duplicate(true)])
+	b.prune_before = _prune_before
+	_prune_before = -1
 	_dirty_chunks.clear()
 	_dirty_inventories.clear()
-	_outbox.append_array(_pending)
-	_pending.clear()
-	_pending_keys.clear()
-	return true
+	_in_flight[writer.submit(b)] = _pending
+	_pending = []
 
 
-## Writes changed entity state in one transaction.
-func flush_state() -> bool:
+## Moves acknowledgements of committed batches to the outbox.
+func poll() -> void:
+	for id in writer.take_done():
+		for p: Array in _in_flight.get(id, []):
+			_uncommitted.erase(p[0] + "|" + p[1])
+			_outbox.append(p)
+		_in_flight.erase(id)
+
+
+## Commits everything and waits for it (tests, shutdown, before backups).
+## False if the database keeps refusing (see writer.last_error()).
+func sync() -> bool:
+	commit_async(true)
+	flush_state()
+	writer.wait_idle()
+	poll()
+	return writer.last_error() == ""
+
+
+## Hands changed entity state to the writer (encoded there). At most `limit`
+## entities per call (-1: all), so the server can spread the work over ticks.
+func flush_state(limit := -1) -> void:
 	if _dirty_entities.is_empty():
-		return true
-	if not store.begin():
-		return false
-	for id: String in _dirty_entities:
+		return
+	var b := StoreWriter.Batch.new()
+	for id: String in _dirty_entities.keys():
+		if limit >= 0 and b.entities.size() >= limit:
+			break
 		var e: Array = _entities[id]
 		var cx := floori(float(e[1]) / Chunk.SIZE)
 		var cy := floori(float(e[2]) / Chunk.SIZE)
-		if not store.put_entity(id, e[0], cx, cy, e[3], Cbor.encode(e[4])):
-			store.rollback()
-			return false
-	if not store.commit():
-		return false
-	_dirty_entities.clear()
-	return true
+		b.entities.append([id, e[0], cx, cy, e[3], (e[4] as Dictionary).duplicate(true)])
+		_dirty_entities.erase(id)
+	writer.submit(b)
 
 
 ## Acknowledgements ready to send: [actor, request_id, result].
@@ -149,25 +208,29 @@ func take_acks() -> Array:
 	return out
 
 
-## Forgets old processed requests (memory and store).
-func prune_requests() -> bool:
+## Forgets old processed requests: in memory now, in the store with the next batch.
+func prune_requests() -> void:
 	var limit := tick - request_memory_ticks
 	if limit <= 0:
-		return true
-	# Committed results are in the store; keep only the pending ones in memory.
+		return
+	# Committed results are in the store; keep only the uncommitted ones here.
 	var keep := {}
-	for key: String in _pending_keys:
+	for key: String in _uncommitted:
 		keep[key] = _results[key]
 	_results = keep
-	return store.prune_requests(limit)
+	_prune_before = limit
 
 
-func pending_count() -> int:
-	return _pending.size()
+func uncommitted_count() -> int:
+	return _uncommitted.size()
+
+
+func dirty_entity_count() -> int:
+	return _dirty_entities.size()
 
 
 func _is_pending(key: String) -> bool:
-	return _pending_keys.has(key)
+	return _uncommitted.has(key)
 
 
 func _apply(actor: String, r: Dictionary) -> Dictionary:
@@ -191,13 +254,13 @@ func _cell(r: Dictionary) -> Array:
 
 func _build(actor: String, r: Dictionary) -> Dictionary:
 	var part := String(r.get("part", ""))
-	if not part_costs.has(part):
+	if content.kind_of(part) != "structure":
 		return {"ok": false, "reason": "unknown_part"}
 	var at := _cell(r)
 	var c := chunk(at[0], at[1], at[2])
 	if c.get_cell("structure", at[3], at[4]) != "":
 		return {"ok": false, "reason": "occupied"}
-	var costs: Dictionary = part_costs[part]
+	var costs := content.structure_cost(part)
 	var inv := inventory(actor)
 	if not inv.has_all(costs):
 		return {"ok": false, "reason": "materials"}
@@ -218,9 +281,12 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "empty"}
 	if c.get_props(at[3], at[4]).get("owner", "") != actor:
 		return {"ok": false, "reason": "not_owner"}
+	if not content.has(part):
+		# Its pack is gone: keep the part as it is rather than lose it unpaid.
+		return {"ok": false, "reason": "unknown_part"}
 	c.set_cell("structure", at[3], at[4], "")
 	c.set_props(at[3], at[4], {})
-	var costs: Dictionary = part_costs.get(part, {})
+	var costs := content.structure_cost(part)
 	var inv := inventory(actor)
 	for id: String in costs:
 		inv.add(id, int(costs[id]))

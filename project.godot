@@ -15,6 +15,7 @@ config/description="Long-lived 2D pixel sandbox: a world to live in."
 config/features=PackedStringArray("4.7")
 config/use_custom_user_dir=true
 config/custom_user_dir_name="noheroneeds"
+run/main_scene="res://scenes/main.tscn"
 
 [debug]
 
@@ -34,4 +35,6 @@ window/stretch/scale_mode="integer"
 
 [rendering]
 
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
 textures/canvas_textures/default_texture_filter=0

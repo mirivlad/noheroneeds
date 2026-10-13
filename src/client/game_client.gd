@@ -29,6 +29,10 @@ var entities := {}
 var chunks := {}
 ## request id -> result, as acknowledged by the server
 var results := {}
+## Own position before the last tick, for drawing between ticks.
+var previous_position := Vector2i.ZERO
+## Chunk keys received since the presentation last asked.
+var changed_chunks: Array[String] = []
 ## Times a prediction had to be corrected (for tests and diagnostics).
 var corrections := 0
 
@@ -61,6 +65,7 @@ func step() -> void:
 	if state == "playing" and has_position:
 		_input_seq += 1
 		_unacked_inputs.append([_input_seq, move.x, move.y])
+		previous_position = position
 		position = Movement.step(position, move.x, move.y, _solid)
 		_send(Transport.Channel.STATE, Protocol.INPUT, {"inputs": _unacked_inputs.slice(-Protocol.INPUT_REDUNDANCY),
 			"ack": _latest_snapshot})
@@ -117,7 +122,9 @@ func _on_message(m: Dictionary) -> void:
 		Protocol.CHUNK:
 			var c := ChunkCodec.decode(m["data"])
 			if c:
-				chunks[ServerWorld.chunk_key(m["location"], m["cx"], m["cy"])] = c
+				var key := ServerWorld.chunk_key(m["location"], m["cx"], m["cy"])
+				chunks[key] = c
+				changed_chunks.append(key)
 		Protocol.SNAPSHOT:
 			_on_snapshot(m)
 
@@ -157,6 +164,8 @@ func _reconcile(server_pos: Vector2i, ack: int) -> void:
 		replay = Movement.step(replay, e[1], e[2], _solid)
 	if has_position and replay != position:
 		corrections += 1
+	if not has_position:
+		previous_position = replay
 	position = replay
 	has_position = true
 

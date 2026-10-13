@@ -52,6 +52,10 @@ var _prune_before := -1
 var max_batches_in_flight := 2
 var _closed := false
 
+## Items every character gets on its first arrival in this world: a world
+## rule set by the server, not part of the profile. Provisional, until crafts
+## and gathering provide materials.
+var starter_kit := {}
 ## Where characters appear the first time they enter this world.
 var spawn_location := SURFACE
 var spawn_position := Vector2i.ZERO
@@ -198,6 +202,8 @@ func enter(owner: String, c: PortableCharacter) -> String:
 		_dirty_characters[id] = true
 		for item: String in c.inventory.stacks:
 			grant(id, item, c.inventory.stacks[item])
+		for item: String in starter_kit:
+			grant(id, item, int(starter_kit[item]))
 	elif known["owner"] != owner:
 		return "not_owner"
 	if present.has(id):

@@ -17,6 +17,9 @@ static var _id_pattern := RegEx.create_from_string("^[a-z0-9_]+:[a-z0-9_/]+$")
 var defs := {}
 ## pack id -> {"version", "depends", "dir"}
 var packs := {}
+## content id -> visual definition that draws it; a later pack's visual
+## replaces an earlier one (reskins), logic definitions cannot be replaced.
+var visuals := {}
 ## Problems found while loading; a registry with errors must not be used.
 var errors: PackedStringArray = []
 var _hashing := HashingContext.new()
@@ -98,6 +101,11 @@ func kind_of(id: String) -> String:
 func structure_cost(id: String) -> Dictionary:
 	var d: Dictionary = defs.get(id, {})
 	return d.get("cost", {}) if d.get("kind") == "structure" else {}
+
+
+## How a definition is drawn ({} if nothing draws it).
+func visual_of(id: String) -> Dictionary:
+	return visuals.get(id, {})
 
 
 ## Identifies the exact content set (packs, versions, file bytes) for handshakes.
@@ -197,6 +205,8 @@ func _validate() -> void:
 				d["spawn_clearing"] = int(d.get("spawn_clearing", 0))
 				d["water_threshold"] = float(d.get("water_threshold", 0.5))
 				d["shore_width"] = float(d.get("shore_width", 0.0))
+			"visual":
+				_check_visual(id, d)
 			"biome":
 				_check_weights(id, "ground", d.get("ground"), ["ground"])
 				_check_weights(id, "cover", d.get("cover", {}), ["plant"], false)
@@ -217,6 +227,33 @@ func _check_amounts(id: String, field: String, amounts: Variant, required: bool)
 			errors.append("%s: '%s' refers to '%s', which is not an item" % [id, field, ref])
 		elif int(amounts[ref]) < 1:
 			errors.append("%s: '%s' needs a positive count of '%s'" % [id, field, ref])
+
+
+func _check_visual(id: String, d: Dictionary) -> void:
+	var target := String(d.get("for", ""))
+	if not defs.has(target) or kind_of(target) == "visual":
+		errors.append("%s: draws '%s', which is not defined" % [id, target])
+		return
+	if not ["flat", "tall", "character"].has(d.get("mode")):
+		errors.append("%s: mode must be flat, tall or character" % id)
+	for f: String in ["rect", "origin"]:
+		var v: Variant = d.get(f)
+		if typeof(v) != TYPE_ARRAY or (v as Array).size() != (4 if f == "rect" else 2):
+			errors.append("%s: bad %s" % [id, f])
+			return
+		d[f] = (v as Array).map(func(n: Variant) -> int: return int(n))
+	d["variants"] = maxi(1, int(d.get("variants", 1)))
+	var dir: String = packs.get(d["pack"], {}).get("dir", "")
+	d["atlas_path"] = dir.path_join(String(d.get("atlas", ""))) if dir != "" else ""
+	if dir != "" and not FileAccess.file_exists(d["atlas_path"]) and not ResourceLoader.exists(d["atlas_path"]):
+		errors.append("%s: atlas %s not found" % [id, d["atlas_path"]])
+	var old: Dictionary = visuals.get(target, {})
+	if old.is_empty() or _pack_order(d["pack"]) >= _pack_order(old["pack"]):
+		visuals[target] = d
+
+
+func _pack_order(pid: String) -> int:
+	return packs.keys().find(pid)
 
 
 ## {content id: weight} where every id is one of `kinds`; weights become floats.

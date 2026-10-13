@@ -6,6 +6,7 @@ extends SceneTree
 ##   --max-players=N      default 20
 ##   --identity=DIR       server key directory (default user://server_identity)
 ##   --content=DIR[,DIR]  content packs (default res://content/base)
+##   --console            read commands ("stop") from the terminal
 ##   --stop-file=PATH     stop cleanly when this file appears (default: STOP
 ##                        next to the world database; it is removed on start)
 ## Prints "LISTENING <port> <server id>" when ready.
@@ -50,7 +51,8 @@ func _initialize() -> void:
 	_stop_file = ProjectSettings.globalize_path(String(o.get("stop-file", world_path.get_base_dir().path_join("STOP"))))
 	if FileAccess.file_exists(_stop_file):
 		DirAccess.remove_absolute(_stop_file)
-	_stdin.start(_read_console)
+	if o.has("console"):
+		_stdin.start(_read_console)
 	print("LISTENING %d %s" % [port, identity.fingerprint])
 
 
@@ -82,6 +84,8 @@ func _finalize() -> void:
 		_transport.close()
 		_world.close()
 		print("STOPPED")
+	if _stdin.is_started() and not _stdin.is_alive():
+		_stdin.wait_to_finish()
 
 
 ## Console commands, on their own thread (reading stdin blocks).

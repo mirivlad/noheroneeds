@@ -9,7 +9,8 @@ extends RefCounted
 ## from it, so new biomes come as data.
 
 const ID := "base:surface"
-const VERSION := 1
+## 2: ground lies in patches instead of per-cell noise.
+const VERSION := 2
 var world_seed := 0
 ## From the generator's own definition (content "base:surface").
 var _water := ""
@@ -26,6 +27,8 @@ var _biomes: Array = []
 var _solid := {}
 var _biome_noise := FastNoiseLite.new()
 var _water_noise := FastNoiseLite.new()
+## One noise field per patch slot (the n-th lesser ground of any biome uses field n).
+var _patch_noise: Array[FastNoiseLite] = []
 
 
 func _init(seed_value: int, content: ContentRegistry) -> void:
@@ -37,7 +40,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	ids.sort()  # a stable order: the same content gives the same world
 	for id: String in ids:
 		var d := content.get_def(id)
-		_biomes.append({"ground": _table(d["ground"]), "cover": _table(d.get("cover", {})),
+		_biomes.append({"ground": _patches(d["ground"]), "cover": _table(d.get("cover", {})),
 			"density": float(d["cover_density"])})
 		for plant: String in d.get("cover", {}):
 			if content.get_def(plant).get("solid", false):
@@ -57,6 +60,12 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	_water_noise.seed = seed_value + 7919
 	_water_noise.frequency = 0.03
 	_water_noise.fractal_octaves = 2
+	for i in 8:
+		var n := FastNoiseLite.new()
+		n.seed = seed_value + 104729 * (i + 1)
+		n.frequency = 0.07
+		n.fractal_octaves = 2
+		_patch_noise.append(n)
 
 
 ## Whether this content has anything to generate from.
@@ -82,7 +91,7 @@ func generate(cx: int, cy: int) -> Chunk:
 					c.set_cell("cover", lx, ly, _pick(_shore_cover, _hash(x, y, 5)))
 				continue
 			var b: Dictionary = _biomes[_biome_at(x, y)]
-			c.set_cell("ground", lx, ly, _pick(b["ground"], _hash(x, y, 1)))
+			c.set_cell("ground", lx, ly, _ground_at(b["ground"], x, y))
 			if _hash(x, y, 2) < float(b["density"]):
 				var plant := _pick(b["cover"], _hash(x, y, 3))
 				if plant != "" and not (clearing and _solid.has(plant)):
@@ -93,6 +102,36 @@ func generate(cx: int, cy: int) -> Chunk:
 func _biome_at(x: int, y: int) -> int:
 	var v := (_biome_noise.get_noise_2d(x, y) + 1.0) * 0.5
 	return clampi(int(v * _biomes.size()), 0, _biomes.size() - 1)
+
+
+## The dominant ground of a biome covers everything except patches of the
+## lesser ones; a lesser ground with share s of the weights shows where its
+## noise field is above a threshold that leaves about s of the area.
+func _ground_at(g: Dictionary, x: int, y: int) -> String:
+	var jitter := (_hash(x, y, 1) - 0.5) * 0.04  # ragged patch edges
+	var lesser: Array = g["lesser"]
+	for i in mini(lesser.size(), _patch_noise.size()):
+		if _patch_noise[i].get_noise_2d(x, y) + jitter > lesser[i][1]:
+			return lesser[i][0]
+	return g["main"]
+
+
+static func _patches(weights: Dictionary) -> Dictionary:
+	var ids: Array = weights.keys()
+	ids.sort()
+	var total := 0.0
+	var main := ""
+	for id: String in ids:
+		total += float(weights[id])
+		if main == "" or float(weights[id]) > float(weights[main]):
+			main = id
+	var lesser: Array = []
+	for id: String in ids:
+		if id != main:
+			# Fractal simplex noise is roughly normal with sd ~0.2 here.
+			var share := float(weights[id]) / total
+			lesser.append([id, 0.2 * sqrt(-2.0 * log(maxf(share, 0.001))) * 0.8])
+	return {"main": main, "lesser": lesser}
 
 
 ## [[id, cumulative weight], ...] with the total last.

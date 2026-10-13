@@ -34,29 +34,35 @@ func test_kill_during_load() -> void:
 
 
 func _run_and_kill(db: String, round: int, seed: int, kill_after: int) -> Array:
-	var args := ["--headless", "--audio-driver", "Dummy", "--path", ProjectSettings.globalize_path("res://"),
-		"-s", "res://tests/support/crash_worker.gd", "--", "--db=" + db, "--round=%d" % round, "--seed=%d" % seed]
-	var p := OS.execute_with_pipe(OS.get_executable_path(), args)
+	var p := spawn_godot("res://tests/support/crash_worker.gd", ["--db=" + db, "--round=%d" % round, "--seed=%d" % seed])
 	var io: FileAccess = p["stdio"]
 	var acked: Array = []
 	var killed := false
-	# Blocking reads until the pipe closes. Lines read after the kill were
-	# printed before the worker died, so they were sent and count as acknowledged.
-	while true:
+	var deadline := Time.get_ticks_msec() + 60000
+	while Time.get_ticks_msec() < deadline:
 		var line := io.get_line()
-		# After the kill an empty read means the pipe is drained (the worker
-		# prints no blank lines of its own); eof is not always reported.
-		if line == "" and (killed or io.eof_reached() or not OS.is_process_running(p["pid"])):
-			break
 		if line.begins_with("ACK "):
 			var f := line.split(" ")
 			acked.append([f[1], f[2], f[3]])
 			if not killed and acked.size() >= kill_after:
 				OS.kill(p["pid"])
 				killed = true
+		elif line == "":
+			if killed or not OS.is_process_running(p["pid"]):
+				# Lines already in the pipe were printed before the worker died:
+				# those acknowledgements were sent.
+				var rest := io.get_line()
+				while rest != "":
+					if rest.begins_with("ACK "):
+						var g := rest.split(" ")
+						acked.append([g[1], g[2], g[3]])
+					rest = io.get_line()
+				break
+			OS.delay_msec(1)
 	if not killed:
+		OS.kill(p["pid"])
 		var err: FileAccess = p["stderr"]
-		check(false, "worker exited by itself: " + err.get_as_text())
+		check(false, "worker ended or stalled by itself: " + err.get_as_text())
 	return acked
 
 

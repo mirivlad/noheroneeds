@@ -102,6 +102,17 @@ func bench_10k_chunks() -> void:
 	s.close()
 
 
+func bench_surface_generation() -> void:
+	var g := SurfaceGenerator.new(1, ContentRegistry.load_packs(["res://content/base"]))
+	var t := Time.get_ticks_usec()
+	for i in 100:
+		g.generate(i % 10, i / 10)
+	var ms := (Time.get_ticks_usec() - t) / 1000.0 / 100
+	_measure("surface_generate", ms, "ms/chunk")
+	# A walking player (4 cells/s) enters a new column of 7 chunks every 8 s.
+	_measure("loader_share_for_one_walking_player", ms * 7 / 8000.0 * 100.0, "% of one core")
+
+
 func bench_operation_commits() -> void:
 	for sync: String in ["FULL", "NORMAL"]:
 		var sub := tmp_dir().path_join(sync)

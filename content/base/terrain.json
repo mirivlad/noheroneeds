@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "defs": [
+    {"id": "base:grass", "kind": "ground", "name": "Трава"},
+    {"id": "base:grass_dry", "kind": "ground", "name": "Сухая трава"},
+    {"id": "base:dirt", "kind": "ground", "name": "Земля"},
+    {"id": "base:moss", "kind": "ground", "name": "Мох"},
+    {"id": "base:forest_floor", "kind": "ground", "name": "Лесная подстилка"},
+    {"id": "base:sand", "kind": "ground", "name": "Песок"},
+    {"id": "base:water", "kind": "ground", "name": "Вода", "solid": true},
+
+    {"id": "base:tall_grass", "kind": "plant", "name": "Высокая трава"},
+    {"id": "base:clover", "kind": "plant", "name": "Клевер"},
+    {"id": "base:flower_red", "kind": "plant", "name": "Мак"},
+    {"id": "base:flower_yellow", "kind": "plant", "name": "Лютик"},
+    {"id": "base:flower_blue", "kind": "plant", "name": "Василёк"},
+    {"id": "base:fern", "kind": "plant", "name": "Папоротник"},
+    {"id": "base:bush", "kind": "plant", "name": "Куст", "solid": true},
+    {"id": "base:berry_bush", "kind": "plant", "name": "Ягодный куст", "solid": true},
+    {"id": "base:reeds", "kind": "plant", "name": "Камыш"},
+    {"id": "base:oak", "kind": "plant", "name": "Дуб", "solid": true},
+    {"id": "base:birch", "kind": "plant", "name": "Берёза", "solid": true},
+    {"id": "base:spruce", "kind": "plant", "name": "Ель", "solid": true},
+
+    {
+      "id": "base:surface", "kind": "generator", "name": "Поверхность",
+      "water": "base:water", "shore": "base:sand", "shore_cover": {"base:reeds": 1}, "shore_cover_density": 0.35,
+      "spawn_clearing": 8, "water_threshold": 0.5, "shore_width": 0.08
+    },
+    {
+      "id": "base:meadow", "kind": "biome", "name": "Луг",
+      "ground": {"base:grass": 8, "base:grass_dry": 1, "base:dirt": 0.3},
+      "cover": {"base:tall_grass": 10, "base:clover": 5, "base:flower_red": 1.2, "base:flower_yellow": 1.2, "base:flower_blue": 0.8, "base:bush": 0.6, "base:oak": 0.4, "base:birch": 0.3},
+      "cover_density": 0.3
+    },
+    {
+      "id": "base:forest", "kind": "biome", "name": "Лес",
+      "ground": {"base:forest_floor": 6, "base:moss": 3, "base:grass": 1},
+      "cover": {"base:fern": 6, "base:spruce": 4, "base:oak": 2, "base:birch": 2, "base:berry_bush": 1.5, "base:bush": 1, "base:tall_grass": 2},
+      "cover_density": 0.35
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+class_name SurfaceGenerator
+extends RefCounted
+## Makes surface chunks from the world seed. The same seed, ID and VERSION
+## always give the same chunk. A chunk is generated once and then stored
+## whole (ADR-0005), so a new VERSION only shapes places nobody has visited.
+##
+## Biomes are content: each lists its ground and plants with weights and how
+## densely plants grow. Code here only decides where a biome is and samples
+## from it, so new biomes come as data.
+
+const ID := "base:surface"
+const VERSION := 1
+var world_seed := 0
+## From the generator's own definition (content "base:surface").
+var _water := ""
+var _shore := ""
+var _shore_cover: Array = []
+var _shore_density := 0.0
+## Water where the water noise (-1..1) is above this; shore just below it.
+var _water_level := 0.5
+var _shore_width := 0.0
+## Cells around the spawn point kept free of anything solid.
+var _clearing := 0
+var _biomes: Array = []
+## Plants that block walking (from their definitions), kept out of the spawn clearing.
+var _solid := {}
+var _biome_noise := FastNoiseLite.new()
+var _water_noise := FastNoiseLite.new()
+
+
+func _init(seed_value: int, content: ContentRegistry) -> void:
+	world_seed = seed_value
+	var ids: Array = []
+	for id: String in content.defs:
+		if content.kind_of(id) == "biome":
+			ids.append(id)
+	ids.sort()  # a stable order: the same content gives the same world
+	for id: String in ids:
+		var d := content.get_def(id)
+		_biomes.append({"ground": _table(d["ground"]), "cover": _table(d.get("cover", {})),
+			"density": float(d["cover_density"])})
+		for plant: String in d.get("cover", {}):
+			if content.get_def(plant).get("solid", false):
+				_solid[plant] = true
+	var g := content.get_def(ID)
+	if g.get("kind") == "generator":
+		_water = g["water"]
+		_shore = g["shore"]
+		_shore_cover = _table(g.get("shore_cover", {}))
+		_shore_density = g["shore_cover_density"]
+		_clearing = g["spawn_clearing"]
+		_water_level = g["water_threshold"]
+		_shore_width = g["shore_width"]
+	_biome_noise.seed = seed_value
+	_biome_noise.frequency = 0.012
+	_biome_noise.fractal_octaves = 3
+	_water_noise.seed = seed_value + 7919
+	_water_noise.frequency = 0.03
+	_water_noise.fractal_octaves = 2
+
+
+## Whether this content has anything to generate from.
+func can_generate() -> bool:
+	return not _biomes.is_empty() and _water != ""
+
+
+func generate(cx: int, cy: int) -> Chunk:
+	var c := Chunk.new()
+	c.meta = {"gen": ID, "gen_version": VERSION}
+	for ly in Chunk.SIZE:
+		for lx in Chunk.SIZE:
+			var x := cx * Chunk.SIZE + lx
+			var y := cy * Chunk.SIZE + ly
+			var clearing := absi(x) <= _clearing and absi(y) <= _clearing
+			var water := _water_noise.get_noise_2d(x, y)
+			if water > _water_level and not clearing:
+				c.set_cell("ground", lx, ly, _water)
+				continue
+			if water > _water_level - _shore_width and not clearing:
+				c.set_cell("ground", lx, ly, _shore)
+				if _hash(x, y, 4) < _shore_density:
+					c.set_cell("cover", lx, ly, _pick(_shore_cover, _hash(x, y, 5)))
+				continue
+			var b: Dictionary = _biomes[_biome_at(x, y)]
+			c.set_cell("ground", lx, ly, _pick(b["ground"], _hash(x, y, 1)))
+			if _hash(x, y, 2) < float(b["density"]):
+				var plant := _pick(b["cover"], _hash(x, y, 3))
+				if plant != "" and not (clearing and _solid.has(plant)):
+					c.set_cell("cover", lx, ly, plant)
+	return c
+
+
+func _biome_at(x: int, y: int) -> int:
+	var v := (_biome_noise.get_noise_2d(x, y) + 1.0) * 0.5
+	return clampi(int(v * _biomes.size()), 0, _biomes.size() - 1)
+
+
+## [[id, cumulative weight], ...] with the total last.
+static func _table(weights: Dictionary) -> Array:
+	var ids: Array = weights.keys()
+	ids.sort()
+	var out: Array = []
+	var total := 0.0
+	for id: String in ids:
+		total += float(weights[id])
+		out.append([id, total])
+	return out
+
+
+static func _pick(table: Array, r: float) -> String:
+	if table.is_empty():
+		return ""
+	var t: float = r * table[-1][1]
+	for e: Array in table:
+		if t < e[1]:
+			return e[0]
+	return table[-1][0]
+
+
+## Deterministic value in [0, 1) for a cell and a purpose.
+func _hash(x: int, y: int, salt: int) -> float:
+	var n := (x * 374761393 + y * 668265263 + salt * 2246822519 + world_seed * 3266489917) & 0xFFFFFFFF
+	n = ((n ^ (n >> 13)) * 1274126177) & 0xFFFFFFFF
+	return float((n ^ (n >> 16)) & 0xFFFFFF) / float(0x1000000)

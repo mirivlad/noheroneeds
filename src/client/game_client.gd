@@ -167,8 +167,7 @@ func _solid(x: int, y: int) -> bool:
 	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
 	if c == null:
 		return false  # unknown ground: the server will correct us
-	var part := c.get_cell("structure", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
-	return part != "" and bool(content.get_def(part).get("solid", true))
+	return Terrain.is_solid(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content)
 
 
 func _send(channel: Transport.Channel, type: String, fields: Dictionary) -> void:

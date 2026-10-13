@@ -421,7 +421,7 @@ def chibi(w, h, look, style):
             # hair: a volume larger than the skull, bangs, side locks
             dv = ((u - 0.5) / (head_rx + 0.07)) ** 2 + ((v - head_cy + 0.03) / (head_ry + 0.04)) ** 2
             bang = 0.20 + 0.05 * abs(math.sin(u * math.pi * 3.2)) + look.get("bang", 0)
-            side = (u < 0.2 or u > 0.8) and v < look["lock"] and abs(u - 0.5) < head_rx + 0.06
+            side = (u < 0.2 or u > 0.8) and v < look["lock"] and abs(u - 0.5) < head_rx + 0.06 and (dv < 1.0 or v > 0.2)
             if (dv < 1 and v < bang) or side:
                 c = hair[2] if u < 0.42 and v < 0.16 else hair[1]
                 if dv > 0.72 and (u > 0.6 or v > 0.2):

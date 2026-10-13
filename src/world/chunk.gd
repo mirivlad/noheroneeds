@@ -81,6 +81,19 @@ func same_as(other: Chunk) -> bool:
 	return true
 
 
+## An independent copy (packed arrays are copy-on-write, so this is cheap):
+## the writer thread encodes it while the simulation keeps changing the original.
+func snapshot() -> Chunk:
+	var c := Chunk.new()
+	c.palette = palette.duplicate()
+	c._index = _index.duplicate()
+	for n: String in layers:
+		c.layers[n] = (layers[n] as PackedInt32Array).duplicate()
+	c.props = props.duplicate(true)
+	c.meta = meta.duplicate(true)
+	return c
+
+
 ## Rebuilds the palette lookup after the palette was replaced (codec use).
 func _reindex() -> void:
 	_index.clear()

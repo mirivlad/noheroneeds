@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "defs": [
+    {"id": "base:plank", "kind": "item", "name": "Доска", "stack": 99},
+    {"id": "base:log", "kind": "item", "name": "Бревно", "stack": 20},
+    {"id": "base:stone", "kind": "item", "name": "Камень", "stack": 99}
+  ]
+}

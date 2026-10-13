@@ -1,0 +1,231 @@
+class_name ContentRegistry
+extends RefCounted
+## Definitions of everything in the world, loaded from content packs (JSON).
+## Code never branches on a particular id: it reads the definition's fields.
+##
+## A pack is a directory with pack.json ({format, id, version, depends}) and
+## any number of *.json files ({format, defs: [{id, kind, ...}]}). Ids are
+## "<pack>:<name>"; a pack defines ids only in its own namespace. Each kind
+## has a validator that checks fields and references to other definitions.
+
+const PACK_FORMAT := 1
+const DEFS_FORMAT := 1
+
+static var _id_pattern := RegEx.create_from_string("^[a-z0-9_]+:[a-z0-9_/]+$")
+
+## id -> definition Dictionary (with "pack" added)
+var defs := {}
+## pack id -> {"version", "depends", "dir"}
+var packs := {}
+## Problems found while loading; a registry with errors must not be used.
+var errors: PackedStringArray = []
+var _hashing := HashingContext.new()
+var _file_hashes: PackedStringArray = []
+
+
+static func is_valid_id(id: String) -> bool:
+	return _id_pattern.search(id) != null
+
+
+## Loads packs in dependency order and validates the result.
+static func load_packs(dirs: PackedStringArray) -> ContentRegistry:
+	var reg := ContentRegistry.new()
+	var pending := {}
+	for dir in dirs:
+		var manifest := reg._read_json(dir.path_join("pack.json"))
+		if manifest.is_empty():
+			continue
+		if int(manifest.get("format", 0)) != PACK_FORMAT:
+			reg.errors.append("%s: unknown pack format %s" % [dir, manifest.get("format")])
+			continue
+		var pid := String(manifest.get("id", ""))
+		if not pid.is_valid_identifier() or pid != pid.to_lower():
+			reg.errors.append("%s: bad pack id '%s'" % [dir, pid])
+			continue
+		if pending.has(pid):
+			reg.errors.append("pack '%s' given twice" % pid)
+			continue
+		pending[pid] = {"version": String(manifest.get("version", "")), "depends": manifest.get("depends", []), "dir": dir}
+	var loaded := {}
+	while loaded.size() < pending.size():
+		var progress := false
+		for pid: String in pending:
+			if loaded.has(pid):
+				continue
+			var ready := true
+			for dep: Variant in pending[pid]["depends"]:
+				if not pending.has(String(dep)):
+					reg.errors.append("pack '%s' needs missing pack '%s'" % [pid, dep])
+					loaded[pid] = true
+					ready = false
+					break
+				if not loaded.has(String(dep)):
+					ready = false
+			if ready and not loaded.has(pid):
+				reg._load_pack(pid, pending[pid])
+				loaded[pid] = true
+				progress = true
+		if not progress and loaded.size() < pending.size():
+			reg.errors.append("packs depend on each other in a cycle")
+			break
+	reg._validate()
+	return reg
+
+
+## For tests and tools: a registry from definitions in memory (pack "test").
+static func from_defs(list: Array) -> ContentRegistry:
+	var reg := ContentRegistry.new()
+	reg.packs["test"] = {"version": "0", "depends": [], "dir": ""}
+	for d: Dictionary in list:
+		reg._add(d.duplicate(true), "test", "memory")
+	reg._validate()
+	return reg
+
+
+func has(id: String) -> bool:
+	return defs.has(id)
+
+
+func get_def(id: String) -> Dictionary:
+	return defs.get(id, {})
+
+
+func kind_of(id: String) -> String:
+	return String(defs.get(id, {}).get("kind", ""))
+
+
+## Materials a structure part costs: {item id: count}; empty if not a structure.
+func structure_cost(id: String) -> Dictionary:
+	var d: Dictionary = defs.get(id, {})
+	return d.get("cost", {}) if d.get("kind") == "structure" else {}
+
+
+## Identifies the exact content set (packs, versions, file bytes) for handshakes.
+func fingerprint() -> String:
+	var parts := PackedStringArray()
+	for pid: String in packs:
+		parts.append("%s@%s" % [pid, packs[pid]["version"]])
+	parts.append_array(_file_hashes)
+	parts.sort()
+	_hashing.start(HashingContext.HASH_SHA256)
+	_hashing.update("\n".join(parts).to_utf8_buffer())
+	return _hashing.finish().hex_encode()
+
+
+func _load_pack(pid: String, info: Dictionary) -> void:
+	packs[pid] = info
+	var dir: String = info["dir"]
+	var files := DirAccess.get_files_at(dir)
+	files.sort()
+	for f in files:
+		if not f.ends_with(".json") or f == "pack.json":
+			continue
+		var path := dir.path_join(f)
+		var data := _read_json(path)
+		if data.is_empty():
+			continue
+		_file_hashes.append("%s/%s:%s" % [pid, f, FileAccess.get_sha256(path)])
+		if int(data.get("format", 0)) != DEFS_FORMAT:
+			errors.append("%s: unknown definitions format %s" % [path, data.get("format")])
+			continue
+		for d: Variant in data.get("defs", []):
+			if typeof(d) != TYPE_DICTIONARY:
+				errors.append("%s: a definition is not an object" % path)
+				continue
+			_add(d, pid, path)
+
+
+func _add(d: Dictionary, pid: String, where: String) -> void:
+	var id := String(d.get("id", ""))
+	if not is_valid_id(id):
+		errors.append("%s: bad id '%s'" % [where, id])
+		return
+	if id.get_slice(":", 0) != pid:
+		errors.append("%s: '%s' is outside pack namespace '%s'" % [where, id, pid])
+		return
+	if defs.has(id):
+		errors.append("%s: '%s' is already defined in pack '%s'" % [where, id, defs[id]["pack"]])
+		return
+	d["pack"] = pid
+	defs[id] = d
+
+
+func _validate() -> void:
+	for id: String in defs:
+		var d: Dictionary = defs[id]
+		match String(d.get("kind", "")):
+			"item":
+				d["stack"] = int(d.get("stack", 1))
+				if d["stack"] < 1:
+					errors.append("%s: stack must be at least 1" % id)
+			"structure":
+				_check_amounts(id, "cost", d.get("cost", {}), true)
+			"recipe":
+				_check_amounts(id, "inputs", d.get("inputs", {}), true)
+				_check_amounts(id, "outputs", d.get("outputs", {}), true)
+			"body_plan":
+				_check_strings(id, "slots", d.get("slots", []))
+				_check_strings(id, "appearance_slots", d.get("appearance_slots", []))
+				_check_strings(id, "colors", d.get("colors", []))
+				var dirs := int(d.get("directions", 0))
+				d["directions"] = dirs
+				if dirs != 4 and dirs != 8:
+					errors.append("%s: directions must be 4 or 8" % id)
+			"style":
+				if String(d.get("slot", "")) == "":
+					errors.append("%s: a style needs a slot" % id)
+				_check_refs(id, "body_plans", d.get("body_plans", []), "body_plan")
+			"skill":
+				d["max_level"] = int(d.get("max_level", 0))
+				if d["max_level"] < 1:
+					errors.append("%s: max_level must be at least 1" % id)
+			"attribute":
+				d["min"] = int(d.get("min", 0))
+				d["max"] = int(d.get("max", 0))
+				if d["max"] < d["min"]:
+					errors.append("%s: max below min" % id)
+			"achievement":
+				pass
+			var other:
+				errors.append("%s: unknown kind '%s'" % [id, other])
+
+
+func _check_amounts(id: String, field: String, amounts: Variant, required: bool) -> void:
+	if typeof(amounts) != TYPE_DICTIONARY or (required and (amounts as Dictionary).is_empty()):
+		errors.append("%s: '%s' must list items and counts" % [id, field])
+		return
+	for ref: Variant in amounts:
+		amounts[ref] = int(amounts[ref])  # JSON numbers arrive as floats
+		if kind_of(String(ref)) != "item":
+			errors.append("%s: '%s' refers to '%s', which is not an item" % [id, field, ref])
+		elif int(amounts[ref]) < 1:
+			errors.append("%s: '%s' needs a positive count of '%s'" % [id, field, ref])
+
+
+func _check_strings(id: String, field: String, list: Variant) -> void:
+	if typeof(list) != TYPE_ARRAY or (list as Array).is_empty():
+		errors.append("%s: '%s' must be a non-empty list" % [id, field])
+		return
+	for v: Variant in list:
+		if typeof(v) != TYPE_STRING or String(v) == "":
+			errors.append("%s: '%s' has a bad entry" % [id, field])
+
+
+func _check_refs(id: String, field: String, list: Variant, kind: String) -> void:
+	if typeof(list) != TYPE_ARRAY or (list as Array).is_empty():
+		errors.append("%s: '%s' must list %s ids" % [id, field, kind])
+		return
+	for v: Variant in list:
+		if kind_of(String(v)) != kind:
+			errors.append("%s: '%s' refers to '%s', which is not a %s" % [id, field, v, kind])
+
+
+func _read_json(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		errors.append("%s: missing" % path)
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		errors.append("%s: not a JSON object" % path)
+		return {}
+	return parsed

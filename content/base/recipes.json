@@ -1,0 +1,6 @@
+{
+  "format": 1,
+  "defs": [
+    {"id": "base:saw_planks", "kind": "recipe", "name": "Распилить бревно", "inputs": {"base:log": 1}, "outputs": {"base:plank": 4}}
+  ]
+}

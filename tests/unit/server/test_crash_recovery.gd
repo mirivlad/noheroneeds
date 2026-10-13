@@ -3,7 +3,7 @@ extends TestCase
 ## world. Every acknowledged operation must be in the database, the database
 ## must be intact, and no material may appear or vanish.
 
-const COSTS := {"base:wood_wall": {"base:plank": 3}, "base:stone_wall": {"base:stone": 2, "base:plank": 1}}
+const COSTS := {"test:wood_wall": {"test:plank": 3}, "test:stone_wall": {"test:stone": 2, "test:plank": 1}}
 const ACTORS := ["a", "b", "c", "d", "e", "f"]
 
 
@@ -27,10 +27,10 @@ func test_kill_during_load() -> void:
 			if stored.is_empty() or bool(Cbor.decode(stored).value["ok"]) != (ack[2] == "ok"):
 				missing += 1
 		eq(missing, 0, "acknowledged operations missing after round %d (of %d)" % [round, acked.size()])
-		var w := ServerWorld.new(store)
-		w.part_costs = COSTS
-		eq(_totals(w), {"base:plank": 60 * ACTORS.size(), "base:stone": 30 * ACTORS.size()}, "materials after round %d" % round)
 		store.close()
+		var w := ServerWorld.open(db, sample_content())
+		eq(_totals(w), {"test:plank": 60 * ACTORS.size(), "test:stone": 30 * ACTORS.size()}, "materials after round %d" % round)
+		w.close()
 
 
 func _run_and_kill(db: String, round: int, seed: int, kill_after: int) -> Array:
@@ -75,3 +75,11 @@ func _totals(w: ServerWorld) -> Dictionary:
 				for id: String in costs:
 					t[id] = t.get(id, 0) + int(costs[id])
 	return t
+
+
+static func sample_content() -> ContentRegistry:
+	return ContentRegistry.from_defs([
+		{"id": "test:plank", "kind": "item"}, {"id": "test:stone", "kind": "item"},
+		{"id": "test:wood_wall", "kind": "structure", "cost": {"test:plank": 3}},
+		{"id": "test:stone_wall", "kind": "structure", "cost": {"test:stone": 2, "test:plank": 1}},
+	])

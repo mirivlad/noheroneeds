@@ -615,6 +615,15 @@ def main():
     dd.rectangle((0, T, 15, 2 * T - 1), outline=P["wood"][0])
     a.put(15, 9, down, "base:wood_stairs_down_frame", (0, 2 * T), "tall")
     down_v = a.visuals.pop()
+    # A torch on a pole (ADR-0014: a light source).
+    torch = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
+    d = ImageDraw.Draw(torch)
+    d.rectangle((7, 12, 8, 31), P["bark"][2])
+    d.line((7, 12, 7, 31), P["bark"][1])
+    d.rectangle((6, 9, 9, 12), P["bark"][0])
+    d.polygon([(6, 9), (9, 9), (10, 6), (8, 1), (7, 3), (5, 6)], hx("e8862e"))
+    d.polygon([(7, 8), (8, 8), (9, 6), (8, 3), (6, 6)], hx("f8d070"))
+    a.put(12, 9, b4.soft_edge(torch, P["bark"][0]), "base:torch", (0, 2 * T), "tall")
     a.put(11, 9, stairs_e, "base:wood_stairs_east_frame", (0, 2 * T), "tall")
     east_v = a.visuals.pop()
     for v in a.visuals:

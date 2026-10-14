@@ -1228,6 +1228,24 @@
    }
   },
   {
+   "id": "base:visual/torch",
+   "kind": "visual",
+   "for": "base:torch",
+   "atlas": "art/tiles.png",
+   "rect": [
+    192,
+    144,
+    16,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "mode": "tall",
+   "variants": 1
+  },
+  {
    "id": "base:visual/wood_column",
    "kind": "visual",
    "for": "base:wood_column",

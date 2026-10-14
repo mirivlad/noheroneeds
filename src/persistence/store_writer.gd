@@ -39,6 +39,8 @@ class Batch:
 	var world_characters: Array = []
 	## Delete processed requests older than this tick (-1: no pruning).
 	var prune_before := -1
+	## World facts as [key, value] (the world time...): written with state.
+	var meta: Array = []
 
 
 var retry_delay_ms := 500
@@ -201,6 +203,8 @@ func _write(b: Batch) -> bool:
 		ok = ok and _store.put_world_character(wc[0], Cbor.encode(wc[1]))
 	if b.prune_before >= 0:
 		ok = ok and _store.prune_requests(b.prune_before)
+	for m: Array in b.meta:
+		ok = ok and _store.write_meta(String(m[0]), String(m[1]))
 	if not ok:
 		_store.rollback()
 		return false

@@ -11,7 +11,8 @@ extends Node2D
 ## Dev options (App passes them through): --walk=DX,DY holds a direction;
 ## --demo builds a little house through ordinary requests on arrival
 ## (--demo=outside puts the player at the porch, --demo=upstairs goes up the
-## stairs; the player starts inside); --screenshot=PATH --frames=N.
+## stairs; the player starts inside); --screenshot=PATH --frames=N;
+## --time=HOUR sets a local world's clock.
 ##
 ## Controls (temporary): WASD/arrows walk, with Ctrl run; 1-3 choose a part,
 ## R turns it (stairs: up north, east or west); left click
@@ -26,7 +27,7 @@ signal failed(reason: String)
 signal screenshot_taken
 
 const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:wood_ceiling",
-	"base:thatch_roof", "base:wood_stairs", "base:wood_column"]
+	"base:thatch_roof", "base:wood_stairs", "base:wood_column", "base:torch"]
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 
 var content: ContentRegistry
@@ -99,6 +100,9 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 			if game == null:
 				return "не удалось открыть мир"
 			WorldLibrary.apply_rules(cfg.get("rules", {}), game.world)
+			if _opts.has("time"):  # dev only: --time=HOUR sets the world's clock
+				var day_start := game.world.world_time - game.world.world_time % Daylight.DAY_MS
+				game.world.world_time = day_start + int(float(_opts["time"]) * Daylight.HOUR_MS)
 			client = game.client
 	view.setup(content, client)
 	add_child(view)
@@ -139,7 +143,7 @@ func _notification(what: int) -> void:
 
 ## The music this moment calls for (App's MusicDirector follows it):
 ## danger, then home (under a roof, on a building's level), then night
-## (outdoors; until the world has its own time, the player's clock), else
+## (outdoors, by the world's time), else
 ## explore — fields and woods are one mood, so walking through glades and
 ## trees does not keep changing the melody.
 func music_mood() -> String:
@@ -149,9 +153,8 @@ func music_mood() -> String:
 		return "explore"
 	if audio.indoors or client.z > 0:
 		return "home"
-	var hour := int(Time.get_datetime_dict_from_system()["hour"])
-	if hour >= 21 or hour < 6:
-		return "night"
+	if client.has_time and Daylight.is_night(client.world_time):
+		return "night"  # the world's own night, not the player's clock
 	return "explore"
 
 
@@ -220,6 +223,8 @@ func _process(delta: float) -> void:
 		client.request({"type": "build", "location": client.location, "x": -2, "y": 4, "part": "base:wood_stairs", "facing": "e"})
 		client.request({"type": "build", "location": client.location, "x": 2, "y": 4, "part": "base:wood_stairs", "facing": "w"})
 		client.request({"type": "drop", "item": "base:stone", "count": 2})
+		for x in [-2, 2]:  # torches by the door (ADR-0014)
+			client.request({"type": "build", "location": client.location, "x": x, "y": 3, "part": "base:torch"})
 	if _opts.get("demo") == "" and _frames == 30:
 		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
 	if _opts.get("demo") == "outside" and _frames == 40 and game:
@@ -445,7 +450,9 @@ func _update_hud() -> void:
 		var mark := ">" if id == MATERIALS[_material] else " "
 		bag.append("%s%s %d" % [mark, content.get_def(id).get("name", id), int(inv.get(id, 0))])
 	var level := "Поверхность  0" if client.z == 0 else "Этаж  %+d" % client.z
-	hud.text = level + "     " + "  ".join(bag)
+	var clock := "День %d  %s     " % [Daylight.day_of(int(client.world_time)), Daylight.clock_text(client.world_time)] \
+		if client.has_time else ""
+	hud.text = clock + level + "     " + "  ".join(bag)
 	var info := PackedStringArray()
 	if hosted:
 		info.append("сервер: порт %d%s" % [hosted.port, _lan_address()])

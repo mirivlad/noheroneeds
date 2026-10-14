@@ -192,6 +192,8 @@ func _validate() -> void:
 					errors.append("%s: unknown role '%s'" % [id, d["role"]])
 				d["openable"] = bool(d.get("openable", false))
 				d["rotations"] = _check_rotations(id, d.get("rotations", []))
+				if d.has("light"):
+					_check_light(id, d)
 				if d["role"] == "ceiling" and kind_of(String(d.get("floor", ""))) != "ground":
 					errors.append("%s: a ceiling needs the floor (a ground) it makes above" % id)
 			"recipe":
@@ -243,6 +245,24 @@ func _validate() -> void:
 					errors.append("%s: cover_density must be within 0..1" % id)
 			var other:
 				errors.append("%s: unknown kind '%s'" % [id, other])
+
+
+## A light source (ADR-0014): {"radius" cells 1..8, "intensity" 0..1,
+## "color" "#rrggbb"}. A rule: how light it is decides what creatures see.
+func _check_light(id: String, d: Dictionary) -> void:
+	var l: Variant = d["light"]
+	if typeof(l) != TYPE_DICTIONARY:
+		errors.append("%s: light must be {radius, intensity, color}" % id)
+		return
+	l["radius"] = float(l.get("radius", 0))
+	l["intensity"] = float(l.get("intensity", 1.0))
+	l["color"] = String(l.get("color", "#ffffff"))
+	if l["radius"] <= 0.0 or l["radius"] > Lighting.MAX_RADIUS or l["intensity"] <= 0.0 or l["intensity"] > 1.0 \
+			or not _color.search(String(l["color"])):
+		errors.append("%s: light needs a radius of 1..%d cells, an intensity of 0..1 and a #rrggbb color" % [id, Lighting.MAX_RADIUS])
+
+
+static var _color := RegEx.create_from_string("^#[0-9a-fA-F]{6}$")
 
 
 ## The facings a part may be built in: distinct, among n, e, s, w.

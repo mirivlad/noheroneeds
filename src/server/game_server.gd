@@ -120,6 +120,7 @@ func _step() -> void:
 					_on_message(_sessions[e.peer], Protocol.decode(e.data, true))
 	_lap("network_in")
 	world.tick = tick
+	world.advance_time()
 	world.poll_loaded()
 	for s: Session in _sessions.values():
 		if s.state == "playing":
@@ -393,7 +394,8 @@ func _send_snapshot(s: Session) -> void:
 		s.snapshots.erase(s.oldest_snapshot)
 		s.oldest_snapshot += 1
 	_send(s, Transport.Channel.STATE, Protocol.SNAPSHOT, {"id": sid, "base": s.acked if s.acked > 0 else 0,
-		"tick": tick, "entities": changed, "removed": removed, "input_ack": s.last_input_seq})
+		"tick": tick, "entities": changed, "removed": removed, "input_ack": s.last_input_seq,
+		"time": world.world_time, "rate": world.time_rate})
 
 
 func _net_id(s: Session, id: String) -> int:

@@ -116,6 +116,8 @@ func show_world_form(mode: String) -> void:
 	seed_edit.tooltip_text = "Одинаковый сид — одинаковая местность. Число или слово."
 	var levels := _spin("Этажей не выше", 1, 20, WorldLibrary.RULES["max_levels"])
 	levels.tooltip_text = "Сколько этажей можно надстроить (правило мира)"
+	var day := _spin("Сутки длятся, мин", 2, 600, WorldLibrary.RULES["day_minutes"])
+	day.tooltip_text = "Сколько реальных минут длятся игровые сутки (правило мира)"
 	var kit := _check("Стартовые материалы", true)
 	kit.tooltip_text = "Доски, камень и брёвна каждому новому персонажу"
 	var outfit := _check("Стартовая одежда", true)
@@ -126,7 +128,7 @@ func show_world_form(mode: String) -> void:
 		players = _spin("Игроков не больше", 1, 64, int(settings.get_value("max_players")))
 	_gap()
 	_button("Создать и играть", func() -> void:
-		var rules := {"seed": seed_edit.text.strip_edges(), "max_levels": int(levels.value),
+		var rules := {"seed": seed_edit.text.strip_edges(), "max_levels": int(levels.value), "day_minutes": int(day.value),
 			"starter_kit": kit.button_pressed, "starter_outfit": outfit.button_pressed}
 		var id := worlds.create(name_edit.text, rules)
 		_start_world(id, mode, int(port.value) if port else 0, int(players.value) if players else 0))

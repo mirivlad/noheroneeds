@@ -15,7 +15,8 @@ class_name Protocol
 ##    comes once, as "uid", when an entity enters the client's view.
 ## 4: LOCATION tells the client it is now in another location (stairs...).
 ## 5: an input is [seq, dx, dy, run]: run 1 moves 1.5 times as fast.
-const VERSION := 5
+## 6: SNAPSHOT carries the world time (game ms) and its rate (ms a tick).
+const VERSION := 6
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -53,7 +54,7 @@ const SERVER_FIELDS := {
 	# base ("uid" with the entity id when it enters the view); removed:
 	# [net number]; input_ack: last input seq applied for this client
 	SNAPSHOT: {"id": TYPE_INT, "base": TYPE_INT, "tick": TYPE_INT, "entities": TYPE_DICTIONARY,
-		"removed": TYPE_ARRAY, "input_ack": TYPE_INT},
+		"removed": TYPE_ARRAY, "input_ack": TYPE_INT, "time": TYPE_INT, "rate": TYPE_INT},
 	RESULT: {"request_id": TYPE_STRING, "result": TYPE_DICTIONARY},
 	CHUNK: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT, "data": TYPE_PACKED_BYTE_ARRAY},
 	# z: the level label (0 surface, +1 first floor...); identity is the id.

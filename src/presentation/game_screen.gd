@@ -36,7 +36,6 @@ var settings: GameSettings
 var audio := AudioDirector.new()
 ## Danger music (combat, step 10): set by what threatens the player.
 var danger := false
-var _forest := false
 ## Request id -> sound event to play when it succeeds (own pickups, drops).
 var _sound_on_ok := {}
 ## The menu is open: no controls, and a single-player world stands still.
@@ -137,9 +136,9 @@ func _notification(what: int) -> void:
 
 ## The music this moment calls for (App's MusicDirector follows it):
 ## danger, then home (under a roof, on a building's level), then night
-## (outdoors; until the world has its own time, the player's clock), then
-## forest (with a margin, so the edge of a wood does not flip it), else
-## explore.
+## (outdoors; until the world has its own time, the player's clock), else
+## explore — fields and woods are one mood, so walking through glades and
+## trees does not keep changing the melody.
 func music_mood() -> String:
 	if danger:
 		return "danger"
@@ -147,9 +146,6 @@ func music_mood() -> String:
 		return "explore"
 	if audio.indoors or client.z > 0:
 		return "home"
-	_forest = audio.forest_share > (0.35 if _forest else 0.55)
-	if _forest:
-		return "forest"
 	var hour := int(Time.get_datetime_dict_from_system()["hour"])
 	if hour >= 21 or hour < 6:
 		return "night"

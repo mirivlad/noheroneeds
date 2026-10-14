@@ -37,7 +37,11 @@ func _run(sec: float, dt := 0.1) -> Array:
 
 
 func test_the_start_screen_opens_softly_with_the_first_explore_track() -> void:
-	check(m.tracks.size() == 5, "five moods of the author's: %s" % [m.tracks.keys()])
+	eq(m.tracks.size(), 4, "explore (with the forest), home, night, danger")
+	var outdoor: Array = m.tracks["explore"]
+	eq(outdoor.size(), 4, "fields and woods in one rotation")
+	check(outdoor[0].contains("/explore/") and outdoor[1].contains("/forest/") and outdoor[2].contains("/explore/"),
+		"interleaved: %s" % [outdoor])
 	m.want("menu")
 	_run(3.5)
 	check(m.track.ends_with("explore/morning_light_trail.ogg"), "the quiet one first: " + m.track)
@@ -51,10 +55,10 @@ func test_a_mood_change_fades_out_pauses_and_fades_in() -> void:
 	m.want("explore")
 	_run(20.0)
 	var first := m.track
-	m.want("forest")
+	m.want("home")
 	var phases := _run(30.0)
 	eq(phases.slice(0, 4), ["playing", "fading", "silent", "playing"], "out, a pause, in")
-	check(m.track.contains("/forest/"), "now the forest: " + m.track)
+	check(m.track.contains("/home/"), "now home: " + m.track)
 	check(first != m.track, "another track")
 	check(_worst_jump < 2.0, "never abrupt: %.2f dB a step" % _worst_jump)
 
@@ -85,14 +89,26 @@ func test_a_track_near_its_end_plays_out_and_the_next_is_of_the_new_mood() -> vo
 	check(_worst_jump < 2.0, "never abrupt: %.2f dB a step" % _worst_jump)
 
 
-func test_danger_comes_quickly_and_leaves_slowly() -> void:
+## Walking from a field into a wood is not a change of music.
+func test_woods_and_fields_are_one_mood() -> void:
+	m.want("explore")
+	_run(15.0)
+	var playing := m.track
 	m.want("forest")
+	_run(30.0)
+	eq(m.track, playing, "the same track goes on")
+	eq(m.mood, "explore")
+
+
+func test_danger_comes_quickly_and_leaves_slowly() -> void:
+	m.want("explore")
 	_run(30.0)
 	m.want("danger")
 	_run(MusicDirector.DANGER_SETTLE_S + MusicDirector.DANGER_FADE_S + 1.5)
 	check(m.track.contains("/danger/"), "danger within seconds: " + m.track)
-	m.want("forest")
+	m.want("explore")
 	_run(MusicDirector.DANGER_SETTLE_S + 3.0)
 	eq(m.phase, "fading", "still fading out")
 	_run(20.0)
-	check(m.track.contains("/forest/"), "back to the forest: " + m.track)
+	eq(m.mood, "explore", "back outdoors")
+	eq(m.phase, "playing")

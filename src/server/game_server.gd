@@ -144,6 +144,11 @@ func _step() -> void:
 		var s := _session_of(ack[0])
 		if s:
 			_send(s, Transport.Channel.RELIABLE, Protocol.RESULT, {"request_id": ack[1], "result": ack[2]})
+	for id: String in world.relocated:
+		var rs := _session_of(id)
+		if rs:
+			_tell_location(rs)
+	world.relocated.clear()
 	_lap("storage")
 	for s: Session in _sessions.values():
 		if s.state == "playing":
@@ -227,6 +232,15 @@ func _join(s: Session, file: PackedByteArray) -> void:
 	s.state = "playing"
 	var p: Dictionary = world.present[id]
 	_send(s, Transport.Channel.RELIABLE, Protocol.WELCOME, {"character_id": id, "location": p["location"], "tick": tick})
+	_tell_location(s)
+
+
+func _tell_location(s: Session) -> void:
+	var loc: String = world.present[s.character_id]["location"]
+	s.prefetched_at = Vector2i(1 << 30, 0)
+	s.streamed_at = Vector2i(1 << 30, 0)
+	s.inputs.clear()
+	_send(s, Transport.Channel.RELIABLE, Protocol.LOCATION, {"location": loc, "z": world.levels.z(loc)})
 
 
 func _take_input(s: Session, m: Dictionary) -> void:
@@ -268,9 +282,17 @@ func _prefetch(s: Session) -> void:
 		return  # only when the player enters another chunk
 	s.prefetched_at = mc
 	var r := view_chunks + 1
-	for cy in range(mc.y - r, mc.y + r + 1):
-		for cx in range(mc.x - r, mc.x + r + 1):
-			world.prefetch(p["location"], cx, cy)
+	for loc: String in _shown_locations(p["location"]):
+		for cy in range(mc.y - r, mc.y + r + 1):
+			for cx in range(mc.x - r, mc.x + r + 1):
+				world.prefetch(loc, cx, cy)
+
+
+## What a player standing in `location` gets chunks of: the location itself,
+## and on a building level also the surface below it (seen dimmed). Things
+## and people come only from the player's own location.
+func _shown_locations(location: String) -> Array:
+	return [location] if location == ServerWorld.SURFACE else [location, ServerWorld.SURFACE]
 
 
 ## Entity states for this tick, shared by every client's snapshot. Each
@@ -309,9 +331,10 @@ func _mark_needed(s: Session) -> void:
 	var cell := Movement.cell_of(p["pos"])
 	var mc := Vector2i(floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
 	var r := view_chunks + 1
-	for cy in range(mc.y - r, mc.y + r + 1):
-		for cx in range(mc.x - r, mc.x + r + 1):
-			world.mark_needed(p["location"], cx, cy)
+	for loc: String in _shown_locations(p["location"]):
+		for cy in range(mc.y - r, mc.y + r + 1):
+			for cx in range(mc.x - r, mc.x + r + 1):
+				world.mark_needed(loc, cx, cy)
 
 
 func _send_snapshot(s: Session) -> void:
@@ -391,23 +414,25 @@ func _stream_chunks(s: Session) -> void:
 	s.streamed_epoch = world.revision_epoch
 	s.streaming_unfinished = false
 	var budget := CHUNKS_PER_TICK
-	# Nearest first, so the ground under the player arrives before the edges.
-	for r in view_chunks + 1:
-		for cy in range(mc.y - r, mc.y + r + 1):
-			for cx in range(mc.x - r, mc.x + r + 1):
-				if maxi(absi(cx - mc.x), absi(cy - mc.y)) != r:
-					continue
-				var key := ServerWorld.chunk_key(loc, cx, cy)
-				var rev := world.chunk_revision(loc, cx, cy)
-				if s.chunks.get(key, -1) == rev:
-					continue
-				if budget == 0:
-					s.streaming_unfinished = true
-					return
-				budget -= 1
-				s.chunks[key] = rev
-				_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": loc, "cx": cx, "cy": cy,
-					"data": world.encoded_chunk(loc, cx, cy)})
+	# Nearest first, so the ground under the player arrives before the edges;
+	# the player's own location before the surface seen below it.
+	for shown: String in _shown_locations(loc):
+		for r in view_chunks + 1:
+			for cy in range(mc.y - r, mc.y + r + 1):
+				for cx in range(mc.x - r, mc.x + r + 1):
+					if maxi(absi(cx - mc.x), absi(cy - mc.y)) != r:
+						continue
+					var key := ServerWorld.chunk_key(shown, cx, cy)
+					var rev := world.chunk_revision(shown, cx, cy)
+					if s.chunks.get(key, -1) == rev:
+						continue
+					if budget == 0:
+						s.streaming_unfinished = true
+						return
+					budget -= 1
+					s.chunks[key] = rev
+					_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": shown, "cx": cx, "cy": cy,
+						"data": world.encoded_chunk(shown, cx, cy)})
 
 
 func _session_of(character_id: String) -> Session:

@@ -195,6 +195,54 @@ def icon(kind):
     return mp.outline(img, STRONG)
 
 
+def building_tiles():
+    """Floor (flat), ceiling and thatch roof (covers seen from above), stairs, column."""
+    floor = Image.new("RGBA", (T, T))
+    fp = floor.load()
+    for y in range(T):
+        for x in range(T):
+            c = P["wood"][3] if (y // 4) % 2 == 0 else hx("c8935a")
+            if y % 4 == 3:
+                c = P["wood"][1]
+            if (x + (y // 4) * 6) % 16 == 0:
+                c = P["wood"][1]
+            fp[x, y] = c
+    ceiling = Image.new("RGBA", (T, T))
+    cp = ceiling.load()
+    for y in range(T):
+        for x in range(T):
+            c = P["wood"][2] if (x // 4) % 2 == 0 else P["wood"][3]
+            if x % 4 == 3:
+                c = P["wood"][0]
+            cp[x, y] = c
+    thatch = Image.new("RGBA", (T, T))
+    tp = thatch.load()
+    for y in range(T):
+        for x in range(T):
+            r = h2(x, y, 77)
+            c = hx("c0a458") if r > 0.35 else hx("a08240")
+            if y % 5 == 4:
+                c = hx("7e6230")
+            if r > 0.92:
+                c = hx("dcc47a")
+            tp[x, y] = c
+    stairs = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
+    d = ImageDraw.Draw(stairs)
+    for k in range(6):
+        y = 4 + k * 5
+        d.rectangle((1, y, 14, y + 3), P["wood"][3])
+        d.line((1, y + 3, 14, y + 3), P["wood"][1])
+    d.line((0, 4, 0, 31), P["wood"][0])
+    d.line((15, 4, 15, 31), P["wood"][0])
+    column = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
+    d = ImageDraw.Draw(column)
+    d.rectangle((5, 2, 10, 31), P["bark"][2])
+    d.line((5, 2, 5, 31), P["bark"][1])
+    d.rectangle((4, 0, 11, 2), P["wood"][3])
+    d.rectangle((4, 29, 11, 31), P["wood"][2])
+    return floor, ceiling, thatch, mp.outline(stairs, STYLE), mp.outline(column, STYLE)
+
+
 def chibi_sheet():
     """Rows: S, SE, E, NE, N (W-side rows are mirrored at run time).
     Columns: idle, step A, step B. Frames 48x48, feet at (24, 44)."""
@@ -265,6 +313,12 @@ def main():
             v["states"] = {"open": opened["rect"]}
     for col, kind in enumerate(["plank", "log", "stone", "linen_shirt", "work_trousers", "boots", "axe"]):
         a.put(col, 13, icon(kind), "base:" + kind, (0, T), "item")
+    floor, ceiling, thatch, stairs, column = building_tiles()
+    a.put(7, 7, floor, "base:wood_floor", (0, T), "flat")
+    a.put(8, 7, ceiling, "base:wood_ceiling", (0, T), "cover")
+    a.put(9, 7, thatch, "base:thatch_roof", (0, T), "cover")
+    a.put(13, 9, stairs, "base:wood_stairs", (0, 2 * T), "tall")
+    a.put(14, 9, column, "base:wood_column", (0, 2 * T), "tall")
     (OUT / "art").mkdir(parents=True, exist_ok=True)
     a.img.save(OUT / "art" / "tiles.png")
     chibi_sheet().save(OUT / "art" / "chibi_placeholder.png")

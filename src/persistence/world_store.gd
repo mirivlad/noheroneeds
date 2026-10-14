@@ -4,7 +4,7 @@ extends RefCounted
 ## not know game rules. Writes that must land together go inside
 ## begin()/commit(); a failed commit is rolled back and reported.
 
-const SCHEMA_VERSION := 2
+const SCHEMA_VERSION := 3
 
 ## MIGRATIONS[n] upgrades schema version n to n + 1. Never edit a published
 ## step: add a new one. Step 0 creates the first schema.
@@ -22,6 +22,11 @@ const MIGRATIONS: Array = [
 	[
 		"CREATE TABLE characters(character_id TEXT PRIMARY KEY, owner TEXT NOT NULL, data BLOB NOT NULL) WITHOUT ROWID",
 		"CREATE TABLE world_characters(character_id TEXT PRIMARY KEY, data BLOB NOT NULL) WITHOUT ROWID",
+	],
+	# 2 -> 3: locations other than the surface (building levels; later caves).
+	[
+		"CREATE TABLE locations(location_id TEXT PRIMARY KEY, kind TEXT NOT NULL, building TEXT NOT NULL, z INTEGER NOT NULL, data BLOB NOT NULL) WITHOUT ROWID",
+		"CREATE INDEX locations_by_building ON locations(building, z)",
 	],
 ]
 
@@ -177,6 +182,33 @@ func put_world_character(character_id: String, data: PackedByteArray) -> bool:
 func get_world_character(character_id: String) -> PackedByteArray:
 	_db.query_with_bindings("SELECT data FROM world_characters WHERE character_id=?", [character_id])
 	return _db.query_result[0]["data"] if _db.query_result.size() else PackedByteArray()
+
+
+# --- locations -----------------------------------------------------------
+
+func put_location(location_id: String, kind: String, building: String, z: int, data: PackedByteArray) -> bool:
+	return _exec_b("INSERT INTO locations(location_id, kind, building, z, data) VALUES(?, ?, ?, ?, ?) ON CONFLICT(location_id) DO UPDATE SET kind=excluded.kind, building=excluded.building, z=excluded.z, data=excluded.data",
+		[location_id, kind, building, z, data])
+
+
+func delete_location(location_id: String) -> bool:
+	return _exec_b("DELETE FROM locations WHERE location_id=?", [location_id])
+
+
+## Every location: [{location_id, kind, building, z, data}]
+func all_locations() -> Array:
+	_db.query("SELECT location_id, kind, building, z, data FROM locations")
+	return _db.query_result
+
+
+## Chunk coordinates stored for a location: [{cx, cy}]
+func chunks_of(location: String) -> Array:
+	_db.query_with_bindings("SELECT cx, cy FROM chunks WHERE location=?", [location])
+	return _db.query_result
+
+
+func delete_chunk(location: String, cx: int, cy: int) -> bool:
+	return _exec_b("DELETE FROM chunks WHERE location=? AND cx=? AND cy=?", [location, cx, cy])
 
 
 # --- processed requests (idempotency ledger) -----------------------------

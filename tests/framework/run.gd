@@ -5,7 +5,24 @@ extends SceneTree
 ## Exit code: 0 when every check passed, 1 otherwise.
 
 
+## Counts engine and script errors, so a test whose code broke fails even if
+## no check of its own failed.
+class ErrorCounter:
+	extends Logger
+	var count := 0
+	var last := ""
+
+	func _log_error(function: String, file: String, line: int, code: String, rationale: String,
+			_editor_notify: bool, _error_type: int, _script_backtrace: Array[ScriptBacktrace]) -> void:
+		count += 1
+		last = "%s (%s:%d %s)" % [rationale if rationale != "" else code, file.get_file(), line, function]
+
+
+var _errors := ErrorCounter.new()
+
+
 func _initialize() -> void:
+	OS.add_logger(_errors)
 	_run.call_deferred()
 
 
@@ -40,10 +57,13 @@ func _run() -> void:
 			total += 1
 			suite.current = "%s::%s" % [path.get_file().get_basename(), mname]
 			var before := suite.failures.size()
+			var errors_before := _errors.count
 			var t := Time.get_ticks_msec()
 			await suite.before_each()
 			await suite.call(mname)
 			await suite.after_each()
+			if _errors.count > errors_before:
+				suite.failures.append("%s: %d engine/script error(s), last: %s" % [suite.current, _errors.count - errors_before, _errors.last])
 			var ok := suite.failures.size() == before
 			print("%s %s (%d ms)" % ["PASS" if ok else "FAIL", suite.current, Time.get_ticks_msec() - t])
 			for f in suite.failures.slice(before):

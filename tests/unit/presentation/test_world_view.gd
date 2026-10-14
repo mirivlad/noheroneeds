@@ -19,7 +19,7 @@ func test_view_follows_the_client() -> void:
 	for i in 30:
 		g.step()
 	view.update_view(0.0, 0.05)
-	var ground := view.get_child(0) as TileMapLayer
+	var ground := view.ground_layer()
 	check(ground.get_used_cells().size() >= 9 * Chunk.CELLS, "ground of the nearby chunks: %d cells" % ground.get_used_cells().size())
 	var sprites := view.find_children("*", "Sprite2D", true, false).size()
 	check(sprites > 0, "tall things drawn as sprites: %d" % sprites)

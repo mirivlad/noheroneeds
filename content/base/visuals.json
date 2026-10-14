@@ -532,6 +532,96 @@
    "variants": 1
   },
   {
+   "id": "base:visual/wood_floor",
+   "kind": "visual",
+   "for": "base:wood_floor",
+   "atlas": "art/tiles.png",
+   "rect": [
+    112,
+    112,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "flat",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/wood_ceiling",
+   "kind": "visual",
+   "for": "base:wood_ceiling",
+   "atlas": "art/tiles.png",
+   "rect": [
+    128,
+    112,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "cover",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/thatch_roof",
+   "kind": "visual",
+   "for": "base:thatch_roof",
+   "atlas": "art/tiles.png",
+   "rect": [
+    144,
+    112,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "cover",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/wood_stairs",
+   "kind": "visual",
+   "for": "base:wood_stairs",
+   "atlas": "art/tiles.png",
+   "rect": [
+    208,
+    144,
+    16,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "mode": "tall",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/wood_column",
+   "kind": "visual",
+   "for": "base:wood_column",
+   "atlas": "art/tiles.png",
+   "rect": [
+    224,
+    144,
+    16,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "mode": "tall",
+   "variants": 1
+  },
+  {
    "id": "base:visual/humanoid_adult",
    "kind": "visual",
    "for": "base:humanoid_adult",

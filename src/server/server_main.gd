@@ -8,6 +8,8 @@ extends SceneTree
 ##   --content=DIR[,DIR]  content packs (default res://content/base)
 ##   --console            read commands ("stop") from the terminal
 ##   --stats=SECONDS      print "STATS {...}" (tick times, traffic) this often
+##   --max-levels=N       highest building level new ceilings may create
+##                        (default 3; lowering it keeps existing levels)
 ##   --starter-kit=ID:N[,ID:N]  items each character gets on its first arrival
 ##                        in this world (a world rule; none by default)
 ##   --stop-file=PATH     stop cleanly when this file appears (default: STOP
@@ -54,6 +56,8 @@ func _initialize() -> void:
 	if err != OK:
 		_world.close()
 		return _fail("cannot listen on port %d: %s" % [port, error_string(err)])
+	if o.has("max-levels"):
+		_world.max_levels = int(o["max-levels"])
 	for pair in String(o.get("starter-kit", "")).split(",", false):
 		var at := pair.rfind(":")
 		_world.starter_kit[pair.left(at)] = int(pair.substr(at + 1))

@@ -15,6 +15,8 @@ const PACK_FORMAT := 1
 const PRESENTATION_FIELDS := ["name", "description"]
 ## Fields the registry adds while loading.
 const DERIVED_FIELDS := ["pack", "atlas_path"]
+## What a structure part is for (ADR-0007). Columns and beams are decoration.
+const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture"]
 const DEFS_FORMAT := 1
 
 static var _id_pattern := RegEx.create_from_string("^[a-z0-9_]+:[a-z0-9_/]+$")
@@ -175,6 +177,10 @@ func _validate() -> void:
 					errors.append("%s: stack must be at least 1" % id)
 			"structure":
 				_check_amounts(id, "cost", d.get("cost", {}), true)
+				d["role"] = String(d.get("role", "wall"))
+				if not STRUCTURE_ROLES.has(d["role"]):
+					errors.append("%s: unknown role '%s'" % [id, d["role"]])
+				d["openable"] = bool(d.get("openable", false))
 			"recipe":
 				_check_amounts(id, "inputs", d.get("inputs", {}), true)
 				_check_amounts(id, "outputs", d.get("outputs", {}), true)
@@ -241,8 +247,18 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	if not defs.has(target) or kind_of(target) == "visual":
 		errors.append("%s: draws '%s', which is not defined" % [id, target])
 		return
-	if not ["flat", "tall", "character"].has(d.get("mode")):
-		errors.append("%s: mode must be flat, tall or character" % id)
+	if not ["flat", "tall", "character", "item"].has(d.get("mode")):
+		errors.append("%s: mode must be flat, tall, character or item" % id)
+	var states: Variant = d.get("states", {})
+	if typeof(states) != TYPE_DICTIONARY:
+		errors.append("%s: states must map a state name to a rect" % id)
+	else:
+		for st: Variant in states:
+			var rect: Variant = states[st]
+			if typeof(rect) != TYPE_ARRAY or (rect as Array).size() != 4:
+				errors.append("%s: state '%s' needs a rect" % [id, st])
+			else:
+				states[st] = (rect as Array).map(func(n: Variant) -> int: return int(n))
 	for f: String in ["rect", "origin"]:
 		var v: Variant = d.get(f)
 		if typeof(v) != TYPE_ARRAY or (v as Array).size() != (4 if f == "rect" else 2):

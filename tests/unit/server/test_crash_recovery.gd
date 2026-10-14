@@ -29,7 +29,12 @@ func test_kill_during_load() -> void:
 		eq(missing, 0, "acknowledged operations missing after round %d (of %d)" % [round, acked.size()])
 		store.close()
 		var w := ServerWorld.open(db, sample_content())
-		eq(_totals(w), {"test:plank": 60 * ACTORS.size(), "test:stone": 30 * ACTORS.size()}, "materials after round %d" % round)
+		var totals := _totals(w)
+		var store2 := w.store
+		for row: Dictionary in store2.query_rows("SELECT data FROM entities WHERE kind='item'"):
+			var d: Dictionary = Cbor.decode(row["data"]).value
+			totals[d["item"]] = totals.get(d["item"], 0) + int(d["count"])
+		eq(totals, {"test:plank": 60 * ACTORS.size(), "test:stone": 30 * ACTORS.size()}, "materials (with things on the ground) after round %d" % round)
 		w.close()
 
 

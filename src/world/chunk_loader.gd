@@ -36,7 +36,7 @@ func request(location: String, cx: int, cy: int) -> void:
 	_mutex.unlock()
 
 
-## [[location, cx, cy, Chunk, generated: bool], ...]
+## [[location, cx, cy, Chunk, generated: bool, entity rows], ...]
 func take_ready() -> Array:
 	_mutex.lock()
 	var out := _ready
@@ -86,8 +86,9 @@ func _run() -> void:
 				generated = true
 			else:
 				c = Chunk.new()
+			var rows := _store.entities_in_chunk(r[0], r[1], r[2]) if not data.is_empty() else []
 			_mutex.lock()
 			_queued.erase(ServerWorld.chunk_key(r[0], r[1], r[2]))
 			if c:
-				_ready.append([r[0], r[1], r[2], c, generated])
+				_ready.append([r[0], r[1], r[2], c, generated, rows])
 			_mutex.unlock()

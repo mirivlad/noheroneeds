@@ -23,6 +23,11 @@ class Batch:
 	var requests: Array = []
 	## [character_id, owner, portable data Dictionary]
 	var characters: Array = []
+	## Things lying in the world, written with the inventories they came from:
+	## [id, location, cx, cy, kind, data Dictionary]
+	var items: Array = []
+	## Ids of entities taken out of the world (picked up...)
+	var removed_entities: Array = []
 	## [id, location, cx, cy, kind, data Dictionary] — a state batch has only
 	## these and world_characters
 	var entities: Array = []
@@ -61,7 +66,8 @@ func submit(batch: Batch) -> int:
 	batch.id = _next_id
 	_next_id += 1
 	if batch.chunks.is_empty() and batch.inventories.is_empty() and batch.requests.is_empty() \
-			and batch.characters.is_empty() and batch.prune_before < 0:
+			and batch.characters.is_empty() and batch.items.is_empty() and batch.removed_entities.is_empty() \
+			and batch.prune_before < 0:
 		_state.append(batch)
 	else:
 		_ops.append(batch)
@@ -174,6 +180,10 @@ func _write(b: Batch) -> bool:
 		ok = ok and _store.put_request(r[0], r[1], r[2], Cbor.encode(r[3]))
 	for c: Array in b.characters:
 		ok = ok and _store.put_character(c[0], c[1], Cbor.encode(c[2]))
+	for e: Array in b.items:
+		ok = ok and _store.put_entity(e[0], e[1], e[2], e[3], e[4], Cbor.encode(e[5]))
+	for id: String in b.removed_entities:
+		ok = ok and _store.delete_entity(id)
 	for e: Array in b.entities:
 		ok = ok and _store.put_entity(e[0], e[1], e[2], e[3], e[4], Cbor.encode(e[5]))
 	for wc: Array in b.world_characters:

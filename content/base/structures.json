@@ -1,8 +1,8 @@
 {
   "format": 1,
   "defs": [
-    {"id": "base:wood_wall", "kind": "structure", "name": "Деревянная стена", "cost": {"base:plank": 3}},
-    {"id": "base:stone_wall", "kind": "structure", "name": "Каменная стена", "cost": {"base:stone": 2, "base:plank": 1}},
-    {"id": "base:wood_door", "kind": "structure", "name": "Деревянная дверь", "cost": {"base:plank": 4}}
+    {"id": "base:wood_wall", "kind": "structure", "role": "wall", "name": "Деревянная стена", "cost": {"base:plank": 3}},
+    {"id": "base:stone_wall", "kind": "structure", "role": "wall", "name": "Каменная стена", "cost": {"base:stone": 2, "base:plank": 1}},
+    {"id": "base:wood_door", "kind": "structure", "role": "door", "openable": true, "name": "Деревянная дверь", "cost": {"base:plank": 4}}
   ]
 }

@@ -209,6 +209,13 @@ func _send_snapshot(s: Session) -> void:
 		var c := Vector2i(floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
 		if absi(c.x - mc.x) <= view_chunks and absi(c.y - mc.y) <= view_chunks:
 			now[id] = {"x": p["pos"].x, "y": p["pos"].y, "kind": "character", "name": p["name"], "appearance": p["appearance"]}
+	# The player's own inventory travels only to that player.
+	now[s.character_id]["inventory"] = world.inventory(s.character_id).stacks.duplicate()
+	for cy in range(mc.y - view_chunks, mc.y + view_chunks + 1):
+		for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
+			for id: String in world.items_in_chunk(me["location"], cx, cy):
+				var it: Dictionary = world.items[id]
+				now[id] = {"x": it["x"], "y": it["y"], "kind": "item", "item": it["item"], "count": it["count"]}
 	var base: Dictionary = s.snapshots.get(s.acked, {}) if s.acked > 0 else {}
 	var changed := {}
 	for id: String in now:

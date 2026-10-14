@@ -95,6 +95,11 @@ func reconnect(net: Transport) -> void:
 	_unacked_inputs.clear()
 
 
+## The own inventory as the server last showed it: {item id: count}.
+func inventory() -> Dictionary:
+	return _snapshots.get(_latest_snapshot, {}).get(character_id, {}).get("inventory", {})
+
+
 func unanswered_requests() -> int:
 	return _requests.size()
 

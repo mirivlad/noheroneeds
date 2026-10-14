@@ -168,33 +168,50 @@ def cricket(sec, seed, f=4300):
 
 # ------------------------------------------------------------ sounds
 
+def thud(sec, seed, top=420, tau=0.012):
+    """The heel: noise under a gentle (first-order) low-pass, a few
+    milliseconds long. No narrow band: a narrow band rings at its pitch and
+    the step sounds hollow, like a drum or an empty tank."""
+    x = low(high(noise(sec, seed), 50, 1), top, 2)
+    return x * decay(sec, tau, 0.003)
+
+
+def tail_out(x, keep=0.45):
+    """Fades the clip to silence after `keep` of it: nothing rings on."""
+    n = len(x)
+    k = int(n * keep)
+    w = np.ones(n)
+    w[k:] = np.cos(np.linspace(0, np.pi / 2, n - k)) ** 2
+    return x * w
+
+
 def step(surface, seed):
-    """A soft footstep on a surface."""
+    """A soft, dull footstep on a surface: a short heel and the surface's own
+    texture, most of it in the first 40 ms, then silence."""
     r = rng(seed)
-    sec = 0.18
+    sec = 0.14
     if surface == "grass":       # blades brushing, a soft heel
-        x = band(noise(sec, seed), 1200, 5000) * decay(sec, 0.035, 0.012) * 0.5
-        x += band(noise(sec, seed + 1), 80, 300) * decay(sec, 0.03, 0.006)
+        x = thud(sec, seed + 1, 380, 0.010)
+        x += high(low(noise(sec, seed), 4000, 1), 1200, 1) * decay(sec, 0.028, 0.010) * 0.35
     elif surface == "leaves":    # dry litter crackling under the foot
-        x = band(noise(sec, seed + 1), 80, 300) * decay(sec, 0.03, 0.006)
+        x = thud(sec, seed + 1, 380, 0.010)
         for k in range(r.integers(5, 10)):
-            place(x, band(noise(0.008, seed + 10 + k), 2000, 6000) * decay(0.008, 0.0015),
-                  r.uniform(0.0, 0.07), r.uniform(0.2, 0.5))
+            place(x, band(noise(0.006, seed + 10 + k), 1800, 4500, 1) * decay(0.006, 0.0012),
+                  r.uniform(0.0, 0.06), r.uniform(0.15, 0.35))
     elif surface == "moss":      # almost nothing: a muffled press
-        x = band(noise(sec, seed), 60, 260) * decay(sec, 0.045, 0.012)
-        x += band(noise(sec, seed + 1), 600, 1500) * decay(sec, 0.02, 0.01) * 0.15
-    elif surface == "sand":      # a long soft crunch
-        sec = 0.22
-        x = band(noise(sec, seed), 1500, 6000) * decay(sec, 0.06, 0.02) * 0.45
-        x += band(noise(sec, seed + 1), 90, 300) * decay(sec, 0.03, 0.008) * 0.6
-    elif surface == "wood":      # a board, hollow underneath
-        x = band(noise(sec, seed), 90, 520) * decay(sec, 0.04, 0.005)
-        x += 0.35 * knock(r.uniform(150, 190), sec, seed + 2, 0.03)
-        x += 0.1 * band(noise(sec, seed + 3), 1100, 2400) * decay(sec, 0.008, 0.003)
+        x = thud(sec, seed, 260, 0.016)
+    elif surface == "sand":      # a soft crunch
+        sec = 0.18
+        x = thud(sec, seed + 1, 360, 0.010) * 0.8
+        x += high(low(noise(sec, seed), 4500, 1), 1300, 1) * decay(sec, 0.045, 0.015) * 0.3
+    elif surface == "wood":      # a board: firmer, damped at once
+        x = thud(sec, seed, 550, 0.009)
+        x += 0.08 * knock(r.uniform(220, 260), sec, seed + 2, 0.010)
     else:                        # earth: a dull thud with a little grit
-        x = band(noise(sec, seed), 70, 380) * decay(sec, 0.035, 0.006)
-        x += band(noise(sec, seed + 1), 1500, 3500) * decay(sec, 0.02, 0.006) * 0.12
-    return low(x, 3000, 2)
+        x = thud(sec, seed, 400, 0.012)
+        x += high(low(noise(sec, seed + 1), 3000, 1), 1200, 1) * decay(sec, 0.012, 0.004) * 0.1
+    bright = surface in ("grass", "leaves", "sand")  # their rustle is the point
+    return tail_out(low(x, 3200 if bright else 1600, 2))
 
 
 def build_wood():
@@ -402,8 +419,8 @@ def main():
     for ground, surface in (("base:grass", "grass"), ("base:grass_dry", "grass"), ("base:forest_floor", "leaves"),
                             ("base:moss", "moss"), ("base:sand", "sand"), ("base:dirt", "earth"),
                             ("base:wood_floor", "wood")):
-        sound("step_" + ground.split(":")[1], ground, "step", steps[surface], -10.0, (0.9, 1.1))
-    sound("step", "*", "step", steps["earth"], -10.0, (0.9, 1.1))
+        sound("step_" + ground.split(":")[1], ground, "step", steps[surface], -13.0, (0.92, 1.08))
+    sound("step", "*", "step", steps["earth"], -13.0, (0.92, 1.08))
     sound("build", "*", "build", [write("build_wood", build_wood())], -4.0)
     sound("build_stone", "base:stone_wall", "build", [write("build_stone", build_stone())], -4.0)
     sound("dismantle", "*", "dismantle", [write("dismantle_wood", dismantle_wood())], -4.0)

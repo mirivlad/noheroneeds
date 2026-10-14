@@ -697,7 +697,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 					return {"ok": false, "reason": "too_high"}  # a server setting (ADR-0007)
 				building = levels.building(loc) if on_level else ""
 		"stairs":
-			if c.get_cell("ceiling", at[3], at[4]) == "":
+			if _stairs_arrival(loc, x, y, _facing(def, r)) == NO_CELL:
 				return {"ok": false, "reason": "no_opening_above"}
 			if Terrain.is_solid(c, at[3], at[4], content, on_level):
 				return {"ok": false, "reason": "blocked"}
@@ -714,6 +714,13 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 		inv.remove(id, int(costs[id]))
 	_touch_inventory(actor)
 	var props := {"owner": actor}
+	if not (def["rotations"] as Array).is_empty():
+		props["facing"] = _facing(def, r)
+	if role == "stairs":
+		# Where it leads is settled now, so the way down above, the climb and
+		# the ceiling it needs agree whatever is built around it later.
+		var arrive := _stairs_arrival(loc, x, y, _facing(def, r))
+		props["arrive"] = [arrive.x, arrive.y]
 	var others: Array = []
 	if role == "ceiling" and not on_level:
 		# Ceilings joined side by side make one building; joining two merges them.
@@ -806,8 +813,8 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	if layer == "ceiling":
 		var building := levels.building(loc) if loc != SURFACE else String(_layer_props(c, "ceiling", at[3], at[4]).get("building", ""))
 		upper = levels.level(building, levels.z(loc) + 1)
-		if c.get_cell("structure", at[3], at[4]) != "" and content.get_def(c.get_cell("structure", at[3], at[4])).get("role") == "stairs":
-			return {"ok": false, "reason": "stairs_below"}
+		if _stairs_leading_to(loc, Vector2i(x, y)) != NO_CELL:
+			return {"ok": false, "reason": "stairs_below"}  # stairs come up through it
 		if upper != "" and _occupied(upper, x, y):
 			return {"ok": false, "reason": "occupied_above"}  # ADR-0007: take those down first
 	if layer == "structure" and _is_stairs(part):
@@ -847,9 +854,10 @@ func _occupied(location: String, x: int, y: int) -> bool:
 	return _someone_stands_on(location, x, y)
 
 
-## Up or down a staircase next to the character (ADR-0007): up from a cell
-## with stairs to the same cell of the level above; down when the cell below
-## has stairs.
+## Up or down a staircase next to the character (ADR-0007, ADR-0013): up
+## from a cell with stairs to where they lead on the level above (that cell
+## itself, or the one their top faces); down from where stairs below lead to,
+## onto those stairs.
 func _climb(actor: String, r: Dictionary) -> Dictionary:
 	if not present.has(actor):
 		return {"ok": false, "reason": "not_here"}
@@ -859,44 +867,100 @@ func _climb(actor: String, r: Dictionary) -> Dictionary:
 	var y := int(r.get("y", 0))
 	if String(r.get("location", "")) != loc or not _reaches(actor, loc, x, y, USE_REACH):
 		return {"ok": false, "reason": "too_far"}
-	var cx := floori(float(x) / Chunk.SIZE)
-	var cy := floori(float(y) / Chunk.SIZE)
-	var lx := x - cx * Chunk.SIZE
-	var ly := y - cy * Chunk.SIZE
-	var here := chunk(loc, cx, cy)
 	var dest := ""
+	var to := Vector2i(x, y)
 	# "dir": "up" or "down" where stairs stand over stairs and both ways lead
 	# on from one cell; without it, up first (older clients).
 	var dir := String(r.get("dir", ""))
-	if dir != "down" and _is_stairs(here.get_cell("structure", lx, ly)):
-		var building := levels.building(loc) if loc != SURFACE else String(_layer_props(here, "ceiling", lx, ly).get("building", ""))
+	if dir != "down" and _is_stairs(_part_at(loc, x, y, "structure")):
+		var arrive := _arrival_of(loc, x, y)
+		var building := levels.building(loc) if loc != SURFACE else _ceiling_building(loc, arrive.x, arrive.y)
 		dest = levels.level(building, levels.z(loc) + 1)
+		to = arrive
 	if dest == "" and dir != "up" and loc != SURFACE:
 		var below := levels.level(levels.building(loc), levels.z(loc) - 1)
-		if below != "" and _is_stairs(chunk(below, cx, cy).get_cell("structure", lx, ly)):
+		var from := _stairs_leading_to(below, Vector2i(x, y)) if below != "" else NO_CELL
+		if from != NO_CELL:
 			dest = below
+			to = from
 	if dest == "":
 		return {"ok": false, "reason": "no_stairs"}
 	p["location"] = dest
-	p["pos"] = Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2)
+	p["pos"] = Vector2i(to.x * Movement.UNIT + Movement.UNIT / 2, to.y * Movement.UNIT + Movement.UNIT / 2)
 	_dirty_world_characters[actor] = true
 	relocated[actor] = true
 	return {"ok": true, "location": dest, "z": levels.z(dest)}
 
 
-## Marks (or unmarks) the cell above a staircase as the way down, so players
-## upstairs can see where to go down.
-func _mark_stairs_down(location: String, x: int, y: int, on: bool) -> void:
+const NO_CELL := Vector2i(1 << 30, 1 << 30)
+
+
+## The facing a part is built in: the one asked for if the part allows it,
+## else its default (the first it lists); "" for parts that do not turn.
+func _facing(def: Dictionary, r: Dictionary) -> String:
+	var turns: Array = def.get("rotations", [])
+	if turns.is_empty():
+		return ""
+	var want := String(r.get("facing", ""))
+	return want if turns.has(want) else String(turns[0])
+
+
+## Where stairs at (x, y) facing `facing` would lead on the level above: the
+## cell itself if it is ceiled over (stairs inside a building), else the cell
+## their top faces if that one is (onto a wall, a gallery, the next room);
+## NO_CELL if neither.
+func _stairs_arrival(loc: String, x: int, y: int, facing: String) -> Vector2i:
+	if _part_at(loc, x, y, "ceiling") != "":
+		return Vector2i(x, y)
+	var top: Vector2i = Vector2i(x, y) + (ContentRegistry.FACINGS.get(facing, Vector2i(0, -1)) as Vector2i)
+	if facing != "" and _part_at(loc, top.x, top.y, "ceiling") != "":
+		return top
+	return NO_CELL
+
+
+## Where built stairs lead (stairs built before they remembered it: their
+## own cell, which was then the only way).
+func _arrival_of(loc: String, x: int, y: int) -> Vector2i:
+	var a: Variant = _props_at(loc, x, y).get("arrive")
+	if typeof(a) == TYPE_ARRAY and (a as Array).size() == 2:
+		return Vector2i(int(a[0]), int(a[1]))
+	return Vector2i(x, y)
+
+
+## The stairs on `loc` that lead up to `cell` (on the level above), else NO_CELL.
+func _stairs_leading_to(loc: String, cell: Vector2i) -> Vector2i:
+	for d: Vector2i in [Vector2i.ZERO, Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]:
+		var at := cell + d
+		if _is_stairs(_part_at(loc, at.x, at.y, "structure")) and _arrival_of(loc, at.x, at.y) == cell:
+			return at
+	return NO_CELL
+
+
+func _part_at(loc: String, x: int, y: int, layer: String) -> String:
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)
-	var here := chunk(location, cx, cy)
-	var lx := x - cx * Chunk.SIZE
-	var ly := y - cy * Chunk.SIZE
-	var building := levels.building(location) if location != SURFACE else String(_layer_props(here, "ceiling", lx, ly).get("building", ""))
+	return chunk(loc, cx, cy).get_cell(layer, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
+
+
+func _props_at(loc: String, x: int, y: int) -> Dictionary:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	return chunk(loc, cx, cy).get_props(x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
+
+
+## Marks (or unmarks) the way down on the level above, where the stairs at
+## (x, y) lead, so players upstairs can see where to go down.
+func _mark_stairs_down(location: String, x: int, y: int, on: bool) -> void:
+	var arrive := _arrival_of(location, x, y)
+	var building := levels.building(location) if location != SURFACE else _ceiling_building(location, arrive.x, arrive.y)
 	var upper := levels.level(building, levels.z(location) + 1)
 	if upper == "":
 		return
+	var cx := floori(float(arrive.x) / Chunk.SIZE)
+	var cy := floori(float(arrive.y) / Chunk.SIZE)
 	var uc := chunk(upper, cx, cy)
+	var lx := arrive.x - cx * Chunk.SIZE
+	var ly := arrive.y - cy * Chunk.SIZE
 	var props := uc.get_props(lx, ly).duplicate()
 	if on:
 		props["stairs_down"] = true

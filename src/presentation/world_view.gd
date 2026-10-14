@@ -374,7 +374,8 @@ func _paint(key: String, spread := true) -> void:
 				if v.get("mode") == "tall":
 					var state := "open" if c.get_props(lx, ly).get("open", false) else ""
 					var variant := _join_mask(p[0], cell, String(v.get("autotile", ""))) if v.has("autotile") else 0
-					var s := _tall_sprite(v, cell, state, variant)
+					var facing := String(c.get_props(lx, ly).get("facing", ""))
+					var s := _tall_sprite(v, cell, state, variant, facing)
 					s.set_meta("cell", cell)
 					holder.add_child(s)
 				else:
@@ -483,7 +484,10 @@ func _grid_piece(cell: Vector2i, grid: Vector2i) -> Vector2i:
 	return Vector2i(posmod(cell.x, grid.x), posmod(cell.y, grid.y))
 
 
-func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0) -> Sprite2D:
+## A tall thing's sprite: its state's picture (an open door), else its
+## facing's (ADR-0013; "mirror" draws a facing as another one flipped), else
+## its own (or an alternate, picked by the cell).
+func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0, facing := "") -> Sprite2D:
 	var alts: Array = v.get("alternates", [])
 	if not alts.is_empty() and state == "" and variant == 0:
 		# The same picture for a cell every time and for every player.
@@ -493,8 +497,14 @@ func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0) -> S
 	var s := Sprite2D.new()
 	s.texture = texture(v["atlas_path"])
 	s.region_enabled = true
-	var r: Array = v.get("states", {}).get(state, v["rect"])
+	var flip := false
+	var turned := facing
+	if v.get("mirror", {}).has(facing):
+		turned = String(v["mirror"][facing])
+		flip = true
+	var r: Array = v.get("states", {}).get(state, v.get("rotations", {}).get(turned, v["rect"]))
 	s.region_rect = Rect2(r[0] + variant * r[2], r[1], r[2], r[3])
+	s.flip_h = flip
 	s.centered = false
 	# The sprite's origin pixel sits on the cell's bottom-left corner; that corner sorts it.
 	s.position = Vector2(cell.x * CELL, (cell.y + 1) * CELL)

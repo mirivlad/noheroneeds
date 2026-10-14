@@ -13,7 +13,8 @@ extends Node2D
 ## (--demo=outside puts the player at the porch, --demo=upstairs goes up the
 ## stairs; the player starts inside); --screenshot=PATH --frames=N.
 ##
-## Controls (temporary): WASD/arrows walk, with Ctrl run; 1-3 choose a part; left click
+## Controls (temporary): WASD/arrows walk, with Ctrl run; 1-3 choose a part,
+## R turns it (stairs: up north, east or west); left click
 ## builds, right click takes down; E picks up what lies near or opens and
 ## closes a door next to you; G drops one of the chosen material (Tab);
 ## F goes up the stairs you stand on (or down, if there is no way up),
@@ -49,6 +50,8 @@ var status := Label.new()
 var _info := Label.new()
 var _accum := 0.0
 var _part := 0
+## The facing the chosen part will be built in (ADR-0013), turned with R.
+var _facing := 0
 var _material := 0
 var _note := ""
 var _opts := {}
@@ -63,7 +66,7 @@ const REASONS := {
 	"occupied": "место занято", "blocked": "мешает вода или дерево", "someone_there": "там кто-то стоит",
 	"materials": "не хватает материалов", "too_far": "слишком далеко", "no_floor": "здесь нет пола",
 	"too_high": "выше строить нельзя (настройка сервера)", "occupied_above": "сверху что-то стоит — сначала уберите",
-	"no_opening_above": "лестнице нужно перекрытие над ней", "stairs_below": "сначала уберите лестницу",
+	"no_opening_above": "лестнице нужно перекрытие над ней или там, куда она ведёт", "stairs_below": "сначала уберите лестницу",
 	"not_owner": "это не ваше", "empty": "здесь нечего разбирать", "no_stairs": "здесь нет лестницы",
 	"unknown_part": "неизвестная деталь", "nothing_to_use": "здесь нечего открыть", "gone": "уже подобрали",
 	"not_enough": "не хватает", "no_such_place": "здесь строить нельзя",
@@ -194,6 +197,8 @@ func _process(delta: float) -> void:
 		_accum = 0.0
 	if _opts.has("demo") and not _demo_done and client.state == "playing" and client.has_position:
 		_demo_done = true
+		if game:
+			game.world.grant(client.character_id, "base:plank", 60)  # dev only: enough for the demo
 		for x in range(-3, 4):
 			for y in [-4, 2]:
 				var part := "base:wood_door" if x == 0 and y == 2 else ("base:stone_wall" if y == -4 else "base:wood_wall")
@@ -207,11 +212,18 @@ func _process(delta: float) -> void:
 				var part := "base:thatch_roof" if y == -3 else "base:wood_ceiling"
 				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": part})
 		client.request({"type": "build", "location": client.location, "x": 1, "y": 0, "part": "base:wood_stairs"})
+		# Beside the house: a wall with a walk on top, stairs up to it from
+		# both ends, turned east and west (ADR-0013).
+		for x in range(-1, 2):
+			client.request({"type": "build", "location": client.location, "x": x, "y": 4, "part": "base:wood_wall"})
+			client.request({"type": "build", "location": client.location, "x": x, "y": 4, "part": "base:wood_ceiling"})
+		client.request({"type": "build", "location": client.location, "x": -2, "y": 4, "part": "base:wood_stairs", "facing": "e"})
+		client.request({"type": "build", "location": client.location, "x": 2, "y": 4, "part": "base:wood_stairs", "facing": "w"})
 		client.request({"type": "drop", "item": "base:stone", "count": 2})
 	if _opts.get("demo") == "" and _frames == 30:
 		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
 	if _opts.get("demo") == "outside" and _frames == 40 and game:
-		game.world.move_character(client.character_id, Vector2i(128, 4 * 256 + 128))  # dev only: to the porch
+		game.world.move_character(client.character_id, Vector2i(128, 7 * 256 + 128))  # dev only: before the house
 	if _opts.get("demo") == "behind" and _frames == 40 and game:
 		game.world.move_character(client.character_id, Vector2i(128, -5 * 256 + 200))  # dev only: behind the back wall
 	if _opts.get("demo") == "upstairs" and _frames == 40:
@@ -246,6 +258,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		var k: int = (event as InputEventKey).keycode
 		if k >= KEY_1 and k < KEY_1 + PARTS.size():
 			_part = k - KEY_1
+			_facing = 0
+		elif k == KEY_R:
+			var turns := _turns()
+			if not turns.is_empty():
+				_facing = (_facing + 1) % turns.size()
 		elif k == KEY_TAB:
 			_material = (_material + 1) % MATERIALS.size()
 		elif k == KEY_G and client.state == "playing":
@@ -261,6 +278,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			cell = _build_cell()
 			op["type"] = "build"
 			op["part"] = PARTS[_part]
+			if not _turns().is_empty():
+				op["facing"] = _turns()[_facing % _turns().size()]
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			cell = view.pick(get_global_mouse_position())  # what the mouse points at
 			op["type"] = "dismantle"
@@ -331,6 +350,11 @@ func _ways_at(cell: Vector2i) -> Array:
 	return ways
 
 
+## The facings the chosen part may be built in ([] if it does not turn).
+func _turns() -> Array:
+	return content.get_def(PARTS[_part]).get("rotations", [])
+
+
 ## Where a click would build: the cell under the mouse, or for ceilings and
 ## roofs the cell whose cover would be drawn there (covers sit a cell higher).
 func _build_cell() -> Vector2i:
@@ -349,7 +373,11 @@ func _update_ghost() -> void:
 	var cell := _build_cell()
 	_ghost.texture = view.texture(v["atlas_path"])
 	_ghost.region_enabled = true
-	_ghost.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+	var facing := String(_turns()[_facing % _turns().size()]) if not _turns().is_empty() else ""
+	var turned: String = v.get("mirror", {}).get(facing, facing)
+	var r: Array = v.get("rotations", {}).get(turned, v["rect"])
+	_ghost.region_rect = Rect2(r[0], r[1], r[2], r[3])
+	_ghost.flip_h = v.get("mirror", {}).has(facing)
 	if v["mode"] == "cover":
 		_ghost.position = Vector2(cell.x * WorldView.CELL, cell.y * WorldView.CELL - WorldView.COVER_LIFT)
 	else:
@@ -429,8 +457,10 @@ func _update_hud() -> void:
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:
 		note = "F — вверх, Shift+F — вниз   " + _note
-	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, _part + 1, content.get_def(PARTS[_part]).get("name", ""),
-		cell.x, cell.y, note]
+	var part_name := String(content.get_def(PARTS[_part]).get("name", ""))
+	if not _turns().is_empty():
+		part_name += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
+	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, _part + 1, part_name, cell.x, cell.y, note]
 	for i in _slots.size():
 		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
 

@@ -4,7 +4,7 @@
     {"id": "base:wood_floor", "kind": "ground", "name": "Дощатый пол"},
     {"id": "base:wood_ceiling", "kind": "structure", "role": "ceiling", "floor": "base:wood_floor", "name": "Деревянное перекрытие", "cost": {"base:plank": 2}},
     {"id": "base:thatch_roof", "kind": "structure", "role": "roof", "name": "Соломенная кровля", "cost": {"base:log": 1}},
-    {"id": "base:wood_stairs", "kind": "structure", "role": "stairs", "solid": false, "name": "Деревянная лестница", "cost": {"base:plank": 4}},
+    {"id": "base:wood_stairs", "kind": "structure", "role": "stairs", "solid": false, "rotations": ["n", "e", "w"], "name": "Деревянная лестница", "cost": {"base:plank": 4}},
     {"id": "base:wood_column", "kind": "structure", "role": "column", "name": "Деревянная колонна", "cost": {"base:log": 1}}
   ]
 }

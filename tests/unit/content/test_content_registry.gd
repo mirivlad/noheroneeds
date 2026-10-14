@@ -140,6 +140,8 @@ func test_problems_are_reported() -> void:
 		"reference to non-item": [{"id": "test:w", "kind": "structure", "cost": {"test:v": 1}},
 			{"id": "test:v", "kind": "structure", "cost": {"test:w": 1}}],
 		"zero count": [{"id": "test:i", "kind": "item"}, {"id": "test:w", "kind": "structure", "cost": {"test:i": 0}}],
+		"bad facing": [{"id": "test:i", "kind": "item"}, {"id": "test:s", "kind": "structure", "cost": {"test:i": 1}, "rotations": ["n", "up"]}],
+		"facing twice": [{"id": "test:i", "kind": "item"}, {"id": "test:s", "kind": "structure", "cost": {"test:i": 1}, "rotations": ["e", "e"]}],
 	}
 	for name: String in cases:
 		check(not ContentRegistry.from_defs(cases[name]).errors.is_empty(), name)

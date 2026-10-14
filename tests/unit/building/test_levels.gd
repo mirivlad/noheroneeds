@@ -173,3 +173,49 @@ func test_stairs_over_stairs_lead_both_ways() -> void:
 	eq(up.get("z"), 2, "up by default")
 	eq(_req({"type": "climb", "location": up["location"], "x": 5, "y": 5, "dir": "up"}, a).get("reason"), "no_stairs", "no stairs up on the top")
 	eq(_req({"type": "climb", "location": up["location"], "x": 5, "y": 5, "dir": "down"}, a).get("location"), first)
+
+
+## ADR-0013: stairs turned east lead up beside them, onto a wall with a
+## ceiling on it; the way down is there; that ceiling cannot be taken away
+## from under them; stairs leading nowhere are refused.
+func test_turned_stairs_lead_onto_a_wall_beside_them() -> void:
+	eq(_build("surface", 7, 5, "base:wood_wall").get("ok"), true)
+	eq(_build("surface", 7, 5, "base:wood_ceiling").get("ok"), true, "a ceiling on top of the wall: a walk along it")
+	eq(_req({"type": "build", "location": "surface", "x": 5, "y": 5, "part": "base:wood_stairs", "facing": "e"}).get("reason"),
+		"no_opening_above", "two cells away: they lead nowhere")
+	eq(_req({"type": "build", "location": "surface", "x": 6, "y": 5, "part": "base:wood_stairs", "facing": "w"}).get("reason"),
+		"no_opening_above", "turned away from the wall")
+	eq(_req({"type": "build", "location": "surface", "x": 6, "y": 5, "part": "base:wood_stairs", "facing": "e"}).get("ok"), true)
+	eq(_props("surface", 6, 5).get("facing"), "e", "the facing is kept")
+	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	w.enter("k", c)
+	var a := c.character_id
+	w.move_character(a, Vector2i(6 * 256 + 128, 6 * 256 + 128))
+	var up := _req({"type": "climb", "location": "surface", "x": 6, "y": 5}, a)
+	eq(up.get("ok"), true, str(up))
+	eq(Movement.cell_of(w.present[a]["pos"]), Vector2i(7, 5), "on top of the wall")
+	eq(_props(up["location"], 7, 5).get("stairs_down"), true, "the way down is there")
+	eq(_req({"type": "dismantle", "location": "surface", "x": 7, "y": 5}).get("part"), "base:wood_wall",
+		"the wall may go (no load physics, ADR-0007)")
+	eq(_req({"type": "dismantle", "location": "surface", "x": 7, "y": 5}).get("reason"), "stairs_below",
+		"not the ceiling the stairs come up to")
+	var down := _req({"type": "climb", "location": up["location"], "x": 7, "y": 5, "dir": "down"}, a)
+	eq(down.get("location"), "surface")
+	eq(Movement.cell_of(w.present[a]["pos"]), Vector2i(6, 5), "back on the stairs")
+	eq(_req({"type": "dismantle", "location": "surface", "x": 6, "y": 5}).get("part"), "base:wood_stairs")
+	check(not _props(up["location"], 7, 5).has("stairs_down"), "the way down goes with them")
+	eq(_req({"type": "dismantle", "location": "surface", "x": 7, "y": 5}).get("ok"), true, "now the ceiling may go")
+
+
+## A part that does not turn ignores a facing; one that does falls back to
+## its default for a facing it does not allow.
+func test_facings_are_checked() -> void:
+	eq(_req({"type": "build", "location": "surface", "x": 2, "y": 2, "part": "base:wood_wall", "facing": "e"}).get("ok"), true)
+	check(not _props("surface", 2, 2).has("facing"), "walls do not turn")
+	_build("surface", 4, 2, "base:wood_ceiling")
+	eq(_req({"type": "build", "location": "surface", "x": 4, "y": 2, "part": "base:wood_stairs", "facing": "s"}).get("ok"), true)
+	eq(_props("surface", 4, 2).get("facing"), "n", "south is not allowed for stairs: the default")
+
+
+func _props(loc: String, x: int, y: int) -> Dictionary:
+	return w.chunk(loc, floori(x / 32.0), floori(y / 32.0)).get_props(posmod(x, 32), posmod(y, 32))

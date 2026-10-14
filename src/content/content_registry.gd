@@ -21,6 +21,9 @@ const PRESENTATION_KINDS := ["visual", "sound"]
 const SOUND_EVENTS := ["step", "build", "dismantle", "open", "close", "pickup", "drop", "climb", "click", "ambience", "wind"]
 ## What a structure part is for (ADR-0007). Columns and beams are decoration.
 const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture"]
+## Which way a part can be turned (ADR-0013): north is up the screen. A part
+## lists the facings it allows, the first is its default; none: it does not turn.
+const FACINGS := {"n": Vector2i(0, -1), "e": Vector2i(1, 0), "s": Vector2i(0, 1), "w": Vector2i(-1, 0)}
 const DEFS_FORMAT := 1
 
 static var _id_pattern := RegEx.create_from_string("^[a-z0-9_]+:[a-z0-9_/]+$")
@@ -188,6 +191,7 @@ func _validate() -> void:
 				if not STRUCTURE_ROLES.has(d["role"]):
 					errors.append("%s: unknown role '%s'" % [id, d["role"]])
 				d["openable"] = bool(d.get("openable", false))
+				d["rotations"] = _check_rotations(id, d.get("rotations", []))
 				if d["role"] == "ceiling" and kind_of(String(d.get("floor", ""))) != "ground":
 					errors.append("%s: a ceiling needs the floor (a ground) it makes above" % id)
 			"recipe":
@@ -241,6 +245,20 @@ func _validate() -> void:
 				errors.append("%s: unknown kind '%s'" % [id, other])
 
 
+## The facings a part may be built in: distinct, among n, e, s, w.
+func _check_rotations(id: String, turns: Variant) -> Array:
+	if typeof(turns) != TYPE_ARRAY:
+		errors.append("%s: rotations must be a list of facings" % id)
+		return []
+	var seen := {}
+	for f: Variant in turns:
+		if not FACINGS.has(f) or seen.has(f):
+			errors.append("%s: rotations must be distinct facings among n, e, s, w" % id)
+			return []
+		seen[f] = true
+	return turns
+
+
 func _check_amounts(id: String, field: String, amounts: Variant, required: bool) -> void:
 	if typeof(amounts) != TYPE_DICTIONARY or (required and (amounts as Dictionary).is_empty()):
 		errors.append("%s: '%s' must list items and counts" % [id, field])
@@ -270,6 +288,22 @@ func _check_visual(id: String, d: Dictionary) -> void:
 				errors.append("%s: state '%s' needs a rect" % [id, st])
 			else:
 				states[st] = (rect as Array).map(func(n: Variant) -> int: return int(n))
+	# Pictures of a turned part (ADR-0013): facing -> rect; the default
+	# facing is "rect" itself; "mirror": {"w": "e"} draws one flipped.
+	var turned: Variant = d.get("rotations", {})
+	if typeof(turned) != TYPE_DICTIONARY:
+		errors.append("%s: rotations must map a facing to a rect" % id)
+	else:
+		for f: Variant in turned:
+			var rect: Variant = turned[f]
+			if not FACINGS.has(f) or typeof(rect) != TYPE_ARRAY or (rect as Array).size() != 4:
+				errors.append("%s: rotation '%s' needs a facing and a rect" % [id, f])
+			else:
+				turned[f] = (rect as Array).map(func(n: Variant) -> int: return int(n))
+	var mirror: Variant = d.get("mirror", {})
+	if typeof(mirror) != TYPE_DICTIONARY or (mirror as Dictionary).keys().any(func(f: Variant) -> bool:
+			return not FACINGS.has(f) or not FACINGS.has(mirror[f])):
+		errors.append("%s: mirror must map a facing to the facing it flips" % id)
 	for f: String in ["rect", "origin"]:
 		var v: Variant = d.get(f)
 		if typeof(v) != TYPE_ARRAY or (v as Array).size() != (4 if f == "rect" else 2):

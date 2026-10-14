@@ -39,6 +39,8 @@ var results := {}
 var previous_position := Vector2i.ZERO
 ## Chunk keys received since the presentation last asked.
 var changed_chunks: Array[String] = []
+## Changes seen in the world since the view last took them (see _note_changes).
+var world_events: Array[Dictionary] = []
 ## Times a prediction had to be corrected (for tests and diagnostics).
 var corrections := 0
 
@@ -143,10 +145,45 @@ func _on_message(m: Dictionary) -> void:
 			var c := ChunkCodec.decode(m["data"])
 			if c:
 				var key := ServerWorld.chunk_key(m["location"], m["cx"], m["cy"])
+				var old: Chunk = chunks.get(key)
+				if old:
+					_note_changes(String(m["location"]), Vector2i(int(m["cx"]), int(m["cy"])) * Chunk.SIZE, old, c)
 				chunks[key] = c
 				changed_chunks.append(key)
 		Protocol.SNAPSHOT:
 			_on_snapshot(m)
+
+
+## What changed in a chunk the client already had, for sounds and effects:
+## {"type": "build"|"dismantle"|"open"|"close", "location", "cell", "part"}.
+## A chunk seen for the first time is no news.
+func _note_changes(loc: String, origin: Vector2i, old: Chunk, new: Chunk) -> void:
+	for layer: String in ["structure", "cover", "ceiling", "roof"]:
+		var a: PackedInt32Array = old.layers.get(layer, PackedInt32Array())
+		var b: PackedInt32Array = new.layers.get(layer, PackedInt32Array())
+		if a.is_empty() and b.is_empty():
+			continue
+		for i in Chunk.CELLS:
+			var was := old.palette[a[i]] if not a.is_empty() else ""
+			var now := new.palette[b[i]] if not b.is_empty() else ""
+			if was == now:
+				continue
+			var cell := origin + Vector2i(i % Chunk.SIZE, i / Chunk.SIZE)
+			if was != "":
+				world_events.append({"type": "dismantle", "location": loc, "cell": cell, "part": was})
+			if now != "":
+				world_events.append({"type": "build", "location": loc, "cell": cell, "part": now})
+	var seen := {}
+	for i: int in new.props.keys() + old.props.keys():
+		if seen.has(i):
+			continue
+		seen[i] = true
+		var was_open := bool((old.props.get(i, {}) as Dictionary).get("open", false))
+		var now_open := bool((new.props.get(i, {}) as Dictionary).get("open", false))
+		if was_open != now_open:
+			var cell := origin + Vector2i(i % Chunk.SIZE, i / Chunk.SIZE)
+			var part := new.get_cell("structure", i % Chunk.SIZE, i / Chunk.SIZE)
+			world_events.append({"type": "open" if now_open else "close", "location": loc, "cell": cell, "part": part})
 
 
 func _on_snapshot(m: Dictionary) -> void:

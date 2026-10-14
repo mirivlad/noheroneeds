@@ -1,0 +1,378 @@
+{
+ "format": 1,
+ "defs": [
+  {
+   "id": "base:sound/step_grass",
+   "kind": "sound",
+   "for": "base:grass",
+   "event": "step",
+   "files": [
+    "audio/step_grass_1.wav",
+    "audio/step_grass_2.wav",
+    "audio/step_grass_3.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.9,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/step_grass_dry",
+   "kind": "sound",
+   "for": "base:grass_dry",
+   "event": "step",
+   "files": [
+    "audio/step_grass_1.wav",
+    "audio/step_grass_2.wav",
+    "audio/step_grass_3.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.9,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/step_forest_floor",
+   "kind": "sound",
+   "for": "base:forest_floor",
+   "event": "step",
+   "files": [
+    "audio/step_leaves_1.wav",
+    "audio/step_leaves_2.wav",
+    "audio/step_leaves_3.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.9,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/step_moss",
+   "kind": "sound",
+   "for": "base:moss",
+   "event": "step",
+   "files": [
+    "audio/step_moss_1.wav",
+    "audio/step_moss_2.wav",
+    "audio/step_moss_3.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.9,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/step_sand",
+   "kind": "sound",
+   "for": "base:sand",
+   "event": "step",
+   "files": [
+    "audio/step_sand_1.wav",
+    "audio/step_sand_2.wav",
+    "audio/step_sand_3.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.9,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/step_dirt",
+   "kind": "sound",
+   "for": "base:dirt",
+   "event": "step",
+   "files": [
+    "audio/step_earth_1.wav",
+    "audio/step_earth_2.wav",
+    "audio/step_earth_3.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.9,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/step_wood_floor",
+   "kind": "sound",
+   "for": "base:wood_floor",
+   "event": "step",
+   "files": [
+    "audio/step_wood_1.wav",
+    "audio/step_wood_2.wav",
+    "audio/step_wood_3.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.9,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/step",
+   "kind": "sound",
+   "for": "*",
+   "event": "step",
+   "files": [
+    "audio/step_earth_1.wav",
+    "audio/step_earth_2.wav",
+    "audio/step_earth_3.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.9,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/build",
+   "kind": "sound",
+   "for": "*",
+   "event": "build",
+   "files": [
+    "audio/build_wood.wav"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/build_stone",
+   "kind": "sound",
+   "for": "base:stone_wall",
+   "event": "build",
+   "files": [
+    "audio/build_stone.wav"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/dismantle",
+   "kind": "sound",
+   "for": "*",
+   "event": "dismantle",
+   "files": [
+    "audio/dismantle_wood.wav"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/dismantle_stone",
+   "kind": "sound",
+   "for": "base:stone_wall",
+   "event": "dismantle",
+   "files": [
+    "audio/dismantle_stone.wav"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/door_open",
+   "kind": "sound",
+   "for": "base:wood_door",
+   "event": "open",
+   "files": [
+    "audio/door_open.wav"
+   ],
+   "volume_db": -5.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/door_close",
+   "kind": "sound",
+   "for": "base:wood_door",
+   "event": "close",
+   "files": [
+    "audio/door_close.wav"
+   ],
+   "volume_db": -5.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/pickup",
+   "kind": "sound",
+   "for": "*",
+   "event": "pickup",
+   "files": [
+    "audio/pickup.wav"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/drop",
+   "kind": "sound",
+   "for": "*",
+   "event": "drop",
+   "files": [
+    "audio/drop.wav"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/climb",
+   "kind": "sound",
+   "for": "*",
+   "event": "climb",
+   "files": [
+    "audio/climb.wav"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/click",
+   "kind": "sound",
+   "for": "*",
+   "event": "click",
+   "files": [
+    "audio/click.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.97,
+    1.03
+   ]
+  },
+  {
+   "id": "base:sound/amb_grass",
+   "kind": "sound",
+   "for": "base:grass",
+   "event": "ambience",
+   "files": [
+    "audio/amb_meadow.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  },
+  {
+   "id": "base:sound/amb_grass_dry",
+   "kind": "sound",
+   "for": "base:grass_dry",
+   "event": "ambience",
+   "files": [
+    "audio/amb_meadow.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  },
+  {
+   "id": "base:sound/amb_dirt",
+   "kind": "sound",
+   "for": "base:dirt",
+   "event": "ambience",
+   "files": [
+    "audio/amb_meadow.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  },
+  {
+   "id": "base:sound/amb_sand",
+   "kind": "sound",
+   "for": "base:sand",
+   "event": "ambience",
+   "files": [
+    "audio/amb_meadow.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  },
+  {
+   "id": "base:sound/amb_forest_floor",
+   "kind": "sound",
+   "for": "base:forest_floor",
+   "event": "ambience",
+   "files": [
+    "audio/amb_forest.wav"
+   ],
+   "volume_db": -12.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  },
+  {
+   "id": "base:sound/amb_moss",
+   "kind": "sound",
+   "for": "base:moss",
+   "event": "ambience",
+   "files": [
+    "audio/amb_forest.wav"
+   ],
+   "volume_db": -12.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  },
+  {
+   "id": "base:sound/amb_water",
+   "kind": "sound",
+   "for": "base:water",
+   "event": "ambience",
+   "files": [
+    "audio/amb_water.wav"
+   ],
+   "volume_db": -12.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  }
+ ]
+}

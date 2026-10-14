@@ -9,12 +9,16 @@ extends RefCounted
 ## has a validator that checks fields and references to other definitions.
 
 const PACK_FORMAT := 1
-## Fields only a player sees (texts). They and "visual" definitions are left
-## out of the rules fingerprint (ADR-0009): translations and texture packs
-## never stop anyone from joining.
+## Fields only a player sees (texts). They, "visual" and "sound" definitions
+## are left out of the rules fingerprint (ADR-0009): translations, texture
+## and sound packs never stop anyone from joining.
 const PRESENTATION_FIELDS := ["name", "description"]
 ## Fields the registry adds while loading.
-const DERIVED_FIELDS := ["pack", "atlas_path"]
+const DERIVED_FIELDS := ["pack", "atlas_path", "paths"]
+## Kinds that only show or sound, never rule.
+const PRESENTATION_KINDS := ["visual", "sound"]
+## What a sound answers to (sounds.json, ADR-0009).
+const SOUND_EVENTS := ["step", "build", "dismantle", "open", "close", "pickup", "drop", "climb", "click", "ambience"]
 ## What a structure part is for (ADR-0007). Columns and beams are decoration.
 const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture"]
 const DEFS_FORMAT := 1
@@ -28,6 +32,9 @@ var packs := {}
 ## content id -> visual definition that draws it; a later pack's visual
 ## replaces an earlier one (reskins), logic definitions cannot be replaced.
 var visuals := {}
+## content id (or "*" for anything without its own) -> {event: sound
+## definition}; a later pack's sound replaces an earlier one.
+var sounds := {}
 ## Problems found while loading; a registry with errors must not be used.
 var errors: PackedStringArray = []
 
@@ -121,7 +128,7 @@ func fingerprint() -> String:
 	var rules := {}
 	for id: String in defs:
 		var d: Dictionary = defs[id]
-		if d.get("kind") == "visual":
+		if PRESENTATION_KINDS.has(d.get("kind")):
 			continue
 		var r := d.duplicate(true)
 		for f: String in PRESENTATION_FIELDS + DERIVED_FIELDS:
@@ -222,6 +229,8 @@ func _validate() -> void:
 				d["shore_width"] = float(d.get("shore_width", 0.0))
 			"visual":
 				_check_visual(id, d)
+			"sound":
+				_check_sound(id, d)
 			"biome":
 				_check_weights(id, "ground", d.get("ground"), ["ground"])
 				_check_weights(id, "cover", d.get("cover", {}), ["plant"], false)
@@ -324,6 +333,44 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	var old: Dictionary = visuals.get(target, {})
 	if old.is_empty() or _pack_order(d["pack"]) >= _pack_order(old["pack"]):
 		visuals[target] = d
+
+
+## The sound of an event for a thing: its own, else the general one ("*").
+func sound_of(id: String, event: String) -> Dictionary:
+	var own: Dictionary = sounds.get(id, {}).get(event, {})
+	return own if not own.is_empty() else sounds.get("*", {}).get(event, {})
+
+
+func _check_sound(id: String, d: Dictionary) -> void:
+	var target := String(d.get("for", ""))
+	if target != "*" and (not defs.has(target) or PRESENTATION_KINDS.has(kind_of(target))):
+		errors.append("%s: sounds for '%s', which is not defined" % [id, target])
+		return
+	var event := String(d.get("event", ""))
+	if not SOUND_EVENTS.has(event):
+		errors.append("%s: event must be one of %s" % [id, ", ".join(SOUND_EVENTS)])
+		return
+	var files: Variant = d.get("files")
+	if typeof(files) != TYPE_ARRAY or (files as Array).is_empty():
+		errors.append("%s: a sound needs files" % id)
+		return
+	var dir: String = packs.get(d["pack"], {}).get("dir", "")
+	var paths := PackedStringArray()
+	for f: Variant in files:
+		var path := dir.path_join(String(f)) if dir != "" else String(f)
+		if dir != "" and not FileAccess.file_exists(path) and not ResourceLoader.exists(path):
+			errors.append("%s: file %s not found" % [id, path])
+		paths.append(path)
+	d["paths"] = paths
+	d["volume_db"] = float(d.get("volume_db", 0.0))
+	var pitch: Variant = d.get("pitch", [1.0, 1.0])
+	d["pitch"] = [float(pitch[0]), float(pitch[1])] if typeof(pitch) == TYPE_ARRAY and (pitch as Array).size() == 2 else [1.0, 1.0]
+	d["loop"] = bool(d.get("loop", false))
+	var by_event: Dictionary = sounds.get(target, {})
+	var old: Dictionary = by_event.get(event, {})
+	if old.is_empty() or _pack_order(d["pack"]) >= _pack_order(old["pack"]):
+		by_event[event] = d
+	sounds[target] = by_event
 
 
 func _pack_order(pid: String) -> int:

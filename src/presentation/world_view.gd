@@ -19,6 +19,8 @@ const MAX_ROOM := 2048
 
 var content: ContentRegistry
 var client: GameClient
+## Called with the point (pixels) where a character's foot came down.
+var on_step := Callable()
 var _ground := TileMapLayer.new()
 var _cover := TileMapLayer.new()
 ## The surface seen from a building level, dimmed.
@@ -659,6 +661,9 @@ func _character(id: String, looks: Dictionary) -> CharacterSprite:
 		if not worn.is_empty():
 			layers.append([String(worn.get("layer", "")), texture(worn["atlas_path"])])
 	var cs := CharacterSprite.new(texture(v["atlas_path"]), v, layers, looks.duplicate(true))
+	cs.stepped.connect(func() -> void:
+		if on_step.is_valid():
+			on_step.call(cs.position))
 	if old:
 		cs.position = old.position
 		old.queue_free()

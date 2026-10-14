@@ -33,6 +33,10 @@ var game: LocalGame
 var hosted: HostedGame
 var client: GameClient
 var settings: GameSettings
+var audio := AudioDirector.new()
+var music := MusicDirector.new()
+## Request id -> sound event to play when it succeeds (own pickups, drops).
+var _sound_on_ok := {}
 ## The menu is open: no controls, and a single-player world stands still.
 var paused := false
 var _reported := false
@@ -94,6 +98,11 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 			client = game.client
 	view.setup(content, client)
 	add_child(view)
+	audio.setup(content, client, view)
+	add_child(audio)
+	view.on_step = func(at: Vector2) -> void: audio.step_at(client.location, at)
+	music.setup(content)
+	add_child(music)
 	camera.position_smoothing_enabled = false
 	add_child(camera)
 	var layer := CanvasLayer.new()
@@ -121,7 +130,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [view, camera, hud, status, _info, _ghost]:
+		for n: Node in [view, camera, hud, status, _info, _ghost, audio, music]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -196,6 +205,7 @@ func _process(delta: float) -> void:
 			for x in range(-2, 1):
 				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_ceiling"})
 	view.update_view(_accum / tick, delta)
+	music.want("home" if audio.indoors else ("forest" if audio.forest_share > 0.5 else "explore"))
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
 	_update_hud()
@@ -223,7 +233,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif k == KEY_TAB:
 			_material = (_material + 1) % MATERIALS.size()
 		elif k == KEY_G and client.state == "playing":
-			client.request({"type": "drop", "item": MATERIALS[_material], "count": 1})
+			_sound_on_ok[client.request({"type": "drop", "item": MATERIALS[_material], "count": 1})] = "drop"
 		elif k == KEY_E and client.state == "playing":
 			_use_nearest()
 		elif k == KEY_F and client.state == "playing":
@@ -257,7 +267,7 @@ func _use_nearest() -> void:
 				best = id
 				best_d = dist
 	if best != "":
-		client.request({"type": "pickup", "entity": best})
+		_sound_on_ok[client.request({"type": "pickup", "entity": best})] = "pickup"
 		return
 	var me := Movement.cell_of(client.position)
 	for dy in [0, -1, 1]:
@@ -378,6 +388,9 @@ func _update_hud() -> void:
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
 		_note = "готово" if r.get("ok") else "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+		if r.get("ok") and _sound_on_ok.has(rid):
+			audio.play(_sound_on_ok[rid], "", null)
+		_sound_on_ok.erase(rid)
 		client.results.erase(rid)
 	var cell := Movement.cell_of(client.position)
 	var state: String = {"playing": "", "connecting": "подключение…", "joining": "вход…", "disconnected": "нет связи",

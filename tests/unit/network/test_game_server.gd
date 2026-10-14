@@ -238,3 +238,29 @@ func test_wrong_protocol_version_is_refused() -> void:
 			got = String(Protocol.decode(e.data, false).get("reason", ""))
 	check(got.begins_with("protocol"), got)
 	eq(server.session_count(), 0)
+
+
+## What changes in the world reaches every client as news (for sounds):
+## another player's building, taking down, a door opening and closing.
+func test_world_changes_reach_others_as_events() -> void:
+	var a := _client("owner", _character("Аня", 10))
+	var b := _client("other", _character("Боря"))
+	_run(30, [a, b])
+	b.world_events.clear()
+	a.request({"type": "build", "location": "surface", "x": 1, "y": 1, "part": "base:wood_door"})
+	_run(10, [a, b])
+	a.move = Vector2i(1, 1)  # up to the door
+	_run(4, [a, b])
+	a.move = Vector2i.ZERO
+	a.request({"type": "use", "location": "surface", "x": 1, "y": 1})
+	_run(10, [a, b])
+	a.request({"type": "use", "location": "surface", "x": 1, "y": 1})
+	_run(10, [a, b])
+	a.request({"type": "dismantle", "location": "surface", "x": 1, "y": 1})
+	_run(10, [a, b])
+	var types := []
+	for e: Dictionary in b.world_events:
+		if e["cell"] == Vector2i(1, 1):
+			types.append(e["type"])
+	eq(types, ["build", "open", "close", "dismantle"], "in order, once each")
+	eq(b.world_events[0]["part"], "base:wood_door")

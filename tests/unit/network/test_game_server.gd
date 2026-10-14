@@ -205,7 +205,15 @@ func test_refusals() -> void:
 	_run(20, [thief])
 	eq(thief.state, "rejected")
 	eq(thief.reject_reason, "not_owner")
-	# Different content.
+	# A texture pack and a translation on the client side are no obstacle (ADR-0009).
+	var dressed := _client("owner", _character("Вика"))
+	var reskinned := ContentRegistry.load_packs(["res://content/base"])
+	reskinned.get_def("base:oak")["name"] = "Oak"
+	reskinned.visuals["base:oak"] = {"mode": "flat"}
+	dressed.content = reskinned
+	_run(20, [dressed])
+	eq(dressed.state, "playing", dressed.reject_reason)
+	# Different rules.
 	var odd := _client("owner", _character("Вера"))
 	odd.content = ContentRegistry.from_defs([{"id": "test:x", "kind": "item"}])
 	_run(10, [odd])

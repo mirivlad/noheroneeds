@@ -38,6 +38,30 @@ func test_new_content_is_data_only() -> void:
 	w.close()
 
 
+## ADR-0009: texts, pictures and texture packs never change the rules fingerprint.
+func test_fingerprint_ignores_presentation() -> void:
+	var root := tmp_dir()
+	var p := root.path_join("p")
+	_write(p, "pack.json", {"format": 1, "id": "p", "version": "1", "depends": []})
+	_write(p, "a.json", {"format": 1, "defs": [{"id": "p:x", "kind": "item", "name": "Камень"}]})
+	var f1 := ContentRegistry.load_packs([p]).fingerprint()
+	_write(p, "a.json", {"format": 1, "defs": [{"id": "p:x", "kind": "item", "name": "Stone", "description": "grey"}]})
+	_write(p, "pack.json", {"format": 1, "id": "p", "version": "7", "depends": []})
+	eq(ContentRegistry.load_packs([p]).fingerprint(), f1, "translation and pack version")
+	var base := ContentRegistry.load_packs(["res://content/base"])
+	var tex := root.path_join("tex")
+	_write(tex, "pack.json", {"format": 1, "id": "tex", "version": "1", "depends": ["base"]})
+	var img := Image.create(48, 64, false, Image.FORMAT_RGBA8)
+	img.fill(Color.ORANGE)
+	img.save_png(tex.path_join("oak.png"))
+	_write(tex, "visuals.json", {"format": 1, "defs": [{"id": "tex:visual/oak", "kind": "visual", "for": "base:oak",
+		"atlas": "oak.png", "rect": [0, 0, 48, 64], "origin": [16, 64], "mode": "tall"}]})
+	var with_pack := ContentRegistry.load_packs(["res://content/base", tex])
+	eq(with_pack.errors, PackedStringArray())
+	eq(with_pack.fingerprint(), base.fingerprint(), "a texture pack")
+	eq(with_pack.visual_of("base:oak")["pack"], "tex", "the pack redraws the oak")
+
+
 func test_fingerprint_follows_content() -> void:
 	var root := tmp_dir()
 	var p := root.path_join("p")

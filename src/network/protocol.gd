@@ -10,7 +10,8 @@ class_name Protocol
 ##
 ## Bump VERSION on any change to a message; servers refuse other versions.
 
-const VERSION := 1
+## 2: "content" in HELLO is the rules fingerprint (ADR-0009).
+const VERSION := 2
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.

@@ -270,7 +270,7 @@ func _apply_input(s: Session) -> void:
 		var p: Dictionary = world.present[s.character_id]
 		var loc: String = p["location"]
 		world.move_character(s.character_id, Movement.step(p["pos"], e[1], e[2],
-			func(x: int, y: int) -> bool: return world.is_solid(loc, x, y)))
+			func(x: int, y: int) -> bool: return world.is_solid(loc, x, y), e[3] == 1))
 
 
 ## Keeps one ring of chunks beyond what the client sees loading in advance.

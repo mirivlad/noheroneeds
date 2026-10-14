@@ -9,14 +9,18 @@ const TICK_RATE := 20
 ## ≈ 4 cells per second; diagonals keep about the same speed.
 const WALK := 51
 const DIAGONAL := 36
+## Running (Ctrl): 1.5 times as fast. A step stays shorter than a cell.
+const RUN := 77
+const RUN_DIAGONAL := 54
 const HALF_X := 80
 const HALF_Y := 48
 
 
-## One tick of movement in direction (dx, dy), each -1..1.
+## One tick of movement in direction (dx, dy), each -1..1; run: 1.5 times as fast.
 ## solid: Callable(cell_x: int, cell_y: int) -> bool
-static func step(pos: Vector2i, dx: int, dy: int, solid: Callable) -> Vector2i:
-	var speed := DIAGONAL if dx != 0 and dy != 0 else WALK
+static func step(pos: Vector2i, dx: int, dy: int, solid: Callable, run := false) -> Vector2i:
+	var diagonal := dx != 0 and dy != 0
+	var speed := (RUN_DIAGONAL if diagonal else RUN) if run else (DIAGONAL if diagonal else WALK)
 	pos = _axis(pos, dx * speed, true, solid)
 	return _axis(pos, dy * speed, false, solid)
 

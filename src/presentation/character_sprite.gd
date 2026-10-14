@@ -8,6 +8,8 @@ extends Node2D
 ## Placed at the feet, so it sorts with trees and walls by where it stands.
 
 const DIRS := ["s", "se", "e", "ne", "n"]
+## Walking speed on screen (Movement.WALK units a tick), for the walk's pace.
+const WALK_PX_PER_SEC := float(Movement.WALK) / Movement.UNIT * 16.0 * Movement.TICK_RATE
 ## Old sheets without "animations": idle, step, step.
 const PLAIN := {"idle": {"from": 0, "frames": 1, "fps": 1}, "walk": {"from": 1, "frames": 2, "fps": 6.67}}
 
@@ -55,7 +57,9 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 	var step := _shown - before
 	if step.length() > 0.05:
 		_face(step)
-		_walk += delta
+		# The walk plays as fast as the feet go: running steps come quicker.
+		var pace := clampf(step.length() / maxf(delta, 0.001) / WALK_PX_PER_SEC, 0.6, 1.8) if delta > 0.0 else 1.0
+		_walk += delta * pace
 		_idle = 0.0
 	else:
 		_walk = 0.0

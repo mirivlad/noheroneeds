@@ -373,6 +373,125 @@
     1.0
    ],
    "loop": true
+  },
+  {
+   "id": "base:sound/wind_grass",
+   "kind": "sound",
+   "for": "base:grass",
+   "event": "wind",
+   "files": [
+    "audio/wind_meadow_1.wav",
+    "audio/wind_meadow_2.wav",
+    "audio/wind_meadow_3.wav",
+    "audio/wind_meadow_4.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    0.95,
+    1.05
+   ]
+  },
+  {
+   "id": "base:sound/wind_grass_dry",
+   "kind": "sound",
+   "for": "base:grass_dry",
+   "event": "wind",
+   "files": [
+    "audio/wind_meadow_1.wav",
+    "audio/wind_meadow_2.wav",
+    "audio/wind_meadow_3.wav",
+    "audio/wind_meadow_4.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    0.95,
+    1.05
+   ]
+  },
+  {
+   "id": "base:sound/wind_dirt",
+   "kind": "sound",
+   "for": "base:dirt",
+   "event": "wind",
+   "files": [
+    "audio/wind_meadow_1.wav",
+    "audio/wind_meadow_2.wav",
+    "audio/wind_meadow_3.wav",
+    "audio/wind_meadow_4.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    0.95,
+    1.05
+   ]
+  },
+  {
+   "id": "base:sound/wind_sand",
+   "kind": "sound",
+   "for": "base:sand",
+   "event": "wind",
+   "files": [
+    "audio/wind_meadow_1.wav",
+    "audio/wind_meadow_2.wav",
+    "audio/wind_meadow_3.wav",
+    "audio/wind_meadow_4.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    0.95,
+    1.05
+   ]
+  },
+  {
+   "id": "base:sound/wind_water",
+   "kind": "sound",
+   "for": "base:water",
+   "event": "wind",
+   "files": [
+    "audio/wind_meadow_1.wav",
+    "audio/wind_meadow_2.wav",
+    "audio/wind_meadow_3.wav",
+    "audio/wind_meadow_4.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    0.95,
+    1.05
+   ]
+  },
+  {
+   "id": "base:sound/wind_forest_floor",
+   "kind": "sound",
+   "for": "base:forest_floor",
+   "event": "wind",
+   "files": [
+    "audio/wind_forest_1.wav",
+    "audio/wind_forest_2.wav",
+    "audio/wind_forest_3.wav",
+    "audio/wind_forest_4.wav"
+   ],
+   "volume_db": -12.0,
+   "pitch": [
+    0.95,
+    1.05
+   ]
+  },
+  {
+   "id": "base:sound/wind_moss",
+   "kind": "sound",
+   "for": "base:moss",
+   "event": "wind",
+   "files": [
+    "audio/wind_forest_1.wav",
+    "audio/wind_forest_2.wav",
+    "audio/wind_forest_3.wav",
+    "audio/wind_forest_4.wav"
+   ],
+   "volume_db": -12.0,
+   "pitch": [
+    0.95,
+    1.05
+   ]
   }
  ]
 }

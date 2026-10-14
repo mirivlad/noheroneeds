@@ -55,6 +55,8 @@ static func audio(path: String, loop := false) -> AudioStream:
 				s = AudioStreamOggVorbis.load_from_buffer(bytes)
 			"mp3":
 				s = AudioStreamMP3.load_from_buffer(bytes)
+	if s:
+		s.resource_name = path  # where it came from
 	if s and loop:
 		s = s.duplicate()
 		if s is AudioStreamWAV:

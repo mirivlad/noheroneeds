@@ -32,6 +32,23 @@ func test_view_follows_the_client() -> void:
 	for child: Node in dolls[0].get_children():
 		slots.append(String((child as Sprite2D).texture.resource_path.get_file()))
 	eq(slots, ["body.png", "boots.png", "linen_shirt.png", "hair_short.png"], "layers in order")
+	# Grounds meet with ragged edges: only on a cell next to a higher ground.
+	var edges := view.edge_cells()
+	check(edges.size() > 0, "edges drawn where grounds meet: %d cells" % edges.size())
+	var prio := {}
+	for id: String in content.visuals:
+		if content.visuals[id].has("edges"):
+			prio[id] = int(content.visuals[id]["edges"]["priority"])
+	var wrong := 0
+	for cell: Vector2i in edges:
+		var own := view.ground_at("surface", cell)
+		var higher := false
+		for dy in [-1, 0, 1]:
+			for dx in [-1, 0, 1]:
+				var n := view.ground_at("surface", cell + Vector2i(dx, dy))
+				higher = higher or (prio.has(n) and prio.has(own) and prio[n] > prio[own])
+		wrong += 0 if higher else 1
+	eq(wrong, 0, "every edge lies next to a higher ground")
 	# A wall built at (2, 1) appears where it stands.
 	g.client.request({"type": "build", "location": "surface", "x": 2, "y": 1, "part": "base:wood_wall"})
 	for i in 10:

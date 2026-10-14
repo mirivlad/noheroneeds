@@ -207,6 +207,12 @@ func _validate() -> void:
 				_check_amounts(id, "outputs", d.get("outputs", {}), true)
 			"body_plan":
 				d["health"] = int(d.get("health", 20))
+				var fall: Variant = d.get("fall_damage", [0, 2, 6, 12, 20])
+				if typeof(fall) != TYPE_ARRAY or (fall as Array).is_empty() \
+						or (fall as Array).any(func(n: Variant) -> bool: return typeof(n) not in [TYPE_INT, TYPE_FLOAT] or n < 0):
+					errors.append("%s: fall_damage lists the hurt of a fall by levels fallen" % id)
+				else:
+					d["fall_damage"] = (fall as Array).map(func(n: Variant) -> int: return int(n))
 				if d.has("unarmed"):
 					_check_weapon(id, "unarmed", d["unarmed"], false)
 				_check_strings(id, "slots", d.get("slots", []))

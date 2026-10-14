@@ -446,10 +446,13 @@ func _update_replica() -> void:
 				{"kind": "projectile", "item": pr.ammo, "vx": int(pr.vel.x), "vy": int(pr.vel.y)})
 			_replica[id] = r
 			_others[id] = true
-		elif r.x != int(pr.pos.x) or r.y != int(pr.pos.y):
-			r.x = int(pr.pos.x)
-			r.y = int(pr.pos.y)
-			r.hv += 1
+		else:
+			if r.location != pr.location:
+				r.relocate(pr.location, world.levels.z(pr.location))  # down to the street, up to a walkway
+			if r.x != int(pr.pos.x) or r.y != int(pr.pos.y):
+				r.x = int(pr.pos.x)
+				r.y = int(pr.pos.y)
+				r.hv += 1
 	for id: String in world.present:
 		var p: Dictionary = world.present[id]
 		var pos: Vector2i = p["pos"]
@@ -668,7 +671,8 @@ func _send_snapshot(s: Session) -> void:
 	var my_loc: String = world.present[s.character_id]["location"]
 	for id: String in world.combat.projectiles:
 		var r: Replica = _replica.get(id)
-		if r and r.location == my_loc and absi(r.x - my_pos.x) <= CREATURE_VIEW.x * Movement.UNIT \
+		if r and (r.location == my_loc or (_on_plan(r.location) and _on_plan(my_loc))) \
+				and absi(r.x - my_pos.x) <= CREATURE_VIEW.x * Movement.UNIT \
 				and absi(r.y - my_pos.y) <= CREATURE_VIEW.y * Movement.UNIT:
 			view[id] = r
 	var due := []

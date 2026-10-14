@@ -34,6 +34,8 @@ var content: ContentRegistry
 ## The weapon chosen with Q (index into _weapons()), attack requests in flight,
 ## deaths already told (-1: none seen yet).
 var _weapon := 0
+## Where one last walked: a jump goes that way.
+var _last_dir := Vector2i(0, 1)
 var _attacks := {}
 var _deaths_seen := -1
 var game: LocalGame
@@ -69,7 +71,7 @@ var _slots: Array[Panel] = []
 
 ## What the server's refusals mean, for people.
 const REASONS := {
-	"occupied": "место занято", "blocked": "мешает вода или дерево", "someone_there": "там кто-то стоит",
+	"occupied": "место занято", "blocked": "мешает вода, стена или дерево", "someone_there": "там кто-то стоит",
 	"materials": "не хватает материалов", "too_far": "слишком далеко", "no_floor": "здесь нет пола",
 	"too_high": "выше строить нельзя (настройка сервера)", "occupied_above": "сверху что-то стоит — сначала уберите",
 	"no_opening_above": "лестнице нужно перекрытие над ней или там, куда она ведёт", "stairs_below": "сначала уберите лестницу",
@@ -77,6 +79,8 @@ const REASONS := {
 	"unknown_part": "неизвестная деталь", "nothing_to_use": "здесь нечего открыть", "gone": "уже подобрали",
 	"not_enough": "не хватает", "no_such_place": "здесь строить нельзя",
 	"no_ammo": "нет стрел", "not_carried": "этого нет при себе", "not_a_weapon": "это не оружие",
+	"nothing_to_jump_from": "прыгать можно с этажа", "not_an_edge": "пол продолжается — идите",
+	"roof_below": "внизу крыша", "bad_request": "не получилось",
 }
 
 
@@ -187,6 +191,8 @@ func _process(delta: float) -> void:
 	if client == null:
 		return
 	client.move = _direction() if not paused else Vector2i.ZERO
+	if client.move != Vector2i.ZERO:
+		_last_dir = client.move
 	client.run = not paused and (_opts.has("run") or Input.is_physical_key_pressed(KEY_CTRL))
 	# A single-player world stands still while the menu is open; a server
 	# others play on cannot.
@@ -289,6 +295,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			var turns := _turns()
 			if not turns.is_empty():
 				_facing = (_facing + 1) % turns.size()
+		elif k == KEY_J and client.state == "playing":
+			_sound_on_ok[client.request({"type": "jump", "dx": _last_dir.x, "dy": _last_dir.y})] = "climb"
 		elif k == KEY_Q:
 			_weapon = (_weapon + 1) % _weapons().size()
 		elif k == KEY_SPACE and not (event as InputEventKey).echo and client.state == "playing":
@@ -335,8 +343,24 @@ func _weapons() -> Array:
 func _attack() -> void:
 	var weapons := _weapons()
 	var item: String = weapons[_weapon % weapons.size()]
-	var m := get_global_mouse_position() * WorldView.UNITS_PER_PIXEL
-	var rid := client.request({"type": "attack", "item": item, "x": int(m.x), "y": int(m.y)})
+	var mouse := get_global_mouse_position()
+	var m := mouse * WorldView.UNITS_PER_PIXEL
+	var op := {"type": "attack", "item": item, "x": int(m.x), "y": int(m.y)}
+	# Aiming at one on another level (on a walkway, in the street below):
+	# the shot goes to that level (ADR-0019).
+	for id: String in client.entities:
+		var e: Dictionary = client.entities[id]
+		var dz := int(e.get("z", client.z)) - client.z
+		if dz == 0 or not e.get("kind") in ["character", "creature"]:
+			continue
+		var at := Vector2(int(e.get("x", 0)), int(e.get("y", 0))) / WorldView.UNITS_PER_PIXEL \
+			- Vector2(0, WorldView.COVER_LIFT * maxi(dz, 0) + 8)
+		if at.distance_to(mouse) < 10.0:
+			op["z"] = int(e["z"])
+			op["x"] = int(e["x"])
+			op["y"] = int(e["y"])
+			break
+	var rid := client.request(op)
 	_attacks[rid] = true
 	var ranged: bool = item != "" and content.get_def(item)["weapon"]["kind"] == "ranged"
 	if not ranged:
@@ -519,7 +543,7 @@ func _update_hud() -> void:
 	if settings.get_value("show_fps"):
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
-		info.append("Ctrl — бег, ЛКМ/ПКМ — строить/разобрать, Пробел — удар, Q — оружие, E — взять, F — лестница, Esc — меню")
+		info.append("Ctrl — бег, ЛКМ/ПКМ — строить/разобрать, Пробел — удар, Q — оружие, J — прыжок с края, E — взять, F — лестница, Esc — меню")
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:

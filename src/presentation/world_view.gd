@@ -265,6 +265,12 @@ func _set_flat(layer: TileMapLayer, cell: Vector2i, id: String) -> void:
 
 
 func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0) -> Sprite2D:
+	var alts: Array = v.get("alternates", [])
+	if not alts.is_empty() and state == "" and variant == 0:
+		# The same picture for a cell every time and for every player.
+		var k := absi((cell.x * 73856093) ^ (cell.y * 19349663)) % (alts.size() + 1)
+		if k > 0:
+			v = alts[k - 1]
 	var s := Sprite2D.new()
 	s.texture = texture(v["atlas_path"])
 	s.region_enabled = true

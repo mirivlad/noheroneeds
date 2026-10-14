@@ -362,6 +362,41 @@ def person_view(look_name, view, frame):
     return strong(spr)
 
 
+def _art_origin(img):
+    """Where an imported sprite stands: the middle of its base (a trunk, the
+    root of a tuft) goes to the middle of the cell, its bottom row on the
+    cell's bottom edge, two pixels up for depth."""
+    w, h = img.size
+    px = img.load()
+    xs = [x for y in range(max(0, h - 4), h) for x in range(w) if px[x, y][3] > 0]
+    mid = round(sum(xs) / len(xs)) if xs else w // 2
+    return [mid - T // 2, h - 2]
+
+
+def production_art(visuals):
+    """Imported art (tools/art/imports/*.json, ADR-0008) replaces the
+    placeholders of the content ids it draws."""
+    by_id = {v["for"]: v for v in visuals}
+    for manifest in sorted((ROOT / "tools" / "art" / "imports").glob("*.json")):
+        m = json.loads(manifest.read_text())
+        out = Path(m["out"]).relative_to("content/base")
+        for for_id, names in m.get("visuals", {}).items():
+            pics = []
+            for name in names:
+                path = OUT / out / f"{name}.png"
+                if path.exists():
+                    img = Image.open(path)
+                    pics.append({"atlas": str(out / f"{name}.png"), "rect": [0, 0, img.width, img.height],
+                                 "origin": _art_origin(img)})
+            if not pics:
+                continue
+            v = by_id[for_id]
+            v.update(pics[0])
+            v["mode"], v["variants"] = "tall", 1
+            if len(pics) > 1:
+                v["alternates"] = pics[1:]
+
+
 def main():
     a = Atlas(16, 23)
     for row, kind in enumerate(["grass", "grass_dry", "dirt", "moss", "forest_floor", "sand", "water"]):
@@ -417,6 +452,7 @@ def main():
         "atlas": "art/chibi_placeholder.png", "rect": [0, 0, 48, 48], "origin": [24, 45], "mode": "character",
         "variants": 1, "directions": ["s", "se", "e", "ne", "n"], "frames": 3,
     })
+    production_art(a.visuals)
     with open(OUT / "visuals.json", "w") as f:
         json.dump({"format": 1, "defs": a.visuals}, f, ensure_ascii=False, indent=1)
         f.write("\n")

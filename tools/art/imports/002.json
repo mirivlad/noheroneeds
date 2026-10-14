@@ -1,0 +1,109 @@
+{
+ "brief": "002",
+ "out": "content/base/art/plants",
+ "sheets": [
+  {
+   "file": "art_src/incoming/002/sheet_trees.png",
+   "names": [
+    "spruce",
+    "spruce_young",
+    "birch",
+    "oak",
+    "oak_autumn",
+    "berry_bush",
+    "berry_bush_large",
+    "bush_low",
+    "bush",
+    "sapling"
+   ],
+   "block": 5.4
+  },
+  {
+   "file": "art_src/incoming/002/sheet_plants.png",
+   "names": [
+    "grass_short",
+    "grass_tuft",
+    "tall_grass",
+    "flowers_white",
+    "flowers_yellow",
+    "flowers_pink_blue",
+    "grass_reedy",
+    "grass_reedy",
+    "cattails",
+    "cattails",
+    "bush_round",
+    "fallen_branch",
+    "stump",
+    "mossy_rock",
+    "rock_pile",
+    "lily_pads",
+    "lily_pads",
+    "lily_pads",
+    "reeds_plume",
+    "reeds_plume",
+    "reeds_plume"
+   ],
+   "block": 5.8
+  }
+ ],
+ "visuals": {
+  "base:oak": [
+   "oak"
+  ],
+  "base:birch": [
+   "birch"
+  ],
+  "base:spruce": [
+   "spruce",
+   "spruce_young"
+  ],
+  "base:bush": [
+   "bush_low",
+   "bush",
+   "bush_round"
+  ],
+  "base:berry_bush": [
+   "berry_bush",
+   "berry_bush_large"
+  ],
+  "base:tall_grass": [
+   "tall_grass",
+   "grass_tuft",
+   "grass_short",
+   "grass_reedy"
+  ],
+  "base:reeds": [
+   "cattails",
+   "reeds_plume"
+  ],
+  "base:flower_yellow": [
+   "flowers_yellow"
+  ],
+  "base:flower_blue": [
+   "flowers_pink_blue"
+  ]
+ },
+ "_comment": "heights: sprite heights for objects drawn out of scale on the sheet (a person is 32). visuals: content id -> imported sprites (the first is the main picture, the rest alternates picked by cell). Read by tools/art/import_sheet.py and tools/art/make_placeholders.py.",
+ "heights": {
+  "grass_short": 9,
+  "grass_tuft": 12,
+  "tall_grass": 18,
+  "grass_reedy": 20,
+  "flowers_white": 16,
+  "flowers_yellow": 16,
+  "flowers_pink_blue": 16,
+  "cattails": 28,
+  "reeds_plume": 28,
+  "bush_round": 18,
+  "fallen_branch": 11,
+  "stump": 15,
+  "mossy_rock": 19,
+  "rock_pile": 15,
+  "lily_pads": 13,
+  "bush": 28,
+  "bush_low": 20,
+  "berry_bush": 20,
+  "berry_bush_large": 24,
+  "sapling": 30
+ }
+}

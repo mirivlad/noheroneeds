@@ -15,6 +15,9 @@ var layers := {}
 var props := {}
 ## Free-form CBOR-compatible metadata, e.g. which generator made the chunk.
 var meta := {}
+## Derived, not stored: per cell, what Terrain worked out about it (solid,
+## opaque...), 0 when not yet; a change of the cell forgets it.
+var traits := PackedByteArray()
 var _index := {"": 0}
 
 
@@ -42,6 +45,8 @@ func set_cell(layer: String, x: int, y: int, content_id: String) -> void:
 		_index[content_id] = i
 	cells[cell_index(x, y)] = i
 	layers[layer] = cells
+	if not traits.is_empty():
+		traits[cell_index(x, y)] = 0
 
 
 func get_props(x: int, y: int) -> Dictionary:
@@ -53,6 +58,8 @@ func set_props(x: int, y: int, value: Dictionary) -> void:
 		props.erase(cell_index(x, y))
 	else:
 		props[cell_index(x, y)] = value
+	if not traits.is_empty():
+		traits[cell_index(x, y)] = 0
 
 
 ## Cells of a layer as content ids (for comparisons and tools; not for hot paths).

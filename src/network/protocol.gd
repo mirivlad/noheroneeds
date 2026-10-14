@@ -16,7 +16,10 @@ class_name Protocol
 ## 4: LOCATION tells the client it is now in another location (stairs...).
 ## 5: an input is [seq, dx, dy, run]: run 1 moves 1.5 times as fast.
 ## 6: SNAPSHOT carries the world time (game ms) and its rate (ms a tick).
-const VERSION := 6
+## 7: SNAPSHOT is a difference from what the client has acknowledged (no
+##    "base"); positions go packed as int32 [net, x, y] in "hot", removed
+##    nets as int32 in "removed".
+const VERSION := 7
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -50,11 +53,12 @@ const SERVER_FIELDS := {
 	CHALLENGE: {"nonce": TYPE_PACKED_BYTE_ARRAY, "server_id": TYPE_STRING},
 	WELCOME: {"character_id": TYPE_STRING, "location": TYPE_STRING, "tick": TYPE_INT},
 	REJECT: {"reason": TYPE_STRING},
-	# entities: {net number: {field: value}} changed since the acknowledged
-	# base ("uid" with the entity id when it enters the view); removed:
-	# [net number]; input_ack: last input seq applied for this client
-	SNAPSHOT: {"id": TYPE_INT, "base": TYPE_INT, "tick": TYPE_INT, "entities": TYPE_DICTIONARY,
-		"removed": TYPE_ARRAY, "input_ack": TYPE_INT, "time": TYPE_INT, "rate": TYPE_INT},
+	# Differences from what the client acknowledged. hot: int32 [net, x, y]
+	# positions; entities: {net number: {field: value}} - whole when new to
+	# the client ("uid" with the entity id), else cold changes, inventory;
+	# removed: int32 nets; input_ack: last input seq applied for this client
+	SNAPSHOT: {"id": TYPE_INT, "tick": TYPE_INT, "hot": TYPE_PACKED_BYTE_ARRAY, "entities": TYPE_DICTIONARY,
+		"removed": TYPE_PACKED_BYTE_ARRAY, "input_ack": TYPE_INT, "time": TYPE_INT, "rate": TYPE_INT},
 	RESULT: {"request_id": TYPE_STRING, "result": TYPE_DICTIONARY},
 	CHUNK: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT, "data": TYPE_PACKED_BYTE_ARRAY},
 	# z: the level label (0 surface, +1 first floor...); identity is the id.

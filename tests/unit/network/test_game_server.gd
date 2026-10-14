@@ -126,6 +126,42 @@ func test_snapshots_converge_on_a_bad_network() -> void:
 	eq(Vector2i(seen.get("x", 0), seen.get("y", 0)), _server_pos(a), "the other player sees it too")
 
 
+## Creatures (ADR-0018) reach clients, follow them on a bad network, and go
+## from them when they leave memory or the player goes away and comes back.
+func test_creatures_reach_clients_and_follow_them_on_a_bad_network() -> void:
+	net.state_loss = 0.3
+	net.state_duplicate = 0.2
+	net.delay_steps = 2
+	var a := _client("owner", _character("Аня"))
+	_run(30, [a])
+	var me := Movement.cell_of(_server_pos(a))
+	var hare := world.creatures._spawn("base:hare", "surface", me + Vector2i(4, 2), {}, 1)
+	_run(40, [a])
+	var seen: Dictionary = a.entities.get(hare.id, {})
+	eq(seen.get("creature"), "base:hare", "the hare came")
+	# It walks off; the client follows it to where it stops.
+	hare.target = (me + Vector2i(10, 6)) * Movement.UNIT
+	world.creatures._movers[hare.id] = true
+	_run(120, [a])
+	eq(hare.target, Creature.NO_TARGET, "it got there")
+	seen = a.entities.get(hare.id, {})
+	eq(Vector2i(seen.get("x", 0), seen.get("y", 0)), hare.pos, "the client has it where it stopped")
+	# The player goes far away and comes back: the hare goes and comes again.
+	var home := _server_pos(a)
+	world.move_character(a.character_id, home + Vector2i(200, 0) * Movement.UNIT)
+	_run(60, [a])
+	check(not a.entities.has(hare.id), "out of view: gone from the client")
+	world.move_character(a.character_id, home)
+	_run(60, [a])
+	seen = a.entities.get(hare.id, {})
+	eq(Vector2i(seen.get("x", 0), seen.get("y", 0)), hare.pos, "back in view, where it is")
+	eq(seen.get("creature"), "base:hare", "whole again")
+	# It leaves memory with its chunk: gone from the client too.
+	world.creatures.drop_chunk(world.creatures._chunk_of(hare))
+	_run(40, [a])
+	check(not a.entities.has(hare.id), "left memory: gone from the client")
+
+
 func test_request_result_after_commit_and_seen_by_others() -> void:
 	var a := _client("owner", _character("Аня", 10))
 	var b := _client("other", _character("Боря"))

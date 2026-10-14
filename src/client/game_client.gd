@@ -49,7 +49,6 @@ var world_events: Array[Dictionary] = []
 ## Times a prediction had to be corrected (for tests and diagnostics).
 var corrections := 0
 
-var _snapshots := {}
 ## short net number -> entity id (this connection)
 var _uid_of := {}
 var _latest_snapshot := 0
@@ -106,8 +105,8 @@ func reconnect(net: Transport) -> void:
 	state = "connecting"
 	has_position = false
 	entities.clear()
+	own = {}
 	chunks.clear()
-	_snapshots.clear()
 	_uid_of.clear()
 	_latest_snapshot = 0
 	_unacked_inputs.clear()
@@ -115,7 +114,7 @@ func reconnect(net: Transport) -> void:
 
 ## The own inventory as the server last showed it: {item id: count}.
 func inventory() -> Dictionary:
-	return _snapshots.get(_latest_snapshot, {}).get(character_id, {}).get("inventory", {})
+	return own.get("inventory", {})
 
 
 func unanswered_requests() -> int:
@@ -193,43 +192,44 @@ func _note_changes(loc: String, origin: Vector2i, old: Chunk, new: Chunk) -> voi
 			world_events.append({"type": "open" if now_open else "close", "location": loc, "cell": cell, "part": part})
 
 
+## Snapshots (protocol 7) are differences from what this client last
+## acknowledged; the newest one applies on top of what we have, older or
+## repeated ones are dropped (the server repeats what we may have missed).
 func _on_snapshot(m: Dictionary) -> void:
 	var sid: int = m["id"]
 	if sid <= _latest_snapshot:
-		return  # older or repeated: newest wins
-	var base_id: int = m["base"]
-	if base_id != 0 and not _snapshots.has(base_id):
-		return  # cannot rebuild it; the next one will do
-	var full: Dictionary = (_snapshots.get(base_id, {}) as Dictionary).duplicate(true)
-	for n: Variant in m["removed"]:
-		full.erase(_uid_of.get(n, ""))
+		return
+	var removed := (m["removed"] as PackedByteArray).to_int32_array()
+	for n in removed:
+		entities.erase(_uid_of.get(n, ""))
 	var changed: Dictionary = m["entities"]
 	for n: Variant in changed:
 		var fields: Dictionary = changed[n]
 		if typeof(fields.get("uid")) == TYPE_STRING:
 			_uid_of[n] = fields["uid"]
+			fields.erase("uid")
 		var id: String = _uid_of.get(n, "")
 		if id == "":
 			continue  # a number we were never introduced to: wait for a full state
-		var st: Dictionary = full.get(id, {})
-		st.merge(fields, true)
-		st.erase("uid")
-		full[id] = st
-	_snapshots[sid] = full
+		if id == character_id:
+			own.merge(fields, true)
+		else:
+			(entities.get_or_add(id, {}) as Dictionary).merge(fields, true)
+	var hot := (m["hot"] as PackedByteArray).to_int32_array()
+	for i in range(0, hot.size() - 2, 3):
+		var id: String = _uid_of.get(hot[i], "")
+		var e: Dictionary = own if id == character_id else entities.get(id, {})
+		if id != "" and (id == character_id or entities.has(id)):
+			e["x"] = hot[i + 1]
+			e["y"] = hot[i + 2]
 	_latest_snapshot = sid
 	time_rate = int(m["rate"])
 	# The server's clock, unless ours is just ahead by the ticks in flight.
 	if not has_time or absf(world_time - float(m["time"])) > time_rate * 10:
 		world_time = float(m["time"])
 	has_time = true
-	for old: int in _snapshots.keys():
-		if old < base_id:
-			_snapshots.erase(old)
-	entities = full.duplicate()
-	own = full.get(character_id, own)
-	entities.erase(character_id)
-	if full.has(character_id):
-		_reconcile(Vector2i(full[character_id]["x"], full[character_id]["y"]), m["input_ack"])
+	if own.has("x"):
+		_reconcile(Vector2i(own["x"], own["y"]), m["input_ack"])
 
 
 ## The server's position after input `ack`, plus our inputs it has not seen yet.

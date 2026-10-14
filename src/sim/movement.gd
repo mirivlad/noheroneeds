@@ -4,7 +4,10 @@ class_name Movement
 ## sides compute exactly the same result from the same inputs.
 ## The collider is a box at the feet, HALF_X by HALF_Y from the position.
 
-const UNIT := 256
+## A cell is UNIT units; UNIT is 1 << UNIT_SHIFT (cells by a shift, which
+## floors for negative positions too).
+const UNIT_SHIFT := 8
+const UNIT := 1 << UNIT_SHIFT
 const TICK_RATE := 20
 ## ≈ 4 cells per second; diagonals keep about the same speed.
 const WALK := 51
@@ -34,7 +37,7 @@ static func step_at(pos: Vector2i, dx: int, dy: int, solid: Callable, speed: int
 
 
 static func cell_of(pos: Vector2i) -> Vector2i:
-	return Vector2i(_div(pos.x), _div(pos.y))
+	return Vector2i(pos.x >> UNIT_SHIFT, pos.y >> UNIT_SHIFT)
 
 
 ## Moves along one axis; the leading edge stops at the first solid cell.
@@ -61,4 +64,4 @@ static func _axis(pos: Vector2i, d: int, horizontal: bool, solid: Callable) -> V
 
 
 static func _div(v: int) -> int:
-	return floori(float(v) / UNIT)
+	return v >> UNIT_SHIFT

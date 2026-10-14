@@ -29,6 +29,10 @@ var seed := 0
 ## Not saved: the tick it thinks next, ticks it has not moved while walking.
 var next_think := 0
 var stuck := 0
+## Not saved: the key of the chunk it was last found in, for that chunk and location.
+var chunk_key := ""
+var chunk_at := Vector2i(1 << 30, 0)
+var chunk_location := ""
 ## Bumped by every change worth saving; saved_version: the last one saved.
 var version := 1
 var saved_version := 0

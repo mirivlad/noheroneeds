@@ -65,7 +65,8 @@ func _run(n: int, creatures := 0) -> void:
 	for s: Dictionary in stats:
 		print("  window: players %d, tick p50 %d p99 %d max %d us, sync loads %d, %s" % [int(s["players"]), int(s["p50"]),
 			int(s["p99"]), int(s["max"]), int(s.get("sync_loads", 0)), JSON.stringify(s.get("sections_ms", {}))])
-		print("    slowest tick: " + JSON.stringify(s.get("slowest_ms", {})))
+		print("    slowest tick: " + JSON.stringify(s.get("slowest_ms", {})) + ", request to result p50/p99/max ms: "
+			+ JSON.stringify(s.get("result_ms", [])))
 		if prev.is_empty():
 			prev = s["bytes"]
 			continue

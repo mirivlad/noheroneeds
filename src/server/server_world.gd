@@ -94,6 +94,8 @@ var _left_places := {}
 ## (x, y in movement units). Written in operation batches with the
 ## inventories they come from or go to, so nothing is lost or doubled.
 var items := {}
+## Bumped whenever an item appears, goes or moves (views of items cache on it).
+var items_rev := 0
 var _items_by_chunk := {}
 var _dirty_items := {}
 var _removed_items := {}
@@ -162,7 +164,7 @@ func close() -> void:
 	sync()
 	writer.stop()
 	store.close()
-	creatures.world = null  # they hold each other: let both go
+	creatures.detach()  # they hold each other: let both go
 
 
 ## Stops without committing what is not yet handed to the writer (tests of crashes).
@@ -173,7 +175,7 @@ func abandon() -> void:
 	loader.stop()
 	writer.stop()
 	store.close()
-	creatures.world = null
+	creatures.detach()
 
 
 static func chunk_key(location: String, cx: int, cy: int) -> String:
@@ -181,7 +183,27 @@ static func chunk_key(location: String, cx: int, cy: int) -> String:
 
 
 ## A chunk, loaded or generated now if the loader has not brought it yet.
+## The chunk last asked for: most asks come in runs for one chunk (a
+## creature's steps and sight, light around a cell), and building its key is
+## the dearest part. Forgotten when chunks leave memory.
+var _last_chunk: Chunk = null
+## Bumped when chunks leave memory (whoever keeps a Chunk asks for it again).
+var chunks_epoch := 0
+var _last_chunk_at := Vector2i(1 << 30, 0)
+var _last_chunk_location := ""
+
+
 func chunk(location: String, cx: int, cy: int) -> Chunk:
+	if _last_chunk != null and cx == _last_chunk_at.x and cy == _last_chunk_at.y and location == _last_chunk_location:
+		return _last_chunk
+	var c := _chunk(location, cx, cy)
+	_last_chunk = c
+	_last_chunk_at = Vector2i(cx, cy)
+	_last_chunk_location = location
+	return c
+
+
+func _chunk(location: String, cx: int, cy: int) -> Chunk:
 	var key := chunk_key(location, cx, cy)
 	var c: Chunk = _chunks.get(key)
 	if c == null:
@@ -220,6 +242,7 @@ func _take_items(location: String, rows: Array) -> void:
 
 func _place_item(id: String, it: Dictionary) -> void:
 	items[id] = it
+	items_rev += 1
 	var key := _item_chunk_key(it)
 	if not _items_by_chunk.has(key):
 		_items_by_chunk[key] = {}
@@ -263,8 +286,11 @@ func unload_idle(idle_ticks: int) -> int:
 		_lights_by_chunk.erase(key)
 		for id: String in (_items_by_chunk.get(key, {}) as Dictionary):
 			items.erase(id)
+			items_rev += 1
 		_items_by_chunk.erase(key)
 		_chunks.erase(key)
+		_last_chunk = null
+		chunks_epoch += 1
 		_encoded.erase(key)
 		_needed.erase(key)
 		_written_by.erase(key)
@@ -546,20 +572,77 @@ func needed_within(key: String, ticks: int) -> bool:
 
 ## Whether a cell blocks sight (ADR-0018): a part that is not see-through
 ## (walls; a door unless open), or a solid plant (a tree, a bush).
+## "Is this cell solid?" for one location, asked many times a tick by walking
+## creatures: it keeps the chunk it last read (ServerWorld.solid_in).
+class SolidIn:
+	var world: ServerWorld
+	var location := ""
+	var empty_ground_blocks := false
+	var _at := Vector2i(1 << 30, 0)
+	var _epoch := -1
+	var _chunk: Chunk = null
+
+	func solid(x: int, y: int) -> bool:
+		var here := Vector2i(x >> 5, y >> 5)  # Chunk.SIZE is 32
+		if here != _at or _epoch != world.chunks_epoch:
+			_at = here
+			_epoch = world.chunks_epoch
+			_chunk = world.chunk(location, here.x, here.y)
+		return Terrain.is_solid(_chunk, x & 31, y & 31, world.content, empty_ground_blocks)
+
+
+## Answers whether a cell of `location` is solid (its .solid(x, y)), as
+## is_solid, but cheaper for runs of questions about nearby cells. Keep the
+## object while using its method as a Callable.
+func solid_in(location: String) -> SolidIn:
+	var q := SolidIn.new()
+	q.world = self
+	q.location = location
+	q.empty_ground_blocks = location != SURFACE
+	return q
+
+
+## Whether a location has daylight at all (ADR-0014, ADR-0017): the surface
+## and the levels of buildings; not underground.
+func has_daylight(location: String) -> bool:
+	return location == SURFACE or levels.kind(location) == Levels.BUILDING_LEVEL
+
+
+## Whether nothing opaque stands between two cells, the cells themselves not
+## counted (Bresenham's line). Sight asks it often: chunks are looked up once
+## for a run of cells, and cells by what Terrain keeps about them.
+func line_clear(location: String, a: Vector2i, b: Vector2i) -> bool:
+	var dx := absi(b.x - a.x)
+	var dy := -absi(b.y - a.y)
+	var sx := 1 if a.x < b.x else -1
+	var sy := 1 if a.y < b.y else -1
+	var err := dx + dy
+	var p := a
+	var at := Vector2i(1 << 30, 0)
+	var c: Chunk = null
+	while p != b:
+		var e2 := 2 * err
+		if e2 >= dy:
+			err += dy
+			p.x += sx
+		if e2 <= dx:
+			err += dx
+			p.y += sy
+		if p == b:
+			break
+		var here := Vector2i(p.x >> 5, p.y >> 5)  # Chunk.SIZE is 32
+		if here != at:
+			at = here
+			c = chunk(location, here.x, here.y)
+		if Terrain.is_opaque(c, p.x & 31, p.y & 31, content):
+			return false
+	return true
+
+
 func is_opaque(location: String, x: int, y: int) -> bool:
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)
-	var c := chunk(location, cx, cy)
-	var lx := x - cx * Chunk.SIZE
-	var ly := y - cy * Chunk.SIZE
-	var part := c.get_cell("structure", lx, ly)
-	if part != "":
-		var d := content.get_def(part)
-		if d.get("openable", false) and c.get_props(lx, ly).get("open", false):
-			return false
-		return bool(d.get("opaque", String(d.get("role", "")) in ["wall", "door"]))
-	var plant := c.get_cell("cover", lx, ly)
-	return plant != "" and bool(content.get_def(plant).get("solid", false))
+	return Terrain.is_opaque(chunk(location, cx, cy), x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content)
 
 
 ## How light a cell is now, 0..1 (ADR-0014): the hour's daylight, less under a
@@ -757,6 +840,7 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 	var key := _item_chunk_key(it)
 	(_items_by_chunk[key] as Dictionary).erase(id)
 	items.erase(id)
+	items_rev += 1
 	_dirty_items.erase(id)
 	_removed_items[id] = key
 	_touch_inventory(actor)
@@ -1183,6 +1267,8 @@ func _move_location(from: String, to: String) -> void:
 			_place_item(id, it)
 			_dirty_items[id] = true
 		_chunks.erase(key)
+		_last_chunk = null
+		chunks_epoch += 1
 		_encoded.erase(key)
 		_dirty_chunks.erase(key)
 		gone.append([cx, cy])

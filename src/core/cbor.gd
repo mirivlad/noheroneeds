@@ -22,7 +22,19 @@ static func encode(value: Variant) -> PackedByteArray:
 	last_error = ""
 	var out := StreamPeerBuffer.new()
 	out.big_endian = true
-	if not _enc(out, value, 0):
+	if not _enc(out, value, 0, true):
+		return PackedByteArray()
+	return out.data_array
+
+
+## Same format without sorting map keys: valid CBOR that decode() reads, but
+## not byte-for-byte reproducible. For network messages, where speed matters
+## and nothing is signed or stored; never for signed or stored data.
+static func encode_fast(value: Variant) -> PackedByteArray:
+	last_error = ""
+	var out := StreamPeerBuffer.new()
+	out.big_endian = true
+	if not _enc(out, value, 0, false):
 		return PackedByteArray()
 	return out.data_array
 
@@ -56,7 +68,7 @@ static func _head(out: StreamPeerBuffer, major: int, n: int) -> void:
 		out.put_u64(n)
 
 
-static func _enc(out: StreamPeerBuffer, v: Variant, depth: int) -> bool:
+static func _enc(out: StreamPeerBuffer, v: Variant, depth: int, canonical: bool) -> bool:
 	if depth > MAX_DEPTH:
 		last_error = "nesting deeper than %d" % MAX_DEPTH
 		return false
@@ -86,10 +98,20 @@ static func _enc(out: StreamPeerBuffer, v: Variant, depth: int) -> bool:
 			var a: Array = v
 			_head(out, 4, a.size())
 			for item: Variant in a:
-				if not _enc(out, item, depth + 1):
+				if not _enc(out, item, depth + 1, canonical):
 					return false
 		TYPE_DICTIONARY:
 			var d: Dictionary = v
+			if not canonical:
+				_head(out, 5, d.size())
+				for k: Variant in d:
+					if typeof(k) != TYPE_INT and typeof(k) != TYPE_STRING and typeof(k) != TYPE_STRING_NAME:
+						last_error = "map key of type %s" % type_string(typeof(k))
+						return false
+					_enc(out, k, depth + 1, false)
+					if not _enc(out, d[k], depth + 1, false):
+						return false
+				return true
 			var pairs: Array = []
 			for k: Variant in d:
 				if typeof(k) != TYPE_INT and typeof(k) != TYPE_STRING and typeof(k) != TYPE_STRING_NAME:
@@ -105,7 +127,7 @@ static func _enc(out: StreamPeerBuffer, v: Variant, depth: int) -> bool:
 			_head(out, 5, pairs.size())
 			for p: Array in pairs:
 				out.put_data(p[0])
-				if not _enc(out, p[1], depth + 1):
+				if not _enc(out, p[1], depth + 1, true):
 					return false
 		_:
 			last_error = "unsupported type %s" % type_string(typeof(v))

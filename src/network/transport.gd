@@ -28,6 +28,10 @@ class Event:
 		data = d
 
 
+## Bytes handed to send() so far, per channel (for load measurements).
+var bytes_sent := [0, 0, 0]
+
+
 ## Events since the last call, in arrival order.
 func poll() -> Array[Event]:
 	return []

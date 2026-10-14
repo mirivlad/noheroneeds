@@ -7,6 +7,9 @@ extends SceneTree
 ##   --identity=DIR       server key directory (default user://server_identity)
 ##   --content=DIR[,DIR]  content packs (default res://content/base)
 ##   --console            read commands ("stop") from the terminal
+##   --stats=SECONDS      print "STATS {...}" (tick times, traffic) this often
+##   --starter-kit=ID:N[,ID:N]  items each character gets on its first arrival
+##                        in this world (a world rule; none by default)
 ##   --stop-file=PATH     stop cleanly when this file appears (default: STOP
 ##                        next to the world database; it is removed on start)
 ## Prints "LISTENING <port> <server id>" when ready.
@@ -18,11 +21,15 @@ extends SceneTree
 var _server: GameServer
 var _world: ServerWorld
 var _transport: ENetTransport
-var _accum := 0.0
+## When the next tick is due (µs). Absolute time, not summed frame deltas:
+## Godot smooths and caps deltas, which made the server drift below 20 Hz.
+var _next_tick := 0
 var _stop_file := ""
 var _stop_requested := false
 var _stdin := Thread.new()
 var _next_stop_check := 0
+var _stats_every := 0
+var _next_stats := 0
 
 
 func _initialize() -> void:
@@ -47,7 +54,12 @@ func _initialize() -> void:
 	if err != OK:
 		_world.close()
 		return _fail("cannot listen on port %d: %s" % [port, error_string(err)])
+	for pair in String(o.get("starter-kit", "")).split(",", false):
+		var at := pair.rfind(":")
+		_world.starter_kit[pair.left(at)] = int(pair.substr(at + 1))
 	_server = GameServer.new(_world, _transport, identity)
+	_stats_every = int(o.get("stats", "0")) * 1000
+	_next_stats = Time.get_ticks_msec() + _stats_every
 	_stop_file = ProjectSettings.globalize_path(String(o.get("stop-file", world_path.get_base_dir().path_join("STOP"))))
 	if FileAccess.file_exists(_stop_file):
 		DirAccess.remove_absolute(_stop_file)
@@ -66,15 +78,23 @@ func _process(delta: float) -> bool:
 			_stop_requested = true
 	if _stop_requested:
 		return true  # quit; _finalize() saves everything
-	_accum += delta
-	var tick_len := 1.0 / GameServer.TICK_RATE
+	if _stats_every > 0 and Time.get_ticks_msec() >= _next_stats:
+		_next_stats += _stats_every
+		print("STATS " + JSON.stringify(_server.take_stats()))
+	var tick_usec := 1000000 / GameServer.TICK_RATE
+	var now := Time.get_ticks_usec()
+	if _next_tick == 0:
+		_next_tick = now
 	var steps := 0
-	while _accum >= tick_len and steps < 4:  # catch up a little, never spiral
+	while now >= _next_tick and steps < 4:  # catch up a little, never spiral
 		_server.step()
-		_accum -= tick_len
+		_next_tick += tick_usec
 		steps += 1
-	if _accum > tick_len * 4:
-		_accum = 0.0
+		now = Time.get_ticks_usec()
+	if now - _next_tick > tick_usec * 4:
+		_next_tick = now  # too far behind: drop the backlog rather than rush
+	elif now < _next_tick:
+		OS.delay_usec(mini(_next_tick - now, 2000))  # do not spin a core while waiting
 	return false
 
 

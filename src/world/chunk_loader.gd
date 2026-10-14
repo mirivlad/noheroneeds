@@ -36,7 +36,9 @@ func request(location: String, cx: int, cy: int) -> void:
 	_mutex.unlock()
 
 
-## [[location, cx, cy, Chunk, generated: bool, entity rows], ...]
+## [[location, cx, cy, Chunk, generated: bool, entity rows, encoded bytes], ...]
+## The bytes are what clients receive, so the simulation never encodes an
+## unchanged chunk: stored ones come as stored, new ones are encoded here.
 func take_ready() -> Array:
 	_mutex.lock()
 	var out := _ready
@@ -83,6 +85,7 @@ func _run() -> void:
 				c = ChunkCodec.decode(data)
 			elif r[0] == ServerWorld.SURFACE and _generator:
 				c = _generator.generate(r[1], r[2])
+				data = ChunkCodec.encode(c)
 				generated = true
 			else:
 				c = Chunk.new()
@@ -90,5 +93,5 @@ func _run() -> void:
 			_mutex.lock()
 			_queued.erase(ServerWorld.chunk_key(r[0], r[1], r[2]))
 			if c:
-				_ready.append([r[0], r[1], r[2], c, generated, rows])
+				_ready.append([r[0], r[1], r[2], c, generated, rows, data])
 			_mutex.unlock()

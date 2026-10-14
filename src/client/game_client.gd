@@ -37,6 +37,8 @@ var changed_chunks: Array[String] = []
 var corrections := 0
 
 var _snapshots := {}
+## short net number -> entity id (this connection)
+var _uid_of := {}
 var _latest_snapshot := 0
 var _input_seq := 0
 var _unacked_inputs: Array = []
@@ -91,6 +93,7 @@ func reconnect(net: Transport) -> void:
 	entities.clear()
 	chunks.clear()
 	_snapshots.clear()
+	_uid_of.clear()
 	_latest_snapshot = 0
 	_unacked_inputs.clear()
 
@@ -142,12 +145,19 @@ func _on_snapshot(m: Dictionary) -> void:
 	if base_id != 0 and not _snapshots.has(base_id):
 		return  # cannot rebuild it; the next one will do
 	var full: Dictionary = (_snapshots.get(base_id, {}) as Dictionary).duplicate(true)
-	for id: Variant in m["removed"]:
-		full.erase(id)
+	for n: Variant in m["removed"]:
+		full.erase(_uid_of.get(n, ""))
 	var changed: Dictionary = m["entities"]
-	for id: String in changed:
+	for n: Variant in changed:
+		var fields: Dictionary = changed[n]
+		if typeof(fields.get("uid")) == TYPE_STRING:
+			_uid_of[n] = fields["uid"]
+		var id: String = _uid_of.get(n, "")
+		if id == "":
+			continue  # a number we were never introduced to: wait for a full state
 		var st: Dictionary = full.get(id, {})
-		st.merge(changed[id], true)
+		st.merge(fields, true)
+		st.erase("uid")
 		full[id] = st
 	_snapshots[sid] = full
 	_latest_snapshot = sid

@@ -268,6 +268,13 @@ func _check_visual(id: String, d: Dictionary) -> void:
 			return
 		d[f] = (v as Array).map(func(n: Variant) -> int: return int(n))
 	d["variants"] = maxi(1, int(d.get("variants", 1)))
+	# A seamless texture laid over grid[0] x grid[1] tiles (ground, roofs).
+	if d.has("grid"):
+		var g: Variant = d["grid"]
+		if typeof(g) != TYPE_ARRAY or (g as Array).size() != 2 or int(g[0]) < 1 or int(g[1]) < 1:
+			errors.append("%s: grid needs two positive numbers" % id)
+		else:
+			d["grid_size"] = Vector2i(int(g[0]), int(g[1]))
 	var dir: String = packs.get(d["pack"], {}).get("dir", "")
 	d["atlas_path"] = dir.path_join(String(d.get("atlas", ""))) if dir != "" else ""
 	if dir != "" and not FileAccess.file_exists(d["atlas_path"]) and not ResourceLoader.exists(d["atlas_path"]):

@@ -1,0 +1,116 @@
+{
+ "brief": "001",
+ "out": "content/base/art/materials",
+ "_comment": "Material -> generated texture, size in pixels (64 = 4 x 4 tiles) and the master-palette ramps it is drawn in. Read by tools/art/import_texture.py; tools/art/make_placeholders.py builds tiles and walls from the results.",
+ "materials": {
+  "grass": {
+   "file": "art_src/incoming/001/grass.png",
+   "size": 64,
+   "ramps": [
+    "grass"
+   ]
+  },
+  "grass_dry": {
+   "file": "art_src/incoming/001/grass_dry.png",
+   "size": 64,
+   "ramps": [
+    "grass_dry",
+    "grass"
+   ]
+  },
+  "dirt": {
+   "file": "art_src/incoming/001/dirt.png",
+   "size": 64,
+   "ramps": [
+    "dirt",
+    "stone"
+   ]
+  },
+  "moss": {
+   "file": "art_src/incoming/001/moss.png",
+   "size": 64,
+   "ramps": [
+    "moss",
+    "forest_floor"
+   ]
+  },
+  "forest_floor": {
+   "file": "art_src/incoming/001/forest_floor.png",
+   "size": 64,
+   "ramps": [
+    "forest_floor",
+    "leaf_ochre",
+    "moss"
+   ],
+   "centre": 0.4,
+   "spread": 0.25
+  },
+  "sand": {
+   "file": "art_src/incoming/001/sand.png",
+   "size": 64,
+   "ramps": [
+    "sand"
+   ]
+  },
+  "water": {
+   "file": "art_src/incoming/001/water.png",
+   "size": 64,
+   "ramps": [
+    "water"
+   ],
+   "spread": 0.22
+  },
+  "wood_floor": {
+   "file": "art_src/incoming/001/wood_floor.png",
+   "size": 64,
+   "ramps": [
+    "plank"
+   ]
+  },
+  "wood_wall_face": {
+   "file": "art_src/incoming/001/wood_wall_face.png",
+   "size": 48,
+   "ramps": [
+    "log"
+   ]
+  },
+  "wood_wall_top": {
+   "file": "art_src/incoming/001/wood_wall_top.png",
+   "size": 48,
+   "ramps": [
+    "log",
+    "plank"
+   ]
+  },
+  "stone_wall_face": {
+   "file": "art_src/incoming/001/stone_wall_face.png",
+   "size": 48,
+   "ramps": [
+    "stone",
+    "moss"
+   ]
+  },
+  "stone_wall_top": {
+   "file": "art_src/incoming/001/stone_wall_top.png",
+   "size": 48,
+   "ramps": [
+    "stone",
+    "moss"
+   ]
+  },
+  "roof_red": {
+   "file": "art_src/incoming/001/roof_red.png",
+   "size": 48,
+   "ramps": [
+    "roof_tile"
+   ]
+  },
+  "roof_thatch": {
+   "file": "art_src/incoming/001/roof_thatch.png",
+   "size": 48,
+   "ramps": [
+    "thatch"
+   ]
+  }
+ }
+}

@@ -60,11 +60,13 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 			sources[path] = [ts.add_source(src), src]
 		var src: TileSetAtlasSource = sources[path][1]
 		var first := Vector2i(v["rect"][0] / CELL, v["rect"][1] / CELL)
-		for i in int(v["variants"]):
-			var at := first + Vector2i(i, 0)
-			if not src.has_tile(at):
-				src.create_tile(at)
-		_tiles[target] = [sources[path][0], first, int(v["variants"])]
+		var grid: Vector2i = v.get("grid_size", Vector2i(int(v["variants"]), 1))
+		for j in grid.y:
+			for i in grid.x:
+				var at := first + Vector2i(i, j)
+				if not src.has_tile(at):
+					src.create_tile(at)
+		_tiles[target] = [sources[path][0], first, int(v["variants"]), v.has("grid_size"), grid]
 	var miss := Image.create(CELL, CELL, false, Image.FORMAT_RGBA8)
 	for y in CELL:
 		for x in CELL:
@@ -216,7 +218,8 @@ func _set_cover(cell: Vector2i, id: String) -> void:
 	else:
 		s.texture = texture(v["atlas_path"])
 		s.region_enabled = true
-		s.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+		var piece := _grid_piece(cell, v["grid_size"]) * CELL if v.has("grid_size") else Vector2i.ZERO
+		s.region_rect = Rect2(v["rect"][0] + piece.x, v["rect"][1] + piece.y, v["rect"][2], v["rect"][3])
 	s.position = Vector2(cell.x * CELL, cell.y * CELL - COVER_LIFT)
 	s.visible = not _hidden_room.has(cell)
 	_covers.add_child(s)
@@ -260,8 +263,16 @@ func _set_flat(layer: TileMapLayer, cell: Vector2i, id: String) -> void:
 	if t.is_empty():
 		layer.set_cell(cell, _missing_source, Vector2i.ZERO)
 		return
+	if t[3]:
+		# A seamless texture over a grid of tiles: each cell takes its piece.
+		layer.set_cell(cell, t[0], t[1] + _grid_piece(cell, t[4]))
+		return
 	var variant := (cell.x * 73856093 ^ cell.y * 19349663) & 0x7fffffff
 	layer.set_cell(cell, t[0], t[1] + Vector2i(variant % t[2], 0))
+
+
+func _grid_piece(cell: Vector2i, grid: Vector2i) -> Vector2i:
+	return Vector2i(posmod(cell.x, grid.x), posmod(cell.y, grid.y))
 
 
 func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0) -> Sprite2D:

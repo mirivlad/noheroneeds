@@ -14,7 +14,8 @@ class_name Protocol
 ## 3: snapshots key entities by short per-connection numbers; the full id
 ##    comes once, as "uid", when an entity enters the client's view.
 ## 4: LOCATION tells the client it is now in another location (stairs...).
-const VERSION := 4
+## 5: an input is [seq, dx, dy, run]: run 1 moves 1.5 times as fast.
+const VERSION := 5
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -89,8 +90,9 @@ static func decode(data: PackedByteArray, from_client: bool) -> Dictionary:
 static func clean_inputs(raw: Array) -> Array:
 	var out: Array = []
 	for e: Variant in raw.slice(-INPUT_REDUNDANCY):
-		if typeof(e) == TYPE_ARRAY and (e as Array).size() == 3 and typeof(e[0]) == TYPE_INT \
-				and typeof(e[1]) == TYPE_INT and typeof(e[2]) == TYPE_INT and absi(e[1]) <= 1 and absi(e[2]) <= 1:
+		if typeof(e) == TYPE_ARRAY and (e as Array).size() == 4 and typeof(e[0]) == TYPE_INT \
+				and typeof(e[1]) == TYPE_INT and typeof(e[2]) == TYPE_INT and absi(e[1]) <= 1 and absi(e[2]) <= 1 \
+				and typeof(e[3]) == TYPE_INT and (e[3] == 0 or e[3] == 1):
 			out.append(e)
 	return out
 

@@ -83,6 +83,10 @@ func test_prediction_matches_the_server() -> void:
 	_run(40, [a])
 	a.move = Vector2i(-1, 0)
 	_run(25, [a])
+	a.run = true  # running is predicted exactly too
+	a.move = Vector2i(0, -1)
+	_run(25, [a])
+	a.run = false
 	a.move = Vector2i.ZERO
 	_run(15, [a])
 	eq(a.position, _server_pos(a), "same place")

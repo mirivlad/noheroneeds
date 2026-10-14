@@ -27,6 +27,8 @@ var position := Vector2i.ZERO
 var has_position := false
 ## Movement intention for the next ticks, each axis -1..1.
 var move := Vector2i.ZERO
+## Running (held key), 1.5 times as fast.
+var run := false
 ## Other entities as of the newest snapshot: id -> state.
 var entities := {}
 ## chunk key -> Chunk
@@ -70,9 +72,9 @@ func step() -> void:
 				_on_message(Protocol.decode(e.data, false))
 	if state == "playing" and has_position:
 		_input_seq += 1
-		_unacked_inputs.append([_input_seq, move.x, move.y])
+		_unacked_inputs.append([_input_seq, move.x, move.y, 1 if run else 0])
 		previous_position = position
-		position = Movement.step(position, move.x, move.y, _solid)
+		position = Movement.step(position, move.x, move.y, _solid, run)
 		_send(Transport.Channel.STATE, Protocol.INPUT, {"inputs": _unacked_inputs.slice(-Protocol.INPUT_REDUNDANCY),
 			"ack": _latest_snapshot})
 
@@ -187,7 +189,7 @@ func _reconcile(server_pos: Vector2i, ack: int) -> void:
 		_unacked_inputs.pop_front()
 	var replay := server_pos
 	for e: Array in _unacked_inputs:
-		replay = Movement.step(replay, e[1], e[2], _solid)
+		replay = Movement.step(replay, e[1], e[2], _solid, e[3] == 1)
 	if has_position and replay != position:
 		corrections += 1
 	if not has_position:

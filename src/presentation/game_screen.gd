@@ -13,7 +13,7 @@ extends Node2D
 ## (--demo=outside puts the player at the porch, --demo=upstairs goes up the
 ## stairs; the player starts inside); --screenshot=PATH --frames=N.
 ##
-## Controls (temporary): WASD/arrows walk; 1-3 choose a part; left click
+## Controls (temporary): WASD/arrows walk, with Ctrl run; 1-3 choose a part; left click
 ## builds, right click takes down; E picks up what lies near or opens and
 ## closes a door next to you; G drops one of the chosen material (Tab);
 ## F goes up the stairs you stand on (or down, if there is no way up),
@@ -149,6 +149,7 @@ func _process(delta: float) -> void:
 	if client == null:
 		return
 	client.move = _direction() if not paused else Vector2i.ZERO
+	client.run = not paused and (_opts.has("run") or Input.is_physical_key_pressed(KEY_CTRL))
 	# A single-player world stands still while the menu is open; a server
 	# others play on cannot.
 	_accum += 0.0 if paused and game else delta
@@ -394,7 +395,7 @@ func _update_hud() -> void:
 	if settings.get_value("show_fps"):
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
-		info.append("ЛКМ — строить, ПКМ — разобрать, E — взять, F — лестница, Esc — меню")
+		info.append("Ctrl — бег, ЛКМ/ПКМ — строить/разобрать, E — взять, F — лестница, Esc — меню")
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:

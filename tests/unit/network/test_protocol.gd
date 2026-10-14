@@ -14,9 +14,25 @@ func test_round_trip_and_type_checks() -> void:
 
 
 func test_inputs_are_cleaned() -> void:
-	var raw: Array = [[1, 0, 1], [2, 5, 0], ["x", 0, 0], [3, -1, -1], [4, 1], [5, 1, 0], [6, 0, 0]]
-	# The last INPUT_REDUNDANCY entries are [3..6]; [4, 1] is malformed.
-	eq(Protocol.clean_inputs(raw), [[3, -1, -1], [5, 1, 0], [6, 0, 0]], "only the last few, only valid ones")
+	var raw: Array = [[1, 0, 1, 0], [2, 5, 0, 0], ["x", 0, 0, 0], [3, -1, -1, 1], [4, 1], [5, 1, 0, 2], [6, 0, 0, 0]]
+	# The last INPUT_REDUNDANCY entries are [3..6]; [4, 1] is malformed, run 2 is not a flag.
+	eq(Protocol.clean_inputs(raw), [[3, -1, -1, 1], [6, 0, 0, 0]], "only the last few, only valid ones")
+
+
+## Running: 1.5 times as far a tick, the same on both sides, never through walls.
+func test_running_is_faster_and_still_stops_at_walls() -> void:
+	var open := func(_x: int, _y: int) -> bool: return false
+	var walk := Movement.step(Vector2i(128, 128), 1, 0, open)
+	var run := Movement.step(Vector2i(128, 128), 1, 0, open, true)
+	eq(walk.x - 128, Movement.WALK)
+	eq(run.x - 128, Movement.RUN)
+	check(absf(float(Movement.RUN) / Movement.WALK - 1.5) < 0.02, "1.5 times")
+	check(absf(float(Movement.RUN_DIAGONAL) / Movement.DIAGONAL - 1.5) < 0.02, "diagonals too")
+	var wall := func(x: int, _y: int) -> bool: return x == 1
+	var p := Vector2i(128, 128)
+	for i in 10:
+		p = Movement.step(p, 1, 0, wall, true)
+	eq(p.x, Movement.UNIT - Movement.HALF_X, "stopped at the wall's face")
 
 
 func test_memory_network_keeps_reliable_order_under_bad_conditions() -> void:

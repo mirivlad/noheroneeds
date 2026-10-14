@@ -1,0 +1,346 @@
+class_name Combat
+extends RefCounted
+## Fighting on the server (ADR-0019): health, blows and arrows, death.
+##   health  — characters (their body plan's "health") and creatures (their
+##             definition's); kept with them; comes back slowly once nobody
+##             has hurt them for a while;
+##   blows   — a weapon's data ("weapon": melee) or the body plan's
+##             "unarmed", a creature's "attack": what is within reach, in the
+##             arc toward where one aims, seen (Sight), the nearest is hit;
+##   arrows  — a ranged weapon shoots its ammo as a projectile flying over the
+##             plan: walls and what stands high enough stop it, the first one
+##             it meets is hit; a missed arrow lies where it fell;
+##   death   — a creature leaves its "drops"; a character, by the world's
+##             rule, leaves what it carried where it fell (or keeps it) and
+##             comes back at the spawn point.
+## Characters are hit only where the server allows it (pvp, ADR-0016).
+
+## Health comes back by one every REGEN_EVERY ticks, REGEN_AFTER ticks after
+## the last hurt.
+const REGEN_EVERY := 20
+const REGEN_AFTER := 200
+## How near an arrow passes to hit (units), and how far it moves per check.
+const HIT_RADIUS := 110
+const PROJECTILE_STEP := 96
+## A body is about this far round its position (units): blows reach it.
+const BODY := 80
+
+var world: ServerWorld
+## id -> Projectile
+var projectiles := {}
+## World rules (ADR-0016, ADR-0019): "off" or "free" (mutual: later);
+## whether a character drops what it carried when it dies.
+var pvp := "off"
+var death_drops := true
+## Creatures whose health changed since the last take_health_changes().
+var _health_changed := {}
+var _hurt_at := {}
+var _ready_at := {}
+var _tick := 0
+
+
+class Projectile:
+	var id := ""
+	var location := ""
+	var pos := Vector2.ZERO
+	var vel := Vector2.ZERO
+	var left := 0.0
+	var owner := ""
+	var damage := 0
+	var ammo := ""
+	var start := Vector2i.ZERO
+	var aim := Vector2i.ZERO
+
+
+func _init(w: ServerWorld) -> void:
+	world = w
+
+
+# --- health ----------------------------------------------------------------------
+
+func max_health_of(id: String) -> int:
+	if world.present.has(id):
+		return int(world.content.get_def(_body_plan(world.present[id])).get("health", 20))
+	var c := world.creatures.get_creature(id)
+	return int(world.content.get_def(c.kind).get("health", 5)) if c else 0
+
+
+func _body_plan(p: Dictionary) -> String:
+	return String((p["appearance"] as Dictionary).get("body_plan", "base:humanoid_adult"))
+
+
+func health_of(id: String) -> int:
+	if world.present.has(id):
+		return int(world.present[id].get("health", max_health_of(id)))
+	var c := world.creatures.get_creature(id)
+	return c.health if c else 0
+
+
+func _set_health(id: String, value: int) -> void:
+	if world.present.has(id):
+		world.present[id]["health"] = value
+		world.note_character(id)
+	else:
+		var c := world.creatures.get_creature(id)
+		if c:
+			c.health = value
+			c.changed()
+			_health_changed[id] = true
+
+
+## Takes `amount` of health from `target` (a character or a creature) for
+## `attacker`; it remembers who did it; at nothing it dies.
+func hurt(target: String, amount: int, attacker: String) -> void:
+	var left := health_of(target) - amount
+	_hurt_at[target] = _tick
+	var c := world.creatures.get_creature(target)
+	if c:
+		var who := attacker
+		var at := _position(attacker)
+		if at != NO_POS:
+			c.memory[who] = {"pos": Movement.cell_of(at), "time": world.world_time, "what": "attacker"}
+		world.creatures.alarm(c)
+	if left > 0:
+		_set_health(target, left)
+	elif world.present.has(target):
+		_character_dies(target)
+	elif c:
+		_creature_dies(c)
+
+
+## {creature id: true} whose health changed (for the replicas), since last time.
+func take_health_changes() -> Dictionary:
+	var out := _health_changed
+	_health_changed = {}
+	return out
+
+
+func step(tick: int) -> void:
+	_tick = tick
+	_fly()
+	if tick % REGEN_EVERY != 0:
+		return
+	for id: String in _hurt_at.keys():
+		if tick - int(_hurt_at[id]) < REGEN_AFTER:
+			continue
+		if not world.present.has(id) and not world.creatures.has(id):
+			_hurt_at.erase(id)
+			continue
+		var h := health_of(id) + 1
+		_set_health(id, mini(h, max_health_of(id)))
+		if h >= max_health_of(id):
+			_hurt_at.erase(id)
+
+
+func _character_dies(id: String) -> void:
+	var p: Dictionary = world.present[id]
+	if death_drops:
+		var inv := world.inventory(id)
+		for item: String in inv.stacks.keys():
+			world.place_item(String(p["location"]), p["pos"], item, int(inv.stacks[item]))
+			inv.remove(item, int(inv.stacks[item]))
+		world.touch_inventory(id)
+	p["location"] = world.spawn_location
+	p["pos"] = world.spawn_position
+	p["health"] = max_health_of(id)
+	p["deaths"] = int(p.get("deaths", 0)) + 1
+	_hurt_at.erase(id)
+	world.relocated[id] = true
+	world.note_character(id)
+
+
+func _creature_dies(c: Creature) -> void:
+	var drops: Dictionary = world.content.get_def(c.kind).get("drops", {})
+	for item: String in drops:
+		world.place_item(c.location, c.pos, item, int(drops[item]))
+	_hurt_at.erase(c.id)
+	world.creatures.remove(c.id)
+
+
+# --- blows -------------------------------------------------------------------------
+
+const NO_POS := Vector2i(1 << 30, 1 << 30)
+
+
+## A player's attack request: {"item": weapon id or "" (bare hands), "x",
+## "y": where it aims (movement units)}. A ranged weapon shoots its ammo.
+func attack(actor: String, r: Dictionary) -> Dictionary:
+	if not world.present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var p: Dictionary = world.present[actor]
+	var item := String(r.get("item", ""))
+	var w: Dictionary
+	if item == "":
+		w = world.content.get_def(_body_plan(p)).get("unarmed", {})
+	else:
+		if world.inventory(actor).count(item) <= 0:
+			return {"ok": false, "reason": "not_carried"}
+		w = world.content.get_def(item).get("weapon", {})
+	if w.is_empty():
+		return {"ok": false, "reason": "not_a_weapon"}
+	if _tick < int(_ready_at.get(actor, 0)):
+		return {"ok": false, "reason": "not_ready"}
+	_ready_at[actor] = _tick + _ticks(float(w["cooldown_ms"]))
+	var aim := Vector2i(int(r.get("x", 0)), int(r.get("y", 0)))
+	if w["kind"] == "ranged":
+		return _shoot(actor, p, w, aim)
+	var hit := _blow(actor, String(p["location"]), p["pos"], aim, w)
+	world.creatures.noise(String(p["location"]), Movement.cell_of(p["pos"]))
+	return {"ok": true, "hit": hit}
+
+
+## A creature strikes `target` if it is within its reach and seen: true if hit.
+func creature_attack(c: Creature, target: String) -> bool:
+	var w: Dictionary = world.content.get_def(c.kind).get("attack", {})
+	if w.is_empty() or _tick < int(_ready_at.get(c.id, 0)):
+		return false
+	var at := _position(target)
+	if at == NO_POS or _location(target) != c.location:
+		return false
+	_ready_at[c.id] = _tick + _ticks(float(w["cooldown_ms"]))
+	return _blow(c.id, c.location, c.pos, at, w) == target
+
+
+## The nearest one within reach and arc toward `aim`, seen from `from`: hurt.
+func _blow(attacker: String, location: String, from: Vector2i, aim: Vector2i, w: Dictionary) -> String:
+	var dir := Vector2(aim - from)
+	if dir == Vector2.ZERO:
+		return ""
+	dir = dir.normalized()
+	var reach := float(w["reach"]) * Movement.UNIT + BODY
+	var cos_arc := cos(deg_to_rad(float(w["arc"]) / 2.0))
+	var best := ""
+	var best_d := INF
+	for id: String in _targets_near(attacker, location, from, reach):
+		var v := Vector2(_position(id) - from)
+		var d := v.length()
+		if d > reach or d >= best_d:
+			continue
+		if d > BODY and v.dot(dir) / d < cos_arc:
+			continue
+		if not Sight.clear(world, location, Movement.cell_of(from), location, Movement.cell_of(_position(id))):
+			continue
+		best = id
+		best_d = d
+	if best != "":
+		hurt(best, int(w["damage"]), attacker)
+	return best
+
+
+## Who may be hit near `at`: creatures, and characters where the rules allow.
+func _targets_near(attacker: String, location: String, at: Vector2i, radius: float) -> Array:
+	var out := []
+	var attacker_is_creature := world.creatures.has(attacker)
+	for id: String in world.present:
+		if id == attacker or world.present[id]["location"] != location:
+			continue
+		if not attacker_is_creature and pvp != "free":
+			continue  # PvE (ADR-0016): characters are not hit by characters
+		if Vector2(world.present[id]["pos"] - at).length() <= radius:
+			out.append(id)
+	var cell := Movement.cell_of(at)
+	var r := ceili(radius / Movement.UNIT) + 1
+	for cy in range((cell.y - r) >> 5, ((cell.y + r) >> 5) + 1):
+		for cx in range((cell.x - r) >> 5, ((cell.x + r) >> 5) + 1):
+			for id: String in world.creatures.in_chunk(location, cx, cy):
+				if id != attacker and Vector2(world.creatures.get_creature(id).pos - at).length() <= radius:
+					out.append(id)
+	return out
+
+
+func _position(id: String) -> Vector2i:
+	if world.present.has(id):
+		return world.present[id]["pos"]
+	var c := world.creatures.get_creature(id)
+	return c.pos if c else NO_POS
+
+
+func _location(id: String) -> String:
+	if world.present.has(id):
+		return String(world.present[id]["location"])
+	var c := world.creatures.get_creature(id)
+	return c.location if c else ""
+
+
+func _ticks(ms: float) -> int:
+	return maxi(1, ceili(ms / (1000.0 / Movement.TICK_RATE)))
+
+
+# --- arrows ------------------------------------------------------------------------
+
+func _shoot(actor: String, p: Dictionary, w: Dictionary, aim: Vector2i) -> Dictionary:
+	var ammo := String(w["ammo"])
+	if world.inventory(actor).count(ammo) <= 0:
+		return {"ok": false, "reason": "no_ammo"}
+	var from: Vector2i = p["pos"]
+	var dir := Vector2(aim - from)
+	if dir == Vector2.ZERO:
+		return {"ok": false, "reason": "bad_request"}
+	world.inventory(actor).remove(ammo, 1)
+	world.touch_inventory(actor)
+	var pr := Projectile.new()
+	pr.id = Uuid.v4()
+	pr.location = String(p["location"])
+	pr.pos = Vector2(from)
+	pr.vel = dir.normalized() * float(w["speed"]) * Movement.UNIT / Movement.TICK_RATE
+	pr.left = float(w["range"]) * Movement.UNIT
+	pr.owner = actor
+	pr.damage = int(w["damage"])
+	pr.ammo = ammo
+	pr.start = Movement.cell_of(from)
+	pr.aim = Movement.cell_of(Vector2i(Vector2(from) + dir.normalized() * pr.left))
+	projectiles[pr.id] = pr
+	world.creatures.noise(pr.location, pr.start)
+	return {"ok": true, "projectile": pr.id}
+
+
+## Arrows fly a tick further in small steps: the first one they pass near is
+## hit; what stands in their way (at the height they fly, Sight's spans)
+## stops them, and they fall there.
+func _fly() -> void:
+	for id: String in projectiles.keys():
+		var pr: Projectile = projectiles[id]
+		var dist := pr.vel.length()
+		var steps := maxi(1, ceili(dist / PROJECTILE_STEP))
+		var done := false
+		var last_free := pr.pos
+		for i in steps:
+			var next := pr.pos + pr.vel / steps
+			var cell := Movement.cell_of(Vector2i(next))
+			if cell != pr.start and _stops(pr, cell):
+				_fall(pr, last_free)
+				done = true
+				break
+			pr.pos = next
+			last_free = next
+			pr.left -= dist / steps
+			var target := _hit_near(pr)
+			if target != "":
+				hurt(target, pr.damage, pr.owner)
+				projectiles.erase(id)
+				done = true
+				break
+			if pr.left <= 0.0:
+				_fall(pr, pr.pos)
+				done = true
+				break
+		if done:
+			continue
+
+
+func _stops(pr: Projectile, cell: Vector2i) -> bool:
+	if not Sight.same_space(world, pr.location, Levels.SURFACE):
+		return world.is_solid(pr.location, cell.x, cell.y)
+	var h := world.levels.z(pr.location) + Sight.EYE
+	return Sight._blocked(world, cell, h, h, pr.location, pr.start, pr.location, pr.aim)
+
+
+func _hit_near(pr: Projectile) -> String:
+	for id: String in _targets_near(pr.owner, pr.location, Vector2i(pr.pos), HIT_RADIUS):
+		return id
+	return ""
+
+
+func _fall(pr: Projectile, at: Vector2) -> void:
+	world.place_item(pr.location, Vector2i(at), pr.ammo, 1)
+	projectiles.erase(pr.id)

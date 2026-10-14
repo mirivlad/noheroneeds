@@ -134,6 +134,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		return null
 	var world := ServerWorld.new(s, registry, w)
 	world.creatures = CreatureSim.new(world)
+	world.combat = Combat.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	var saved_time := s.read_meta("time")
 	if saved_time.is_valid_int():
@@ -165,6 +166,7 @@ func close() -> void:
 	writer.stop()
 	store.close()
 	creatures.detach()  # they hold each other: let both go
+	combat.world = null
 
 
 ## Stops without committing what is not yet handed to the writer (tests of crashes).
@@ -176,6 +178,7 @@ func abandon() -> void:
 	writer.stop()
 	store.close()
 	creatures.detach()
+	combat.world = null
 
 
 static func chunk_key(location: String, cx: int, cy: int) -> String:
@@ -368,6 +371,8 @@ func enter(owner: String, c: PortableCharacter) -> String:
 		_dirty_characters[id] = true
 	present[id] = {"location": String(place["location"]), "pos": Vector2i(int(place["x"]), int(place["y"])),
 		"name": data["name"], "appearance": shown_look(data)}
+	present[id]["health"] = int(place.get("health", combat.max_health_of(id)))
+	present[id]["deaths"] = int(place.get("deaths", 0))
 	_dirty_world_characters[id] = true
 	return ""
 
@@ -382,10 +387,36 @@ static func shown_look(data: Dictionary) -> Dictionary:
 func leave(id: String) -> void:
 	if present.has(id):
 		var p: Dictionary = present[id]
-		_left_places[id] = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y}
+		_left_places[id] = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
+			"health": p.get("health", 0), "deaths": p.get("deaths", 0)}
 		_dirty_world_characters[id] = true
 		flush_state()  # its last position goes out with this batch
 		present.erase(id)
+
+
+## A present character's world state changed (health...): saved soon.
+func note_character(id: String) -> void:
+	_dirty_world_characters[id] = true
+
+
+## Puts `n` of `item` on the ground at `pos` (movement units): what a
+## creature leaves, what a character drops when it dies, a fallen arrow.
+func place_item(location: String, pos: Vector2i, item: String, n: int) -> String:
+	var id := Uuid.v4()
+	_place_item(id, {"location": location, "x": pos.x, "y": pos.y, "item": item, "count": n})
+	_dirty_items[id] = true
+	return id
+
+
+## An entity leaves the world for good (a creature that died).
+func remove_entity(id: String, location: String, cell: Vector2i) -> void:
+	_entities.erase(id)
+	_dirty_entities.erase(id)
+	_removed_items[id] = chunk_key(location, cell.x >> 5, cell.y >> 5)
+
+
+func touch_inventory(owner: String) -> void:
+	_touch_inventory(owner)
 
 
 func move_character(id: String, pos: Vector2i) -> void:
@@ -550,6 +581,8 @@ func advance_time() -> void:
 var _time_dirty := false
 ## Living creatures (ADR-0018).
 var creatures: CreatureSim
+## Health, blows, arrows, death (ADR-0019).
+var combat: Combat
 ## World facts to write with the next state batch (set_meta).
 var _pending_meta := {}
 ## Light sources by chunk, worked out when first asked, forgotten on change.
@@ -677,7 +710,8 @@ func flush_state(limit := -1) -> void:
 	for id: String in _dirty_world_characters.keys():
 		if present.has(id):
 			var p: Dictionary = present[id]
-			b.world_characters.append([id, {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y}])
+			b.world_characters.append([id, {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
+				"health": int(p.get("health", 0)), "deaths": int(p.get("deaths", 0))}])
 		_dirty_world_characters.erase(id)
 	for id: String in _dirty_entities.keys():
 		if limit >= 0 and b.entities.size() >= limit:
@@ -740,6 +774,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _drop(actor, r)
 		"pickup":
 			return _pickup(actor, r)
+		"attack":
+			return combat.attack(actor, r)
 	return {"ok": false, "reason": "unknown_type"}
 
 

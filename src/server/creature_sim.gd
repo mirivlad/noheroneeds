@@ -96,6 +96,8 @@ func _index(c: Creature, old_key := "") -> void:
 
 
 func add(c: Creature) -> void:
+	if c.health < 0:
+		c.health = int(world.content.get_def(c.kind).get("health", 5))
 	creatures[c.id] = c
 	_appeared[c.id] = true
 	_left.erase(c.id)
@@ -236,6 +238,26 @@ func ready_to_unload(key: String) -> bool:
 	return ready
 
 
+## A creature is gone for good (it died): out of memory and of the store.
+func remove(id: String) -> void:
+	var c: Creature = creatures.get(id)
+	if c == null:
+		return
+	(_by_chunk.get(_chunk_of(c), {}) as Dictionary).erase(id)
+	creatures.erase(id)
+	_movers.erase(id)
+	_last_saved.erase(id)
+	_left[id] = true
+	_appeared.erase(id)
+	_moved.erase(id)
+	world.remove_entity(id, c.location, c.cell())
+
+
+## Something happened to it (it was hurt): it thinks at once.
+func alarm(c: Creature) -> void:
+	_schedule(c, _tick + 1)
+
+
 ## The chunk leaves memory: so do its creatures (they are saved).
 func drop_chunk(key: String) -> void:
 	for id: String in (_by_chunk.get(key, {}) as Dictionary):
@@ -331,11 +353,13 @@ func _think(c: Creature, tick: int) -> void:
 			_prey(c, def)
 		"villager":
 			_villager(c, def)
+		"predator":
+			_predator(c, def)
 	if c.target != Creature.NO_TARGET:
 		_movers[c.id] = true
 	else:
 		_movers.erase(c.id)
-	var soon := c.state == "flee" or c.state == "alert"
+	var soon := c.state in ["flee", "alert", "hunt", "attack"]
 	_schedule(c, tick + (maxi(2, int(def["think_ticks"]) / 2) if soon else int(def["think_ticks"])))
 
 
@@ -379,7 +403,11 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 		if absi(at.x - me.x) > sight or absi(at.y - me.y) > sight:
 			continue
 		if Perception.sees(world, c.location, me, def, at, p["location"]):
-			c.memory[pid] = {"pos": at, "time": now, "what": "character"}
+			var was: Dictionary = c.memory.get(pid, {})
+			if was.get("what") == "attacker" and now - int(was["time"]) <= _ms(20.0):
+				was["pos"] = at  # who hurt it: still that, seen where it is now
+			else:
+				c.memory[pid] = {"pos": at, "time": now, "what": "character"}
 	for n: Array in _noises:
 		if n[0] == c.location and Perception.hears(def, me, n[1]):
 			c.memory["noise"] = {"pos": n[1], "time": int(n[2]), "what": "noise"}
@@ -448,6 +476,12 @@ func _prey(c: Creature, def: Dictionary) -> void:
 ## Villagers: go about near home by day, stop to look at someone who comes
 ## close, go home at night.
 func _villager(c: Creature, def: Dictionary) -> void:
+	var attacker := _attacker(c, 12.0)
+	if not attacker.is_empty():
+		var away := _away_from(c, attacker[0], 16.0)
+		if away != Creature.NO_TARGET:
+			_go(c, "flee", away, true)  # hurt: it runs from who did it
+			return
 	if Daylight.is_night(world.world_time):
 		if c.cell() != c.home:
 			_go(c, "go_home", c.home, false)
@@ -465,6 +499,70 @@ func _villager(c: Creature, def: Dictionary) -> void:
 			_go(c, "wander", spot, false)
 			return
 	_go(c, "idle", Creature.NO_TARGET, false)
+
+
+## Predators (a wolf): by night, or by day when one comes into its territory
+## or hurts it, it goes after the nearest character it has seen, running, and
+## strikes when within reach; badly hurt, it runs; it loses one it cannot find
+## where it last saw it. Otherwise it keeps near its den: resting by day,
+## prowling by night.
+func _predator(c: Creature, def: Dictionary) -> void:
+	var night := Daylight.is_night(world.world_time)
+	var max_hp := int(def["health"])
+	var prey := _nearest_character(c, float(def["sight"]))
+	var attacker := _attacker(c, float(def["sight"]))
+	if c.health * 10 < max_hp * 3 and not prey.is_empty():
+		var away := _away_from(c, prey[0], 16.0)
+		if away != Creature.NO_TARGET:
+			_go(c, "flee", away, true)
+			return
+	if not prey.is_empty() and (night or not attacker.is_empty() or float(prey[1]) <= float(def["territory"])):
+		var who: String = prey[2]
+		if world.combat.creature_attack(c, who):
+			_go(c, "attack", Creature.NO_TARGET, false)
+			return
+		var m: Dictionary = c.memory[who]
+		if float(prey[1]) < 1.0 and int(m["time"]) < world.world_time:
+			c.memory.erase(who)  # it was here, and is not: lost
+			_go(c, "alert", Creature.NO_TARGET, false)
+			return
+		_go(c, "hunt", prey[0], true)
+		return
+	if c.target != Creature.NO_TARGET and c.state in ["wander", "prowl"]:
+		return
+	if c.rand(int(world.world_time / 1000) + c.next_think) < (0.5 if night else 0.15):
+		var spot := _spot_near(c, c.home, float(def["home_radius"]), c.next_think)
+		if spot != Creature.NO_TARGET:
+			_go(c, "prowl" if night else "wander", spot, false)
+			return
+	_go(c, "rest" if not night else "idle", Creature.NO_TARGET, false)
+
+
+## The nearest character it remembers (seen or hurt by), within `within`
+## cells: [cell, distance, id] or [].
+func _nearest_character(c: Creature, within: float) -> Array:
+	var me := c.cell()
+	var best := []
+	for k: String in c.memory:
+		var m: Dictionary = c.memory[k]
+		if m["what"] == "noise" or not world.present.has(k):
+			continue
+		var d := Vector2(me).distance_to(Vector2(m["pos"]))
+		if d <= within and (best.is_empty() or d < float(best[1])):
+			best = [m["pos"], d, k]
+	return best
+
+
+## Who hurt it lately (it remembers where): [cell, distance, id] or [].
+func _attacker(c: Creature, within: float) -> Array:
+	var me := c.cell()
+	for k: String in c.memory:
+		var m: Dictionary = c.memory[k]
+		if m["what"] == "attacker" and world.world_time - int(m["time"]) <= _ms(20.0):
+			var d := Vector2(me).distance_to(Vector2(m["pos"]))
+			if d <= within:
+				return [m["pos"], d, k]
+	return []
 
 
 func _go(c: Creature, state: String, target_cell: Vector2i, run: bool) -> void:

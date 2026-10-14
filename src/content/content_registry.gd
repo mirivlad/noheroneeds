@@ -182,6 +182,8 @@ func _validate() -> void:
 		var d: Dictionary = defs[id]
 		match String(d.get("kind", "")):
 			"item":
+				if d.has("weapon"):
+					_check_weapon(id, "weapon", d["weapon"], true)
 				d["stack"] = int(d.get("stack", 1))
 				if d["stack"] < 1:
 					errors.append("%s: stack must be at least 1" % id)
@@ -203,6 +205,9 @@ func _validate() -> void:
 				_check_amounts(id, "inputs", d.get("inputs", {}), true)
 				_check_amounts(id, "outputs", d.get("outputs", {}), true)
 			"body_plan":
+				d["health"] = int(d.get("health", 20))
+				if d.has("unarmed"):
+					_check_weapon(id, "unarmed", d["unarmed"], false)
 				_check_strings(id, "slots", d.get("slots", []))
 				_check_strings(id, "appearance_slots", d.get("appearance_slots", []))
 				_check_strings(id, "colors", d.get("colors", []))
@@ -257,7 +262,7 @@ func _validate() -> void:
 
 ## A living creature (ADR-0018): how it behaves is data, the code knows
 ## only the behaviours by name.
-const BEHAVIORS := ["prey", "villager"]
+const BEHAVIORS := ["prey", "villager", "predator"]
 
 
 func _check_creature(id: String, d: Dictionary) -> void:
@@ -268,6 +273,16 @@ func _check_creature(id: String, d: Dictionary) -> void:
 		if d[f] < 0.0:
 			errors.append("%s: %s must not be negative" % [id, f])
 	d["think_ticks"] = maxi(1, int(d.get("think_ticks", 10)))
+	d["health"] = int(d.get("health", 5))
+	d["territory"] = float(d.get("territory", 0.0))
+	if d["health"] < 1:
+		errors.append("%s: health must be at least 1" % id)
+	if d.has("attack"):
+		_check_weapon(id, "attack", d["attack"], false)
+	elif String(d.get("behavior", "")) == "predator":
+		errors.append("%s: a predator needs an attack" % id)
+	if d.has("drops"):
+		_check_amounts(id, "drops", d["drops"], false)
 	if d["speed"] <= 0.0 or d["run_speed"] < d["speed"] or d["run_speed"] * Movement.WALK >= Movement.UNIT:
 		errors.append("%s: speeds must be positive, running not slower, a step shorter than a cell" % id)
 	if d["dark_sight"] > 1.0:
@@ -292,6 +307,38 @@ func _check_light(id: String, d: Dictionary) -> void:
 
 
 static var _color := RegEx.create_from_string("^#[0-9a-fA-F]{6}$")
+
+
+## A way to hurt (ADR-0019): {"kind": "melee", "damage", "reach" cells,
+## "arc" degrees, "cooldown_ms"} or, where ranged is allowed, {"kind":
+## "ranged", "damage", "range" cells, "speed" cells a second, "ammo" item,
+## "cooldown_ms"}.
+func _check_weapon(id: String, field: String, w: Variant, ranged_ok: bool) -> void:
+	if typeof(w) != TYPE_DICTIONARY:
+		errors.append("%s: %s must be a weapon {kind, damage...}" % [id, field])
+		return
+	w["kind"] = String(w.get("kind", "melee"))
+	w["damage"] = int(w.get("damage", 0))
+	w["cooldown_ms"] = float(w.get("cooldown_ms", 800))
+	if w["damage"] < 1 or w["cooldown_ms"] < 50.0:
+		errors.append("%s: %s needs damage of at least 1 and a cooldown of at least 50 ms" % [id, field])
+	match String(w["kind"]):
+		"melee":
+			w["reach"] = float(w.get("reach", 1.0))
+			w["arc"] = float(w.get("arc", 90))
+			if w["reach"] <= 0.0 or w["reach"] > 4.0 or w["arc"] <= 0.0 or w["arc"] > 360.0:
+				errors.append("%s: %s needs a reach of up to 4 cells and an arc of up to 360 degrees" % [id, field])
+		"ranged":
+			if not ranged_ok:
+				errors.append("%s: %s cannot be ranged" % [id, field])
+			w["range"] = float(w.get("range", 0))
+			w["speed"] = float(w.get("speed", 0))
+			if w["range"] <= 0.0 or w["range"] > 64.0 or w["speed"] <= 0.0 or w["speed"] > 60.0:
+				errors.append("%s: %s needs a range of up to 64 cells and a speed of up to 60 cells a second" % [id, field])
+			if kind_of(String(w.get("ammo", ""))) != "item":
+				errors.append("%s: %s shoots '%s', which is not an item" % [id, field, w.get("ammo", "")])
+		_:
+			errors.append("%s: %s kind must be melee or ranged" % [id, field])
 
 
 ## How tall it stands, in levels (ADR-0015: sight is checked on the plan with

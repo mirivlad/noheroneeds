@@ -15,6 +15,10 @@ const RULES := {
 	"starter_outfit": true,
 	## How long a game day lasts, real minutes (ADR-0014).
 	"day_minutes": 24,
+	## Characters hurting characters (ADR-0016): "off" or "free".
+	"pvp": "off",
+	## A character that dies leaves what it carried where it fell (ADR-0019).
+	"death_drops": true,
 }
 ## What "starter kit" and "starter outfit" give (world rules of the base game).
 const STARTER_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20}
@@ -117,6 +121,8 @@ static func apply_rules(info: Dictionary, world: ServerWorld) -> void:
 	world.starter_kit = STARTER_KIT.duplicate() if info.get("starter_kit", true) else {}
 	world.starter_outfit = STARTER_OUTFIT.duplicate() if info.get("starter_outfit", true) else {}
 	world.set_day_minutes(float(info.get("day_minutes", RULES["day_minutes"])))
+	world.combat.pvp = "free" if String(info.get("pvp", RULES["pvp"])) == "free" else "off"
+	world.combat.death_drops = bool(info.get("death_drops", RULES["death_drops"]))
 
 
 func _write(id: String, info: Dictionary) -> void:

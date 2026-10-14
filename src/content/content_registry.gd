@@ -283,6 +283,19 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	# A style is one ("mode": "layer"); a wearable item has one as "worn".
 	if d.get("mode") == "layer" and String(d.get("layer", "")) == "":
 		errors.append("%s: a layer needs the slot it is drawn in ('layer')" % id)
+	# Ground lapping over lower grounds: its edge shapes and its priority.
+	var edges: Variant = d.get("edges")
+	if edges != null:
+		if typeof(edges) != TYPE_DICTIONARY or typeof(edges.get("masks")) != TYPE_ARRAY \
+				or typeof(edges.get("rect")) != TYPE_ARRAY or not edges.has("priority"):
+			errors.append("%s: edges need atlas, rect, masks and priority" % id)
+		else:
+			edges["rect"] = (edges["rect"] as Array).map(func(n: Variant) -> int: return int(n))
+			edges["masks"] = (edges["masks"] as Array).map(func(n: Variant) -> int: return int(n))
+			edges["priority"] = int(edges["priority"])
+			edges["atlas_path"] = dir.path_join(String(edges.get("atlas", ""))) if dir != "" else ""
+			if dir != "" and not FileAccess.file_exists(edges["atlas_path"]) and not ResourceLoader.exists(edges["atlas_path"]):
+				errors.append("%s: atlas %s not found" % [id, edges["atlas_path"]])
 	var worn: Variant = d.get("worn")
 	if worn != null:
 		if typeof(worn) != TYPE_DICTIONARY or String(worn.get("atlas", "")) == "" or String(worn.get("layer", "")) == "":

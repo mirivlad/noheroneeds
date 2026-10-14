@@ -399,6 +399,97 @@ def production_materials(visuals):
                   "grid": [tex.width // T, tex.height // T]})
         y += tex.height
     atlas.save(OUT / "art" / "ground.png")
+    ground_edges(by_id)
+
+
+# Ground over ground (ART_STANDARD 5): a ground of higher priority laps over
+# its lower neighbour with a ragged edge. Building floors take no part.
+EDGE_PRIORITY = {"base:water": 0, "base:sand": 1, "base:dirt": 2, "base:forest_floor": 3,
+                 "base:moss": 4, "base:grass_dry": 5, "base:grass": 6}
+# Neighbour bits: sides N E S W, then corners NE SE SW NW.
+_N, _E, _S, _W, _NE, _SE, _SW, _NW = 1, 2, 4, 8, 16, 32, 64, 128
+
+
+def edge_masks():
+    """The 47 distinct edge shapes: a corner counts only when neither side
+    next to it is there (a side's band already covers its corners)."""
+    out = []
+    for m in range(256):
+        c = m
+        if m & (_N | _E):
+            c &= ~_NE
+        if m & (_S | _E):
+            c &= ~_SE
+        if m & (_S | _W):
+            c &= ~_SW
+        if m & (_N | _W):
+            c &= ~_NW
+        if c == m and m:
+            out.append(m)
+    return out
+
+
+def _wave(t, seed):
+    """Smooth noise along an edge, periodic over a cell, so bands of
+    neighbouring cells meet."""
+    return sum(math.sin(2 * math.pi * (k * t / T) + seed * (k + 1.7)) / k for k in (1, 2, 3)) / 1.8
+
+
+def edge_shape(m):
+    """Which pixels of a cell a neighbour's ground covers, for mask m."""
+    cov = [[False] * T for _ in range(T)]
+    for y in range(T):
+        for x in range(T):
+            band = lambda t, seed: 4.6 + 2.0 * _wave(t, seed)
+            if m & _N and y < band(x, 1):
+                cov[y][x] = True
+            if m & _S and T - 1 - y < band(x, 2):
+                cov[y][x] = True
+            if m & _W and x < band(y, 3):
+                cov[y][x] = True
+            if m & _E and T - 1 - x < band(y, 4):
+                cov[y][x] = True
+            for bit, cx, cy, seed in ((_NE, T, 0, 5), (_SE, T, T, 6), (_SW, 0, T, 7), (_NW, 0, 0, 8)):
+                if m & bit:
+                    d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+                    if d < 5.6 + 1.4 * _wave(math.atan2(y - cy, x - cx) * 8, seed):
+                        cov[y][x] = True
+    return cov
+
+
+def ground_edges(by_id):
+    """art/ground_edges.png: for each ground, a block of its texture pieces
+    (rows: piece py * gx + px) cut to every edge shape (columns), with a lip
+    one step darker where it ends."""
+    masks = edge_masks()
+    shapes = [edge_shape(m) for m in masks]
+    grounds = [(i, by_id[i]) for i in EDGE_PRIORITY if i in by_id and "grid" in by_id[i]]
+    pieces = [v["grid"][0] * v["grid"][1] for _, v in grounds]
+    img = Image.new("RGBA", (len(masks) * T, sum(pieces) * T), (0, 0, 0, 0))
+    ground = Image.open(OUT / "art" / "ground.png").convert("RGBA")
+    y0 = 0
+    for (for_id, v), n in zip(grounds, pieces):
+        gx = v["grid"][0]
+        for k in range(n):
+            px, py = k % gx, k // gx
+            piece = ground.crop((v["rect"][0] + px * T, v["rect"][1] + py * T, v["rect"][0] + (px + 1) * T,
+                                 v["rect"][1] + (py + 1) * T)).load()
+            for col, cov in enumerate(shapes):
+                for y in range(T):
+                    for x in range(T):
+                        if not cov[y][x]:
+                            continue
+                        c = piece[x, y]
+                        inner = all(0 <= x + dx < T and 0 <= y + dy < T and cov[y + dy][x + dx]
+                                    or not (0 <= x + dx < T and 0 <= y + dy < T)
+                                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+                        if not inner:
+                            c = tuple(int(ch * 0.82) for ch in c[:3]) + (255,)
+                        img.putpixel((col * T + x, y0 + k * T + y), c)
+        v["edges"] = {"atlas": "art/ground_edges.png", "rect": [0, y0, T, T], "masks": masks,
+                      "priority": EDGE_PRIORITY[for_id]}
+        y0 += n * T
+    img.save(OUT / "art" / "ground_edges.png")
 
 
 def production_people(visuals):

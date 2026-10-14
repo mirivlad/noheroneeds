@@ -37,6 +37,15 @@ var _characters := {}
 var _textures := {}
 ## visual id -> [source id, first atlas cell Vector2i, variants]
 var _tiles := {}
+## Grounds that lap over lower neighbours (ART_STANDARD 5): ground id ->
+## [source id, first atlas cell, grid, {mask: column}, priority, layer].
+var _edges := {}
+## Ground id -> priority, for every ground taking part (also the lowest).
+var _edge_priority := {}
+## Priority -> ground id.
+var _by_rank: Array[String] = []
+## Cell -> bits of the priorities whose edge is drawn on it.
+var _edge_set := {}
 ## Drawn where the content has no picture (a texture pack may lack one): a
 ## loud magenta checker, so a gap is noticed rather than hidden.
 var _missing_source := -1
@@ -76,6 +85,7 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	ms.texture_region_size = Vector2i(CELL, CELL)
 	ms.create_tile(Vector2i.ZERO)
 	_missing_source = ts.add_source(ms)
+	_setup_edges(ts)
 	_ground.tile_set = ts
 	_cover.tile_set = ts
 	_below.tile_set = ts
@@ -87,9 +97,151 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	_covers.z_index = 10
 	add_child(_below)
 	add_child(_ground)
+	var lapping := _edges.keys()
+	lapping.sort_custom(func(a: String, b: String) -> bool: return _edges[a][4] < _edges[b][4])
+	for id: String in lapping:
+		add_child(_edges[id][5])  # higher grounds drawn later, over lower ones
 	add_child(_cover)
 	add_child(_sorted)
 	add_child(_covers)
+
+
+func _setup_edges(ts: TileSet) -> void:
+	var sources := {}
+	for id: String in content.visuals:
+		var e: Dictionary = content.visuals[id].get("edges", {})
+		if e.is_empty():
+			continue
+		_edge_priority[id] = int(e["priority"])
+		var path: String = e["atlas_path"]
+		if not sources.has(path):
+			var src := TileSetAtlasSource.new()
+			src.texture = texture(path)
+			src.texture_region_size = Vector2i(CELL, CELL)
+			sources[path] = [ts.add_source(src), src]
+		var src: TileSetAtlasSource = sources[path][1]
+		var grid: Vector2i = content.visuals[id].get("grid_size", Vector2i.ONE)
+		var masks: Array = e["masks"]
+		var first := Vector2i(e["rect"][0] / CELL, e["rect"][1] / CELL)
+		for row in grid.x * grid.y:
+			for col in masks.size():
+				var at := first + Vector2i(col, row)
+				if not src.has_tile(at):
+					src.create_tile(at)
+		var column := {}
+		for col in masks.size():
+			column[int(masks[col])] = col
+		var layer := TileMapLayer.new()
+		layer.tile_set = ts
+		layer.z_index = -2
+		_edges[id] = [sources[path][0], first, grid, column, int(e["priority"]), layer]
+	# Priorities become ranks 0..n-1, so they index small arrays and bits.
+	var ids := _edge_priority.keys()
+	ids.sort_custom(func(a: String, b: String) -> bool: return _edge_priority[a] < _edge_priority[b])
+	for i in ids.size():
+		_edge_priority[ids[i]] = i
+		_by_rank.append(ids[i])
+	for id: String in _edges:
+		_edges[id][4] = _edge_priority[id]
+
+
+## Neighbour bits as the art tool numbers them: sides N E S W, corners NE SE SW NW.
+const _EDGE_BITS := [[Vector2i(0, -1), 1], [Vector2i(1, 0), 2], [Vector2i(0, 1), 4], [Vector2i(-1, 0), 8],
+	[Vector2i(1, -1), 16], [Vector2i(1, 1), 32], [Vector2i(-1, 1), 64], [Vector2i(-1, -1), 128]]
+
+
+## Where a higher ground meets a cell, its ragged edge laps over it. Done
+## for a rectangle of cells at once: the grounds around are read once into
+## an array of priorities (-1: takes no part, like a building floor).
+func _paint_edges(location: String, x0: int, y0: int, w: int, h: int) -> void:
+	var rw := w + 2
+	var ranks := _ground_ranks(location, x0 - 1, y0 - 1, rw, h + 2)
+	var offs := PackedInt32Array()
+	var bits := PackedInt32Array()
+	for b: Array in _EDGE_BITS:
+		offs.append((b[0] as Vector2i).y * rw + (b[0] as Vector2i).x)
+		bits.append(int(b[1]))
+	var masks := PackedInt32Array()
+	masks.resize(_by_rank.size())
+	for y in h:
+		for x in w:
+			var i := (y + 1) * rw + x + 1
+			var own := ranks[i]
+			var cell := Vector2i(x0 + x, y0 + y)
+			var had: int = _edge_set.get(cell, 0)
+			if own < 0 and had == 0:
+				continue
+			masks.fill(0)
+			var any := 0
+			if own >= 0:
+				for k in 8:
+					var n := ranks[i + offs[k]]
+					if n > own:
+						masks[n] |= bits[k]
+						any |= 1 << n
+			for r in _by_rank.size():
+				if any & (1 << r):
+					_set_edge(_by_rank[r], cell, masks[r])
+				elif had & (1 << r):
+					(_edges[_by_rank[r]][5] as TileMapLayer).erase_cell(cell)
+			if any == 0:
+				_edge_set.erase(cell)
+			else:
+				_edge_set[cell] = any
+
+
+func _set_edge(g: String, cell: Vector2i, m: int) -> void:
+	var e: Array = _edges[g]
+	# A corner counts only without a side next to it (the tool's shapes).
+	if m & 3:
+		m &= ~16
+	if m & 6:
+		m &= ~32
+	if m & 12:
+		m &= ~64
+	if m & 9:
+		m &= ~128
+	var grid: Vector2i = e[2]
+	var piece := _grid_piece(cell, grid)
+	(e[5] as TileMapLayer).set_cell(cell, e[0], e[1] + Vector2i(e[3][m], piece.y * grid.x + piece.x))
+
+
+func _ground_ranks(location: String, x0: int, y0: int, w: int, h: int) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	out.resize(w * h)
+	out.fill(-1)
+	for cy in range(floori(y0 / float(Chunk.SIZE)), floori((y0 + h - 1) / float(Chunk.SIZE)) + 1):
+		for cx in range(floori(x0 / float(Chunk.SIZE)), floori((x0 + w - 1) / float(Chunk.SIZE)) + 1):
+			var c: Chunk = client.chunks.get(ServerWorld.chunk_key(location, cx, cy))
+			if c == null:
+				continue
+			var cells: PackedInt32Array = c.layers.get("ground", PackedInt32Array())
+			if cells.is_empty():
+				continue
+			var rank_of := PackedInt32Array()
+			for id: String in c.palette:
+				rank_of.append(_edge_priority.get(id, -1))
+			var ax := maxi(x0, cx * Chunk.SIZE)
+			var bx := mini(x0 + w, (cx + 1) * Chunk.SIZE)
+			for y in range(maxi(y0, cy * Chunk.SIZE), mini(y0 + h, (cy + 1) * Chunk.SIZE)):
+				var src := (y - cy * Chunk.SIZE) * Chunk.SIZE - cx * Chunk.SIZE
+				var dst := (y - y0) * w - x0
+				for x in range(ax, bx):
+					out[dst + x] = rank_of[cells[src + x]]
+	return out
+
+
+## The ground of a cell as the client knows it ("" if its chunk is not here).
+func ground_at(location: String, cell: Vector2i) -> String:
+	var cx := floori(cell.x / float(Chunk.SIZE))
+	var cy := floori(cell.y / float(Chunk.SIZE))
+	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	return c.get_cell("ground", cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else ""
+
+
+## Cells with an edge of a higher ground drawn over them -> bits of ranks.
+func edge_cells() -> Dictionary:
+	return _edge_set
 
 
 ## The tile layer of the ground (or floors) of the client's location.
@@ -128,6 +280,9 @@ func update_view(alpha: float, delta: float) -> void:
 ## Forgets everything drawn (the client moved to another location).
 func _clear() -> void:
 	_ground.clear()
+	for g: String in _edges:
+		(_edges[g][5] as TileMapLayer).clear()
+	_edge_set.clear()
 	_cover.clear()
 	_below.clear()
 	for key: String in _chunk_nodes:
@@ -188,6 +343,9 @@ func _paint(key: String, spread := true) -> void:
 				if mark:
 					holder.add_child(mark)
 	# Walls on the edge join walls of the next chunk: redraw those once.
+	if not _edges.is_empty():
+		# Edges here, and on the rim of the chunks around, which depend on this one.
+		_paint_edges(p[0], ox - 1, oy - 1, Chunk.SIZE + 2, Chunk.SIZE + 2)
 	if spread:
 		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 			var nk := ServerWorld.chunk_key(p[0], int(p[1]) + d.x, int(p[2]) + d.y)

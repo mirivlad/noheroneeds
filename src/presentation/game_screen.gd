@@ -1,33 +1,47 @@
+class_name GameScreen
 extends Node2D
-## The game client window. Single-player by default: a local server in this
-## process (LocalGame). With --connect=HOST:PORT it joins a dedicated server.
-## --profile=NAME keeps identity, character and local world apart (default
-## "default"), e.g. for development runs.
-## Dev options: --screenshot=PATH --frames=N saves a frame and quits;
-## --walk=DX,DY holds a direction (for screenshots of movement);
+## The game being played: the world, the HUD, the player's controls. Started
+## by App with how to play (cfg):
+##   {"mode": "local", "world_path", "rules"}  single-player: a local server in
+##       this process (LocalGame);
+##   {"mode": "host", "world_path", "rules", "port", "max_players"}  a server
+##       in this process that others join (HostedGame);
+##   {"mode": "connect", "address", "port"}  a dedicated or hosted server.
+## Esc asks App for the menu; a lost connection is reported to it.
+## Dev options (App passes them through): --walk=DX,DY holds a direction;
 ## --demo builds a little house through ordinary requests on arrival
 ## (--demo=outside puts the player at the porch, --demo=upstairs goes up the
-## stairs; the player starts inside).
+## stairs; the player starts inside); --screenshot=PATH --frames=N.
 ##
 ## Controls (temporary): WASD/arrows walk; 1-3 choose a part; left click
 ## builds, right click takes down; E picks up what lies near or opens and
 ## closes a door next to you; G drops one of the chosen material (Tab);
 ## F goes up the stairs you stand on (or down, if there is no way up),
-## Shift+F goes down.
+## Shift+F goes down; Esc opens the menu.
+
+signal menu_requested
+## The connection is gone or the server refused us (reason for people).
+signal failed(reason: String)
+signal screenshot_taken
 
 const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:wood_ceiling",
 	"base:thatch_roof", "base:wood_stairs", "base:wood_column"]
-const LOCAL_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20}
-const LOCAL_OUTFIT := {"torso": "base:linen_shirt", "legs": "base:work_trousers", "feet": "base:boots"}
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 
 var content: ContentRegistry
 var game: LocalGame
+var hosted: HostedGame
 var client: GameClient
+var settings: GameSettings
+## The menu is open: no controls, and a single-player world stands still.
+var paused := false
+var _reported := false
 var view := WorldView.new()
 var camera := Camera2D.new()
 var hud := Label.new()
 var status := Label.new()
+## The second HUD line: hosting address, frame rate, control hints.
+var _info := Label.new()
 var _accum := 0.0
 var _part := 0
 var _material := 0
@@ -51,63 +65,100 @@ const REASONS := {
 }
 
 
-func _ready() -> void:
-	for a in OS.get_cmdline_user_args():
-		var kv := a.trim_prefix("--").split("=", true, 1)
-		_opts[kv[0]] = kv[1] if kv.size() > 1 else ""
-	content = ContentRegistry.load_packs(["res://content/base"])
-	if not content.errors.is_empty():
-		push_error("content: " + "; ".join(content.errors))
-		get_tree().quit(1)
-		return
-	var me := PlayerIdentity.load_or_create(_user("identity"))
-	var file := _character_file(me)
-	if _opts.has("connect"):
-		var hp := String(_opts["connect"]).split(":")
-		var t := ENetTransport.new()
-		t.start_client(hp[0], int(hp[1]) if hp.size() > 1 else 24680)
-		client = GameClient.new(t, me, file, content)
-	else:
-		var path := _user("worlds/local/world.db")
-		DirAccess.make_dir_recursive_absolute(path.get_base_dir())
-		game = LocalGame.start(path, content, me,
-			PlayerIdentity.load_or_create(_user("local_server_identity")), file)
-		game.world.starter_kit = LOCAL_KIT
-		game.world.starter_outfit = LOCAL_OUTFIT
-		client = game.client
+## Sets the game up; "" on success, else what went wrong (for people).
+func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, server_identity: PlayerIdentity,
+		character_file: PackedByteArray, player_settings: GameSettings, dev := {}) -> String:
+	content = registry
+	settings = player_settings
+	_opts = dev
+	match String(cfg.get("mode", "local")):
+		"connect":
+			var t := ENetTransport.new()
+			if t.start_client(String(cfg["address"]), int(cfg["port"])) != OK:
+				return "не удалось начать подключение к %s:%d" % [cfg["address"], cfg["port"]]
+			client = GameClient.new(t, me, character_file, content)
+		"host":
+			hosted = HostedGame.start(String(cfg["world_path"]), content, me, server_identity, character_file,
+				int(cfg["port"]), int(cfg.get("max_players", 8)), {"seed": WorldLibrary.seed_of(cfg.get("rules", {}))})
+			if not hosted.ok():
+				return hosted.error
+			WorldLibrary.apply_rules(cfg.get("rules", {}), hosted.world)
+			client = hosted.client
+		_:
+			DirAccess.make_dir_recursive_absolute(String(cfg["world_path"]).get_base_dir())
+			game = LocalGame.start(String(cfg["world_path"]), content, me, server_identity, character_file,
+				{"seed": WorldLibrary.seed_of(cfg.get("rules", {}))})
+			if game == null:
+				return "не удалось открыть мир"
+			WorldLibrary.apply_rules(cfg.get("rules", {}), game.world)
+			client = game.client
 	view.setup(content, client)
 	add_child(view)
 	camera.position_smoothing_enabled = false
 	add_child(camera)
 	var layer := CanvasLayer.new()
 	add_child(layer)
-	var font: Font = load("res://assets/fonts/monogram.ttf")
-	for l: Label in [hud, status]:
-		l.add_theme_font_override("font", font)
+	for l: Label in [hud, status, _info]:
+		l.add_theme_font_override("font", Art.font())
 		l.add_theme_font_size_override("font_size", 16)
-		l.add_theme_color_override("font_color", Color("f2e6c8"))
-		l.add_theme_color_override("font_outline_color", Color("1e1824"))
+		l.add_theme_color_override("font_color", Art.TEXT)
+		l.add_theme_color_override("font_outline_color", Art.INK)
 		l.add_theme_constant_override("outline_size", 4)
 		layer.add_child(l)
 	hud.position = Vector2(6, 2)
 	status.position = Vector2(6, 252)
+	_info.position = Vector2(6, 16)
+	_info.add_theme_color_override("font_color", Art.TEXT_DIM)
 	_ghost.centered = false
 	_ghost.z_index = 20
 	_ghost.visible = false
 	add_child(_ghost)
 	_build_hotbar(layer)
+	apply_settings()
+	return ""
+
+
+func _notification(what: int) -> void:
+	# Parts made up front but never added (a start that failed) are freed too.
+	if what == NOTIFICATION_PREDELETE:
+		for n: Node in [view, camera, hud, status, _info, _ghost]:
+			if is_instance_valid(n) and n.get_parent() == null:
+				n.free()
+
+
+## The view and HUD parts of the player's settings.
+func apply_settings() -> void:
+	var z := float(settings.get_value("view_zoom"))
+	camera.zoom = Vector2(z, z)
+
+
+## Ends the game: the world is saved and closed, connections dropped.
+func close() -> void:
+	if game:
+		game.close()
+		game = null
+	elif hosted:
+		hosted.close()
+		hosted = null
+	elif client:
+		client.transport.close()
+	client = null
 
 
 func _process(delta: float) -> void:
 	if client == null:
 		return
-	client.move = _direction()
-	_accum += delta
+	client.move = _direction() if not paused else Vector2i.ZERO
+	# A single-player world stands still while the menu is open; a server
+	# others play on cannot.
+	_accum += 0.0 if paused and game else delta
 	var tick := 1.0 / Movement.TICK_RATE
 	var steps := 0
 	while _accum >= tick and steps < 4:
 		if game:
 			game.step()
+		elif hosted:
+			hosted.step()
 		else:
 			client.step()
 		_accum -= tick
@@ -149,12 +200,21 @@ func _process(delta: float) -> void:
 	_update_hud()
 	_update_ghost()
 	_frames += 1
+	if not _reported and client.state in ["disconnected", "rejected"]:
+		_reported = true
+		failed.emit("сервер отказал: " + client.reject_reason if client.state == "rejected" else "связь с сервером потеряна")
 	if _opts.has("screenshot") and _frames >= int(_opts.get("frames", "120")):
 		get_viewport().get_texture().get_image().save_png(String(_opts["screenshot"]))
-		_quit()
+		screenshot_taken.emit()
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if paused or client == null:
+		return
+	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		menu_requested.emit()
+		return
 	if event is InputEventKey and event.pressed:
 		var k: int = (event as InputEventKey).keycode
 		if k >= KEY_1 and k < KEY_1 + PARTS.size():
@@ -297,24 +357,6 @@ func _build_hotbar(layer: CanvasLayer) -> void:
 	layer.add_child(bar)
 
 
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		_quit()
-
-
-func _quit() -> void:
-	if game:
-		game.close()
-		game = null
-	elif client:
-		client.transport.close()
-	get_tree().quit()
-
-
-func _user(rel: String) -> String:
-	return ProjectSettings.globalize_path("user://profiles/%s/%s" % [_opts.get("profile", "default"), rel])
-
-
 func _direction() -> Vector2i:
 	if _opts.has("walk"):
 		var p := String(_opts["walk"]).split(",")
@@ -346,6 +388,14 @@ func _update_hud() -> void:
 		bag.append("%s%s %d" % [mark, content.get_def(id).get("name", id), int(inv.get(id, 0))])
 	var level := "Поверхность  0" if client.z == 0 else "Этаж  %+d" % client.z
 	hud.text = level + "     " + "  ".join(bag)
+	var info := PackedStringArray()
+	if hosted:
+		info.append("сервер: порт %d%s" % [hosted.port, _lan_address()])
+	if settings.get_value("show_fps"):
+		info.append("%d к/с" % Engine.get_frames_per_second())
+	if settings.get_value("show_hints"):
+		info.append("ЛКМ — строить, ПКМ — разобрать, E — взять, F — лестница, Esc — меню")
+	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:
 		note = "F — вверх, Shift+F — вниз   " + _note
@@ -355,19 +405,9 @@ func _update_hud() -> void:
 		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
 
 
-## The player's character: made once with default looks, kept as a signed file.
-func _character_file(me: PlayerIdentity) -> PackedByteArray:
-	var path := _user("characters/main.nhnchar")
-	if FileAccess.file_exists(path):
-		var existing := FileAccess.get_file_as_bytes(path)
-		if CharacterFile.read(existing, content).ok:
-			return existing
-	var c := PortableCharacter.create("Путник", "base:humanoid_adult")
-	c.styles = {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
-	c.colors = {"skin": "#eab295", "hair": "#8a3a20", "eyes": "#2f7a52"}
-	var file := CharacterFile.export_signed(c, me, content)
-	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
-	var f := FileAccess.open(path, FileAccess.WRITE)
-	f.store_buffer(file)
-	f.close()
-	return file
+## Where others on the local network reach this host (first private IPv4).
+static func _lan_address() -> String:
+	for a in IP.get_local_addresses():
+		if a.begins_with("192.168.") or a.begins_with("10.") or a.begins_with("172."):
+			return ", адрес " + a
+	return ""

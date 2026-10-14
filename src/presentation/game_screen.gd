@@ -31,6 +31,11 @@ const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:woo
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 
 var content: ContentRegistry
+## The weapon chosen with Q (index into _weapons()), attack requests in flight,
+## deaths already told (-1: none seen yet).
+var _weapon := 0
+var _attacks := {}
+var _deaths_seen := -1
 var game: LocalGame
 var hosted: HostedGame
 var client: GameClient
@@ -71,6 +76,7 @@ const REASONS := {
 	"not_owner": "это не ваше", "empty": "здесь нечего разбирать", "no_stairs": "здесь нет лестницы",
 	"unknown_part": "неизвестная деталь", "nothing_to_use": "здесь нечего открыть", "gone": "уже подобрали",
 	"not_enough": "не хватает", "no_such_place": "здесь строить нельзя",
+	"no_ammo": "нет стрел", "not_carried": "этого нет при себе", "not_a_weapon": "это не оружие",
 }
 
 
@@ -231,6 +237,16 @@ func _process(delta: float) -> void:
 			client.request({"type": "build", "location": client.location, "x": x, "y": 3, "part": "base:torch"})
 	if _opts.get("demo") == "" and _frames == 30:
 		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
+	if _opts.get("demo") == "fight" and game:  # dev only: a wolf, a hurt deer, an arrow (ADR-0019)
+		var me := Vector2i(0, 7)
+		if _frames == 40:
+			game.world.move_character(client.character_id, me * 256 + Vector2i(128, 128))
+			var deer := game.world.creatures._spawn("base:deer", "surface", me + Vector2i(-3, 0), {}, 1)
+			game.world.combat.hurt(deer.id, 4, "")
+			game.world.creatures._spawn("base:wolf", "surface", me + Vector2i(4, -1), {}, 2)
+			game.world.combat.hurt(client.character_id, 6, "")
+		if _frames == 100:
+			client.request({"type": "attack", "item": "base:bow", "x": (me.x + 10) * 256, "y": me.y * 256 + 128})
 	if _opts.get("demo") == "outside" and _frames == 40 and game:
 		game.world.move_character(client.character_id, Vector2i(128, 7 * 256 + 128))  # dev only: before the house
 	if _opts.get("demo") == "behind" and _frames == 40 and game:
@@ -273,6 +289,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			var turns := _turns()
 			if not turns.is_empty():
 				_facing = (_facing + 1) % turns.size()
+		elif k == KEY_Q:
+			_weapon = (_weapon + 1) % _weapons().size()
+		elif k == KEY_SPACE and not (event as InputEventKey).echo and client.state == "playing":
+			_attack()
 		elif k == KEY_TAB:
 			_material = (_material + 1) % MATERIALS.size()
 		elif k == KEY_G and client.state == "playing":
@@ -298,6 +318,29 @@ func _unhandled_input(event: InputEvent) -> void:
 		op["x"] = cell.x
 		op["y"] = cell.y
 		client.request(op)
+
+
+## What one may fight with (ADR-0019): bare hands, then the weapons carried.
+func _weapons() -> Array:
+	var out := [""]
+	var carried: Array = client.inventory().keys()
+	carried.sort()
+	for id: String in carried:
+		if content.get_def(id).has("weapon"):
+			out.append(id)
+	return out
+
+
+## Space: a blow or a shot with the chosen weapon, toward the mouse.
+func _attack() -> void:
+	var weapons := _weapons()
+	var item: String = weapons[_weapon % weapons.size()]
+	var m := get_global_mouse_position() * WorldView.UNITS_PER_PIXEL
+	var rid := client.request({"type": "attack", "item": item, "x": int(m.x), "y": int(m.y)})
+	_attacks[rid] = true
+	var ranged: bool = item != "" and content.get_def(item)["weapon"]["kind"] == "ranged"
+	if not ranged:
+		audio.play("swing", item, null)
 
 
 ## E: the nearest thing on the ground within reach, else a door next to us.
@@ -441,6 +484,12 @@ func _direction() -> Vector2i:
 func _update_hud() -> void:
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
+		if _attacks.has(rid):
+			_attacks.erase(rid)
+			client.results.erase(rid)
+			if not r.get("ok") and r.get("reason") != "not_ready":
+				_note = String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+			continue
 		_note = "готово" if r.get("ok") else "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 		if r.get("ok") and _sound_on_ok.has(rid):
 			audio.play(_sound_on_ok[rid], "", null)
@@ -457,14 +506,20 @@ func _update_hud() -> void:
 	var level := "Поверхность  0" if client.z == 0 else "Этаж  %+d" % client.z
 	var clock := "День %d  %s     " % [Daylight.day_of(int(client.world_time)), Daylight.clock_text(client.world_time)] \
 		if client.has_time else ""
-	hud.text = clock + level + "     " + "  ".join(bag)
+	var top := int(client.own.get("max_health", 0))
+	var health := "Здоровье %d/%d     " % [int(client.own.get("health", top)), top] if top > 0 else ""
+	var deaths := int(client.own.get("deaths", 0))
+	if deaths > _deaths_seen and _deaths_seen >= 0:
+		_note = "вы погибли и вернулись к началу"
+	_deaths_seen = deaths if client.own.has("deaths") else _deaths_seen
+	hud.text = clock + level + "     " + health + "  ".join(bag)
 	var info := PackedStringArray()
 	if hosted:
 		info.append("сервер: порт %d%s" % [hosted.port, _lan_address()])
 	if settings.get_value("show_fps"):
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
-		info.append("Ctrl — бег, ЛКМ/ПКМ — строить/разобрать, E — взять, F — лестница, Esc — меню")
+		info.append("Ctrl — бег, ЛКМ/ПКМ — строить/разобрать, Пробел — удар, Q — оружие, E — взять, F — лестница, Esc — меню")
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:
@@ -472,7 +527,12 @@ func _update_hud() -> void:
 	var part_name := String(content.get_def(PARTS[_part]).get("name", ""))
 	if not _turns().is_empty():
 		part_name += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
-	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, (_part + 1) % 10, part_name, cell.x, cell.y, note]
+	var weapons := _weapons()
+	var weapon: String = weapons[_weapon % weapons.size()]
+	var arms := "руки" if weapon == "" else String(content.get_def(weapon).get("name", weapon))
+	if weapon != "" and content.get_def(weapon)["weapon"]["kind"] == "ranged":
+		arms += " (%d)" % int(inv.get(String(content.get_def(weapon)["weapon"]["ammo"]), 0))
+	status.text = "%s  [%d] %s  (%d, %d)  [Q] %s  %s" % [state, (_part + 1) % 10, part_name, cell.x, cell.y, arms, note]
 	for i in _slots.size():
 		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
 

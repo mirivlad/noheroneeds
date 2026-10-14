@@ -214,6 +214,9 @@ func _on_snapshot(m: Dictionary) -> void:
 		if id == character_id:
 			own.merge(fields, true)
 		else:
+			if fields.get("kind") == "projectile" and not entities.has(id):
+				world_events.append({"type": "shoot", "location": location, "part": String(fields.get("item", "")),
+					"cell": Movement.cell_of(Vector2i(int(fields.get("x", 0)), int(fields.get("y", 0))))})
 			(entities.get_or_add(id, {}) as Dictionary).merge(fields, true)
 	var hot := (m["hot"] as PackedByteArray).to_int32_array()
 	for i in range(0, hot.size() - 2, 3):
@@ -227,6 +230,9 @@ func _on_snapshot(m: Dictionary) -> void:
 		var id: String = _uid_of.get(warm[i], "")
 		var e: Dictionary = own if id == character_id else entities.get(id, {})
 		if id != "" and (id == character_id or entities.has(id)):
+			if warm[i + 1] < int(e.get("health", warm[i + 1])) and e.has("x"):
+				world_events.append({"type": "hit", "location": location, "part": "",
+					"cell": Movement.cell_of(Vector2i(int(e["x"]), int(e["y"])))})
 			e["health"] = warm[i + 1]
 			e["max_health"] = warm[i + 2]
 			e["deaths"] = warm[i + 3]

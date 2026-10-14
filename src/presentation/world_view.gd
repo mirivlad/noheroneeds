@@ -655,12 +655,19 @@ func _update_characters(alpha: float, delta: float) -> void:
 	var seen := {}
 	if client.has_position:
 		seen[client.character_id] = true
-		_character(client.character_id, client.own.get("appearance", {})).show_at(own_pixel_position(alpha), delta, true)
+		var me := _character(client.character_id, client.own.get("appearance", {}))
+		me.show_at(own_pixel_position(alpha), delta, true)
+		me.modulate = Color.WHITE
+		_health(client.character_id, me, client.own, delta)
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
 			seen[id] = true
 			_at_level(_item(id, e), int(e.get("z", client.z)))
+			continue
+		if e.get("kind") == "projectile":
+			seen[id] = true
+			_projectile(id, e, delta)
 			continue
 		var kind := String(e.get("kind", ""))
 		if kind != "character" and kind != "creature":
@@ -679,6 +686,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		var sprite := _character(id, looks)
 		sprite.show_at(target - Vector2(0, COVER_LIFT * maxi(dz, 0)), delta, false)
 		_at_level(sprite, client.z + dz)
+		_health(id, sprite, e, delta)
 	for id: String in _characters.keys():
 		if not seen.has(id):
 			_characters[id].queue_free()
@@ -687,9 +695,75 @@ func _update_characters(alpha: float, delta: float) -> void:
 		if not seen.has(id):
 			_items[id].queue_free()
 			_items.erase(id)
+	for id: String in _projectiles.keys():
+		if not seen.has(id):
+			_projectiles[id].queue_free()
+			_projectiles.erase(id)
+	for id: String in _hp_seen.keys():
+		if not seen.has(id):
+			_hp_seen.erase(id)
+			_flash.erase(id)
 
 
 var _items := {}
+var _projectiles := {}
+## Health last drawn, and how much of a hurt flash is left (s), by id.
+var _hp_seen := {}
+var _flash := {}
+const FLASH := 0.25
+
+
+## An arrow in flight: its item's picture turned along its way, at the
+## height it flies, easing to where the server has it.
+func _projectile(id: String, e: Dictionary, delta: float) -> void:
+	var target := Vector2(int(e.get("x", 0)), int(e.get("y", 0))) / UNITS_PER_PIXEL - Vector2(0, 10)
+	var s: Sprite2D = _projectiles.get(id)
+	if s == null:
+		var v := content.visual_of(String(e.get("item", "")))
+		s = Sprite2D.new()
+		if not v.is_empty():
+			s.texture = texture(v["atlas_path"])
+			s.region_enabled = true
+			s.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+		# The picture points up and right; turn it along the flight.
+		s.rotation = atan2(float(e.get("vy", 0)), float(e.get("vx", 1))) + PI / 4.0
+		s.position = target
+		s.z_index = 5
+		add_child(s)
+		_projectiles[id] = s
+	s.position = s.position.lerp(target, minf(1.0, delta * 30.0))
+
+
+## A health bar over one who is hurt, and a red flash when hurt again.
+func _health(id: String, sprite: Node2D, e: Dictionary, delta: float) -> void:
+	var top := int(e.get("max_health", 0))
+	var h := int(e.get("health", top))
+	if h < int(_hp_seen.get(id, h)):
+		_flash[id] = FLASH
+	_hp_seen[id] = h
+	var bar: Node2D = sprite.get_node_or_null("hp")
+	if top > 0 and h < top:
+		if bar == null:
+			bar = Node2D.new()
+			bar.name = "hp"
+			bar.position = Vector2(-7, -38)
+			var back := ColorRect.new()
+			back.size = Vector2(14, 2)
+			back.color = Color(0.1, 0.08, 0.08, 0.8)
+			var fill := ColorRect.new()
+			fill.name = "fill"
+			fill.size = Vector2(14, 2)
+			fill.color = Color(0.85, 0.25, 0.2)
+			bar.add_child(back)
+			bar.add_child(fill)
+			sprite.add_child(bar)
+		(bar.get_node("fill") as ColorRect).size.x = 14.0 * h / top
+	elif bar:
+		bar.queue_free()
+	var f := float(_flash.get(id, 0.0))
+	if f > 0.0:
+		sprite.modulate = sprite.modulate.lerp(Color(1.0, 0.3, 0.3), f / FLASH)
+		_flash[id] = f - delta
 
 
 ## Draws a thing of level z over the covers (above us) or dimmed with the

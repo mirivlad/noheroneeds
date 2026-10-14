@@ -1203,6 +1203,96 @@
    "variants": 1
   },
   {
+   "id": "base:visual/spear",
+   "kind": "visual",
+   "for": "base:spear",
+   "atlas": "art/tiles.png",
+   "rect": [
+    112,
+    224,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/bow",
+   "kind": "visual",
+   "for": "base:bow",
+   "atlas": "art/tiles.png",
+   "rect": [
+    128,
+    224,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/arrow",
+   "kind": "visual",
+   "for": "base:arrow",
+   "atlas": "art/tiles.png",
+   "rect": [
+    144,
+    224,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/raw_meat",
+   "kind": "visual",
+   "for": "base:raw_meat",
+   "atlas": "art/tiles.png",
+   "rect": [
+    160,
+    224,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/hide",
+   "kind": "visual",
+   "for": "base:hide",
+   "atlas": "art/tiles.png",
+   "rect": [
+    176,
+    224,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
    "id": "base:visual/wood_floor",
    "kind": "visual",
    "for": "base:wood_floor",
@@ -1544,6 +1634,43 @@
    "kind": "visual",
    "for": "base:deer",
    "atlas": "art/creatures/deer.png",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "mode": "character",
+   "variants": 1,
+   "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n"
+   ],
+   "animations": {
+    "idle": {
+     "from": 0,
+     "frames": 4,
+     "fps": 3
+    },
+    "walk": {
+     "from": 4,
+     "frames": 6,
+     "fps": 10
+    }
+   }
+  },
+  {
+   "id": "base:visual/wolf",
+   "kind": "visual",
+   "for": "base:wolf",
+   "atlas": "art/creatures/wolf.png",
    "rect": [
     0,
     0,

@@ -18,7 +18,8 @@ const DERIVED_FIELDS := ["pack", "atlas_path", "paths"]
 ## Kinds that only show or sound, never rule.
 const PRESENTATION_KINDS := ["visual", "sound"]
 ## What a sound answers to (sounds.json, ADR-0009).
-const SOUND_EVENTS := ["step", "build", "dismantle", "open", "close", "pickup", "drop", "climb", "click", "ambience", "wind"]
+const SOUND_EVENTS := ["step", "build", "dismantle", "open", "close", "pickup", "drop", "climb", "click", "ambience", "wind",
+	"swing", "hit", "shoot"]
 ## What a structure part is for (ADR-0007). Columns and beams are decoration.
 const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture"]
 ## Which way a part can be turned (ADR-0013): north is up the screen. A part

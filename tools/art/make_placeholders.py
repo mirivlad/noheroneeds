@@ -319,6 +319,24 @@ def icon(kind):
     elif kind == "axe":
         d.line((5, 12, 11, 4), P["wood"][3])
         d.polygon([(9, 3), (13, 4), (12, 8)], P["stone"][3])
+    elif kind == "spear":
+        d.line((3, 13, 12, 4), P["wood"][3])
+        d.polygon([(11, 2), (14, 2), (14, 5), (12, 5)], P["stone"][3])
+    elif kind == "bow":
+        d.arc((2, 2, 14, 14), 225, 45, P["wood"][3], width=2)
+        d.line((4, 12, 12, 4), P["white"])
+    elif kind == "arrow":
+        d.line((3, 12, 12, 3), P["wood"][3])
+        d.polygon([(11, 2), (14, 2), (13, 5)], P["stone"][3])
+        d.line((3, 12, 2, 10), P["white"])
+        d.line((3, 12, 5, 13), P["white"])
+    elif kind == "raw_meat":
+        d.ellipse((3, 5, 13, 12), hx("b04a48"))
+        d.ellipse((5, 6, 9, 9), hx("d87870"))
+        d.ellipse((10, 8, 12, 10), P["white"])
+    elif kind == "hide":
+        d.polygon([(3, 5), (7, 3), (12, 4), (14, 9), (11, 13), (5, 12), (2, 9)], hx("8a6a4c"))
+        d.polygon([(5, 6), (11, 6), (12, 9), (6, 11)], hx("a8865e"))
     return strong(img)
 
 
@@ -435,6 +453,7 @@ ANIMALS = {
     # fur dark -> light, belly, accents
     "hare": {"fur": ["5a4632", "7a5e42", "9a7a58", "b89a74"], "belly": "e6dcc8", "eye": "1e1612"},
     "deer": {"fur": ["4a3020", "6e4a2e", "8e6440", "ae8458"], "belly": "e2d4b8", "eye": "1e1612"},
+    "wolf": {"fur": ["3a3a40", "5a5a62", "7c7a80", "a09ca0"], "belly": "c8c2bc", "eye": "e8c040"},
 }
 
 
@@ -472,6 +491,37 @@ def _animal_frame(kind, view, anim, k):
                 d.ellipse((22, base - 6, 26, base - 1), fill=belly)
             else:
                 d.ellipse((22, base - 4, 26, base), fill=belly)
+    elif kind == "wolf":
+        lift = [0, -1, 0, 0, -1, 0][k] if walk else (0 if k < 2 else -1 * 0)
+        top = 34 + lift
+        legs = [(0, 0), (2, -2), (0, 0), (-2, 2), (0, 0), (2, -2)][k] if walk else (0, 0)
+        if side:
+            d.line((11, top + 2, 6, top + 6), fill=fur[1], width=3)          # tail, low
+            for i, x in enumerate((14, 17, 26, 29)):
+                d.line((x, top + 5, x + legs[i % 2], 45), fill=fur[1], width=2)
+            d.ellipse((11, top, 31, top + 8), fill=fur[2])                  # body
+            d.ellipse((13, top + 4, 29, top + 8), fill=fur[1])
+            d.ellipse((28, top - 5, 36, top + 3), fill=fur[2])              # head
+            d.polygon([(34, top - 1), (40, top + 1), (35, top + 3)], fill=fur[2])  # muzzle
+            d.point((40, top + 1), fill=fur[0])
+            d.polygon([(29, top - 4), (30, top - 9), (32, top - 4)], fill=fur[1])  # ears
+            d.polygon([(32, top - 4), (34, top - 9), (35, top - 4)], fill=fur[2])
+            d.point((34, top - 2), fill=eye)
+        else:
+            for i, x in enumerate((19, 28)):
+                dy = legs[i] if walk else 0
+                d.line((x, top + 6, x, 45 + min(0, dy)), fill=fur[1], width=2)
+            d.ellipse((17, top - 1, 31, top + 10), fill=fur[2])
+            if back:
+                d.line((24, top + 6, 24, top + 12), fill=fur[1], width=3)    # tail
+            d.ellipse((19, top - 9, 29, top + 1), fill=fur[2])               # head
+            d.polygon([(19, top - 6), (19, top - 13), (23, top - 8)], fill=fur[1])  # ears
+            d.polygon([(29, top - 6), (29, top - 13), (25, top - 8)], fill=fur[1])
+            if not back:
+                d.ellipse((22, top - 4, 26, top + 1), fill=belly)            # muzzle
+                d.point((24, top - 3), fill=fur[0])
+                d.point((21, top - 6), fill=eye)
+                d.point((27, top - 6), fill=eye)
     else:  # deer
         lift = [0, -1, 0, 0, -1, 0][k] if walk else 0
         top = 31 + lift
@@ -752,7 +802,8 @@ def main():
     for v in a.visuals:
         if v["for"] == "base:wood_door":
             v["states"] = {"open": opened["rect"]}
-    for col, kind in enumerate(["plank", "log", "stone", "linen_shirt", "work_trousers", "boots", "axe"]):
+    for col, kind in enumerate(["plank", "log", "stone", "linen_shirt", "work_trousers", "boots", "axe",
+                                "spear", "bow", "arrow", "raw_meat", "hide"]):
         a.put(col, 14, icon(kind), "base:" + kind, (0, T), "item")
     floor, ceiling, thatch, stairs, column, stairs_e = building_tiles()
     a.put(7, 7, floor, "base:wood_floor", (0, T), "flat")

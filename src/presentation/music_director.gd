@@ -9,8 +9,8 @@ extends Node
 ##   danger  — something threatens (combat, step 10);
 ##   home    — under a roof, in a room, on a building's level;
 ##   night   — outdoors at night;
-##   forest  — among trees;
-##   explore — open country; also the start screen ("menu").
+##   explore — outdoors by day, in fields and woods alike (the forest folder's
+##             tracks play here too); also the start screen ("menu").
 ##
 ## Never abrupt (the author: no sharp changes between melodies):
 ##   * two melodies never sound together: the old one fades out (6 s), a
@@ -26,6 +26,10 @@ extends Node
 ## the same with any driver and can be tested.
 
 const MOODS := ["explore", "forest", "home", "night", "danger"]
+## Folders whose tracks play under another mood. Forest and open country are
+## one mood (the author: walking through woods and glades must not keep
+## changing the melody); the forest tracks join the explore rotation.
+const SHARED := {"forest": "explore"}
 const GAP_S := Vector2(30.0, 90.0)
 const MOOD_GAP_S := Vector2(3.0, 8.0)
 const AFTER_FADE_S := Vector2(2.0, 4.0)
@@ -61,6 +65,7 @@ var _mood_turned := false
 
 func setup(registry: ContentRegistry) -> void:
 	_rng.randomize()
+	var by_folder := {}
 	for pid: String in registry.packs:
 		var dir: String = registry.packs[pid].get("dir", "")
 		for m: String in MOODS:
@@ -69,9 +74,24 @@ func setup(registry: ContentRegistry) -> void:
 				continue
 			for f in DirAccess.get_files_at(md):
 				if f.get_extension().to_lower() in ["ogg", "mp3", "wav"]:
-					(tracks.get_or_add(m, []) as Array).append(md.path_join(f))
-	for m: String in tracks:
-		(tracks[m] as Array).sort()
+					(by_folder.get_or_add(m, []) as Array).append(md.path_join(f))
+	# Each mood: its own folder's tracks, interleaved with the folders that
+	# share it (field, forest, field, forest...), its own first.
+	for m: String in MOODS:
+		if SHARED.has(m) or not by_folder.has(m):
+			continue
+		var lists: Array = [by_folder[m]]
+		for f: String in SHARED:
+			if SHARED[f] == m and by_folder.has(f):
+				lists.append(by_folder[f])
+		var mixed := []
+		for l: Array in lists:
+			l.sort()
+		for i in lists.map(func(l: Array) -> int: return l.size()).max():
+			for l: Array in lists:
+				if i < l.size():
+					mixed.append(l[i])
+		tracks[m] = mixed
 		_next[m] = _rng.randi() % (tracks[m] as Array).size()
 	_next["explore"] = 0  # the start screen opens with the first (quiet) explore track
 	_player = AudioStreamPlayer.new()

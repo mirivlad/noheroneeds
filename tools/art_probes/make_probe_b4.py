@@ -38,11 +38,14 @@ R = {
 }
 PALETTES = {
     "light": dict(sat=0.95, contrast=1.0, warm=0.03, dark=0.0, grain=0.035, people_sat=0.95, green_to=0.27),
-    "middle": dict(sat=0.84, contrast=1.0, warm=0.07, dark=0.025, grain=0.04, people_sat=0.88, green_to=0.24),
+    "middle": dict(sat=0.84, contrast=1.0, warm=0.07, dark=0.025, grain=0.04, people_sat=0.88, green_to=0.24,
+                   mid_sat=0.12),  # chosen: deeper half-tones, not darker
     "earthy": dict(sat=0.7, contrast=1.03, warm=0.11, dark=0.05, grain=0.05, people_sat=0.78, green_to=0.21),
 }
 PEOPLE = {
     "A1": dict(w=18, h=32, head=0.33, head_w=0.66, legs=0.72, eyes=(1, 1), shoulders=0.36, leg_gap=0.05),
+    # A1 as chosen, a little less doll-like: smaller head, a mouth.
+    "A1b": dict(w=18, h=32, head=0.315, head_w=0.6, legs=0.71, eyes=(1, 1), shoulders=0.36, leg_gap=0.05, mouth=True),
     "A2": dict(w=17, h=32, head=0.30, head_w=0.6, legs=0.68, eyes=(1, 1), shoulders=0.36, leg_gap=0.06, strap=True),
 }
 OUTLINE_PEOPLE = (44, 32, 30, 255)

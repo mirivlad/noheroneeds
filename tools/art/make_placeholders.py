@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Temporary art for the base pack: a tile atlas, a chibi sheet and the
+"""Temporary art for the base pack: a tile atlas, a people sheet and the
 visual definitions that tie content ids to them (content/base/visuals.json).
 
-These are placeholders in the spirit of probe B2 (tile 16, chibi 20x32,
-coloured outline), drawn by code so the game can run before production art
-exists. Production art replaces the PNGs and visuals.json; no code changes.
+Placeholders in the manner chosen by the author (ART_STANDARD v2, probe B4):
+the middle palette, leaf-clump trees, earthy forms, A1 people (18x32, about
+three heads) with one dark outline, soft shade edges on the world. Drawn by
+code so the game runs before production art exists; production art
+replaces the PNGs and visuals.json without code changes.
 Usage: tools/art/make_placeholders.py   (writes into content/base/)
 """
 import json
@@ -19,13 +21,18 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "art_probes"))
 sys.argv = [sys.argv[0], "/tmp"]  # make_probes reads an output dir it will not use here
 import make_probes as mp  # noqa: E402
+import make_probe_b3 as b3  # noqa: E402
+import make_probe_b4 as b4  # noqa: E402
 from make_probes import P, hx, lerp, h2, vnoise  # noqa: E402
+
+MIDDLE = b4.PALETTES["middle"]
 
 T = 16
 OUT = ROOT / "content" / "base"
-STYLE = dict(outline="colored", detail=1)
-# Characters and interactive things get a darker outline than the scenery (ADR-0001).
-STRONG = dict(outline="ink", detail=1)
+# The world: no full outline (soft shade edges are drawn by the B4 drawers).
+STYLE = dict(outline=None, detail=1)
+# People and interactive things: one dark warm outline (ADR-0001 revision).
+STRONG = "people"
 
 
 class Atlas:
@@ -42,6 +49,22 @@ class Atlas:
             "atlas": "art/tiles.png", "rect": [col * T, row * T, w // variants, h],
             "origin": list(origin), "mode": mode, "variants": variants,
         })
+
+
+def strong(img):
+    """The people/interactive outline: one dark warm colour around the shape."""
+    w, h = img.size
+    src = img.load()
+    out = img.copy()
+    dst = out.load()
+    for y in range(h):
+        for x in range(w):
+            if src[x, y][3]:
+                continue
+            if any(0 <= x + dx < w and 0 <= y + dy < h and src[x + dx, y + dy][3]
+                   for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                dst[x, y] = b4.OUTLINE_PEOPLE
+    return out
 
 
 def ground_tile(kind, variant):
@@ -143,8 +166,8 @@ def wall(kind, mask, opened=False):
         top = [hx("6d6b72"), hx("8f8c92"), hx("a8a4a8"), hx("c4c0c0")]
         face = [hx("3a3840"), hx("55535a"), hx("6d6b72"), hx("85828a")]
     else:
-        top = [hx("6e4428"), hx("93613a"), hx("a8743f"), hx("c08a52")]
-        face = [hx("3a2416"), hx("4e3220"), hx("6e4428"), hx("84552f")]
+        top = [b4.R["log"][1], b4.R["log"][2], b4.R["log"][3], b4.R["log"][4]]
+        face = [b4.R["log"][0], b4.R["log"][1], b4.R["log"][2], b4.R["log"][3]]
     for y in range(2 * T):
         for x in range(T):
             wx = x + mask * 3  # vary the pattern a little between variants
@@ -214,7 +237,7 @@ def door_open():
     d.rectangle((0, 6, 15, 31), hx("2a1e1c"))
     d.rectangle((1, 6, 3, 31), P["wood"][1])
     d.line((1, 6, 1, 31), P["wood"][3])
-    return mp.outline(img, STRONG)
+    return strong(img)
 
 
 def icon(kind):
@@ -243,7 +266,7 @@ def icon(kind):
     elif kind == "axe":
         d.line((5, 12, 11, 4), P["wood"][3])
         d.polygon([(9, 3), (13, 4), (12, 8)], P["stone"][3])
-    return mp.outline(img, STRONG)
+    return strong(img)
 
 
 def building_tiles():
@@ -262,9 +285,11 @@ def building_tiles():
     cp = ceiling.load()
     for y in range(T):
         for x in range(T):
-            c = P["wood"][2] if (x // 4) % 2 == 0 else P["wood"][3]
+            c = b4.R["log"][2] if (x // 4) % 2 == 0 else b4.R["log"][3]
             if x % 4 == 3:
-                c = P["wood"][0]
+                c = b4.R["log"][0]
+            if h2(x, y, 13) > 0.9:
+                c = b4.R["log"][1]
             cp[x, y] = c
     thatch = Image.new("RGBA", (T, T))
     tp = thatch.load()
@@ -291,45 +316,50 @@ def building_tiles():
     d.line((5, 2, 5, 31), P["bark"][1])
     d.rectangle((4, 0, 11, 2), P["wood"][3])
     d.rectangle((4, 29, 11, 31), P["wood"][2])
-    return floor, ceiling, thatch, mp.outline(stairs, STYLE), mp.outline(column, STYLE)
+    return floor, ceiling, thatch, b4.soft_edge(stairs, P["wood"][0]), b4.soft_edge(column, P["bark"][0])
 
 
-def chibi_sheet():
-    """Rows: S, SE, E, NE, N (W-side rows are mirrored at run time).
-    Columns: idle, step A, step B. Frames 48x48, feet at (24, 44)."""
+def people_sheet():
+    """A1 people (ART_STANDARD v2). Rows: S, SE, E, NE, N (the west side is
+    mirrored at run time); columns: idle, step A, step B. Frames 48x48,
+    feet at (24, 45)."""
     F = 48
     sheet = Image.new("RGBA", (3 * F, 5 * F), (0, 0, 0, 0))
-    look = dict(mp.LOOKS["player"])
     for row, view in enumerate(["s", "se", "e", "ne", "n"]):
         for col in range(3):
-            spr = chibi_view(20, 32, look, view, col)
-            sheet.alpha_composite(spr, (col * F + F // 2 - spr.width // 2, row * F + 45 - spr.height + (1 if col else 0)))
-    return sheet
+            spr = person_view("villager", view, col)
+            sheet.alpha_composite(spr, (col * F + F // 2 - spr.width // 2, row * F + 46 - spr.height + (1 if col else 0)))
+    return b3.tone(sheet, MIDDLE, people=True)
 
 
-def chibi_view(w, h, look, view, frame):
-    """The probe chibi, turned: back views show hair, side views one eye."""
-    spr = mp.chibi(w, h, look, dict(outline=None, detail=1))
+def person_view(look_name, view, frame):
+    """The A1 figure turned: from behind the head is hair, from the side the
+    face shifts toward the way it looks; steps move the legs."""
+    f = b4.PEOPLE["A1b"]
+    look = b4.LOOKS[look_name]
+    spr = b3.figure(look, f, None)
     px = spr.load()
+    h = f["h"]
+    head_bottom = int(h * f["head"]) + 2
+    skin = [c[:3] for c in look["skin"]]
     if view in ("n", "ne"):
-        # Cover the face with hair.
-        for y in range(spr.height):
+        for y in range(head_bottom):
             for x in range(spr.width):
                 c = px[x, y]
-                if c[3] and c[:3] in [s[:3] for s in look["skin"]] + [look["eyes"][:3], P["ink"][:3], P["white"][:3]] \
-                        and y < h * 0.5:
-                    px[x, y] = look["hair"][1]
+                if c[3] and (c[:3] in skin or c[:3] != look["hair"][1][:3] and y > 2 and c[:3] not in [k[:3] for k in look["hair"]]):
+                    px[x, y] = look["hair"][1] if x < spr.width * 0.6 else look["hair"][0]
     elif view in ("e", "se"):
         shift = 2 if view == "e" else 1
-        face = spr.crop((0, int(h * 0.25), spr.width, int(h * 0.45)))
-        spr.paste(Image.new("RGBA", face.size, (0, 0, 0, 0)), (0, int(h * 0.25)))
-        spr.alpha_composite(face, (shift, int(h * 0.25)))
+        top = int(h * f["head"] * 0.35)
+        face = spr.crop((0, top, spr.width, head_bottom))
+        spr.paste(Image.new("RGBA", face.size, (0, 0, 0, 0)), (0, top))
+        spr.alpha_composite(face, (shift, top))
     if frame:
-        legs_y = int(h * 0.82) + 2
+        legs_y = int(h * f["legs"]) + 3
         legs = spr.crop((0, legs_y, spr.width, spr.height))
         spr.paste(Image.new("RGBA", legs.size, (0, 0, 0, 0)), (0, legs_y))
         spr.alpha_composite(legs, (1 if frame == 1 else -1, legs_y))
-    return mp.outline(spr, STRONG)
+    return strong(spr)
 
 
 def main():
@@ -339,22 +369,17 @@ def main():
         for v in range(4):
             strip.alpha_composite(ground_tile(kind, v), (v * T, 0))
         a.put(0, row, strip, "base:" + kind, (0, T), "flat", variants=4)
-    for col, kind in enumerate(["tall_grass", "clover", "flower_red", "flower_yellow", "flower_blue", "fern", "reeds"]):
+    for col, kind in enumerate(["clover", "flower_red", "flower_yellow", "flower_blue", "fern"]):
         a.put(col, 7, small_plant(kind), "base:" + kind, (0, T), "flat")
-    a.put(0, 8, fit(mp.bush(T, STYLE, 3), T, T), "base:bush", (0, T), "tall")
-    berry = mp.bush(T, dict(outline=None, detail=1), 5)
-    bpx = berry.load()
-    for (x, y) in ((4, 5), (8, 7), (11, 4), (6, 9)):
-        if bpx[x, y][3]:
-            bpx[x, y] = hx("c8324a")
-    a.put(1, 8, fit(mp.outline(berry, STYLE), T, T), "base:berry_bush", (0, T), "tall")
-    for col, (kind, src) in enumerate([("oak", "leaf"), ("birch", "birch"), ("spruce", "spruce")]):
-        if src == "leaf":
-            spr = mp.tree(T, "leaf", STYLE, 7)
-        else:
-            import make_probe_b2 as b2  # noqa: E402
-            spr = b2.birch(STYLE, 4) if src == "birch" else b2.spruce(STYLE, 4)
-        a.put(col * 3, 9, fit(spr, 3 * T, 4 * T), "base:" + kind, (T, 4 * T), "tall")
+    a.put(5, 7, fit(b4.tall_tuft(3), T, T), "base:tall_grass", (0, T), "flat")
+    # Uneven bushes (B4), 32 x 16 over their one cell.
+    a.put(0, 8, fit(b4.shrub(3), 2 * T, T), "base:bush", (8, T), "tall")
+    a.put(2, 8, fit(b4.shrub(5, berries=True), 2 * T, T), "base:berry_bush", (8, T), "tall")
+    # Trees from leaf clumps (B4): the oak over 4 x 5 cells, birch and spruce 3 x 5.
+    a.put(0, 9, fit(b4.oak(7), 4 * T, 5 * T), "base:oak", (24, 5 * T), "tall")
+    a.put(4, 9, fit(b4.birch(4), 3 * T, 5 * T), "base:birch", (16, 5 * T), "tall")
+    a.put(7, 9, fit(b4.spruce(4), 3 * T, 5 * T), "base:spruce", (16, 5 * T), "tall")
+    a.put(10, 9, fit(b4.cattails(2), T, 2 * T), "base:reeds", (0, 2 * T), "tall")
     # Walls and doors join by neighbours (mask N=1 E=2 S=4 W=8): 16 variants a row.
     for row, kind in ((15, "wood_wall"), (17, "stone_wall"), (19, "wood_door")):
         a.put(0, row, wall_set(kind), "base:" + kind, (0, 2 * T), "tall", variants=16)
@@ -365,7 +390,7 @@ def main():
         if v["for"] == "base:wood_door":
             v["states"] = {"open": opened["rect"]}
     for col, kind in enumerate(["plank", "log", "stone", "linen_shirt", "work_trousers", "boots", "axe"]):
-        a.put(col, 13, icon(kind), "base:" + kind, (0, T), "item")
+        a.put(col, 14, icon(kind), "base:" + kind, (0, T), "item")
     floor, ceiling, thatch, stairs, column = building_tiles()
     a.put(7, 7, floor, "base:wood_floor", (0, T), "flat")
     a.put(8, 7, ceiling, "base:wood_ceiling", (0, T), "cover")
@@ -384,8 +409,9 @@ def main():
             v["states"] = {"down": down_v["rect"]}
     a.put(14, 9, column, "base:wood_column", (0, 2 * T), "tall")
     (OUT / "art").mkdir(parents=True, exist_ok=True)
-    a.img.save(OUT / "art" / "tiles.png")
-    chibi_sheet().save(OUT / "art" / "chibi_placeholder.png")
+    # The middle palette of B4 over everything, and its light grain.
+    b3.grain(b3.tone(a.img, MIDDLE), dict(MIDDLE, grain=0.03), 7).save(OUT / "art" / "tiles.png")
+    people_sheet().save(OUT / "art" / "chibi_placeholder.png")
     a.visuals.append({
         "id": "base:visual/humanoid_adult", "kind": "visual", "for": "base:humanoid_adult",
         "atlas": "art/chibi_placeholder.png", "rect": [0, 0, 48, 48], "origin": [24, 45], "mode": "character",

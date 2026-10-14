@@ -55,7 +55,7 @@ def tone(img, prof, people=False):
                 h, s, v = colorsys.rgb_to_hsv(*(k / 255 for k in key))
                 if 0.15 < h < 0.5 and "green_to" in prof:  # greens toward olive
                     h = h + (prof["green_to"] - h) * 0.5
-                s *= sat
+                s = min(1.0, s * sat * (1 + prof.get("mid_sat", 0.0) * (1 - abs(v - 0.5) * 2)))
                 v = 0.5 + (v - 0.5) * prof["contrast"] - prof["dark"]
                 r, g, b = colorsys.hsv_to_rgb(h, s, max(0.0, min(1.0, v)))
                 # Warmth by channel gains, so darks stay dark (no grey haze).
@@ -166,6 +166,8 @@ def figure(look, f, outline_kind):
         for yy in range(eh):
             for xx in range(ew):
                 px[ex + xx, ey + yy] = lerp(look["eyes"], P["ink"], 0.55)
+    if f.get("mouth"):
+        px[w // 2 + 1, ey + eh + 2] = lerp(skin[0], P["ink"], 0.35)
     return outline(spr, outline_kind)
 
 

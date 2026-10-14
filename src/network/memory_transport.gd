@@ -99,6 +99,7 @@ func poll() -> Array[Transport.Event]:
 
 
 func send(peer: int, channel: Transport.Channel, data: PackedByteArray) -> void:
+	bytes_sent[channel] += data.size()
 	_net._send(_id, peer, channel, data)
 
 

@@ -24,6 +24,13 @@ var import_policy := {}
 ## Clients see this many chunks around their own in each direction.
 var view_chunks := 2
 var tick := 0
+## Microseconds each step() took, since the last take_stats().
+var _tick_usec: Array[int] = []
+var _sync_loads_seen := 0
+## Microseconds per part of the tick since the last take_stats().
+var _sections := {}
+var _mark := 0
+var _replica := {}
 var _sessions := {}
 var _crypto := Crypto.new()
 
@@ -39,8 +46,17 @@ class Session:
 	var inputs: Array = []
 	var last_input_seq := 0
 	var direction := Vector2i.ZERO
-	## snapshot id -> {entity id: state}
+	## snapshot id -> {entity id: Vector2i(hot version, cold version), "~inventory": version}
 	var snapshots := {}
+	var oldest_snapshot := 1
+	## entity id -> short number on this connection (never reused)
+	var net_ids := {}
+	var next_net_id := 1
+	## Where the player's chunk was when prefetching and streaming last ran.
+	var prefetched_at := Vector2i(1 << 30, 0)
+	var streamed_at := Vector2i(1 << 30, 0)
+	var streamed_epoch := -1
+	var streaming_unfinished := true
 	var acked := 0
 	var next_snapshot := 1
 	## chunk key -> revision the client has
@@ -54,6 +70,37 @@ func _init(server_world: ServerWorld, net: Transport, server_identity: PlayerIde
 
 
 func step() -> void:
+	var t0 := Time.get_ticks_usec()
+	_step()
+	_tick_usec.append(Time.get_ticks_usec() - t0)
+
+
+## Tick times and traffic since the last call: {ticks, p50, p99, max (µs),
+## bytes per channel, players}.
+func take_stats() -> Dictionary:
+	var t := _tick_usec.duplicate()
+	t.sort()
+	_tick_usec.clear()
+	var n := t.size()
+	var out := {"ticks": n, "p50": t[n / 2] if n else 0, "p99": t[mini(n - 1, n * 99 / 100)] if n else 0,
+		"max": t[-1] if n else 0, "bytes": transport.bytes_sent.duplicate(), "players": world.present.size(),
+		"sync_loads": world.sync_loads - _sync_loads_seen, "sections_ms": {}}
+	for k: String in _sections:
+		out["sections_ms"][k] = snappedf(_sections[k] / 1000.0, 0.1)
+	_sections.clear()
+	_sync_loads_seen = world.sync_loads
+	return out
+
+
+## Adds the time since the previous mark to a named part of the tick.
+func _lap(name: String) -> void:
+	var now := Time.get_ticks_usec()
+	_sections[name] = _sections.get(name, 0) + now - _mark
+	_mark = now
+
+
+func _step() -> void:
+	_mark = Time.get_ticks_usec()
 	for e in transport.poll():
 		match e.kind:
 			Transport.Kind.CONNECTED:
@@ -64,12 +111,17 @@ func step() -> void:
 			Transport.Kind.PACKET:
 				if _sessions.has(e.peer):
 					_on_message(_sessions[e.peer], Protocol.decode(e.data, true))
+	_lap("network_in")
 	world.tick = tick
 	world.poll_loaded()
 	for s: Session in _sessions.values():
 		if s.state == "playing":
 			_prefetch(s)
+	_lap("prefetch")
+	for s: Session in _sessions.values():
+		if s.state == "playing":
 			_apply_input(s)
+	_lap("movement")
 	world.commit_async()
 	world.flush_state(STATE_ROWS_PER_TICK)
 	world.poll()
@@ -77,10 +129,16 @@ func step() -> void:
 		var s := _session_of(ack[0])
 		if s:
 			_send(s, Transport.Channel.RELIABLE, Protocol.RESULT, {"request_id": ack[1], "result": ack[2]})
+	_lap("storage")
 	for s: Session in _sessions.values():
 		if s.state == "playing":
 			_stream_chunks(s)
+	_lap("chunks")
+	_update_replica()
+	for s: Session in _sessions.values():
+		if s.state == "playing":
 			_send_snapshot(s)
+	_lap("snapshots")
 	tick += 1
 
 
@@ -168,6 +226,7 @@ func _take_input(s: Session, m: Dictionary) -> void:
 		for id: int in s.snapshots.keys():
 			if id < ack:
 				s.snapshots.erase(id)
+		s.oldest_snapshot = ack
 
 
 ## One input per tick; two when a backlog builds up (jitter), so the server
@@ -190,53 +249,109 @@ func _prefetch(s: Session) -> void:
 	var p: Dictionary = world.present[s.character_id]
 	var cell := Movement.cell_of(p["pos"])
 	var mc := Vector2i(floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
+	if mc == s.prefetched_at:
+		return  # only when the player enters another chunk
+	s.prefetched_at = mc
 	var r := view_chunks + 1
 	for cy in range(mc.y - r, mc.y + r + 1):
 		for cx in range(mc.x - r, mc.x + r + 1):
 			world.prefetch(p["location"], cx, cy)
 
 
-func _send_snapshot(s: Session) -> void:
-	var me: Dictionary = world.present[s.character_id]
-	var mine := Movement.cell_of(me["pos"])
-	var mc := Vector2i(floori(float(mine.x) / Chunk.SIZE), floori(float(mine.y) / Chunk.SIZE))
-	var now := {}
+## Entity states for this tick, shared by every client's snapshot. Each
+## entity has a hot part (position) and a cold part (what it is, looks), each
+## with a version; a snapshot remembers versions only, so the delta against
+## the client's acknowledged base is a comparison of numbers.
+func _update_replica() -> void:
+	for id: String in _replica.keys():
+		var r: Dictionary = _replica[id]
+		if r["kind"] == "character" and not world.present.has(id):
+			_replica.erase(id)
+		elif r["kind"] == "item" and not world.items.has(id):
+			_replica.erase(id)
 	for id: String in world.present:
 		var p: Dictionary = world.present[id]
-		if p["location"] != me["location"]:
+		var r: Dictionary = _replica.get(id, {})
+		if r.is_empty():
+			_replica[id] = {"kind": "character", "hot": {"x": p["pos"].x, "y": p["pos"].y}, "hv": 1,
+				"cold": {"kind": "character", "name": p["name"], "appearance": p["appearance"]}, "cv": 1}
+		elif r["hot"]["x"] != p["pos"].x or r["hot"]["y"] != p["pos"].y:
+			r["hot"] = {"x": p["pos"].x, "y": p["pos"].y}
+			r["hv"] += 1
+
+
+func _item_replica(id: String) -> Dictionary:
+	if not _replica.has(id):
+		var it: Dictionary = world.items[id]
+		_replica[id] = {"kind": "item", "hot": {"x": it["x"], "y": it["y"]}, "hv": 1,
+			"cold": {"kind": "item", "item": it["item"], "count": it["count"]}, "cv": 1}
+	return _replica[id]
+
+
+func _send_snapshot(s: Session) -> void:
+	var me: Dictionary = world.present[s.character_id]
+	var loc: String = me["location"]
+	var mine := Movement.cell_of(me["pos"])
+	var mc := Vector2i(floori(float(mine.x) / Chunk.SIZE), floori(float(mine.y) / Chunk.SIZE))
+	var view := {}
+	for id: String in world.present:
+		var p: Dictionary = world.present[id]
+		if p["location"] != loc:
 			continue
 		var cell := Movement.cell_of(p["pos"])
-		var c := Vector2i(floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
-		if absi(c.x - mc.x) <= view_chunks and absi(c.y - mc.y) <= view_chunks:
-			now[id] = {"x": p["pos"].x, "y": p["pos"].y, "kind": "character", "name": p["name"], "appearance": p["appearance"]}
-	# The player's own inventory travels only to that player.
-	now[s.character_id]["inventory"] = world.inventory(s.character_id).stacks.duplicate()
+		if absi(floori(float(cell.x) / Chunk.SIZE) - mc.x) <= view_chunks and absi(floori(float(cell.y) / Chunk.SIZE) - mc.y) <= view_chunks:
+			view[id] = _replica[id]
 	for cy in range(mc.y - view_chunks, mc.y + view_chunks + 1):
 		for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
-			for id: String in world.items_in_chunk(me["location"], cx, cy):
-				var it: Dictionary = world.items[id]
-				now[id] = {"x": it["x"], "y": it["y"], "kind": "item", "item": it["item"], "count": it["count"]}
+			for id: String in world.items_in_chunk(loc, cx, cy):
+				view[id] = _item_replica(id)
 	var base: Dictionary = s.snapshots.get(s.acked, {}) if s.acked > 0 else {}
 	var changed := {}
-	for id: String in now:
-		var old: Dictionary = base.get(id, {})
-		var diff := {}
-		for f: String in now[id]:
-			if not old.has(f) or old[f] != now[id][f]:
-				diff[f] = now[id][f]
-		if not diff.is_empty():
-			changed[id] = diff
+	var versions := {}
+	for id: String in view:
+		var r: Dictionary = view[id]
+		var v := Vector2i(r["hv"], r["cv"])
+		versions[id] = v
+		var b: Variant = base.get(id)
+		if b == null:
+			var full: Dictionary = r["hot"].duplicate()
+			full.merge(r["cold"])
+			full["uid"] = id
+			changed[_net_id(s, id)] = full
+		elif b != v:
+			var d := {}
+			if b.x != v.x:
+				d.merge(r["hot"])
+			if b.y != v.y:
+				d.merge(r["cold"])
+			changed[_net_id(s, id)] = d
+	# The player's own inventory goes only to that player, and only when it changed.
+	var inv_v := world.inventory_version(s.character_id)
+	versions["~inventory"] = inv_v
+	if base.get("~inventory", -1) != inv_v:
+		var mine_n := _net_id(s, s.character_id)
+		if not changed.has(mine_n):
+			changed[mine_n] = {}
+		changed[mine_n]["inventory"] = world.inventory(s.character_id).stacks.duplicate()
 	var removed: Array = []
 	for id: String in base:
-		if not now.has(id):
-			removed.append(id)
+		if not versions.has(id) and s.net_ids.has(id):
+			removed.append(s.net_ids[id])
 	var sid := s.next_snapshot
 	s.next_snapshot += 1
-	s.snapshots[sid] = now
-	if s.snapshots.size() > SNAPSHOT_HISTORY:
-		s.snapshots.erase(s.snapshots.keys().min())
+	s.snapshots[sid] = versions
+	while s.snapshots.size() > SNAPSHOT_HISTORY:
+		s.snapshots.erase(s.oldest_snapshot)
+		s.oldest_snapshot += 1
 	_send(s, Transport.Channel.STATE, Protocol.SNAPSHOT, {"id": sid, "base": s.acked if s.acked > 0 else 0,
 		"tick": tick, "entities": changed, "removed": removed, "input_ack": s.last_input_seq})
+
+
+func _net_id(s: Session, id: String) -> int:
+	if not s.net_ids.has(id):
+		s.net_ids[id] = s.next_net_id
+		s.next_net_id += 1
+	return s.net_ids[id]
 
 
 func _stream_chunks(s: Session) -> void:
@@ -244,6 +359,11 @@ func _stream_chunks(s: Session) -> void:
 	var loc: String = p["location"]
 	var cell := Movement.cell_of(p["pos"])
 	var mc := Vector2i(floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
+	if mc == s.streamed_at and s.streamed_epoch == world.revision_epoch and not s.streaming_unfinished:
+		return  # same place, nothing changed, nothing left to send
+	s.streamed_at = mc
+	s.streamed_epoch = world.revision_epoch
+	s.streaming_unfinished = false
 	var budget := CHUNKS_PER_TICK
 	# Nearest first, so the ground under the player arrives before the edges.
 	for r in view_chunks + 1:
@@ -256,6 +376,7 @@ func _stream_chunks(s: Session) -> void:
 				if s.chunks.get(key, -1) == rev:
 					continue
 				if budget == 0:
+					s.streaming_unfinished = true
 					return
 				budget -= 1
 				s.chunks[key] = rev

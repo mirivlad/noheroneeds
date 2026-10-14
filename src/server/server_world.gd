@@ -80,6 +80,9 @@ var items := {}
 var _items_by_chunk := {}
 var _dirty_items := {}
 var _removed_items := {}
+var _inventory_version := {}
+## Raised by any chunk change anywhere (lets the server skip unchanged views).
+var revision_epoch := 0
 ## chunk key -> revision, raised on every change; clients compare it
 var _chunk_rev := {}
 ## chunk key -> [revision, encoded bytes], shared by all clients
@@ -157,6 +160,7 @@ func chunk(location: String, cx: int, cy: int) -> Chunk:
 		if not data.is_empty():
 			c = ChunkCodec.decode(data)
 			assert(c != null, "corrupt chunk %s: %s" % [key, ChunkCodec.last_error])
+			_encoded[key] = [_chunk_rev.get(key, 0), data]
 		elif location == SURFACE and generator:
 			c = generator.generate(cx, cy)
 			_dirty_chunks[key] = true  # generated once, then kept whole
@@ -213,6 +217,8 @@ func poll_loaded() -> void:
 			continue  # loaded meanwhile by chunk(); the same content
 		_chunks[key] = r[3]
 		_take_items(r[0], r[5])
+		if not (r[6] as PackedByteArray).is_empty():
+			_encoded[key] = [_chunk_rev.get(key, 0), r[6]]
 		if r[4]:
 			_dirty_chunks[key] = true
 
@@ -314,7 +320,7 @@ func _known_character(id: String) -> Dictionary:
 ## Gives items outside of any request (world setup, tests).
 func grant(owner: String, content_id: String, n: int) -> void:
 	inventory(owner).add(content_id, n)
-	_dirty_inventories[owner] = true
+	_touch_inventory(owner)
 
 
 ## Frequently changing state of an entity (position, needs...). CBOR-compatible.
@@ -520,7 +526,7 @@ func _drop(actor: String, r: Dictionary) -> Dictionary:
 	var id := Uuid.v4()
 	_place_item(id, {"location": where["location"], "x": where["x"], "y": where["y"], "item": item, "count": n})
 	_dirty_items[id] = true
-	_dirty_inventories[actor] = true
+	_touch_inventory(actor)
 	return {"ok": true, "entity": id}
 
 
@@ -538,7 +544,7 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 	items.erase(id)
 	_dirty_items.erase(id)
 	_removed_items[id] = true
-	_dirty_inventories[actor] = true
+	_touch_inventory(actor)
 	return {"ok": true, "item": it["item"], "count": it["count"]}
 
 
@@ -556,6 +562,17 @@ func _someone_stands_on(location: String, x: int, y: int) -> bool:
 func _changed(key: String) -> void:
 	_dirty_chunks[key] = true
 	_chunk_rev[key] = _chunk_rev.get(key, 0) + 1
+	revision_epoch += 1
+
+
+func _touch_inventory(owner: String) -> void:
+	_dirty_inventories[owner] = true
+	_inventory_version[owner] = _inventory_version.get(owner, 0) + 1
+
+
+## Raised whenever an inventory changes (clients get theirs only then).
+func inventory_version(owner: String) -> int:
+	return _inventory_version.get(owner, 0)
 
 
 func _cell(r: Dictionary) -> Array:
@@ -589,7 +606,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	c.set_cell("structure", at[3], at[4], part)
 	c.set_props(at[3], at[4], {"owner": actor})
 	_changed(chunk_key(at[0], at[1], at[2]))
-	_dirty_inventories[actor] = true
+	_touch_inventory(actor)
 	return {"ok": true}
 
 
@@ -613,7 +630,7 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	var inv := inventory(actor)
 	for id: String in costs:
 		inv.add(id, int(costs[id]))
-	_dirty_inventories[actor] = true
+	_touch_inventory(actor)
 	return {"ok": true, "part": part}
 
 
@@ -626,6 +643,6 @@ func _transfer(actor: String, r: Dictionary) -> Dictionary:
 	if not inventory(actor).remove(item, n):
 		return {"ok": false, "reason": "not_enough"}
 	inventory(to).add(item, n)
-	_dirty_inventories[actor] = true
-	_dirty_inventories[to] = true
+	_touch_inventory(actor)
+	_touch_inventory(to)
 	return {"ok": true}

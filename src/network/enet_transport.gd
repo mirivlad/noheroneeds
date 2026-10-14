@@ -43,6 +43,7 @@ func poll() -> Array[Transport.Event]:
 func send(to: int, channel: Transport.Channel, data: PackedByteArray) -> void:
 	if peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
 		return
+	bytes_sent[channel] += data.size()
 	peer.set_target_peer(to)
 	match channel:
 		Transport.Channel.STATE:

@@ -11,7 +11,9 @@ class_name Protocol
 ## Bump VERSION on any change to a message; servers refuse other versions.
 
 ## 2: "content" in HELLO is the rules fingerprint (ADR-0009).
-const VERSION := 2
+## 3: snapshots key entities by short per-connection numbers; the full id
+##    comes once, as "uid", when an entity enters the client's view.
+const VERSION := 3
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -44,8 +46,9 @@ const SERVER_FIELDS := {
 	CHALLENGE: {"nonce": TYPE_PACKED_BYTE_ARRAY, "server_id": TYPE_STRING},
 	WELCOME: {"character_id": TYPE_STRING, "location": TYPE_STRING, "tick": TYPE_INT},
 	REJECT: {"reason": TYPE_STRING},
-	# entities: {id: {field: value}} changed since the acknowledged base;
-	# removed: [id]; input_ack: last input seq applied for this client
+	# entities: {net number: {field: value}} changed since the acknowledged
+	# base ("uid" with the entity id when it enters the view); removed:
+	# [net number]; input_ack: last input seq applied for this client
 	SNAPSHOT: {"id": TYPE_INT, "base": TYPE_INT, "tick": TYPE_INT, "entities": TYPE_DICTIONARY,
 		"removed": TYPE_ARRAY, "input_ack": TYPE_INT},
 	RESULT: {"request_id": TYPE_STRING, "result": TYPE_DICTIONARY},
@@ -56,7 +59,7 @@ const SERVER_FIELDS := {
 static func encode(type: String, fields: Dictionary) -> PackedByteArray:
 	var m := fields.duplicate()
 	m["t"] = type
-	var out := Cbor.encode(m)
+	var out := Cbor.encode_fast(m)
 	assert(not out.is_empty(), "unencodable %s: %s" % [type, Cbor.last_error])
 	return out
 

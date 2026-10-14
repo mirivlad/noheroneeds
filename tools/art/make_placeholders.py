@@ -375,10 +375,15 @@ TEX = {}
 MAT_DIR = OUT / "art" / "materials"
 for _f in sorted(MAT_DIR.glob("*.png")) if MAT_DIR.exists() else []:
     TEX[_f.stem] = Image.open(_f).convert("RGBA")
+if "wood_floor" in TEX:
+    # A ceiling seen from above must not pass for the floor beside it: the
+    # planks run across and are lighter, as boards in the light.
+    _c = TEX["wood_floor"].transpose(Image.Transpose.ROTATE_90)
+    TEX["wood_ceiling"] = Image.blend(_c, Image.new("RGBA", _c.size, (236, 206, 150, 255)), 0.28)
 # Seamless textures laid over a grid of tiles: content id -> material.
 GRID_MATERIALS = {"base:grass": "grass", "base:grass_dry": "grass_dry", "base:dirt": "dirt", "base:moss": "moss",
                   "base:forest_floor": "forest_floor", "base:sand": "sand", "base:water": "water",
-                  "base:wood_floor": "wood_floor", "base:wood_ceiling": "wood_floor",
+                  "base:wood_floor": "wood_floor", "base:wood_ceiling": "wood_ceiling",
                   "base:thatch_roof": "roof_thatch"}
 
 

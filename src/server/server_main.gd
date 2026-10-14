@@ -14,6 +14,7 @@ extends SceneTree
 ##                        in this world (a world rule; none by default)
 ##   --starter-outfit=SLOT:ID[,SLOT:ID]  what a character wears when it wears
 ##                        nothing, e.g. torso:base:linen_shirt (none by default)
+##   --day-minutes=N      how long a game day lasts in real minutes (default 24)
 ##   --stop-file=PATH     stop cleanly when this file appears (default: STOP
 ##                        next to the world database; it is removed on start)
 ## Prints "LISTENING <port> <server id>" when ready.
@@ -63,6 +64,8 @@ func _initialize() -> void:
 	for pair in String(o.get("starter-kit", "")).split(",", false):
 		var at := pair.rfind(":")
 		_world.starter_kit[pair.left(at)] = int(pair.substr(at + 1))
+	if o.has("day-minutes"):
+		_world.set_day_minutes(float(o["day-minutes"]))
 	for pair in String(o.get("starter-outfit", "")).split(",", false):
 		var at := pair.find(":")
 		_world.starter_outfit[pair.left(at)] = pair.substr(at + 1)

@@ -13,6 +13,8 @@ const RULES := {
 	"max_levels": 3,
 	"starter_kit": true,
 	"starter_outfit": true,
+	## How long a game day lasts, real minutes (ADR-0014).
+	"day_minutes": 24,
 }
 ## What "starter kit" and "starter outfit" give (world rules of the base game).
 const STARTER_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20}
@@ -82,6 +84,7 @@ func create(name: String, rules: Dictionary) -> String:
 	for key: String in RULES:
 		info[key] = rules.get(key, RULES[key])
 	info["max_levels"] = clampi(int(info["max_levels"]), 1, 20)
+	info["day_minutes"] = clampi(int(info["day_minutes"]), 2, 600)
 	_write(id, info)
 	return id
 
@@ -113,6 +116,7 @@ static func apply_rules(info: Dictionary, world: ServerWorld) -> void:
 	world.max_levels = int(info.get("max_levels", RULES["max_levels"]))
 	world.starter_kit = STARTER_KIT.duplicate() if info.get("starter_kit", true) else {}
 	world.starter_outfit = STARTER_OUTFIT.duplicate() if info.get("starter_outfit", true) else {}
+	world.set_day_minutes(float(info.get("day_minutes", RULES["day_minutes"])))
 
 
 func _write(id: String, info: Dictionary) -> void:

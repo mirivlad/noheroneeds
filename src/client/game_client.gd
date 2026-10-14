@@ -18,6 +18,11 @@ var reject_reason := ""
 var character_id := ""
 ## The own character as the server shows it to others (name, appearance).
 var own := {}
+## The world time (game ms, ADR-0014): the server's from each snapshot,
+## carried on between snapshots at the server's rate.
+var world_time := 0.0
+var time_rate := 0
+var has_time := false
 var location := ""
 ## The level label of the location (0 on the surface).
 var z := 0
@@ -72,6 +77,8 @@ func step() -> void:
 					state = "disconnected"
 			Transport.Kind.PACKET:
 				_on_message(Protocol.decode(e.data, false))
+	if has_time:
+		world_time += time_rate
 	if state == "playing" and has_position:
 		_input_seq += 1
 		_unacked_inputs.append([_input_seq, move.x, move.y, 1 if run else 0])
@@ -210,6 +217,11 @@ func _on_snapshot(m: Dictionary) -> void:
 		full[id] = st
 	_snapshots[sid] = full
 	_latest_snapshot = sid
+	time_rate = int(m["rate"])
+	# The server's clock, unless ours is just ahead by the ticks in flight.
+	if not has_time or absf(world_time - float(m["time"])) > time_rate * 10:
+		world_time = float(m["time"])
+	has_time = true
 	for old: int in _snapshots.keys():
 		if old < base_id:
 			_snapshots.erase(old)

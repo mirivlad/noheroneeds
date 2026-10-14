@@ -38,6 +38,12 @@ var sync_loads := 0
 ## Requests are remembered at least this many ticks for idempotency.
 var request_memory_ticks := 20 * 60 * 30
 var tick := 0
+## World time: game ms since the world began (ADR-0014), saved with the state.
+var world_time := Daylight.START_MS
+## Game ms the clock moves a tick: the day's length is a world rule.
+var time_rate := Daylight.rate_for(Daylight.DEFAULT_DAY_MINUTES)
+## The time is written every this many ticks (and on every full sync).
+const TIME_SAVE_TICKS := 100
 ## Read connection of the simulation thread.
 var store: WorldStore
 var writer: StoreWriter
@@ -126,6 +132,9 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		return null
 	var world := ServerWorld.new(s, registry, w)
 	world.world_seed = int(s.read_meta("seed"))
+	var saved_time := s.read_meta("time")
+	if saved_time.is_valid_int():
+		world.world_time = int(saved_time)
 	world.levels.load_rows(s.all_locations())
 	var g := SurfaceGenerator.new(world.world_seed, registry)
 	world.generator = g if g.can_generate() else null
@@ -484,12 +493,56 @@ func sync() -> bool:
 	return writer.last_error() == ""
 
 
+## The length of a day in real minutes (a world rule); the clock keeps the
+## hour it shows, only its pace changes.
+func set_day_minutes(minutes: float) -> void:
+	time_rate = Daylight.rate_for(minutes)
+
+
+## One tick of the world's clock.
+func advance_time() -> void:
+	world_time += time_rate
+	_time_dirty = true
+
+
+var _time_dirty := false
+
+
+## How light a cell is now, 0..1 (ADR-0014): the hour's daylight, less under a
+## roof or a ceiling, and the light sources around it. What creatures can
+## see will ask this; it is computed when asked, not every tick.
+func light_at(location: String, cell: Vector2i) -> float:
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	var indoors := Terrain.is_covered(chunk(location, cx, cy), cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE)
+	return Lighting.level(world_time, indoors, cell, light_sources(location, cell, Lighting.MAX_RADIUS))
+
+
+## Light sources within `radius` cells of a cell: [cell, intensity, radius].
+func light_sources(location: String, around: Vector2i, radius: int) -> Array:
+	var out := []
+	for y in range(around.y - radius, around.y + radius + 1):
+		for x in range(around.x - radius, around.x + radius + 1):
+			var part := _part_at(location, x, y, "structure")
+			if part == "":
+				continue
+			var l: Dictionary = content.get_def(part).get("light", {})
+			if not l.is_empty():
+				out.append([Vector2i(x, y), float(l["intensity"]), float(l["radius"])])
+	return out
+
+
 ## Hands changed entity state to the writer (encoded there). At most `limit`
 ## entities per call (-1: all), so the server can spread the work over ticks.
+## The world time goes with it now and then, and always on a full flush.
 func flush_state(limit := -1) -> void:
-	if _dirty_entities.is_empty() and _dirty_world_characters.is_empty():
+	var with_time := _time_dirty and (limit < 0 or tick % TIME_SAVE_TICKS == 0)
+	if _dirty_entities.is_empty() and _dirty_world_characters.is_empty() and not with_time:
 		return
 	var b := StoreWriter.Batch.new()
+	if with_time:
+		b.meta.append(["time", str(world_time)])
+		_time_dirty = false
 	for id: String in _dirty_world_characters.keys():
 		if present.has(id):
 			var p: Dictionary = present[id]

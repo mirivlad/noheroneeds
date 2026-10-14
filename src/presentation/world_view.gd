@@ -34,6 +34,11 @@ var _faded: Array[Sprite2D] = []
 const FADED := 0.4
 var _room_from := Vector2i(1 << 30, 0)
 var _sorted := Node2D.new()
+## The hour's light over the whole world (ADR-0014), and the lights of the
+## light sources drawn now (brighter as it gets dark).
+var _tint := CanvasModulate.new()
+var _lights: Array[PointLight2D] = []
+static var _glow: GradientTexture2D
 var _chunk_nodes := {}
 var _characters := {}
 ## visual id -> [source id, first atlas cell Vector2i, variants]
@@ -96,6 +101,7 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	_cover.z_index = -1
 	_sorted.y_sort_enabled = true
 	_covers.z_index = 10
+	add_child(_tint)
 	add_child(_below)
 	add_child(_ground)
 	var lapping := _edges.keys()
@@ -269,6 +275,7 @@ func update_view(alpha: float, delta: float) -> void:
 	for key: String in keys:
 		_pending[key] = true
 	_paint_pending()
+	_update_light()
 	_update_characters(alpha, delta)
 	_update_room()
 	_fade_occluders()
@@ -277,9 +284,47 @@ func update_view(alpha: float, delta: float) -> void:
 func _notification(what: int) -> void:
 	# Layers made up front but never added (setup() not called) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [_ground, _cover, _below, _covers, _sorted]:
+		for n: Node in [_ground, _cover, _below, _covers, _sorted, _tint]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
+
+
+func _update_light() -> void:
+	if not client.has_time:
+		return
+	_tint.color = Daylight.tint(client.world_time)
+	var dark := 1.0 - Daylight.sun(client.world_time)
+	for i in range(_lights.size() - 1, -1, -1):
+		var l := _lights[i]
+		if not is_instance_valid(l):
+			_lights.remove_at(i)
+			continue
+		l.energy = float(l.get_meta("intensity")) * dark * 1.6
+		l.visible = dark > 0.02
+
+
+## A light source's glow: a soft round light the size of its radius.
+func _light_for(def: Dictionary, cell: Vector2i) -> PointLight2D:
+	if _glow == null:
+		_glow = GradientTexture2D.new()
+		_glow.fill = GradientTexture2D.FILL_RADIAL
+		_glow.fill_from = Vector2(0.5, 0.5)
+		_glow.fill_to = Vector2(1.0, 0.5)
+		_glow.width = 128
+		_glow.height = 128
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		_glow.gradient = g
+	var l := PointLight2D.new()
+	l.texture = _glow
+	l.color = Color(String(def["color"]))
+	l.texture_scale = float(def["radius"]) * CELL * 2.0 / _glow.width
+	l.position = Vector2((cell.x + 0.5) * CELL, (cell.y + 0.5) * CELL - CELL)
+	l.set_meta("intensity", float(def["intensity"]))
+	l.energy = 0.0
+	_lights.append(l)
+	return l
 
 
 ## Chunks waiting to be drawn. Those in sight are drawn at once, the rest
@@ -378,6 +423,9 @@ func _paint(key: String, spread := true) -> void:
 					var s := _tall_sprite(v, cell, state, variant, facing)
 					s.set_meta("cell", cell)
 					holder.add_child(s)
+					var light: Dictionary = content.get_def(id).get("light", {})
+					if not light.is_empty():
+						holder.add_child(_light_for(light, cell))
 				else:
 					_set_flat(_cover, cell, id)  # flat, or the missing-picture mark
 			if c.get_props(lx, ly).get("stairs_down", false):
@@ -569,8 +617,9 @@ func _fade_occluders() -> void:
 			var holder: Node2D = _chunk_nodes.get(ServerWorld.chunk_key(client.location, mc.x + dx, mc.y + dy))
 			if holder == null:
 				continue
-			for s: Sprite2D in holder.get_children():
-				if s.position.y > me.position.y and _sprite_rect(s).intersects(body):
+			for n: Node in holder.get_children():
+				var s := n as Sprite2D  # lights stand among the sprites
+				if s and s.position.y > me.position.y and _sprite_rect(s).intersects(body):
 					s.modulate.a = FADED
 					_faded.append(s)
 	for cell: Vector2i in _cover_sprites:
@@ -594,8 +643,9 @@ func pick(point: Vector2) -> Vector2i:
 	var best := Vector2i(floori(point.x / CELL), floori(point.y / CELL))
 	var best_y := -INF
 	for holder: Node2D in _chunk_nodes.values():
-		for s: Sprite2D in holder.get_children():
-			if s.has_meta("cell") and s.position.y > best_y and _sprite_rect(s).has_point(point):
+		for n: Node in holder.get_children():
+			var s := n as Sprite2D
+			if s and s.has_meta("cell") and s.position.y > best_y and _sprite_rect(s).has_point(point):
 				best = s.get_meta("cell")
 				best_y = s.position.y
 	return best

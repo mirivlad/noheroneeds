@@ -19,31 +19,19 @@ static func sees(world: ServerWorld, location: String, eye: Vector2i, def: Dicti
 	var d := Vector2(eye).distance_to(Vector2(at))
 	if d > float(def["sight"]):
 		return false  # beyond sight even in full light: no need to ask the light
-	if d > sight_range(def, world.light_at(location, at)):
+	# The light of the cell is asked only when it matters: no cell is darker
+	# than the day indoors (in a location with daylight), so nearer than the
+	# sight that leaves, it is seen whatever the light.
+	var least := Daylight.outdoor_light(world.world_time) * Daylight.INDOOR_SHARE if world.has_daylight(location) else 0.0
+	if d > sight_range(def, least) and d > sight_range(def, world.light_at(location, at)):
 		return false
-	return line_clear(world, location, eye, at)
+	return world.line_clear(location, eye, at)
 
 
 ## Whether nothing opaque stands between two cells (the cells themselves do
 ## not count: a creature in a doorway still looks out).
 static func line_clear(world: ServerWorld, location: String, a: Vector2i, b: Vector2i) -> bool:
-	var dx := absi(b.x - a.x)
-	var dy := -absi(b.y - a.y)
-	var sx := 1 if a.x < b.x else -1
-	var sy := 1 if a.y < b.y else -1
-	var err := dx + dy
-	var p := a
-	while p != b:
-		var e2 := 2 * err
-		if e2 >= dy:
-			err += dy
-			p.x += sx
-		if e2 <= dx:
-			err += dx
-			p.y += sy
-		if p != b and world.is_opaque(location, p.x, p.y):
-			return false
-	return true
+	return world.line_clear(location, a, b)
 
 
 ## Whether a noise at `at` reaches a creature at `ear`.

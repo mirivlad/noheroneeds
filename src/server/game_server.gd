@@ -16,7 +16,7 @@ const CREATURE_HOT_TICKS := 4
 ## How far around a player creatures are sent (cells, half width and height):
 ## a zoomed-out screen (40 x 22 cells) and a margin.
 const CREATURE_VIEW := Vector2i(26, 18)
-## Snapshots kept per client as possible bases for deltas.
+## Unacknowledged snapshots remembered per client (what each carried).
 const SNAPSHOT_HISTORY := 64
 ## Most queued inputs per client; beyond it the oldest are dropped.
 const MAX_QUEUED_INPUTS := 8
@@ -49,7 +49,43 @@ var _mark := 0
 var _this_tick := {}
 var _slowest := {}
 var _slowest_usec := 0
+## entity id -> Replica: what clients are shown of it this tick.
 var _replica := {}
+## Request id -> when it came; microseconds from a request to its result
+## (the commit to disk is in between), since the last take_stats().
+var _request_at := {}
+var _result_usec: Array[int] = []
+
+
+## An entity as clients see it: a hot part (position) and a cold part (what
+## it is, looks), each with a version that grows on every change. Shared by
+## all sessions and updated in place; a session compares versions only.
+class Replica:
+	var kind := ""
+	var x := 0
+	var y := 0
+	var hv := 1
+	var cv := 1
+	var cold := {}
+	## Encoded size of the cold part (to keep a snapshot within a packet).
+	var cold_size := 0
+	## A creature's beat for sending its position (0..CREATURE_HOT_TICKS-1).
+	var phase := 0
+	## Gone from the world (views holding it drop it).
+	var gone := false
+	## A creature's cell of the grid (GameServer._grid).
+	var grid_key := Vector3i.ZERO
+
+	func _init(k: String, px: int, py: int, c: Dictionary) -> void:
+		kind = k
+		x = px
+		y = py
+		cold = c
+		cold_size = Cbor.encode_fast(c).size()
+
+	## Both versions in one number, as sessions remember them.
+	func version() -> int:
+		return hv << 32 | cv
 var _sessions := {}
 var _crypto := Crypto.new()
 
@@ -65,9 +101,25 @@ class Session:
 	var inputs: Array = []
 	var last_input_seq := 0
 	var direction := Vector2i.ZERO
-	## snapshot id -> {entity id: Vector2i(hot version, cold version), "~inventory": version}
-	var snapshots := {}
-	var oldest_snapshot := 1
+	## What the client has acknowledged (protocol 7): entity id ->
+	## Replica.version(); snapshots carry only differences from it.
+	## "~inventory" -> the inventory version.
+	var known := {}
+	## What the client may see (id -> Replica), worked out again at
+	## view_due, or sooner when the player moves to another grid cell or
+	## items change; replicas update in place in between.
+	var view := {}
+	var view_due := 0
+	var view_cell := Vector3i(1 << 30, 0, 0)
+	var view_items_rev := -1
+	## The tick the view was last worked out.
+	var view_built := -1
+	## Entities sent to the client and not removed since (it may have them).
+	var shown := {}
+	## Entities whose removal was sent and not acknowledged yet: repeated.
+	var removing := {}
+	## snapshot id -> [{entity id: Vector2i versions sent}, [removed ids]]
+	var pending := {}
 	## entity id -> short number on this connection (never reused)
 	var net_ids := {}
 	var next_net_id := 1
@@ -118,6 +170,13 @@ func take_stats() -> Dictionary:
 	_slowest = {}
 	_slowest_usec = 0
 	_sync_loads_seen = world.sync_loads
+	_result_usec.sort()
+	var r := _result_usec.size()
+	out["result_ms"] = [_result_usec[r / 2] / 1000 if r else 0, _result_usec[mini(r - 1, r * 99 / 100)] / 1000 if r else 0,
+		_result_usec[-1] / 1000 if r else 0]
+	_result_usec.clear()
+	if _request_at.size() > 10000:
+		_request_at.clear()  # never answered (a client gone mid-request): not kept forever
 	return out
 
 
@@ -167,6 +226,9 @@ func _step() -> void:
 		world.writer.wait_idle()
 	world.poll()
 	for ack: Array in world.take_acks():
+		if _request_at.has(ack[1]):
+			_result_usec.append(Time.get_ticks_usec() - int(_request_at[ack[1]]))
+			_request_at.erase(ack[1])
 		var s := _session_of(ack[0])
 		if s:
 			_send(s, Transport.Channel.RELIABLE, Protocol.RESULT, {"request_id": ack[1], "result": ack[2]})
@@ -181,6 +243,7 @@ func _step() -> void:
 			_stream_chunks(s)
 	_lap("chunks")
 	_update_replica()
+	_update_creature_replicas()
 	for s: Session in _sessions.values():
 		if s.state == "playing":
 			_send_snapshot(s)
@@ -236,6 +299,7 @@ func _on_message(s: Session, m: Dictionary) -> void:
 				Protocol.INPUT:
 					_take_input(s, m)
 				Protocol.REQUEST:
+					_request_at[String((m["request"] as Dictionary).get("request_id", ""))] = Time.get_ticks_usec()
 					world.handle(s.character_id, m["request"])
 
 
@@ -276,12 +340,28 @@ func _take_input(s: Session, m: Dictionary) -> void:
 	while s.inputs.size() > MAX_QUEUED_INPUTS:
 		s.inputs.pop_front()
 	var ack: int = m["ack"]
-	if ack > s.acked and s.snapshots.has(ack):
+	if ack > s.acked and s.pending.has(ack):
 		s.acked = ack
-		for id: int in s.snapshots.keys():
-			if id < ack:
-				s.snapshots.erase(id)
-		s.oldest_snapshot = ack
+		_acknowledged(s, s.pending[ack])
+		for id: int in s.pending.keys():
+			if id <= ack:
+				s.pending.erase(id)
+
+
+## The client has a snapshot: what it carried is now known to be there. Every
+## snapshot carries every difference from the known state (within its size),
+## so the newest acknowledged one is enough; older ones are dropped unread.
+func _acknowledged(s: Session, sent: Array) -> void:
+	var versions: Dictionary = sent[0]
+	for id: String in versions:
+		if s.shown.has(id) or id == "~inventory":
+			s.known[id] = versions[id]
+	# Removed in that snapshot: the client has them no more (they are sent
+	# whole if they come back).
+	for id: String in sent[1]:
+		s.removing.erase(id)
+		if not s.shown.has(id):
+			s.known.erase(id)
 
 
 ## One input per tick; two when a backlog builds up (jitter), so the server
@@ -321,62 +401,90 @@ func _shown_locations(location: String) -> Array:
 	return [location] if location == ServerWorld.SURFACE else [location, ServerWorld.SURFACE]
 
 
-## Entity states for this tick, shared by every client's snapshot. Each
-## entity has a hot part (position) and a cold part (what it is, looks), each
-## with a version; a snapshot remembers versions only, so the delta against
-## the client's acknowledged base is a comparison of numbers.
+## Character and item states for this tick, shared by every client's snapshot.
 func _update_replica() -> void:
-	for id: String in _replica.keys():
-		var r: Dictionary = _replica[id]
-		if r["kind"] == "character" and not world.present.has(id):
-			_replica.erase(id)
-		elif r["kind"] == "item" and not world.items.has(id):
-			_replica.erase(id)
-		elif r["kind"] == "creature" and not world.creatures.has(id):
-			_replica.erase(id)
+	for id: String in _others.keys():
+		var r: Replica = _replica[id]
+		if (r.kind == "character" and not world.present.has(id)) or (r.kind == "item" and not world.items.has(id)):
+			_gone(id)
 	for id: String in world.present:
 		var p: Dictionary = world.present[id]
-		var r: Dictionary = _replica.get(id, {})
-		if r.is_empty():
-			var cold := {"kind": "character", "name": p["name"], "appearance": p["appearance"]}
-			_replica[id] = {"kind": "character", "hot": {"x": p["pos"].x, "y": p["pos"].y}, "hv": 1,
-				"cold": cold, "cv": 1, "cold_size": Cbor.encode_fast(cold).size()}
-		elif r["hot"]["x"] != p["pos"].x or r["hot"]["y"] != p["pos"].y:
-			r["hot"] = {"x": p["pos"].x, "y": p["pos"].y}
-			r["hv"] += 1
+		var pos: Vector2i = p["pos"]
+		var r: Replica = _replica.get(id)
+		if r == null:
+			_replica[id] = Replica.new("character", pos.x, pos.y,
+				{"kind": "character", "name": p["name"], "appearance": p["appearance"]})
+			_others[id] = true
+		elif r.x != pos.x or r.y != pos.y:
+			r.x = pos.x
+			r.y = pos.y
+			r.hv += 1
 
 
-## A creature as clients see it: where it is (hot), what it is and an NPC's
-## looks (cold). Its position goes out at most every CREATURE_HOT_TICKS (and
-## when it stops): clients ease toward it; creatures need not 20 updates a
-## second, and there may be hundreds in view.
-func _creature_replica(id: String) -> Dictionary:
-	var c := world.creatures.get_creature(id)
-	var r: Dictionary = _replica.get(id, {})
-	if r.is_empty():
+func _gone(id: String) -> void:
+	var r: Replica = _replica[id]
+	r.gone = true
+	_gone_tick = tick
+	_replica.erase(id)
+	_others.erase(id)
+	if r.kind == "creature":
+		(_grid.get(r.grid_key, {}) as Dictionary).erase(id)
+
+
+## Creatures' replicas follow what the creatures did this tick (CreatureSim
+## tells who came, left or moved): no walk over all of them. A creature's
+## position goes out at most every CREATURE_HOT_TICKS, each on its own beat
+## (and at once when it stops): clients ease toward it; creatures need not 20
+## updates a second, and there may be hundreds in view.
+func _update_creature_replicas() -> void:
+	var ch := world.creatures.take_changes()
+	for id: String in ch[1]:
+		if _replica.has(id):
+			_gone(id)
+		_lagging.erase(id)
+	for id: String in ch[0]:
+		var c := world.creatures.get_creature(id)
+		if c == null:
+			continue
+		if _replica.has(id):
+			_lagging[id] = true  # left and came back in one tick
+			continue
 		var cold := {"kind": "creature", "creature": c.kind}
 		if not c.looks.is_empty():
 			cold["appearance"] = c.looks
-		r = {"kind": "creature", "hot": {"x": c.pos.x, "y": c.pos.y}, "hv": 1, "cold": cold, "cv": 1,
-			"cold_size": Cbor.encode_fast(cold).size(), "at": tick,
-			# Each creature on its own beat: their updates spread over the ticks.
-			"phase": absi(hash(id)) % CREATURE_HOT_TICKS}
+		var r := Replica.new("creature", c.pos.x, c.pos.y, cold)
+		r.phase = absi(hash(id)) % CREATURE_HOT_TICKS
 		_replica[id] = r
-	elif (r["hot"]["x"] != c.pos.x or r["hot"]["y"] != c.pos.y) \
-			and ((tick + int(r["phase"])) % CREATURE_HOT_TICKS == 0 or c.target == Creature.NO_TARGET):
-		r["hot"] = {"x": c.pos.x, "y": c.pos.y}
-		r["hv"] += 1
-		r["at"] = tick
-	return r
+		_to_grid(id, r, c.location)
+	_lagging.merge(ch[2])
+	for id: String in _lagging.keys():
+		var c := world.creatures.get_creature(id)
+		var r: Replica = _replica.get(id)
+		if c == null or r == null:
+			_lagging.erase(id)
+			continue
+		if (tick + r.phase) % CREATURE_HOT_TICKS != 0 and c.target != Creature.NO_TARGET:
+			continue  # not its beat, and it walks on
+		_lagging.erase(id)
+		if r.x != c.pos.x or r.y != c.pos.y:
+			r.x = c.pos.x
+			r.y = c.pos.y
+			r.hv += 1
+			_to_grid(id, r, c.location)
 
 
-## Creatures near players this tick, by cells of GRID x GRID: Vector3i(gx,
-## gy, location number) -> [[cell, id, replica]]. Worked out once a tick and
-## shared by every session.
+## Creatures' replicas by cells of GRID x GRID: Vector3i(gx, gy, location
+## number) -> {id: Replica}. Kept up to date as they move; views take the
+## cells round the player.
 const GRID := 8
 var _grid := {}
-var _grid_tick := -1
 var _loc_numbers := {}
+## Creatures whose replica may lag behind them: id -> true.
+var _lagging := {}
+## Ids of character and item replicas (checked every tick for being gone).
+var _others := {}
+## The last tick a replica went (views drop gone ones then).
+var _gone_tick := -1
 
 
 func _loc_n(loc: String) -> int:
@@ -385,26 +493,24 @@ func _loc_n(loc: String) -> int:
 	return _loc_numbers[loc]
 
 
-func _grid_creatures() -> void:
-	if _grid_tick == tick:
+func _to_grid(id: String, r: Replica, location: String) -> void:
+	var at := Movement.cell_of(Vector2i(r.x, r.y))
+	var key := Vector3i(floori(float(at.x) / GRID), floori(float(at.y) / GRID), _loc_n(location))
+	if key == r.grid_key and (_grid.get(key, {}) as Dictionary).has(id):
 		return
-	_grid_tick = tick
-	_grid.clear()
-	for c: Creature in world.creatures.creatures.values():
-		if not world.needed_within(world.creatures.chunk_key_of(c), 2):
-			continue  # nobody near it: no session will look
-		var at := c.cell()
-		var key := Vector3i(floori(float(at.x) / GRID), floori(float(at.y) / GRID), _loc_n(c.location))
-		(_grid.get_or_add(key, []) as Array).append([at, c.id, _creature_replica(c.id)])
+	(_grid.get(r.grid_key, {}) as Dictionary).erase(id)
+	r.grid_key = key
+	(_grid.get_or_add(key, {}) as Dictionary)[id] = r
 
 
-func _item_replica(id: String) -> Dictionary:
-	if not _replica.has(id):
+func _item_replica(id: String) -> Replica:
+	var r: Replica = _replica.get(id)
+	if r == null:
 		var it: Dictionary = world.items[id]
-		var cold := {"kind": "item", "item": it["item"], "count": it["count"]}
-		_replica[id] = {"kind": "item", "hot": {"x": it["x"], "y": it["y"]}, "hv": 1,
-			"cold": cold, "cv": 1, "cold_size": Cbor.encode_fast(cold).size()}
-	return _replica[id]
+		r = Replica.new("item", it["x"], it["y"], {"kind": "item", "item": it["item"], "count": it["count"]})
+		_replica[id] = r
+		_others[id] = true
+	return r
 
 
 ## The chunks a player sees plus one ring stay in memory.
@@ -419,99 +525,127 @@ func _mark_needed(s: Session) -> void:
 				world.mark_needed(loc, cx, cy)
 
 
-func _send_snapshot(s: Session) -> void:
+## What this client may see (id -> Replica), worked out again every few
+## ticks (each session on its own beat), when the player moves to another
+## grid cell or when items change; in between, the replicas it holds change
+## in place, and new characters, creatures, items show up within a few ticks.
+func _view(s: Session) -> Dictionary:
 	var me: Dictionary = world.present[s.character_id]
 	var loc: String = me["location"]
 	var mine := Movement.cell_of(me["pos"])
+	var ln := _loc_n(loc)
+	var cell := Vector3i(floori(float(mine.x) / GRID), floori(float(mine.y) / GRID), ln)
+	if tick < s.view_due and cell == s.view_cell and s.view_items_rev == world.items_rev:
+		return s.view
+	# Sessions on their own beats, so their views are not all worked out in one tick.
+	s.view_due = tick + CREATURE_HOT_TICKS - (tick + s.peer) % CREATURE_HOT_TICKS
+	s.view_cell = cell
+	s.view_items_rev = world.items_rev
+	s.view_built = tick
 	var mc := Vector2i(floori(float(mine.x) / Chunk.SIZE), floori(float(mine.y) / Chunk.SIZE))
 	var view := {}
 	for id: String in world.present:
 		var p: Dictionary = world.present[id]
 		if p["location"] != loc:
 			continue
-		var cell := Movement.cell_of(p["pos"])
-		if absi(floori(float(cell.x) / Chunk.SIZE) - mc.x) <= view_chunks and absi(floori(float(cell.y) / Chunk.SIZE) - mc.y) <= view_chunks:
+		var pc := Movement.cell_of(p["pos"])
+		if absi(floori(float(pc.x) / Chunk.SIZE) - mc.x) <= view_chunks and absi(floori(float(pc.y) / Chunk.SIZE) - mc.y) <= view_chunks:
 			view[id] = _replica[id]
 	for cy in range(mc.y - view_chunks, mc.y + view_chunks + 1):
 		for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
 			for id: String in world.items_in_chunk(loc, cx, cy):
 				view[id] = _item_replica(id)
-
 	# Creatures only as far as a screen sees (zoomed out) and a little more:
-	# from the grid of this tick, the cells round the player's view.
-	_grid_creatures()
+	# from the grid, the cells round the player's view.
+	var lo := (mine - CREATURE_VIEW) * Movement.UNIT
+	var hi := (mine + CREATURE_VIEW + Vector2i.ONE) * Movement.UNIT
 	for gy in range(floori(float(mine.y - CREATURE_VIEW.y) / GRID), floori(float(mine.y + CREATURE_VIEW.y) / GRID) + 1):
 		for gx in range(floori(float(mine.x - CREATURE_VIEW.x) / GRID), floori(float(mine.x + CREATURE_VIEW.x) / GRID) + 1):
-			for e: Array in _grid.get(Vector3i(gx, gy, _loc_n(loc)), []):
-				var at: Vector2i = e[0]
-				if absi(at.x - mine.x) <= CREATURE_VIEW.x and absi(at.y - mine.y) <= CREATURE_VIEW.y:
-					view[e[1]] = e[2]
-	var base: Dictionary = s.snapshots.get(s.acked, {}) if s.acked > 0 else {}
-	var changed := {}
-	var versions := {}
-	# A snapshot goes unreliably and must stay within a packet: entities up to
-	# SNAPSHOT_BYTES (sizes estimated, not encoded), the nearest first; the
-	# others keep their acknowledged version and come in the next snapshots.
-	var my_pos: Vector2i = me["pos"]
+			var cell_creatures: Dictionary = _grid.get(Vector3i(gx, gy, ln), {})
+			for id: String in cell_creatures:
+				var r: Replica = cell_creatures[id]
+				if r.x >= lo.x and r.x < hi.x and r.y >= lo.y and r.y < hi.y:
+					view[id] = r
+	s.view = view
+	return view
+
+
+## A snapshot (protocol 7): only what differs from what the client has
+## acknowledged. Positions of entities it has go packed [net, x, y] in "hot";
+## an entity new to it comes whole (with "uid") in "entities", as do cold
+## changes and the own inventory; "removed" lists nets that left the view
+## (repeated until acknowledged).
+func _send_snapshot(s: Session) -> void:
+	var view := _view(s)
+	var my_pos: Vector2i = world.present[s.character_id]["pos"]
 	var due := []
 	for id: String in view:
-		var r: Dictionary = view[id]
-		var v := Vector2i(r["hv"], r["cv"])
-		var b: Variant = base.get(id)
-		if b == v:
-			versions[id] = v
-		elif id == s.character_id:
-			due.append([-1, id])
-		else:
-			var hot: Dictionary = r["hot"]
-			due.append([absi(int(hot["x"]) - my_pos.x) + absi(int(hot["y"]) - my_pos.y), id])
+		var r: Replica = view[id]
+		if s.known.get(id, -1) == (r.hv << 32 | r.cv) or r.gone:
+			continue
+		due.append([-1 if id == s.character_id else absi(r.x - my_pos.x) + absi(r.y - my_pos.y), id])
+	# A snapshot goes unreliably and must stay within a packet: entities up to
+	# SNAPSHOT_BYTES (sizes estimated, not encoded), the nearest first; the
+	# others come in the next snapshots.
 	due.sort()
 	var room := SNAPSHOT_BYTES
+	var sent := {}
+	var changed := {}
+	var hot := PackedInt32Array()
 	for pair: Array in due:
 		var id: String = pair[1]
-		var r: Dictionary = view[id]
-		var v := Vector2i(r["hv"], r["cv"])
-		var b: Variant = base.get(id)
-		var entry := {}
-		var cost := 16  # the number and a position
-		if b == null:
-			entry = r["hot"].duplicate()
-			entry.merge(r["cold"])
-			entry["uid"] = id
-			cost += int(r.get("cold_size", 60)) + 42
-		else:
-			if b.x != v.x:
-				entry.merge(r["hot"])
-			if b.y != v.y:
-				entry.merge(r["cold"])
-				cost += int(r.get("cold_size", 60))
+		var r: Replica = view[id]
+		var k: int = s.known.get(id, -1)
+		var cost := 12
+		if k == -1:
+			cost += r.cold_size + 46
+		elif k & 0xffffffff != r.cv:
+			cost += r.cold_size + 4
 		if cost > room and id != s.character_id:
-			if b != null:
-				versions[id] = b  # not this time: it stays as the client has it
 			continue
 		room -= cost
-		versions[id] = v
-		changed[_net_id(s, id)] = entry
+		sent[id] = r.version()
+		var n := _net_id(s, id)
+		if k == -1:
+			s.shown[id] = true
+			s.removing.erase(id)
+			var entry := r.cold.duplicate()
+			entry["x"] = r.x
+			entry["y"] = r.y
+			entry["uid"] = id
+			changed[n] = entry
+			continue
+		if k >> 32 != r.hv:
+			hot.append(n)
+			hot.append(r.x)
+			hot.append(r.y)
+		if k & 0xffffffff != r.cv:
+			changed[n] = r.cold.duplicate()
 	# The player's own inventory goes only to that player, and only when it changed.
 	var inv_v := world.inventory_version(s.character_id)
-	versions["~inventory"] = inv_v
-	if base.get("~inventory", -1) != inv_v:
+	if s.known.get("~inventory", -1) != inv_v:
+		sent["~inventory"] = inv_v
 		var mine_n := _net_id(s, s.character_id)
 		if not changed.has(mine_n):
 			changed[mine_n] = {}
 		changed[mine_n]["inventory"] = world.inventory(s.character_id).stacks.duplicate()
-	var removed: Array = []
-	for id: String in base:
-		if not versions.has(id) and s.net_ids.has(id):
-			removed.append(s.net_ids[id])
+	# Who left the view: only when it was worked out again or something went.
+	for id: String in (s.shown.keys() if s.view_built == tick or _gone_tick == tick else []):
+		var r: Replica = view.get(id)
+		if r == null or r.gone:
+			s.shown.erase(id)
+			s.known.erase(id)
+			s.removing[id] = true
+	var removed := PackedInt32Array()
+	for id: String in s.removing:
+		removed.append(s.net_ids[id])
 	var sid := s.next_snapshot
 	s.next_snapshot += 1
-	s.snapshots[sid] = versions
-	while s.snapshots.size() > SNAPSHOT_HISTORY:
-		s.snapshots.erase(s.oldest_snapshot)
-		s.oldest_snapshot += 1
-	_send(s, Transport.Channel.STATE, Protocol.SNAPSHOT, {"id": sid, "base": s.acked if s.acked > 0 else 0,
-		"tick": tick, "entities": changed, "removed": removed, "input_ack": s.last_input_seq,
+	s.pending[sid] = [sent, s.removing.keys()]
+	if s.pending.size() > SNAPSHOT_HISTORY:
+		s.pending.erase(s.pending.keys().min())
+	_send(s, Transport.Channel.STATE, Protocol.SNAPSHOT, {"id": sid, "tick": tick, "hot": hot.to_byte_array(),
+		"entities": changed, "removed": removed.to_byte_array(), "input_ack": s.last_input_seq,
 		"time": world.world_time, "rate": world.time_rate})
 
 

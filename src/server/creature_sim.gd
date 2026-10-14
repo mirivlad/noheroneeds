@@ -37,6 +37,11 @@ var creatures := {}
 ## Thinks done in the last tick (tests, stats).
 var thinks_last_tick := 0
 var _by_chunk := {}
+## Changes for those who mirror the creatures (GameServer, each tick through
+## take_changes): ids that came into memory, left it, or moved.
+var _appeared := {}
+var _left := {}
+var _moved := {}
 var _wheel := {}
 var _movers := {}
 var _last_saved := {}
@@ -57,6 +62,15 @@ func in_chunk(location: String, cx: int, cy: int) -> Array:
 	return (_by_chunk.get(ServerWorld.chunk_key(location, cx, cy), {}) as Dictionary).keys()
 
 
+## [appeared, left, moved] ({id: true} each) since the last call.
+func take_changes() -> Array:
+	var out := [_appeared, _left, _moved]
+	_appeared = {}
+	_left = {}
+	_moved = {}
+	return out
+
+
 func has(id: String) -> bool:
 	return creatures.has(id)
 
@@ -65,13 +79,14 @@ func get_creature(id: String) -> Creature:
 	return creatures.get(id)
 
 
-func chunk_key_of(c: Creature) -> String:
-	return _chunk_of(c)
-
-
+## Its chunk's key (worked out again only when it moved to another chunk).
 func _chunk_of(c: Creature) -> String:
-	var cell := c.cell()
-	return ServerWorld.chunk_key(c.location, floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
+	var at := Vector2i(c.pos.x >> (Movement.UNIT_SHIFT + 5), c.pos.y >> (Movement.UNIT_SHIFT + 5))  # Chunk.SIZE is 32
+	if at != c.chunk_at or c.location != c.chunk_location:
+		c.chunk_at = at
+		c.chunk_location = c.location
+		c.chunk_key = ServerWorld.chunk_key(c.location, at.x, at.y)
+	return c.chunk_key
 
 
 func _index(c: Creature, old_key := "") -> void:
@@ -82,6 +97,8 @@ func _index(c: Creature, old_key := "") -> void:
 
 func add(c: Creature) -> void:
 	creatures[c.id] = c
+	_appeared[c.id] = true
+	_left.erase(c.id)
 	_index(c)
 	_schedule(c, _tick + 1 + absi(hash(c.id)) % 10)
 
@@ -225,6 +242,9 @@ func drop_chunk(key: String) -> void:
 		creatures.erase(id)
 		_movers.erase(id)
 		_last_saved.erase(id)
+		_left[id] = true
+		_appeared.erase(id)
+		_moved.erase(id)
 	_by_chunk.erase(key)
 
 
@@ -340,6 +360,7 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 	c.pos = cell * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
 	c.state = "home" if String(def["behavior"]) == "villager" and night else "idle"
 	_index(c, old)
+	_moved[c.id] = true
 	c.changed()
 
 
@@ -476,8 +497,7 @@ func _move(c: Creature) -> void:
 	var dx := signi(d.x) if absi(d.x) > 24 else 0
 	var dy := signi(d.y) if absi(d.y) > 24 else 0
 	var old_key := _chunk_of(c)
-	var loc := c.location
-	var np := Movement.step_at(c.pos, dx, dy, func(x: int, y: int) -> bool: return world.is_solid(loc, x, y), speed)
+	var np := Movement.step_at(c.pos, dx, dy, _solid_in(c.location), speed)
 	if np == c.pos:
 		c.stuck += 1
 		if c.stuck > 4:  # something in the way: give up, think again
@@ -489,10 +509,30 @@ func _move(c: Creature) -> void:
 		return
 	c.stuck = 0
 	c.pos = np
+	_moved[c.id] = true
 	var key := _chunk_of(c)
 	if key != old_key:
 		_index(c, old_key)
 		c.changed()  # it now belongs to another chunk's rows
+
+
+## world.is_solid for one location, made once per location.
+var _solid_fns := {}
+
+
+func _solid_in(location: String) -> Callable:
+	var f: Array = _solid_fns.get(location, [])
+	if f.is_empty():
+		var q := world.solid_in(location)
+		f = [q, q.solid]  # the object itself is kept: a method Callable does not keep it
+		_solid_fns[location] = f
+	return f[1]
+
+
+## The world closes: let go of it (they hold each other).
+func detach() -> void:
+	world = null
+	_solid_fns.clear()
 
 
 func _walkable(location: String, cell: Vector2i) -> bool:

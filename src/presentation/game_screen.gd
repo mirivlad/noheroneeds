@@ -34,7 +34,9 @@ var hosted: HostedGame
 var client: GameClient
 var settings: GameSettings
 var audio := AudioDirector.new()
-var music := MusicDirector.new()
+## Danger music (combat, step 10): set by what threatens the player.
+var danger := false
+var _forest := false
 ## Request id -> sound event to play when it succeeds (own pickups, drops).
 var _sound_on_ok := {}
 ## The menu is open: no controls, and a single-player world stands still.
@@ -101,8 +103,6 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	audio.setup(content, client, view)
 	add_child(audio)
 	view.on_step = func(at: Vector2) -> void: audio.step_at(client.location, at)
-	music.setup(content)
-	add_child(music)
 	camera.position_smoothing_enabled = false
 	add_child(camera)
 	var layer := CanvasLayer.new()
@@ -130,9 +130,30 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [view, camera, hud, status, _info, _ghost, audio, music]:
+		for n: Node in [view, camera, hud, status, _info, _ghost, audio]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
+
+
+## The music this moment calls for (App's MusicDirector follows it):
+## danger, then home (under a roof, on a building's level), then night
+## (outdoors; until the world has its own time, the player's clock), then
+## forest (with a margin, so the edge of a wood does not flip it), else
+## explore.
+func music_mood() -> String:
+	if danger:
+		return "danger"
+	if client == null or not client.has_position:
+		return "explore"
+	if audio.indoors or client.z > 0:
+		return "home"
+	_forest = audio.forest_share > (0.35 if _forest else 0.55)
+	if _forest:
+		return "forest"
+	var hour := int(Time.get_datetime_dict_from_system()["hour"])
+	if hour >= 21 or hour < 6:
+		return "night"
+	return "explore"
 
 
 ## The view and HUD parts of the player's settings.
@@ -205,7 +226,6 @@ func _process(delta: float) -> void:
 			for x in range(-2, 1):
 				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_ceiling"})
 	view.update_view(_accum / tick, delta)
-	music.want("home" if audio.indoors else ("forest" if audio.forest_share > 0.5 else "explore"))
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
 	_update_hud()

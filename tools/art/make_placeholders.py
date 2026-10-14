@@ -318,13 +318,27 @@ def building_tiles():
         d.line((1, y + 3, 14, y + 3), P["wood"][1])
     d.line((0, 4, 0, 31), P["wood"][0])
     d.line((15, 4, 15, 31), P["wood"][0])
+    # Stairs rising to the east (ADR-0013; west is this one mirrored): four
+    # treads seen from above, each a step higher, the south side of the run
+    # below them.
+    stairs_e = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
+    d = ImageDraw.Draw(stairs_e)
+    for k in range(4):
+        h = 4 * (k + 1)
+        x0 = 4 * k
+        d.rectangle((x0, T - h, x0 + 3, 2 * T - 1 - h), P["wood"][3])          # the tread
+        d.line((x0 + 3, T - h, x0 + 3, 2 * T - 1 - h), P["wood"][1])           # its edge
+        d.rectangle((x0, 2 * T - h, x0 + 3, 2 * T - 1), P["wood"][2])          # the side below it
+        d.line((x0, 2 * T - h, x0 + 3, 2 * T - h), P["wood"][1])
+    d.line((0, 2 * T - 1, 15, 2 * T - 1), P["wood"][0])
     column = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
     d = ImageDraw.Draw(column)
     d.rectangle((5, 2, 10, 31), P["bark"][2])
     d.line((5, 2, 5, 31), P["bark"][1])
     d.rectangle((4, 0, 11, 2), P["wood"][3])
     d.rectangle((4, 29, 11, 31), P["wood"][2])
-    return floor, ceiling, thatch, b4.soft_edge(stairs, P["wood"][0]), b4.soft_edge(column, P["bark"][0])
+    return (floor, ceiling, thatch, b4.soft_edge(stairs, P["wood"][0]), b4.soft_edge(column, P["bark"][0]),
+            b4.soft_edge(stairs_e, P["wood"][0]))
 
 
 def people_sheet():
@@ -588,7 +602,7 @@ def main():
             v["states"] = {"open": opened["rect"]}
     for col, kind in enumerate(["plank", "log", "stone", "linen_shirt", "work_trousers", "boots", "axe"]):
         a.put(col, 14, icon(kind), "base:" + kind, (0, T), "item")
-    floor, ceiling, thatch, stairs, column = building_tiles()
+    floor, ceiling, thatch, stairs, column, stairs_e = building_tiles()
     a.put(7, 7, floor, "base:wood_floor", (0, T), "flat")
     a.put(8, 7, ceiling, "base:wood_ceiling", (0, T), "cover")
     a.put(9, 7, thatch, "base:thatch_roof", (0, T), "cover")
@@ -601,9 +615,13 @@ def main():
     dd.rectangle((0, T, 15, 2 * T - 1), outline=P["wood"][0])
     a.put(15, 9, down, "base:wood_stairs_down_frame", (0, 2 * T), "tall")
     down_v = a.visuals.pop()
+    a.put(11, 9, stairs_e, "base:wood_stairs_east_frame", (0, 2 * T), "tall")
+    east_v = a.visuals.pop()
     for v in a.visuals:
         if v["for"] == "base:wood_stairs":
             v["states"] = {"down": down_v["rect"]}
+            v["rotations"] = {"e": east_v["rect"]}
+            v["mirror"] = {"w": "e"}
     a.put(14, 9, column, "base:wood_column", (0, 2 * T), "tall")
     (OUT / "art").mkdir(parents=True, exist_ok=True)
     # The middle palette of B4 over everything, and its light grain.

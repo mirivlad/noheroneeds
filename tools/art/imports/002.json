@@ -44,6 +44,17 @@
     "reeds_plume"
    ],
    "block": 5.8
+  },
+  {
+   "file": "art_src/incoming/002/sheet_extra.png",
+   "names": [
+    "fern",
+    "clover",
+    "flowers_red",
+    "flowers_red",
+    "flowers_blue",
+    "fern_2"
+   ]
   }
  ],
  "visuals": {
@@ -80,7 +91,18 @@
    "flowers_yellow"
   ],
   "base:flower_blue": [
+   "flowers_blue",
    "flowers_pink_blue"
+  ],
+  "base:fern": [
+   "fern",
+   "fern_2"
+  ],
+  "base:clover": [
+   "clover"
+  ],
+  "base:flower_red": [
+   "flowers_red"
   ]
  },
  "_comment": "heights: sprite heights for objects drawn out of scale on the sheet (a person is 32). visuals: content id -> imported sprites (the first is the main picture, the rest alternates picked by cell). Read by tools/art/import_sheet.py and tools/art/make_placeholders.py.",
@@ -104,6 +126,11 @@
   "bush_low": 20,
   "berry_bush": 20,
   "berry_bush_large": 24,
-  "sapling": 30
+  "sapling": 30,
+  "fern": 16,
+  "fern_2": 18,
+  "clover": 8,
+  "flowers_red": 16,
+  "flowers_blue": 16
  }
 }

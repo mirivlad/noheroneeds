@@ -131,36 +131,36 @@
    "id": "base:visual/clover",
    "kind": "visual",
    "for": "base:clover",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/clover.png",
    "rect": [
     0,
-    112,
-    16,
-    16
+    0,
+    11,
+    8
    ],
    "origin": [
-    0,
-    16
+    -3,
+    6
    ],
-   "mode": "flat",
+   "mode": "tall",
    "variants": 1
   },
   {
    "id": "base:visual/flower_red",
    "kind": "visual",
    "for": "base:flower_red",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/flowers_red.png",
    "rect": [
-    16,
-    112,
-    16,
+    0,
+    0,
+    13,
     16
    ],
    "origin": [
-    0,
-    16
+    -2,
+    14
    ],
-   "mode": "flat",
+   "mode": "tall",
    "variants": 1
   },
   {
@@ -185,37 +185,67 @@
    "id": "base:visual/flower_blue",
    "kind": "visual",
    "for": "base:flower_blue",
-   "atlas": "art/plants/flowers_pink_blue.png",
+   "atlas": "art/plants/flowers_blue.png",
    "rect": [
     0,
     0,
-    19,
-    16
+    14,
+    15
    ],
    "origin": [
     -1,
-    14
+    13
    ],
    "mode": "tall",
-   "variants": 1
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/plants/flowers_pink_blue.png",
+     "rect": [
+      0,
+      0,
+      19,
+      16
+     ],
+     "origin": [
+      -1,
+      14
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/fern",
    "kind": "visual",
    "for": "base:fern",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/fern.png",
    "rect": [
-    64,
-    112,
-    16,
-    16
+    0,
+    0,
+    17,
+    15
    ],
    "origin": [
     0,
-    16
+    13
    ],
-   "mode": "flat",
-   "variants": 1
+   "mode": "tall",
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/plants/fern_2.png",
+     "rect": [
+      0,
+      0,
+      18,
+      18
+     ],
+     "origin": [
+      1,
+      16
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/tall_grass",

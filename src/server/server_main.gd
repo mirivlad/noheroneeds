@@ -15,6 +15,7 @@ extends SceneTree
 ##   --starter-outfit=SLOT:ID[,SLOT:ID]  what a character wears when it wears
 ##                        nothing, e.g. torso:base:linen_shirt (none by default)
 ##   --day-minutes=N      how long a game day lasts in real minutes (default 24)
+##   --populate=N         (load tests) N more creatures around the spawn point
 ##   --stop-file=PATH     stop cleanly when this file appears (default: STOP
 ##                        next to the world database; it is removed on start)
 ## Prints "LISTENING <port> <server id>" when ready.
@@ -69,6 +70,8 @@ func _initialize() -> void:
 	for pair in String(o.get("starter-outfit", "")).split(",", false):
 		var at := pair.find(":")
 		_world.starter_outfit[pair.left(at)] = pair.substr(at + 1)
+	if o.has("populate"):  # load tests: a crowd of creatures around the spawn point
+		_world.creatures.spawn_crowd(int(o["populate"]), 40)
 	_server = GameServer.new(_world, _transport, identity)
 	_stats_every = int(o.get("stats", "0")) * 1000
 	_next_stats = Time.get_ticks_msec() + _stats_every

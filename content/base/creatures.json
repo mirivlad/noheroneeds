@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "defs": [
+    {
+      "id": "base:hare", "kind": "creature", "name": "Заяц", "behavior": "prey",
+      "speed": 1.1, "run_speed": 2.4, "sight": 9, "dark_sight": 0.5, "hearing": 8,
+      "flee_distance": 6, "home_radius": 10, "think_ticks": 8, "memory_s": 30
+    },
+    {
+      "id": "base:deer", "kind": "creature", "name": "Олень", "behavior": "prey",
+      "speed": 0.9, "run_speed": 2.6, "sight": 12, "dark_sight": 0.4, "hearing": 10,
+      "flee_distance": 8, "home_radius": 16, "think_ticks": 10, "memory_s": 40
+    },
+    {
+      "id": "base:villager", "kind": "creature", "name": "Житель", "behavior": "villager",
+      "body_plan": "base:humanoid_adult",
+      "speed": 0.8, "run_speed": 1.3, "sight": 10, "dark_sight": 0.3, "hearing": 8,
+      "flee_distance": 0, "home_radius": 8, "think_ticks": 20, "memory_s": 60
+    }
+  ]
+}

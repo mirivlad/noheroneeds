@@ -131,6 +131,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		s.close()
 		return null
 	var world := ServerWorld.new(s, registry, w)
+	world.creatures = CreatureSim.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	var saved_time := s.read_meta("time")
 	if saved_time.is_valid_int():
@@ -161,6 +162,7 @@ func close() -> void:
 	sync()
 	writer.stop()
 	store.close()
+	creatures.world = null  # they hold each other: let both go
 
 
 ## Stops without committing what is not yet handed to the writer (tests of crashes).
@@ -171,6 +173,7 @@ func abandon() -> void:
 	loader.stop()
 	writer.stop()
 	store.close()
+	creatures.world = null
 
 
 static func chunk_key(location: String, cx: int, cy: int) -> String:
@@ -193,7 +196,10 @@ func chunk(location: String, cx: int, cy: int) -> Chunk:
 		else:
 			c = Chunk.new()
 		_chunks[key] = c
-		_take_items(location, store.entities_in_chunk(location, cx, cy))
+		var rows := store.entities_in_chunk(location, cx, cy)
+		_take_items(location, rows)
+		creatures.take_rows(location, rows)
+		creatures.on_chunk_ready(location, cx, cy, c)
 		sync_loads += 1
 	return c
 
@@ -242,12 +248,19 @@ func unload_idle(idle_ticks: int) -> int:
 	var dirty_item_chunks := {}
 	for id: String in _dirty_items:
 		dirty_item_chunks[_item_chunk_key(items[id])] = true
+	for id: String in _dirty_entities:  # creatures and other state not yet handed to the writer
+		var e: Array = _entities[id]  # [location, cell x, cell y, ...]
+		dirty_item_chunks[chunk_key(e[0], floori(float(e[1]) / Chunk.SIZE), floori(float(e[2]) / Chunk.SIZE))] = true
 	var gone := 0
 	for key: String in _chunks.keys():
 		if tick - int(_needed.get(key, -idle_ticks - 1)) <= idle_ticks:
 			continue
 		if _dirty_chunks.has(key) or dirty_item_chunks.has(key) or int(_written_by.get(key, 0)) > _last_committed:
 			continue
+		if not creatures.ready_to_unload(key):
+			continue  # its creatures are being saved: next time
+		creatures.drop_chunk(key)
+		_lights_by_chunk.erase(key)
 		for id: String in (_items_by_chunk.get(key, {}) as Dictionary):
 			items.erase(id)
 		_items_by_chunk.erase(key)
@@ -277,6 +290,8 @@ func poll_loaded() -> void:
 			continue  # loaded meanwhile by chunk(); the same content
 		_chunks[key] = r[3]
 		_take_items(r[0], r[5])
+		creatures.take_rows(r[0], r[5])
+		creatures.on_chunk_ready(r[0], r[1], r[2], r[3])
 		if not (r[6] as PackedByteArray).is_empty():
 			_encoded[key] = [_chunk_rev.get(key, 0), r[6]]
 		if r[4]:
@@ -486,6 +501,7 @@ func poll() -> void:
 ## Commits everything and waits for it (tests, shutdown, before backups).
 ## False if the database keeps refusing (see writer.last_error()).
 func sync() -> bool:
+	creatures.save_all()
 	commit_async(true)
 	flush_state()
 	writer.wait_idle()
@@ -506,6 +522,44 @@ func advance_time() -> void:
 
 
 var _time_dirty := false
+## Living creatures (ADR-0018).
+var creatures: CreatureSim
+## World facts to write with the next state batch (set_meta).
+var _pending_meta := {}
+## Light sources by chunk, worked out when first asked, forgotten on change.
+var _lights_by_chunk := {}
+
+
+## A world fact written with the next state batch (meta).
+func note_fact(key: String, value: String) -> void:
+	_pending_meta[key] = value
+
+
+func mark_chunk_dirty(location: String, cx: int, cy: int) -> void:
+	_dirty_chunks[chunk_key(location, cx, cy)] = true
+
+
+## Whether players needed a chunk within the last `ticks` ticks (they are near).
+func needed_within(key: String, ticks: int) -> bool:
+	return _needed.has(key) and tick - int(_needed[key]) <= ticks
+
+
+## Whether a cell blocks sight (ADR-0018): a part that is not see-through
+## (walls; a door unless open), or a solid plant (a tree, a bush).
+func is_opaque(location: String, x: int, y: int) -> bool:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	var c := chunk(location, cx, cy)
+	var lx := x - cx * Chunk.SIZE
+	var ly := y - cy * Chunk.SIZE
+	var part := c.get_cell("structure", lx, ly)
+	if part != "":
+		var d := content.get_def(part)
+		if d.get("openable", false) and c.get_props(lx, ly).get("open", false):
+			return false
+		return bool(d.get("opaque", String(d.get("role", "")) in ["wall", "door"]))
+	var plant := c.get_cell("cover", lx, ly)
+	return plant != "" and bool(content.get_def(plant).get("solid", false))
 
 
 ## How light a cell is now, 0..1 (ADR-0014): the hour's daylight, less under a
@@ -519,16 +573,38 @@ func light_at(location: String, cell: Vector2i) -> float:
 
 
 ## Light sources within `radius` cells of a cell: [cell, intensity, radius].
+## Each chunk's sources are found once and kept until the chunk changes.
 func light_sources(location: String, around: Vector2i, radius: int) -> Array:
 	var out := []
-	for y in range(around.y - radius, around.y + radius + 1):
-		for x in range(around.x - radius, around.x + radius + 1):
-			var part := _part_at(location, x, y, "structure")
-			if part == "":
-				continue
-			var l: Dictionary = content.get_def(part).get("light", {})
+	for cy in range(floori(float(around.y - radius) / Chunk.SIZE), floori(float(around.y + radius) / Chunk.SIZE) + 1):
+		for cx in range(floori(float(around.x - radius) / Chunk.SIZE), floori(float(around.x + radius) / Chunk.SIZE) + 1):
+			for src: Array in _chunk_lights(location, cx, cy):
+				var at: Vector2i = src[0]
+				if absi(at.x - around.x) <= radius and absi(at.y - around.y) <= radius:
+					out.append(src)
+	return out
+
+
+func _chunk_lights(location: String, cx: int, cy: int) -> Array:
+	var key := chunk_key(location, cx, cy)
+	if _lights_by_chunk.has(key):
+		return _lights_by_chunk[key]
+	var out := []
+	var c := chunk(location, cx, cy)
+	var cells: PackedInt32Array = c.layers.get("structure", PackedInt32Array())
+	if not cells.is_empty():
+		var lit := {}
+		for i in c.palette.size():
+			var l: Dictionary = content.get_def(c.palette[i]).get("light", {}) if c.palette[i] != "" else {}
 			if not l.is_empty():
-				out.append([Vector2i(x, y), float(l["intensity"]), float(l["radius"])])
+				lit[i] = l
+		if not lit.is_empty():
+			for i in Chunk.CELLS:
+				if lit.has(cells[i]):
+					var l: Dictionary = lit[cells[i]]
+					out.append([Vector2i(cx * Chunk.SIZE + i % Chunk.SIZE, cy * Chunk.SIZE + i / Chunk.SIZE),
+						float(l["intensity"]), float(l["radius"])])
+	_lights_by_chunk[key] = out
 	return out
 
 
@@ -537,12 +613,15 @@ func light_sources(location: String, around: Vector2i, radius: int) -> Array:
 ## The world time goes with it now and then, and always on a full flush.
 func flush_state(limit := -1) -> void:
 	var with_time := _time_dirty and (limit < 0 or tick % TIME_SAVE_TICKS == 0)
-	if _dirty_entities.is_empty() and _dirty_world_characters.is_empty() and not with_time:
+	if _dirty_entities.is_empty() and _dirty_world_characters.is_empty() and not with_time and _pending_meta.is_empty():
 		return
 	var b := StoreWriter.Batch.new()
 	if with_time:
 		b.meta.append(["time", str(world_time)])
 		_time_dirty = false
+	for k: String in _pending_meta:
+		b.meta.append([k, _pending_meta[k]])
+	_pending_meta.clear()
 	for id: String in _dirty_world_characters.keys():
 		if present.has(id):
 			var p: Dictionary = present[id]
@@ -556,7 +635,9 @@ func flush_state(limit := -1) -> void:
 		var cy := floori(float(e[2]) / Chunk.SIZE)
 		b.entities.append([id, e[0], cx, cy, e[3], (e[4] as Dictionary).duplicate(true)])
 		_dirty_entities.erase(id)
-	writer.submit(b)
+	var batch_id := writer.submit(b)
+	for e: Array in b.entities:  # their chunks may unload only once this is on disk
+		_written_by[chunk_key(e[1], e[2], e[3])] = batch_id
 
 
 ## Acknowledgements ready to send: [actor, request_id, result].
@@ -639,6 +720,7 @@ func _use(actor: String, r: Dictionary) -> Dictionary:
 	props["open"] = opening
 	c.set_props(at[3], at[4], props)
 	_changed(chunk_key(at[0], at[1], at[2]))
+	creatures.noise(at[0], Vector2i(x, y))
 	return {"ok": true, "open": opening}
 
 
@@ -694,6 +776,7 @@ func _someone_stands_on(location: String, x: int, y: int) -> bool:
 
 func _changed(key: String) -> void:
 	_dirty_chunks[key] = true
+	_lights_by_chunk.erase(key)
 	_chunk_rev[key] = _chunk_rev.get(key, 0) + 1
 	revision_epoch += 1
 
@@ -800,6 +883,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	_changed(chunk_key(loc, at[1], at[2]))
 	if role == "stairs":
 		_mark_stairs_down(loc, x, y, true)
+	creatures.noise(loc, Vector2i(x, y))  # building is heard around
 	if role == "ceiling":
 		var zl := levels.z(loc) + 1
 		upper = levels.level(building, zl)
@@ -885,6 +969,7 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	if upper != "":
 		chunk(upper, at[1], at[2]).set_cell("ground", at[3], at[4], "")
 		_changed(chunk_key(upper, at[1], at[2]))
+	creatures.noise(loc, Vector2i(x, y))
 	var costs := content.structure_cost(part)
 	var inv := inventory(actor)
 	for id: String in costs:

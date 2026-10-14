@@ -1423,6 +1423,80 @@
    "mode": "layer",
    "layer": "hair_front",
    "variants": 1
+  },
+  {
+   "id": "base:visual/hare",
+   "kind": "visual",
+   "for": "base:hare",
+   "atlas": "art/creatures/hare.png",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "mode": "character",
+   "variants": 1,
+   "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n"
+   ],
+   "animations": {
+    "idle": {
+     "from": 0,
+     "frames": 4,
+     "fps": 3
+    },
+    "walk": {
+     "from": 4,
+     "frames": 6,
+     "fps": 10
+    }
+   }
+  },
+  {
+   "id": "base:visual/deer",
+   "kind": "visual",
+   "for": "base:deer",
+   "atlas": "art/creatures/deer.png",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "mode": "character",
+   "variants": 1,
+   "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n"
+   ],
+   "animations": {
+    "idle": {
+     "from": 0,
+     "frames": 4,
+     "fps": 3
+    },
+    "walk": {
+     "from": 4,
+     "frames": 6,
+     "fps": 10
+    }
+   }
   }
  ]
 }

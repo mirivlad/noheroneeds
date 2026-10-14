@@ -662,11 +662,17 @@ func _update_characters(alpha: float, delta: float) -> void:
 			seen[id] = true
 			_item(id, e)
 			continue
-		if e.get("kind") != "character":
+		var kind := String(e.get("kind", ""))
+		if kind != "character" and kind != "creature":
 			continue
 		seen[id] = true
 		var target := Vector2(int(e.get("x", 0)), int(e.get("y", 0))) / UNITS_PER_PIXEL
-		_character(id, e.get("appearance", {})).show_at(target, delta, false)
+		# An NPC with looks is a paper doll like a character; an animal is
+		# drawn from its own sheet (its creature's visual).
+		var looks: Dictionary = e.get("appearance", {})
+		if kind == "creature" and looks.is_empty():
+			looks = {"body_plan": String(e.get("creature", ""))}
+		_character(id, looks).show_at(target, delta, false)
 	for id: String in _characters.keys():
 		if not seen.has(id):
 			_characters[id].queue_free()

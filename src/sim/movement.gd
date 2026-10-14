@@ -25,6 +25,14 @@ static func step(pos: Vector2i, dx: int, dy: int, solid: Callable, run := false)
 	return _axis(pos, dy * speed, false, solid)
 
 
+## A step at any speed (units a tick, less than a cell): creatures, which
+## each go at their own pace; diagonals keep about the same speed.
+static func step_at(pos: Vector2i, dx: int, dy: int, solid: Callable, speed: int) -> Vector2i:
+	var s := int(round(speed * 0.7071)) if dx != 0 and dy != 0 else speed
+	pos = _axis(pos, dx * s, true, solid)
+	return _axis(pos, dy * s, false, solid)
+
+
 static func cell_of(pos: Vector2i) -> Vector2i:
 	return Vector2i(_div(pos.x), _div(pos.y))
 

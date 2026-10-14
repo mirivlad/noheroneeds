@@ -23,6 +23,8 @@ var _shore_width := 0.0
 ## Cells around the spawn point kept free of anything solid.
 var _clearing := 0
 var _biomes: Array = []
+## Biome ids in the order of _biomes.
+var biome_ids: Array = []
 ## Plants that block walking (from their definitions), kept out of the spawn clearing.
 var _solid := {}
 var _biome_noise := FastNoiseLite.new()
@@ -42,6 +44,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 		var d := content.get_def(id)
 		_biomes.append({"ground": _patches(d["ground"]), "cover": _table(d.get("cover", {})),
 			"density": float(d["cover_density"])})
+		biome_ids.append(id)
 		for plant: String in d.get("cover", {}):
 			if content.get_def(plant).get("solid", false):
 				_solid[plant] = true
@@ -97,6 +100,13 @@ func generate(cx: int, cy: int) -> Chunk:
 				if plant != "" and not (clearing and _solid.has(plant)):
 					c.set_cell("cover", lx, ly, plant)
 	return c
+
+
+## The biome a cell lies in (who lives there, ADR-0018); "" on water.
+func biome_id_at(x: int, y: int) -> String:
+	if _biomes.is_empty() or _water_noise.get_noise_2d(x, y) > _water_level - _shore_width:
+		return ""
+	return String(biome_ids[_biome_at(x, y)])
 
 
 func _biome_at(x: int, y: int) -> int:

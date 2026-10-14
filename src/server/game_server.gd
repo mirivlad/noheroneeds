@@ -8,6 +8,14 @@ extends RefCounted
 const TICK_RATE := Movement.TICK_RATE
 ## Chunks sent to one client per tick at most (≈ 0.5 ms each to encode, cached).
 const CHUNKS_PER_TICK := 4
+## About how many bytes of entities a snapshot carries: it goes unreliably
+## and must fit a packet (ENet's MTU is about 1400; ADR-0018).
+const SNAPSHOT_BYTES := 1100
+## A creature's position goes out at most this often (ticks; 4 = 5 a second).
+const CREATURE_HOT_TICKS := 4
+## How far around a player creatures are sent (cells, half width and height):
+## a zoomed-out screen (40 x 22 cells) and a margin.
+const CREATURE_VIEW := Vector2i(26, 18)
 ## Snapshots kept per client as possible bases for deltas.
 const SNAPSHOT_HISTORY := 64
 ## Most queued inputs per client; beyond it the oldest are dropped.
@@ -37,6 +45,10 @@ var _sync_loads_seen := 0
 ## Microseconds per part of the tick since the last take_stats().
 var _sections := {}
 var _mark := 0
+## The sections of this tick, and of the slowest tick since the last stats.
+var _this_tick := {}
+var _slowest := {}
+var _slowest_usec := 0
 var _replica := {}
 var _sessions := {}
 var _crypto := Crypto.new()
@@ -78,8 +90,13 @@ func _init(server_world: ServerWorld, net: Transport, server_identity: PlayerIde
 
 func step() -> void:
 	var t0 := Time.get_ticks_usec()
+	_this_tick = {}
 	_step()
-	_tick_usec.append(Time.get_ticks_usec() - t0)
+	var took := Time.get_ticks_usec() - t0
+	_tick_usec.append(took)
+	if took > _slowest_usec:
+		_slowest_usec = took
+		_slowest = _this_tick
 
 
 ## Tick times and traffic since the last call: {ticks, p50, p99, max (µs),
@@ -95,6 +112,11 @@ func take_stats() -> Dictionary:
 	for k: String in _sections:
 		out["sections_ms"][k] = snappedf(_sections[k] / 1000.0, 0.1)
 	_sections.clear()
+	out["slowest_ms"] = {}
+	for k: String in _slowest:
+		out["slowest_ms"][k] = snappedf(_slowest[k] / 1000.0, 0.1)
+	_slowest = {}
+	_slowest_usec = 0
 	_sync_loads_seen = world.sync_loads
 	return out
 
@@ -103,6 +125,7 @@ func take_stats() -> Dictionary:
 func _lap(name: String) -> void:
 	var now := Time.get_ticks_usec()
 	_sections[name] = _sections.get(name, 0) + now - _mark
+	_this_tick[name] = int(_this_tick.get(name, 0)) + now - _mark
 	_mark = now
 
 
@@ -136,6 +159,8 @@ func _step() -> void:
 		if s.state == "playing":
 			_apply_input(s)
 	_lap("movement")
+	world.creatures.step(tick)
+	_lap("creatures")
 	world.commit_async(wait_for_disk)
 	world.flush_state(STATE_ROWS_PER_TICK)
 	if wait_for_disk:
@@ -307,22 +332,78 @@ func _update_replica() -> void:
 			_replica.erase(id)
 		elif r["kind"] == "item" and not world.items.has(id):
 			_replica.erase(id)
+		elif r["kind"] == "creature" and not world.creatures.has(id):
+			_replica.erase(id)
 	for id: String in world.present:
 		var p: Dictionary = world.present[id]
 		var r: Dictionary = _replica.get(id, {})
 		if r.is_empty():
+			var cold := {"kind": "character", "name": p["name"], "appearance": p["appearance"]}
 			_replica[id] = {"kind": "character", "hot": {"x": p["pos"].x, "y": p["pos"].y}, "hv": 1,
-				"cold": {"kind": "character", "name": p["name"], "appearance": p["appearance"]}, "cv": 1}
+				"cold": cold, "cv": 1, "cold_size": Cbor.encode_fast(cold).size()}
 		elif r["hot"]["x"] != p["pos"].x or r["hot"]["y"] != p["pos"].y:
 			r["hot"] = {"x": p["pos"].x, "y": p["pos"].y}
 			r["hv"] += 1
 
 
+## A creature as clients see it: where it is (hot), what it is and an NPC's
+## looks (cold). Its position goes out at most every CREATURE_HOT_TICKS (and
+## when it stops): clients ease toward it; creatures need not 20 updates a
+## second, and there may be hundreds in view.
+func _creature_replica(id: String) -> Dictionary:
+	var c := world.creatures.get_creature(id)
+	var r: Dictionary = _replica.get(id, {})
+	if r.is_empty():
+		var cold := {"kind": "creature", "creature": c.kind}
+		if not c.looks.is_empty():
+			cold["appearance"] = c.looks
+		r = {"kind": "creature", "hot": {"x": c.pos.x, "y": c.pos.y}, "hv": 1, "cold": cold, "cv": 1,
+			"cold_size": Cbor.encode_fast(cold).size(), "at": tick,
+			# Each creature on its own beat: their updates spread over the ticks.
+			"phase": absi(hash(id)) % CREATURE_HOT_TICKS}
+		_replica[id] = r
+	elif (r["hot"]["x"] != c.pos.x or r["hot"]["y"] != c.pos.y) \
+			and ((tick + int(r["phase"])) % CREATURE_HOT_TICKS == 0 or c.target == Creature.NO_TARGET):
+		r["hot"] = {"x": c.pos.x, "y": c.pos.y}
+		r["hv"] += 1
+		r["at"] = tick
+	return r
+
+
+## Creatures near players this tick, by cells of GRID x GRID: Vector3i(gx,
+## gy, location number) -> [[cell, id, replica]]. Worked out once a tick and
+## shared by every session.
+const GRID := 8
+var _grid := {}
+var _grid_tick := -1
+var _loc_numbers := {}
+
+
+func _loc_n(loc: String) -> int:
+	if not _loc_numbers.has(loc):
+		_loc_numbers[loc] = _loc_numbers.size()
+	return _loc_numbers[loc]
+
+
+func _grid_creatures() -> void:
+	if _grid_tick == tick:
+		return
+	_grid_tick = tick
+	_grid.clear()
+	for c: Creature in world.creatures.creatures.values():
+		if not world.needed_within(world.creatures.chunk_key_of(c), 2):
+			continue  # nobody near it: no session will look
+		var at := c.cell()
+		var key := Vector3i(floori(float(at.x) / GRID), floori(float(at.y) / GRID), _loc_n(c.location))
+		(_grid.get_or_add(key, []) as Array).append([at, c.id, _creature_replica(c.id)])
+
+
 func _item_replica(id: String) -> Dictionary:
 	if not _replica.has(id):
 		var it: Dictionary = world.items[id]
+		var cold := {"kind": "item", "item": it["item"], "count": it["count"]}
 		_replica[id] = {"kind": "item", "hot": {"x": it["x"], "y": it["y"]}, "hv": 1,
-			"cold": {"kind": "item", "item": it["item"], "count": it["count"]}, "cv": 1}
+			"cold": cold, "cv": 1, "cold_size": Cbor.encode_fast(cold).size()}
 	return _replica[id]
 
 
@@ -355,26 +436,62 @@ func _send_snapshot(s: Session) -> void:
 		for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
 			for id: String in world.items_in_chunk(loc, cx, cy):
 				view[id] = _item_replica(id)
+
+	# Creatures only as far as a screen sees (zoomed out) and a little more:
+	# from the grid of this tick, the cells round the player's view.
+	_grid_creatures()
+	for gy in range(floori(float(mine.y - CREATURE_VIEW.y) / GRID), floori(float(mine.y + CREATURE_VIEW.y) / GRID) + 1):
+		for gx in range(floori(float(mine.x - CREATURE_VIEW.x) / GRID), floori(float(mine.x + CREATURE_VIEW.x) / GRID) + 1):
+			for e: Array in _grid.get(Vector3i(gx, gy, _loc_n(loc)), []):
+				var at: Vector2i = e[0]
+				if absi(at.x - mine.x) <= CREATURE_VIEW.x and absi(at.y - mine.y) <= CREATURE_VIEW.y:
+					view[e[1]] = e[2]
 	var base: Dictionary = s.snapshots.get(s.acked, {}) if s.acked > 0 else {}
 	var changed := {}
 	var versions := {}
+	# A snapshot goes unreliably and must stay within a packet: entities up to
+	# SNAPSHOT_BYTES (sizes estimated, not encoded), the nearest first; the
+	# others keep their acknowledged version and come in the next snapshots.
+	var my_pos: Vector2i = me["pos"]
+	var due := []
 	for id: String in view:
 		var r: Dictionary = view[id]
 		var v := Vector2i(r["hv"], r["cv"])
-		versions[id] = v
 		var b: Variant = base.get(id)
+		if b == v:
+			versions[id] = v
+		elif id == s.character_id:
+			due.append([-1, id])
+		else:
+			var hot: Dictionary = r["hot"]
+			due.append([absi(int(hot["x"]) - my_pos.x) + absi(int(hot["y"]) - my_pos.y), id])
+	due.sort()
+	var room := SNAPSHOT_BYTES
+	for pair: Array in due:
+		var id: String = pair[1]
+		var r: Dictionary = view[id]
+		var v := Vector2i(r["hv"], r["cv"])
+		var b: Variant = base.get(id)
+		var entry := {}
+		var cost := 16  # the number and a position
 		if b == null:
-			var full: Dictionary = r["hot"].duplicate()
-			full.merge(r["cold"])
-			full["uid"] = id
-			changed[_net_id(s, id)] = full
-		elif b != v:
-			var d := {}
+			entry = r["hot"].duplicate()
+			entry.merge(r["cold"])
+			entry["uid"] = id
+			cost += int(r.get("cold_size", 60)) + 42
+		else:
 			if b.x != v.x:
-				d.merge(r["hot"])
+				entry.merge(r["hot"])
 			if b.y != v.y:
-				d.merge(r["cold"])
-			changed[_net_id(s, id)] = d
+				entry.merge(r["cold"])
+				cost += int(r.get("cold_size", 60))
+		if cost > room and id != s.character_id:
+			if b != null:
+				versions[id] = b  # not this time: it stays as the client has it
+			continue
+		room -= cost
+		versions[id] = v
+		changed[_net_id(s, id)] = entry
 	# The player's own inventory goes only to that player, and only when it changed.
 	var inv_v := world.inventory_version(s.character_id)
 	versions["~inventory"] = inv_v

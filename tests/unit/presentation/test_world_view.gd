@@ -65,6 +65,11 @@ func test_view_follows_the_client() -> void:
 	for v: AudioStreamPlayer2D in audio.find_children("*", "AudioStreamPlayer2D", false, false):
 		playing += 1 if v.stream != null else 0
 	eq(playing, 1, "a footstep")
+	audio._process(20.0)  # past the first calm: a gust
+	var gusts := 0
+	for pl: AudioStreamPlayer in audio.find_children("*", "AudioStreamPlayer", false, false):
+		gusts += 1 if pl.stream and String(pl.stream.resource_name).contains("wind") else 0
+	eq(gusts, 1, "the wind comes in a gust")
 	# A wall built at (2, 1) appears where it stands.
 	g.client.request({"type": "build", "location": "surface", "x": 2, "y": 1, "part": "base:wood_wall"})
 	for i in 10:

@@ -8,7 +8,9 @@ extends Node2D
 ##                 anyone, where it happens (GameClient.world_events);
 ##   own actions — picking up, dropping, going up and down stairs;
 ##   ambience    — loops mixed from the ground around the player (meadow,
-##                 forest, water), quieter under a roof.
+##                 forest, water), quieter under a roof;
+##   wind        — gusts now and then with calm between, of the ground
+##                 most of around.
 ## World sounds are positional (Effects bus): far ones fade, the camera
 ## hears. Ambience plays on its own bus.
 
@@ -19,6 +21,9 @@ const AMB_RADIUS := 9
 const AMB_EVERY := 0.5
 const AMB_FADE := 1.5
 const INDOORS_DB := -8.0
+## Wind comes in gusts with calm between them (the author: calm of at least
+## 15 s), the gust of the ground most of around (meadow, forest).
+const WIND_CALM := Vector2(15.0, 45.0)
 
 var content: ContentRegistry
 var client: GameClient
@@ -30,6 +35,10 @@ var _flat: AudioStreamPlayer
 var _amb := {}
 var _amb_wait := 0.0
 var _location := ""
+var _wind: AudioStreamPlayer
+var _wind_wait := 0.0
+## The wind sound of the ground most of around, chosen by _listen_around().
+var _wind_def := {}
 var _rng := RandomNumberGenerator.new()
 ## Seen by MusicDirector: the share of forest around, and being indoors.
 var forest_share := 0.0
@@ -48,6 +57,10 @@ func setup(registry: ContentRegistry, game_client: GameClient, world_view: World
 		v.attenuation = 1.4
 		add_child(v)
 		_voices.append(v)
+	_wind = AudioStreamPlayer.new()
+	_wind.bus = &"Ambience"
+	add_child(_wind)
+	_wind_wait = _rng.randf_range(4.0, WIND_CALM.x)
 	_flat = AudioStreamPlayer.new()
 	_flat.bus = &"Effects"
 	add_child(_flat)
@@ -104,6 +117,7 @@ func _process(delta: float) -> void:
 	if _amb_wait <= 0.0 and client.has_position:
 		_amb_wait = AMB_EVERY
 		_listen_around()
+	_blow(delta)
 	for path: String in _amb:
 		var a: Array = _amb[path]
 		a[2] = move_toward(float(a[2]), float(a[3]), delta / AMB_FADE)
@@ -117,6 +131,23 @@ func _process(delta: float) -> void:
 			p.play(_rng.randf_range(0.0, maxf(0.0, p.stream.get_length() - 1.0)))
 
 
+## A gust now and then: when one has died away, calm for WIND_CALM.
+func _blow(delta: float) -> void:
+	if _wind.playing:
+		_wind.volume_db = float(_wind_def.get("volume_db", 0.0)) + (INDOORS_DB if indoors else 0.0)
+		return
+	_wind_wait -= delta
+	if _wind_wait > 0.0 or _wind_def.is_empty():
+		return
+	var paths: PackedStringArray = _wind_def["paths"]
+	_wind.stream = Art.audio(paths[_rng.randi() % paths.size()])
+	var pitch: Array = _wind_def["pitch"]
+	_wind.pitch_scale = _rng.randf_range(pitch[0], pitch[1])
+	_wind.volume_db = float(_wind_def["volume_db"]) + (INDOORS_DB if indoors else 0.0)
+	_wind.play()
+	_wind_wait = _rng.randf_range(WIND_CALM.x, WIND_CALM.y)
+
+
 ## Which ambience to hear: the surface ground around the player (also from
 ## a building's upper level), each loop as loud as its share of it; water
 ## carries far, so a little of it is heard well.
@@ -126,6 +157,8 @@ func _listen_around() -> void:
 	var defs := {}
 	var total := 0
 	var forest := 0
+	var winds := {}
+	var wind_defs := {}
 	for dy in range(-AMB_RADIUS, AMB_RADIUS + 1, 2):
 		for dx in range(-AMB_RADIUS, AMB_RADIUS + 1, 2):
 			var g := view.ground_at(Levels.SURFACE, me + Vector2i(dx, dy))
@@ -140,7 +173,16 @@ func _listen_around() -> void:
 			defs[path] = d
 			if g in ["base:forest_floor", "base:moss"]:
 				forest += 1
+			var wd: Dictionary = content.sounds.get(g, {}).get("wind", {})
+			if not wd.is_empty():
+				winds[wd["id"]] = int(winds.get(wd["id"], 0)) + 1
+				wind_defs[wd["id"]] = wd
 	forest_share = float(forest) / maxf(1.0, float(total))
+	var most := ""
+	for id: String in winds:
+		if most == "" or int(winds[id]) > int(winds[most]):
+			most = id
+	_wind_def = wind_defs.get(most, {})
 	indoors = not view.hidden_room().is_empty()
 	for path: String in _amb:
 		_amb[path][3] = 0.0

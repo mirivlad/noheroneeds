@@ -11,7 +11,7 @@ its click, the top cut off. Ambience loops are crossfaded at the seam.
 
 sounds.json ties them to content (ADR-0009: presentation, not rules):
 {"kind": "sound", "for": <content id or "*">, "event": step | build |
-dismantle | open | close | pickup | drop | climb | click | ambience,
+dismantle | open | close | pickup | drop | climb | click | ambience | wind,
 "files": [...], "volume_db", "pitch": [lo, hi], "loop"}.
 """
 import json
@@ -297,16 +297,34 @@ def soft_wind(sec, seed, lo=80, hi=600, top=450):
 
 # Ambience levels: the gain each loop had when the author first heard it.
 AMB_GAIN = {"amb_meadow": 2.67, "amb_forest": 1.92}
-# The author: the wind 15% quieter than it was (rms of the old wind).
-WIND_LEVEL = {"meadow": 0.0399 * 0.85, "forest_crowns": 0.0545 * 0.85, "forest_low": 0.028 * 0.85}
+# The author: the wind 15% quieter than it first was, then again a little
+# quieter, and not always there (rms of the first wind, times 0.85 twice).
+WIND_LEVEL = {"meadow": 0.0399 * 0.72, "forest_crowns": 0.0545 * 0.72, "forest_low": 0.028 * 0.72}
+
+
+def gust(kind, seed):
+    """A gust of wind, 5-10 s: it rises softly, holds, dies away. The game
+    plays gusts now and then, with at least 15 s of calm between them."""
+    r = rng(seed)
+    sec = r.uniform(5.0, 10.0)
+    t = t_axis(sec)
+    rise, fall = r.uniform(1.5, 3.0), r.uniform(2.0, 4.0)
+    env = np.minimum(1.0, np.minimum(t / rise, (sec - t) / fall))
+    env = np.sin(np.clip(env, 0, 1) * np.pi / 2) ** 2
+    if kind == "meadow":
+        x = at_rms(soft_wind(sec, seed), WIND_LEVEL["meadow"])
+    else:
+        x = at_rms(soft_wind(sec, seed, 300, 1500, 1100), WIND_LEVEL["forest_crowns"])
+        x += at_rms(soft_wind(sec, seed + 7, 40, 220, 200), WIND_LEVEL["forest_low"])
+    return x * env
 
 
 def amb_meadow():
-    """A meadow in the day: a soft wind, grasshoppers, now and then birds."""
+    """A meadow in the day: grasshoppers, a whisper of grass, now and then
+    birds. The wind comes in gusts of its own (gust())."""
     sec = 24.0
-    wind = at_rms(soft_wind(sec, 100), WIND_LEVEL["meadow"])
-    grass = band(noise(sec, 102), 2000, 6000) * 0.04 * slow_env(sec, 0.3, 103, 0.2, 1.0)
-    x = wind + grass + 0.08 * cricket(sec, 104, 4300) + 0.05 * cricket(sec, 105, 5200)
+    grass = band(noise(sec, 102), 2000, 6000) * 0.02 * slow_env(sec, 0.3, 103, 0.2, 1.0)
+    x = grass + 0.08 * cricket(sec, 104, 4300) + 0.05 * cricket(sec, 105, 5200)
     r = rng(106)
     for k, at in enumerate(np.sort(r.uniform(1.0, sec - 2.0, 6))):
         place(x, chirp(110 + k), at, r.uniform(0.12, 0.25))
@@ -316,12 +334,10 @@ def amb_meadow():
 
 
 def amb_forest():
-    """In a forest: wind in the crowns in long gusts, many birds, a woodpecker far off."""
+    """In a forest: still air with a faint stir of leaves, many birds, a
+    woodpecker far off. Wind in the crowns comes in gusts (gust())."""
     sec = 28.0
-    # Leaves in the crowns: a gentle rustle, not a roar.
-    crowns = at_rms(soft_wind(sec, 200, 300, 1500, 1100), WIND_LEVEL["forest_crowns"])
-    low_air = at_rms(soft_wind(sec, 202, 40, 220, 200), WIND_LEVEL["forest_low"])
-    x = crowns + low_air
+    x = at_rms(soft_wind(sec, 202, 40, 220, 200), WIND_LEVEL["forest_low"] * 0.3)
     r = rng(204)
     for k, at in enumerate(np.sort(r.uniform(0.5, sec - 2.0, 7))):
         place(x, song(210 + k), at, r.uniform(0.12, 0.3))
@@ -333,41 +349,56 @@ def amb_forest():
     return loopify(reverb(x, 0.6, 0.3, 205), 2.0)
 
 
+def bubbles(sec, seed, count, f_lo=250, f_hi=700):
+    """Water's own voice: small air pockets bursting as water folds over -
+    short low tones that rise as they close (a gurgle, not a drip)."""
+    r = rng(seed)
+    x = np.zeros(int(sec * SR))
+    for k in range(count):
+        dur = r.uniform(0.02, 0.06)
+        t = t_axis(dur)
+        f = r.uniform(f_lo, f_hi) * (1 + 0.8 * t / dur)
+        b = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / (dur / 3)) * np.minimum(t / 0.003, 1)
+        place(x, b, r.uniform(0, sec * 0.6), r.uniform(0.3, 1.0))
+    return x
+
+
 def wave_slap(sec, seed):
-    """A small wave reaching the bank: a quick wash in, a long sigh back."""
+    """A small wave at the bank: a dull slosh as it washes in, gurgling as it
+    folds, a quiet draw back. Everything low: no hiss (that was steam)."""
     r = rng(seed)
     t = t_axis(sec)
-    rise = r.uniform(0.12, 0.25)
-    env = np.where(t < rise, (t / rise) ** 2, np.exp(-(t - rise) / r.uniform(0.5, 0.9)))
-    body = band(noise(sec, seed), 150, 1400) * env
-    hiss = band(noise(sec, seed + 1), 1500, 4500) * env * np.exp(-t / 0.4) * 0.25
-    return body + hiss
+    rise = r.uniform(0.15, 0.3)
+    env = np.where(t < rise, (t / rise) ** 2, np.exp(-(t - rise) / r.uniform(0.35, 0.6)))
+    slosh = low(band(noise(sec, seed), 60, 600), 450, 3) * env
+    gurgle = bubbles(sec, seed + 1, int(r.integers(10, 22)))
+    return slosh + 0.35 * gurgle * np.exp(-t / 0.5)
 
 
 def splash(seed):
-    """Water thrown up and falling back: a bright burst over a low thump."""
-    sec = 0.6
-    burst = band(noise(sec, seed), 400, 4000) * decay(sec, 0.18, 0.02)
-    thump = low(noise(sec, seed + 1), 160, 3) * decay(sec, 0.1, 0.01) * 2.0
-    return burst + thump
+    """Water thrown up and falling back: a low thump and a burst of gurgles."""
+    sec = 0.7
+    thump = low(noise(sec, seed), 180, 3) * decay(sec, 0.09, 0.008) * 2.0
+    fall = low(band(noise(sec, seed + 1), 150, 1200), 900, 2) * decay(sec, 0.2, 0.03)
+    return thump + 0.6 * fall + 0.4 * bubbles(sec, seed + 2, 18, 300, 900)
 
 
 def amb_water():
-    """By a lake: a steady low wash of open water, waves slapping the bank one
-    after another, now and then a splash. No drops: a big water does not drip."""
+    """By a lake: a deep, quiet body of water, waves sloshing at the bank one
+    after another, now and then a splash. Low and round, no hiss, no drops."""
     sec = 18.0
-    wash = low(noise(sec, 300), 300, 3) * slow_env(sec, 0.15, 301, 0.5, 1.0)
-    x = wash * 0.8
+    body = low(noise(sec, 300), 140, 3) * slow_env(sec, 0.12, 301, 0.6, 1.0)
+    x = body * 0.6
     r = rng(302)
     at = 0.2
     k = 0
     while at < sec - 1.5:
-        place(x, wave_slap(r.uniform(1.6, 2.6), 310 + k), at, r.uniform(0.35, 0.7))
-        at += r.uniform(1.6, 3.6)
+        place(x, wave_slap(r.uniform(1.4, 2.2), 310 + k), at, r.uniform(0.4, 0.8))
+        at += r.uniform(1.8, 3.8)
         k += 1
-    for j, at in enumerate((4.5, 11.0, 15.5)):
-        place(x, splash(360 + j), at + r.uniform(-0.5, 0.5), r.uniform(0.2, 0.35))
-    x = loopify(x, 1.5)
+    for j, at in enumerate((5.0, 12.5)):
+        place(x, splash(360 + j), at + r.uniform(-0.5, 0.5), r.uniform(0.25, 0.4))
+    x = loopify(low(x, 2500, 2), 1.5)
     return at_rms(x, 0.0965)  # as loud as the first water was
 
 
@@ -410,6 +441,12 @@ def main():
     for ground in ("base:forest_floor", "base:moss"):
         sound("amb_" + ground.split(":")[1], ground, "ambience", [forest], -12.0, (1.0, 1.0), True)
     sound("amb_water", "base:water", "ambience", [water], -12.0, (1.0, 1.0), True)
+    meadow_gusts = [write("wind_meadow_%d" % (k + 1), gust("meadow", 500 + k * 11), gain=AMB_GAIN["amb_meadow"]) for k in range(4)]
+    forest_gusts = [write("wind_forest_%d" % (k + 1), gust("forest", 600 + k * 11), gain=AMB_GAIN["amb_forest"]) for k in range(4)]
+    for ground in ("base:grass", "base:grass_dry", "base:dirt", "base:sand", "base:water"):
+        sound("wind_" + ground.split(":")[1], ground, "wind", meadow_gusts, -14.0, (0.95, 1.05))
+    for ground in ("base:forest_floor", "base:moss"):
+        sound("wind_" + ground.split(":")[1], ground, "wind", forest_gusts, -12.0, (0.95, 1.05))
     with open(os.path.join(PACK, "sounds.json"), "w") as f:
         json.dump({"format": 1, "defs": defs}, f, ensure_ascii=False, indent=1)
         f.write("\n")

@@ -1,16 +1,17 @@
 # Бриф 002 — деревья и растения (лето)
 
-**Зачем:** заменить заглушки деревьев, кустов и мелких растений. Размеры — в ART_STANDARD, раздел 5.
+**Зачем:** заменить заглушки деревьев, кустов и мелких растений. Размеры и формы — ART_STANDARD v2, раздел 6: **кроны из листовых гроздей, не шары; породы различаются силуэтом; кусты неровные, не подушки.** Образец — деревья на референсе и в пробе B4.
 
 **Что сдавать:** по одному объекту на картинку, ровный фон **#FF00FF**, объект целиком, по центру, у основания немного свободного места. Каталог: `art_src/incoming/002/`.
 
 | Файл | Объект | Итоговый спрайт |
 |---|---|---|
-| `oak.png` | раскидистый дуб, круглая крона | 48×64 |
-| `birch.png` | берёза, белый ствол с чёрными штрихами, лёгкая крона | 48×64 |
-| `spruce.png` | ель ярусами | 48×64 |
-| `bush.png` | круглый лиственный куст | 16×16 |
-| `berry_bush.png` | куст с красными ягодами | 16×16 |
+| `oak.png` | дуб: широкая неровная крона из листовых гроздей, видны ветви | 56×72 |
+| `oak_autumn.png` | тот же дуб осенью, охра | 56×72 |
+| `birch.png` | берёза: тонкий наклонный белый ствол с чёрными штрихами, рыхлая светлая крона | 40×72 |
+| `spruce.png` | ель: высокая, узкая, ярусы с провисающими краями | 34×76 |
+| `bush.png` | неровный лиственный куст из гроздей | 24×16 |
+| `berry_bush.png` | неровный куст с красными ягодами | 24×16 |
 | `fern.png` | папоротник, веер листьев | 16×16 |
 | `tall_grass.png` | пучок высокой травы | 16×16 |
 | `reeds.png` | камыш с бурыми початками | 16×16 |
@@ -19,12 +20,13 @@
 ## Запрос (подставить объект и размер)
 
 ```
-Pixel art game sprite of a single {OBJECT}, top-down three-quarter view (like Stardew Valley),
-in the style of the attached image. The image must look like a {W}x{H} pixel sprite enlarged
-16 times: every sprite pixel is a crisp square block of one flat color, no anti-aliasing,
-no blur. Limited palette (max 14 colors), hue-shifted shading, daylight from the top-left.
-No outline, no shadow on the ground, nothing else in the picture.
-Centered on a flat solid #FF00FF magenta background.
+Pixel art game sprite of a single {OBJECT}, top-down three-quarter view, in the style of the
+attached image: natural warm muted palette, grounded and not toy-like. Foliage built from
+many small leaf clumps with dark gaps between them (not round balls), an uneven silhouette.
+The image must look like a {W}x{H} pixel sprite enlarged 16 times: every sprite pixel is a
+crisp square block of one flat color, no anti-aliasing, no blur. Up to 18 colors with rich
+half-tones, daylight from the top-left. No outline, no shadow on the ground, nothing else
+in the picture. Centered on a flat solid #FF00FF magenta background.
 ```
 
 ## Что проверить

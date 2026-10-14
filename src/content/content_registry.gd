@@ -243,8 +243,33 @@ func _validate() -> void:
 				d["cover_density"] = float(d.get("cover_density", 0.0))
 				if d["cover_density"] < 0.0 or d["cover_density"] > 1.0:
 					errors.append("%s: cover_density must be within 0..1" % id)
+				_check_weights(id, "fauna", d.get("fauna", {}), ["creature"], false)
+				d["fauna_density"] = float(d.get("fauna_density", 0.0))  # creatures a chunk, on average
+			"creature":
+				_check_creature(id, d)
 			var other:
 				errors.append("%s: unknown kind '%s'" % [id, other])
+
+
+## A living creature (ADR-0018): how it behaves is data, the code knows
+## only the behaviours by name.
+const BEHAVIORS := ["prey", "villager"]
+
+
+func _check_creature(id: String, d: Dictionary) -> void:
+	if not BEHAVIORS.has(String(d.get("behavior", ""))):
+		errors.append("%s: behavior must be one of %s" % [id, ", ".join(BEHAVIORS)])
+	for f: String in ["speed", "run_speed", "sight", "dark_sight", "hearing", "flee_distance", "home_radius", "memory_s"]:
+		d[f] = float(d.get(f, 0.0))
+		if d[f] < 0.0:
+			errors.append("%s: %s must not be negative" % [id, f])
+	d["think_ticks"] = maxi(1, int(d.get("think_ticks", 10)))
+	if d["speed"] <= 0.0 or d["run_speed"] < d["speed"] or d["run_speed"] * Movement.WALK >= Movement.UNIT:
+		errors.append("%s: speeds must be positive, running not slower, a step shorter than a cell" % id)
+	if d["dark_sight"] > 1.0:
+		errors.append("%s: dark_sight is a share, 0..1" % id)
+	if d.has("body_plan") and kind_of(String(d["body_plan"])) != "body_plan":
+		errors.append("%s: body_plan '%s' is not a body plan" % [id, d["body_plan"]])
 
 
 ## A light source (ADR-0014): {"radius" cells 1..8, "intensity" 0..1,

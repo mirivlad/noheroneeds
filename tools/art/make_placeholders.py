@@ -384,6 +384,104 @@ def person_view(look_name, view, frame):
     return strong(spr)
 
 
+# --- animals (ADR-0018), placeholders: the people's frame grid -------------------
+ANIMAL_ROWS = ["s", "se", "e", "ne", "n"]
+ANIMALS = {
+    # fur dark -> light, belly, accents
+    "hare": {"fur": ["5a4632", "7a5e42", "9a7a58", "b89a74"], "belly": "e6dcc8", "eye": "1e1612"},
+    "deer": {"fur": ["4a3020", "6e4a2e", "8e6440", "ae8458"], "belly": "e2d4b8", "eye": "1e1612"},
+}
+
+
+def _animal_frame(kind, view, anim, k):
+    """One 48x48 frame; feet on y 45, middle x 24."""
+    img = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    a = ANIMALS[kind]
+    fur = [hx(c) for c in a["fur"]]
+    belly, eye = hx(a["belly"]), hx(a["eye"])
+    side = view in ("e", "se", "ne")
+    back = view in ("n", "ne")
+    walk = anim == "walk"
+    if kind == "hare":
+        hop = [0, -2, -4, -3, -1, 0][k] if walk else (0 if k < 3 else -1 * 0)
+        base = 45 + hop
+        if side:
+            d.ellipse((17, base - 7, 29, base), fill=fur[2])                 # body
+            d.ellipse((18, base - 3, 28, base), fill=fur[1])
+            d.ellipse((26, base - 10, 32, base - 4), fill=fur[2])           # head
+            d.line((28, base - 10, 27, base - 16), fill=fur[1], width=2)    # ears
+            d.line((30, base - 10, 30, base - 15), fill=fur[2], width=2)
+            d.point((30, base - 8), fill=eye)
+            d.ellipse((15, base - 6, 18, base - 3), fill=belly)             # tail
+            if walk and k in (1, 2, 3):
+                d.line((19, base, 15, base + 2), fill=fur[1])              # hind legs out
+        else:
+            d.ellipse((19, base - 8, 29, base), fill=fur[2])
+            d.ellipse((20, base - 13, 28, base - 6), fill=fur[2])
+            d.line((22, base - 13, 21, base - 19), fill=fur[1], width=2)
+            d.line((26, base - 13, 27, base - 19), fill=fur[1], width=2)
+            if not back:
+                d.point((22, base - 10), fill=eye)
+                d.point((26, base - 10), fill=eye)
+                d.ellipse((22, base - 6, 26, base - 1), fill=belly)
+            else:
+                d.ellipse((22, base - 4, 26, base), fill=belly)
+    else:  # deer
+        lift = [0, -1, 0, 0, -1, 0][k] if walk else 0
+        top = 31 + lift
+        legs = [(0, 0), (2, -2), (0, 0), (-2, 2), (0, 0), (2, -2)][k] if walk else (0, 0)
+        if side:
+            for i, x in enumerate((15, 18, 27, 30)):
+                dx = legs[i % 2]
+                d.line((x, top + 7, x + dx, 45), fill=fur[1], width=2)
+            d.ellipse((12, top, 33, top + 9), fill=fur[2])                  # body
+            d.ellipse((14, top + 5, 31, top + 9), fill=fur[1])
+            d.polygon([(30, top + 2), (34, top - 7), (37, top - 6), (33, top + 3)], fill=fur[2])  # neck
+            d.ellipse((33, top - 11, 40, top - 5), fill=fur[2])             # head
+            d.line((35, top - 11, 33, top - 16), fill=fur[0])               # antlers
+            d.line((34, top - 13, 31, top - 15), fill=fur[0])
+            d.point((37, top - 9), fill=eye)
+            d.ellipse((10, top + 1, 13, top + 4), fill=belly)               # tail
+        else:
+            for i, x in enumerate((20, 27)):
+                dy = legs[i] if walk else 0
+                d.line((x, top + 8, x, 45 + min(0, dy)), fill=fur[1], width=2)
+            d.ellipse((18, top, 30, top + 11), fill=fur[2])
+            d.ellipse((20, top - 9, 28, top), fill=fur[2])
+            d.line((21, top - 9, 18, top - 15), fill=fur[0])
+            d.line((27, top - 9, 30, top - 15), fill=fur[0])
+            if not back:
+                d.point((22, top - 5), fill=eye)
+                d.point((26, top - 5), fill=eye)
+                d.rectangle((22, top + 2, 26, top + 8), fill=belly)
+            else:
+                d.ellipse((22, top + 7, 26, top + 11), fill=belly)
+    return strong(img)
+
+
+def animal_sheet(kind):
+    """Rows S, SE, E, NE, N; columns idle 0-3, walk 4-9 (like people)."""
+    sheet = Image.new("RGBA", (10 * 48, 5 * 48), (0, 0, 0, 0))
+    for r, view in enumerate(ANIMAL_ROWS):
+        for c in range(10):
+            anim, k = ("idle", c) if c < 4 else ("walk", c - 4)
+            sheet.alpha_composite(_animal_frame(kind, view, anim, k), (c * 48, r * 48))
+    return b3.tone(sheet, MIDDLE, people=True)
+
+
+def production_animals(visuals):
+    out = OUT / "art" / "creatures"
+    out.mkdir(parents=True, exist_ok=True)
+    for kind in ANIMALS:
+        animal_sheet(kind).save(out / f"{kind}.png")
+        visuals.append({"id": "base:visual/" + kind, "kind": "visual", "for": "base:" + kind,
+                        "atlas": f"art/creatures/{kind}.png", "rect": [0, 0, 48, 48], "origin": [24, 45],
+                        "mode": "character", "variants": 1, "directions": ANIMAL_ROWS,
+                        "animations": {"idle": {"from": 0, "frames": 4, "fps": 3},
+                                       "walk": {"from": 4, "frames": 6, "fps": 10}}})
+
+
 # Production material textures (brief 001, tools/art/import_texture.py), by name.
 TEX = {}
 MAT_DIR = OUT / "art" / "materials"
@@ -650,6 +748,7 @@ def main():
     production_art(a.visuals)
     production_materials(a.visuals)
     production_people(a.visuals)
+    production_animals(a.visuals)
     with open(OUT / "visuals.json", "w") as f:
         json.dump({"format": 1, "defs": a.visuals}, f, ensure_ascii=False, indent=1)
         f.write("\n")

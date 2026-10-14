@@ -31,13 +31,15 @@
       "id": "base:meadow", "kind": "biome", "name": "Луг",
       "ground": {"base:grass": 8, "base:grass_dry": 1, "base:dirt": 0.3},
       "cover": {"base:tall_grass": 10, "base:clover": 5, "base:flower_red": 1.2, "base:flower_yellow": 1.2, "base:flower_blue": 0.8, "base:bush": 0.6, "base:oak": 0.4, "base:birch": 0.3},
-      "cover_density": 0.3
+      "cover_density": 0.3,
+      "fauna": {"base:hare": 2, "base:deer": 0.6}, "fauna_density": 1.2
     },
     {
       "id": "base:forest", "kind": "biome", "name": "Лес",
       "ground": {"base:forest_floor": 6, "base:moss": 3, "base:grass": 1},
       "cover": {"base:fern": 6, "base:spruce": 4, "base:oak": 2, "base:birch": 2, "base:berry_bush": 1.5, "base:bush": 1, "base:tall_grass": 2},
-      "cover_density": 0.35
+      "cover_density": 0.35,
+      "fauna": {"base:deer": 1.5, "base:hare": 1}, "fauna_density": 1.4
     }
   ]
 }

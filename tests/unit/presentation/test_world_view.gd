@@ -27,8 +27,8 @@ func test_view_follows_the_client() -> void:
 	check(ground.get_used_cells().size() >= 9 * Chunk.CELLS, "ground of the nearby chunks: %d cells" % ground.get_used_cells().size())
 	var sprites := view.find_children("*", "Sprite2D", true, false).size()
 	check(sprites > 0, "tall things drawn as sprites: %d" % sprites)
-	var dolls := view.find_children("*", "CharacterSprite", true, false)
-	check(dolls.size() == 1, "own character shown")
+	check(view._characters.has(g.client.character_id), "own character shown")
+	var dolls := [view._characters[g.client.character_id]]
 	# A paper doll: the body, then hair and the starter outfit, in the body
 	# plan's order (feet under torso under hair).
 	var slots := []

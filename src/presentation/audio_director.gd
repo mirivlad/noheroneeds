@@ -67,6 +67,15 @@ func setup(registry: ContentRegistry, game_client: GameClient, world_view: World
 	_location = client.location
 
 
+func _exit_tree() -> void:
+	# Players freed while they play leave their streams with the audio server.
+	for n: Node in get_children():
+		if n is AudioStreamPlayer:
+			(n as AudioStreamPlayer).stop()
+		elif n is AudioStreamPlayer2D:
+			(n as AudioStreamPlayer2D).stop()
+
+
 ## A sound of an event for a thing, at a place in the world (pixels), or
 ## everywhere (at = null: the player's own doing).
 func play(event: String, id: String, at: Variant = null) -> void:

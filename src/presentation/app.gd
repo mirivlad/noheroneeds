@@ -21,6 +21,7 @@ var worlds: WorldLibrary
 var characters: CharacterLibrary
 var game: GameScreen
 var menu: MainMenu
+var music := MusicDirector.new()
 var _opts := {}
 var _menu_layer := CanvasLayer.new()
 var _backdrop: Control
@@ -52,6 +53,8 @@ func _ready() -> void:
 	characters = CharacterLibrary.new(_user("characters"), content, me)
 	_menu_layer.layer = 10
 	add_child(_menu_layer)
+	music.setup(content)
+	add_child(music)
 	get_tree().set_auto_accept_quit(false)
 	if _opts.has("connect"):
 		var hp := String(_opts["connect"]).split(":")
@@ -74,6 +77,7 @@ var _frames := 0
 
 func _process(_delta: float) -> void:
 	_frames += 1
+	music.want(game.music_mood() if game and game.client else "menu")
 	# Dev: --world=ID --menu=SCREEN opens the menu over the game for a picture.
 	if game and _opts.has("menu") and _frames == 40:
 		_on_menu_requested()
@@ -119,6 +123,7 @@ func start_game(cfg: Dictionary) -> void:
 
 func quit() -> void:
 	_end_game()
+	music.silence()
 	if not _opts.has("profile_dir"):
 		Art.clear()
 		get_tree().quit()

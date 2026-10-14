@@ -12,6 +12,10 @@ func test_base_pack_loads_clean() -> void:
 	var reg := ContentRegistry.load_packs(["res://content/base"])
 	eq(reg.errors, PackedStringArray(), "no errors")
 	eq(reg.structure_cost("base:wood_wall"), {"base:plank": 3}, "integer counts")
+	eq(ContentRegistry.from_defs([{"id": "test:g", "kind": "ground"},
+		{"id": "test:visual/g", "kind": "visual", "for": "test:g", "mode": "flat", "rect": [0, 0, 16, 16], "origin": [0, 16], "grid": [4, 0]}]) \
+		.errors.has("test:visual/g: grid needs two positive numbers"), true, "a grid needs positive sizes")
+	eq(reg.visual_of("base:grass").get("grid_size"), Vector2i(4, 4), "ground is a seamless 4 x 4 texture")
 	check(reg.fingerprint().length() == 64, "fingerprint")
 
 

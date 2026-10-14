@@ -179,6 +179,9 @@ def wall(kind, mask, opened=False):
                     c = top[2] if (x % 5) != 4 else top[1]
                     if h2(x, y, 9) > 0.93:
                         c = top[3]
+                tex = TEX.get(("stone" if kind == "stone_wall" else "wood") + "_wall_top")
+                if tex is not None:
+                    c = tex.getpixel(((x + (mask % 3) * T) % tex.width, y + (mask // 3 % 3) * T))
             else:  # front face, darker toward the ground
                 fy = y - T
                 if kind == "stone_wall":
@@ -192,6 +195,11 @@ def wall(kind, mask, opened=False):
                         c = face[3]
                     if fy >= 12 and fy % 4 != 3:
                         c = face[1]
+                tex = TEX.get(("stone" if kind == "stone_wall" else "wood") + "_wall_face")
+                if tex is not None:
+                    c = tex.getpixel(((x + (mask % 3) * T) % tex.width, fy + T))
+                    if fy >= 12:
+                        c = lerp(c, face[0], 0.25)  # darker toward the ground
                 if fy == T - 1:
                     c = lerp(face[0], P["ink"], 0.4)  # where the wall meets the ground
             px[x, y] = c
@@ -362,6 +370,37 @@ def person_view(look_name, view, frame):
     return strong(spr)
 
 
+# Production material textures (brief 001, tools/art/import_texture.py), by name.
+TEX = {}
+MAT_DIR = OUT / "art" / "materials"
+for _f in sorted(MAT_DIR.glob("*.png")) if MAT_DIR.exists() else []:
+    TEX[_f.stem] = Image.open(_f).convert("RGBA")
+# Seamless textures laid over a grid of tiles: content id -> material.
+GRID_MATERIALS = {"base:grass": "grass", "base:grass_dry": "grass_dry", "base:dirt": "dirt", "base:moss": "moss",
+                  "base:forest_floor": "forest_floor", "base:sand": "sand", "base:water": "water",
+                  "base:wood_floor": "wood_floor", "base:wood_ceiling": "wood_floor",
+                  "base:thatch_roof": "roof_thatch"}
+
+
+def production_materials(visuals):
+    """Ground, floor and roof textures replace the placeholder tiles: stacked
+    into art/ground.png, each one drawn as a grid of tiles (ADR-0008)."""
+    used = [(i, m) for i, m in GRID_MATERIALS.items() if m in TEX]
+    if not used:
+        return
+    atlas = Image.new("RGBA", (4 * T, sum(TEX[m].height for _, m in used)), (0, 0, 0, 0))
+    y = 0
+    by_id = {v["for"]: v for v in visuals}
+    for for_id, m in used:
+        tex = TEX[m]
+        atlas.alpha_composite(tex, (0, y))
+        v = by_id[for_id]
+        v.update({"atlas": "art/ground.png", "rect": [0, y, T, T], "variants": 1,
+                  "grid": [tex.width // T, tex.height // T]})
+        y += tex.height
+    atlas.save(OUT / "art" / "ground.png")
+
+
 def _art_origin(img):
     """Where an imported sprite stands: the middle of its base (a trunk, the
     root of a tuft) goes to the middle of the cell, its bottom row on the
@@ -445,7 +484,12 @@ def main():
     a.put(14, 9, column, "base:wood_column", (0, 2 * T), "tall")
     (OUT / "art").mkdir(parents=True, exist_ok=True)
     # The middle palette of B4 over everything, and its light grain.
-    b3.grain(b3.tone(a.img, MIDDLE), dict(MIDDLE, grain=0.03), 7).save(OUT / "art" / "tiles.png")
+    toned = b3.grain(b3.tone(a.img, MIDDLE), dict(MIDDLE, grain=0.03), 7)
+    if "wood_wall_face" in TEX:
+        # Walls drawn from production textures are in the palette already.
+        rows = (15 * T, 23 * T)
+        toned.paste(a.img.crop((0, rows[0], a.img.width, rows[1])), (0, rows[0]))
+    toned.save(OUT / "art" / "tiles.png")
     people_sheet().save(OUT / "art" / "chibi_placeholder.png")
     a.visuals.append({
         "id": "base:visual/humanoid_adult", "kind": "visual", "for": "base:humanoid_adult",
@@ -453,6 +497,7 @@ def main():
         "variants": 1, "directions": ["s", "se", "e", "ne", "n"], "frames": 3,
     })
     production_art(a.visuals)
+    production_materials(a.visuals)
     with open(OUT / "visuals.json", "w") as f:
         json.dump({"format": 1, "defs": a.visuals}, f, ensure_ascii=False, indent=1)
         f.write("\n")

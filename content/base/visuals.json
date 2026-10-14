@@ -5,7 +5,7 @@
    "id": "base:visual/grass",
    "kind": "visual",
    "for": "base:grass",
-   "atlas": "art/tiles.png",
+   "atlas": "art/ground.png",
    "rect": [
     0,
     0,
@@ -17,67 +17,17 @@
     16
    ],
    "mode": "flat",
-   "variants": 4
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
   },
   {
    "id": "base:visual/grass_dry",
    "kind": "visual",
    "for": "base:grass_dry",
-   "atlas": "art/tiles.png",
-   "rect": [
-    0,
-    16,
-    16,
-    16
-   ],
-   "origin": [
-    0,
-    16
-   ],
-   "mode": "flat",
-   "variants": 4
-  },
-  {
-   "id": "base:visual/dirt",
-   "kind": "visual",
-   "for": "base:dirt",
-   "atlas": "art/tiles.png",
-   "rect": [
-    0,
-    32,
-    16,
-    16
-   ],
-   "origin": [
-    0,
-    16
-   ],
-   "mode": "flat",
-   "variants": 4
-  },
-  {
-   "id": "base:visual/moss",
-   "kind": "visual",
-   "for": "base:moss",
-   "atlas": "art/tiles.png",
-   "rect": [
-    0,
-    48,
-    16,
-    16
-   ],
-   "origin": [
-    0,
-    16
-   ],
-   "mode": "flat",
-   "variants": 4
-  },
-  {
-   "id": "base:visual/forest_floor",
-   "kind": "visual",
-   "for": "base:forest_floor",
-   "atlas": "art/tiles.png",
+   "atlas": "art/ground.png",
    "rect": [
     0,
     64,
@@ -89,16 +39,86 @@
     16
    ],
    "mode": "flat",
-   "variants": 4
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
+  },
+  {
+   "id": "base:visual/dirt",
+   "kind": "visual",
+   "for": "base:dirt",
+   "atlas": "art/ground.png",
+   "rect": [
+    0,
+    128,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "flat",
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
+  },
+  {
+   "id": "base:visual/moss",
+   "kind": "visual",
+   "for": "base:moss",
+   "atlas": "art/ground.png",
+   "rect": [
+    0,
+    192,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "flat",
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
+  },
+  {
+   "id": "base:visual/forest_floor",
+   "kind": "visual",
+   "for": "base:forest_floor",
+   "atlas": "art/ground.png",
+   "rect": [
+    0,
+    256,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "flat",
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
   },
   {
    "id": "base:visual/sand",
    "kind": "visual",
    "for": "base:sand",
-   "atlas": "art/tiles.png",
+   "atlas": "art/ground.png",
    "rect": [
     0,
-    80,
+    320,
     16,
     16
    ],
@@ -107,16 +127,20 @@
     16
    ],
    "mode": "flat",
-   "variants": 4
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
   },
   {
    "id": "base:visual/water",
    "kind": "visual",
    "for": "base:water",
-   "atlas": "art/tiles.png",
+   "atlas": "art/ground.png",
    "rect": [
     0,
-    96,
+    384,
     16,
     16
    ],
@@ -125,7 +149,11 @@
     16
    ],
    "mode": "flat",
-   "variants": 4
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
   },
   {
    "id": "base:visual/clover",
@@ -682,10 +710,10 @@
    "id": "base:visual/wood_floor",
    "kind": "visual",
    "for": "base:wood_floor",
-   "atlas": "art/tiles.png",
+   "atlas": "art/ground.png",
    "rect": [
-    112,
-    112,
+    0,
+    448,
     16,
     16
    ],
@@ -694,16 +722,20 @@
     16
    ],
    "mode": "flat",
-   "variants": 1
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
   },
   {
    "id": "base:visual/wood_ceiling",
    "kind": "visual",
    "for": "base:wood_ceiling",
-   "atlas": "art/tiles.png",
+   "atlas": "art/ground.png",
    "rect": [
-    128,
-    112,
+    0,
+    512,
     16,
     16
    ],
@@ -712,16 +744,20 @@
     16
    ],
    "mode": "cover",
-   "variants": 1
+   "variants": 1,
+   "grid": [
+    4,
+    4
+   ]
   },
   {
    "id": "base:visual/thatch_roof",
    "kind": "visual",
    "for": "base:thatch_roof",
-   "atlas": "art/tiles.png",
+   "atlas": "art/ground.png",
    "rect": [
-    144,
-    112,
+    0,
+    576,
     16,
     16
    ],
@@ -730,7 +766,11 @@
     16
    ],
    "mode": "cover",
-   "variants": 1
+   "variants": 1,
+   "grid": [
+    3,
+    3
+   ]
   },
   {
    "id": "base:visual/wood_stairs",

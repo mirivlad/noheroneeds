@@ -75,13 +75,25 @@ class Replica:
 	var gone := false
 	## A creature's cell of the grid (GameServer._grid).
 	var grid_key := Vector3i.ZERO
+	## Where it is; its level label goes to clients in the cold part ("z").
+	var location := ""
 
-	func _init(k: String, px: int, py: int, c: Dictionary) -> void:
+	func _init(k: String, loc: String, z: int, px: int, py: int, c: Dictionary) -> void:
 		kind = k
+		location = loc
 		x = px
 		y = py
 		cold = c
+		cold["z"] = z
 		cold_size = Cbor.encode_fast(c).size()
+
+	## Moved to another location (a character up the stairs): a cold change.
+	func relocate(loc: String, z: int) -> void:
+		location = loc
+		cold = cold.duplicate()
+		cold["z"] = z
+		cold_size = Cbor.encode_fast(cold).size()
+		cv += 1
 
 	## Both versions in one number, as sessions remember them.
 	func version() -> int:
@@ -412,10 +424,13 @@ func _update_replica() -> void:
 		var pos: Vector2i = p["pos"]
 		var r: Replica = _replica.get(id)
 		if r == null:
-			_replica[id] = Replica.new("character", pos.x, pos.y,
+			_replica[id] = Replica.new("character", p["location"], world.levels.z(p["location"]), pos.x, pos.y,
 				{"kind": "character", "name": p["name"], "appearance": p["appearance"]})
 			_others[id] = true
-		elif r.x != pos.x or r.y != pos.y:
+			continue
+		if r.location != p["location"]:
+			r.relocate(p["location"], world.levels.z(p["location"]))
+		if r.x != pos.x or r.y != pos.y:
 			r.x = pos.x
 			r.y = pos.y
 			r.hv += 1
@@ -452,7 +467,7 @@ func _update_creature_replicas() -> void:
 		var cold := {"kind": "creature", "creature": c.kind}
 		if not c.looks.is_empty():
 			cold["appearance"] = c.looks
-		var r := Replica.new("creature", c.pos.x, c.pos.y, cold)
+		var r := Replica.new("creature", c.location, world.levels.z(c.location), c.pos.x, c.pos.y, cold)
 		r.phase = absi(hash(id)) % CREATURE_HOT_TICKS
 		_replica[id] = r
 		_to_grid(id, r, c.location)
@@ -507,7 +522,8 @@ func _item_replica(id: String) -> Replica:
 	var r: Replica = _replica.get(id)
 	if r == null:
 		var it: Dictionary = world.items[id]
-		r = Replica.new("item", it["x"], it["y"], {"kind": "item", "item": it["item"], "count": it["count"]})
+		r = Replica.new("item", it["location"], world.levels.z(it["location"]), it["x"], it["y"],
+			{"kind": "item", "item": it["item"], "count": it["count"]})
 		_replica[id] = r
 		_others[id] = true
 	return r
@@ -555,8 +571,37 @@ func _view(s: Session) -> Dictionary:
 		for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
 			for id: String in world.items_in_chunk(loc, cx, cy):
 				view[id] = _item_replica(id)
-	# Creatures only as far as a screen sees (zoomed out) and a little more:
-	# from the grid, the cells round the player's view.
+	_creatures_into(view, ln, mine, "")
+	# Others on the plan of buildings and the surface, where they can be
+	# seen (ADR-0015): one on a walkway from the street, the street from a
+	# window or an open roof — each checked by Sight.
+	if _on_plan(loc):
+		for id: String in world.present:
+			var p: Dictionary = world.present[id]
+			if p["location"] == loc or not _on_plan(p["location"]):
+				continue
+			var pc := Movement.cell_of(p["pos"])
+			if absi(pc.x - mine.x) <= CREATURE_VIEW.x and absi(pc.y - mine.y) <= CREATURE_VIEW.y \
+					and Sight.clear(world, loc, mine, p["location"], pc):
+				view[id] = _replica[id]
+		if loc != ServerWorld.SURFACE:
+			_creatures_into(view, _loc_n(ServerWorld.SURFACE), mine, loc)
+			for cy in range(mc.y - view_chunks, mc.y + view_chunks + 1):
+				for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
+					for id: String in world.items_in_chunk(ServerWorld.SURFACE, cx, cy):
+						var r := _item_replica(id)
+						var ic := Movement.cell_of(Vector2i(r.x, r.y))
+						if absi(ic.x - mine.x) <= CREATURE_VIEW.x and absi(ic.y - mine.y) <= CREATURE_VIEW.y \
+								and Sight.clear(world, loc, mine, ServerWorld.SURFACE, ic):
+							view[id] = r
+	s.view = view
+	return view
+
+
+## Creatures of the grid's location `ln` as far as a screen sees (zoomed
+## out) and a little more round `mine`; seen from `from` (another location
+## on the plan) only those Sight lets through.
+func _creatures_into(view: Dictionary, ln: int, mine: Vector2i, from: String) -> void:
 	var lo := (mine - CREATURE_VIEW) * Movement.UNIT
 	var hi := (mine + CREATURE_VIEW + Vector2i.ONE) * Movement.UNIT
 	for gy in range(floori(float(mine.y - CREATURE_VIEW.y) / GRID), floori(float(mine.y + CREATURE_VIEW.y) / GRID) + 1):
@@ -564,10 +609,13 @@ func _view(s: Session) -> Dictionary:
 			var cell_creatures: Dictionary = _grid.get(Vector3i(gx, gy, ln), {})
 			for id: String in cell_creatures:
 				var r: Replica = cell_creatures[id]
-				if r.x >= lo.x and r.x < hi.x and r.y >= lo.y and r.y < hi.y:
+				if r.x >= lo.x and r.x < hi.x and r.y >= lo.y and r.y < hi.y \
+						and (from == "" or Sight.clear(world, from, mine, r.location, Movement.cell_of(Vector2i(r.x, r.y)))):
 					view[id] = r
-	s.view = view
-	return view
+
+
+func _on_plan(location: String) -> bool:
+	return location == ServerWorld.SURFACE or world.levels.kind(location) == Levels.BUILDING_LEVEL
 
 
 ## A snapshot (protocol 7): only what differs from what the client has

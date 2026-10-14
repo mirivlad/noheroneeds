@@ -373,12 +373,12 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 	var sight := float(def["sight"])
 	for pid: String in world.present:
 		var p: Dictionary = world.present[pid]
-		if p["location"] != c.location:
+		if p["location"] != c.location and not Sight.same_space(world, c.location, p["location"]):
 			continue
 		var at := Movement.cell_of(p["pos"])
 		if absi(at.x - me.x) > sight or absi(at.y - me.y) > sight:
 			continue
-		if Perception.sees(world, c.location, me, def, at):
+		if Perception.sees(world, c.location, me, def, at, p["location"]):
 			c.memory[pid] = {"pos": at, "time": now, "what": "character"}
 	for n: Array in _noises:
 		if n[0] == c.location and Perception.hears(def, me, n[1]):

@@ -194,6 +194,9 @@ func _validate() -> void:
 				d["rotations"] = _check_rotations(id, d.get("rotations", []))
 				if d.has("light"):
 					_check_light(id, d)
+				_check_height(id, d, 1.0)
+				if d.has("opening"):
+					_check_opening(id, d)
 				if d["role"] == "ceiling" and kind_of(String(d.get("floor", ""))) != "ground":
 					errors.append("%s: a ceiling needs the floor (a ground) it makes above" % id)
 			"recipe":
@@ -224,6 +227,7 @@ func _validate() -> void:
 				pass
 			"ground", "plant":
 				d["solid"] = bool(d.get("solid", false))
+				_check_height(id, d, 1.0)
 			"generator":
 				for f: String in ["water", "shore"]:
 					if kind_of(String(d.get(f, ""))) != "ground":
@@ -288,6 +292,29 @@ func _check_light(id: String, d: Dictionary) -> void:
 
 
 static var _color := RegEx.create_from_string("^#[0-9a-fA-F]{6}$")
+
+
+## How tall it stands, in levels (ADR-0015: sight is checked on the plan with
+## the heights of what is in the way): a wall 1, a bush 0.7, a tree 2.
+func _check_height(id: String, d: Dictionary, default: float) -> void:
+	d["height"] = float(d.get("height", default))
+	if d["height"] <= 0.0 or d["height"] > 4.0:
+		errors.append("%s: height is in levels, above 0 and at most 4" % id)
+
+
+## A window or a loophole (ADR-0015): {"sector" degrees 1..180, "range"
+## cells}; it looks where the part faces, so the part must turn.
+func _check_opening(id: String, d: Dictionary) -> void:
+	var o: Variant = d["opening"]
+	if typeof(o) != TYPE_DICTIONARY:
+		errors.append("%s: opening must be {sector, range}" % id)
+		return
+	o["sector"] = float(o.get("sector", 0))
+	o["range"] = float(o.get("range", 0))
+	if o["sector"] < 1.0 or o["sector"] > 180.0 or o["range"] <= 0.0 or o["range"] > 64.0:
+		errors.append("%s: an opening needs a sector of 1..180 degrees and a range of 1..64 cells" % id)
+	if (d["rotations"] as Array).is_empty():
+		errors.append("%s: an opening looks where the part faces: it needs rotations" % id)
 
 
 ## The facings a part may be built in: distinct, among n, e, s, w.

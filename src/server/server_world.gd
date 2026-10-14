@@ -865,10 +865,13 @@ func _climb(actor: String, r: Dictionary) -> Dictionary:
 	var ly := y - cy * Chunk.SIZE
 	var here := chunk(loc, cx, cy)
 	var dest := ""
-	if _is_stairs(here.get_cell("structure", lx, ly)):
+	# "dir": "up" or "down" where stairs stand over stairs and both ways lead
+	# on from one cell; without it, up first (older clients).
+	var dir := String(r.get("dir", ""))
+	if dir != "down" and _is_stairs(here.get_cell("structure", lx, ly)):
 		var building := levels.building(loc) if loc != SURFACE else String(_layer_props(here, "ceiling", lx, ly).get("building", ""))
 		dest = levels.level(building, levels.z(loc) + 1)
-	elif loc != SURFACE:
+	if dest == "" and dir != "up" and loc != SURFACE:
 		var below := levels.level(levels.building(loc), levels.z(loc) - 1)
 		if below != "" and _is_stairs(chunk(below, cx, cy).get_cell("structure", lx, ly)):
 			dest = below

@@ -151,3 +151,25 @@ func test_stairs_go_up_and_down_and_survive_restart() -> void:
 	_open()
 	eq(w.levels.level(w.levels.buildings.keys()[0], 1), up["location"], "the level keeps its id")
 	eq(_cell(up["location"], "ground", 5, 5), "base:wood_floor")
+
+
+## Stairs over stairs: from the middle level one cell leads both ways, and
+## the player chooses ("dir"); without a choice it is up, as before.
+func test_stairs_over_stairs_lead_both_ways() -> void:
+	_build("surface", 5, 5, "base:wood_ceiling")
+	eq(_build("surface", 5, 5, "base:wood_stairs").get("ok"), true)
+	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	w.enter("k", c)
+	var a := c.character_id
+	w.move_character(a, Vector2i(5 * 256 + 128, 4 * 256 + 128))
+	var first: String = _req({"type": "climb", "location": "surface", "x": 5, "y": 5}, a)["location"]
+	eq(_build(first, 5, 5, "base:wood_ceiling").get("ok"), true, "a ceiling over the first level")
+	eq(_build(first, 5, 5, "base:wood_stairs").get("ok"), true, "stairs on the first level")
+	var down := _req({"type": "climb", "location": first, "x": 5, "y": 5, "dir": "down"}, a)
+	eq(down.get("location"), "surface", "down from the first level")
+	eq(_req({"type": "climb", "location": "surface", "x": 5, "y": 5, "dir": "down"}, a).get("reason"), "no_stairs", "no way down from the surface")
+	eq(_req({"type": "climb", "location": "surface", "x": 5, "y": 5}, a).get("location"), first)
+	var up := _req({"type": "climb", "location": first, "x": 5, "y": 5}, a)
+	eq(up.get("z"), 2, "up by default")
+	eq(_req({"type": "climb", "location": up["location"], "x": 5, "y": 5, "dir": "up"}, a).get("reason"), "no_stairs", "no stairs up on the top")
+	eq(_req({"type": "climb", "location": up["location"], "x": 5, "y": 5, "dir": "down"}, a).get("location"), first)

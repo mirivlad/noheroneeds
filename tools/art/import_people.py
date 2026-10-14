@@ -88,7 +88,11 @@ def place(img):
 def views(inc, name, extra_top=0):
     """{view: frame} of one reference: its sheet and its back three-quarter."""
     h = BODY_H + extra_top
-    out = dict(zip(SHEET_VIEWS, (place(f) for f in figures(inc / f"{name}.png", 4, h))))
+    figs = figures(inc / f"{name}.png", 4, h)
+    # The references' "three-quarter front-right" is turned to the viewer's
+    # left: mirrored, it is the view walking down-right (SE).
+    figs[1] = figs[1][:, ::-1]
+    out = dict(zip(SHEET_VIEWS, (place(f) for f in figs)))
     ne = inc / f"{name}_ne.png"
     out["ne"] = place(figures(ne, 1, h)[0]) if ne.exists() else out["n"]
     return out
@@ -276,16 +280,17 @@ def hair_layer(hair, body):
 
 def cloth_layers(outfit, body, rows):
     """An outfit's clothes split into torso, legs and feet. Clothes are its
-    pixels that are not skin, below the neck, without the outline the
-    generation drew (around the figure, and dark lines along bare skin):
-    the tool draws its own. Torso and legs part at the waist, the row where
+    pixels that are not skin, below the neck, without the dark lines the
+    generation drew along bare skin. Torso and legs part at the waist, the row where
     the clothes' colour changes most; the feet are the lowest sixth."""
     skin = is_skin(outfit, skin_of(body), tol=12.0)
     solid = outfit[..., 3] > 0
-    ring = solid & ~ndimage.binary_erosion(solid)
     lab = _lab(outfit[..., :3])
+    # The clothes keep their own edge (it becomes the outline again, and
+    # boots stay as big as the feet in them); the dark lines the generation
+    # drew along bare skin go.
     dark_line = (lab[..., 0] < 32) & ndimage.binary_dilation(skin)
-    cloth = solid & ~skin & ~ring & ~dark_line
+    cloth = solid & ~skin & ~dark_line
     y = np.arange(F)[:, None]
     cloth &= y > rows["neck"]
     means = [lab[r][cloth[r]].mean(0) if cloth[r].sum() >= 3 else None for r in range(F)]

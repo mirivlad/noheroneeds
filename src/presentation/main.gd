@@ -12,7 +12,8 @@ extends Node2D
 ## Controls (temporary): WASD/arrows walk; 1-3 choose a part; left click
 ## builds, right click takes down; E picks up what lies near or opens and
 ## closes a door next to you; G drops one of the chosen material (Tab);
-## F goes up or down the stairs you stand on.
+## F goes up the stairs you stand on (or down, if there is no way up),
+## Shift+F goes down.
 
 const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:wood_ceiling",
 	"base:thatch_roof", "base:wood_stairs", "base:wood_column"]
@@ -137,6 +138,11 @@ func _process(delta: float) -> void:
 		game.world.move_character(client.character_id, Vector2i(128, -5 * 256 + 200))  # dev only: behind the back wall
 	if _opts.get("demo") == "upstairs" and _frames == 40:
 		client.request({"type": "climb", "location": client.location, "x": 1, "y": 0})
+	if _opts.get("demo") == "upstairs" and _frames == 60 and client.z == 1:
+		# Part of the first level roofed over: floor and ceiling side by side.
+		for y in range(-3, 0):
+			for x in range(-2, 1):
+				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_ceiling"})
 	view.update_view(_accum / tick, delta)
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
@@ -160,7 +166,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif k == KEY_E and client.state == "playing":
 			_use_nearest()
 		elif k == KEY_F and client.state == "playing":
-			_climb_nearest()
+			_climb_nearest("down" if (event as InputEventKey).shift_pressed else "up")
 	elif event is InputEventMouseButton and event.pressed and client.state == "playing":
 		var op := {"location": client.location}
 		var cell: Vector2i
@@ -204,24 +210,38 @@ func _use_nearest() -> void:
 				return
 
 
-## F: the stairs (up) or the way down nearest to the player, if any in reach.
-func _climb_nearest() -> void:
+## F: the stairs nearest to the player, if any in reach: up (Shift+F: down)
+## when that way is there, else the other way. Stairs above stairs lead both
+## ways from one cell, so the choice is the player's.
+func _climb_nearest(prefer: String) -> void:
 	var me := Movement.cell_of(client.position)
 	for d: Vector2i in [Vector2i.ZERO, Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0),
 			Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
-		var cell := me + d
-		var cx := floori(cell.x / 32.0)
-		var cy := floori(cell.y / 32.0)
-		var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
-		if c == null:
+		var ways := _ways_at(me + d)
+		if ways.is_empty():
 			continue
-		var lx := cell.x - cx * 32
-		var ly := cell.y - cy * 32
-		var part := c.get_cell("structure", lx, ly)
-		if c.get_props(lx, ly).get("stairs_down", false) or (part != "" and content.get_def(part).get("role") == "stairs"):
-			client.request({"type": "climb", "location": client.location, "x": cell.x, "y": cell.y})
-			return
+		var dir: String = prefer if ways.has(prefer) else ways[0]
+		client.request({"type": "climb", "location": client.location, "x": me.x + d.x, "y": me.y + d.y, "dir": dir})
+		return
 	_note = "рядом нет лестницы"
+
+
+## Which ways lead on from a cell: "up" (stairs here), "down" (stairs below).
+func _ways_at(cell: Vector2i) -> Array:
+	var cx := floori(cell.x / float(Chunk.SIZE))
+	var cy := floori(cell.y / float(Chunk.SIZE))
+	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
+	if c == null:
+		return []
+	var lx := cell.x - cx * Chunk.SIZE
+	var ly := cell.y - cy * Chunk.SIZE
+	var ways := []
+	var part := c.get_cell("structure", lx, ly)
+	if part != "" and content.get_def(part).get("role") == "stairs":
+		ways.append("up")
+	if c.get_props(lx, ly).get("stairs_down", false):
+		ways.append("down")
+	return ways
 
 
 ## Where a click would build: the cell under the mouse, or for ceilings and
@@ -326,8 +346,11 @@ func _update_hud() -> void:
 		bag.append("%s%s %d" % [mark, content.get_def(id).get("name", id), int(inv.get(id, 0))])
 	var level := "Поверхность  0" if client.z == 0 else "Этаж  %+d" % client.z
 	hud.text = level + "     " + "  ".join(bag)
+	var note := _note
+	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:
+		note = "F — вверх, Shift+F — вниз   " + _note
 	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, _part + 1, content.get_def(PARTS[_part]).get("name", ""),
-		cell.x, cell.y, _note]
+		cell.x, cell.y, note]
 	for i in _slots.size():
 		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
 

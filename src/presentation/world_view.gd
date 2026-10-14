@@ -282,15 +282,52 @@ func update_view(alpha: float, delta: float) -> void:
 		_clear()
 		keys = client.chunks.keys()
 	for key: String in keys:
-		_paint(key)
+		_pending[key] = true
+	_paint_pending()
 	_update_characters(alpha, delta)
 	_update_room()
 	_fade_occluders()
 
 
+## Chunks waiting to be drawn. Those in sight are drawn at once, the rest
+## nearest first within a time budget per frame, so arriving on another level
+## (every known chunk redrawn) or a burst of chunks never stalls a frame.
+var _pending := {}
+const PAINT_BUDGET_USEC := 6000
+## Around the player, in pixels: what a frame shows, also zoomed out.
+const SIGHT := Vector2(640, 360)
+
+
+func pending_chunks() -> int:
+	return _pending.size()
+
+
+func _paint_pending() -> void:
+	if _pending.is_empty():
+		return
+	var me := Vector2(client.position) / UNITS_PER_PIXEL if client.has_position else Vector2.ZERO
+	var sight := Rect2(me - SIGHT / 2, SIGHT)
+	var span := float(Chunk.SIZE * CELL)
+	var keys := _pending.keys()
+	var dist := {}
+	for key: String in keys:
+		var p := key.split("|")
+		var r := Rect2(int(p[1]) * span, int(p[2]) * span, span, span)
+		# Own location first, then by distance; in sight means now.
+		dist[key] = -1.0 if r.intersects(sight) else r.get_center().distance_to(me) + (0.0 if p[0] == client.location else 1e6)
+	keys.sort_custom(func(a: String, b: String) -> bool: return dist[a] < dist[b])
+	var start := Time.get_ticks_usec()
+	for key: String in keys:
+		if dist[key] >= 0.0 and Time.get_ticks_usec() - start > PAINT_BUDGET_USEC:
+			break
+		_pending.erase(key)
+		_paint(key)
+
+
 ## Forgets everything drawn (the client moved to another location).
 func _clear() -> void:
 	_ground.clear()
+	_pending.clear()
 	for g: String in _edges:
 		(_edges[g][5] as TileMapLayer).clear()
 	_edge_set.clear()
@@ -390,6 +427,15 @@ func _set_cover(cell: Vector2i, id: String) -> void:
 		var piece := _grid_piece(cell, v["grid_size"]) * CELL if v.has("grid_size") else Vector2i.ZERO
 		s.region_rect = Rect2(v["rect"][0] + piece.x, v["rect"][1] + piece.y, v["rect"][2], v["rect"][3])
 	s.position = Vector2(cell.x * CELL, cell.y * CELL - COVER_LIFT)
+	# Its shadow on the floor along its south edge, under the covers (the
+	# next cover south hides it), so an overhang reads as one.
+	var shade := ColorRect.new()
+	shade.color = Color(0.08, 0.05, 0.04, 0.38)
+	shade.size = Vector2(CELL, 4)
+	shade.position = Vector2(0, COVER_LIFT)
+	shade.z_index = -1
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	s.add_child(shade)
 	s.visible = not _hidden_room.has(cell)
 	_covers.add_child(s)
 	_cover_sprites[cell] = s

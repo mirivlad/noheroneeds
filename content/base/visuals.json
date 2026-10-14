@@ -650,7 +650,11 @@
     16
    ],
    "mode": "item",
-   "variants": 1
+   "variants": 1,
+   "worn": {
+    "atlas": "art/people/linen_shirt.png",
+    "layer": "torso"
+   }
   },
   {
    "id": "base:visual/work_trousers",
@@ -668,7 +672,11 @@
     16
    ],
    "mode": "item",
-   "variants": 1
+   "variants": 1,
+   "worn": {
+    "atlas": "art/people/work_trousers.png",
+    "layer": "legs"
+   }
   },
   {
    "id": "base:visual/boots",
@@ -686,7 +694,11 @@
     16
    ],
    "mode": "item",
-   "variants": 1
+   "variants": 1,
+   "worn": {
+    "atlas": "art/people/boots.png",
+    "layer": "feet"
+   }
   },
   {
    "id": "base:visual/axe",
@@ -820,7 +832,7 @@
    "id": "base:visual/humanoid_adult",
    "kind": "visual",
    "for": "base:humanoid_adult",
-   "atlas": "art/people/villager.png",
+   "atlas": "art/people/body.png",
    "rect": [
     0,
     0,
@@ -840,7 +852,142 @@
     "ne",
     "n"
    ],
-   "frames": 3
+   "animations": {
+    "idle": {
+     "from": 0,
+     "frames": 4,
+     "fps": 6
+    },
+    "walk": {
+     "from": 4,
+     "frames": 6,
+     "fps": 10
+    }
+   },
+   "layer_order": {
+    "s": [
+     "body",
+     "legs",
+     "feet",
+     "torso",
+     "belt",
+     "hair_back",
+     "head",
+     "face",
+     "eyes",
+     "hair_front",
+     "headwear"
+    ],
+    "se": [
+     "body",
+     "legs",
+     "feet",
+     "torso",
+     "belt",
+     "hair_back",
+     "head",
+     "face",
+     "eyes",
+     "hair_front",
+     "headwear"
+    ],
+    "e": [
+     "body",
+     "legs",
+     "feet",
+     "torso",
+     "belt",
+     "hair_back",
+     "head",
+     "face",
+     "eyes",
+     "hair_front",
+     "headwear"
+    ],
+    "ne": [
+     "body",
+     "legs",
+     "feet",
+     "torso",
+     "belt",
+     "hair_back",
+     "head",
+     "face",
+     "eyes",
+     "hair_front",
+     "headwear"
+    ],
+    "n": [
+     "body",
+     "legs",
+     "feet",
+     "torso",
+     "belt",
+     "hair_back",
+     "head",
+     "face",
+     "eyes",
+     "hair_front",
+     "headwear"
+    ]
+   }
+  },
+  {
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "id": "base:visual/hair_short",
+   "kind": "visual",
+   "for": "base:hair_short",
+   "atlas": "art/people/hair_short.png",
+   "mode": "layer",
+   "layer": "hair_front",
+   "variants": 1
+  },
+  {
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "id": "base:visual/hair_long",
+   "kind": "visual",
+   "for": "base:hair_long",
+   "atlas": "art/people/hair_long.png",
+   "mode": "layer",
+   "layer": "hair_front",
+   "variants": 1
+  },
+  {
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "id": "base:visual/hair_braid",
+   "kind": "visual",
+   "for": "base:hair_braid",
+   "atlas": "art/people/hair_braid.png",
+   "mode": "layer",
+   "layer": "hair_front",
+   "variants": 1
   }
  ]
 }

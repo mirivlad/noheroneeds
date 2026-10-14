@@ -70,6 +70,62 @@
     "docs/proposals/004-style-pass/art/people.png"
    ],
    "prompt": "Pixel art sheet of six expressions of the same villager face in one row, head only, front view, in the style of the attached images, about as detailed as an 11-pixel-tall head enlarged 16 times: neutral, happy, sad, angry, surprised, thinking. Small dot eyes and a small mouth, not a chibi, not a doll. Crisp square blocks of flat color, all blocks the same size, no anti-aliasing, no outline. Fully transparent background, nothing else."
+  },
+  {
+   "name": "body_ne",
+   "refs": [
+    "art_src/incoming/003/body.png",
+    "docs/proposals/004-style-pass/art/reference.png"
+   ],
+   "prompt": "Pixel art character sprite, ONE figure only: the same person as in the attached reference sheet (same body, same proportions, same plain undershirt and shorts, bare feet and smooth closely cropped head, same colors, same pixel size and style), now seen in a three-quarter BACK view: the person walks away from the viewer toward the upper right, so we see their back and a little of their right side; the face is not visible. Arms relaxed at the sides, standing, same height as in the reference. The image must look like an 18x32 pixel sprite enlarged 16 times: crisp square blocks of flat color, all blocks the same size, no anti-aliasing, no blur. No outline added, no shadow on the ground. Fully transparent background, nothing else in the picture."
+  },
+  {
+   "name": "hair_short_ne",
+   "refs": [
+    "art_src/incoming/003/hair_short.png",
+    "docs/proposals/004-style-pass/art/reference.png"
+   ],
+   "prompt": "Pixel art character sprite, ONE figure only: the same person as in the attached reference sheet (same body, same proportions, same short tousled chestnut hair, undershirt and shorts, same colors, same pixel size and style), now seen in a three-quarter BACK view: the person walks away from the viewer toward the upper right, so we see their back and a little of their right side; the face is not visible. Arms relaxed at the sides, standing, same height as in the reference. The image must look like an 18x32 pixel sprite enlarged 16 times: crisp square blocks of flat color, all blocks the same size, no anti-aliasing, no blur. No outline added, no shadow on the ground. Fully transparent background, nothing else in the picture."
+  },
+  {
+   "name": "hair_long_ne",
+   "refs": [
+    "art_src/incoming/003/hair_long.png",
+    "docs/proposals/004-style-pass/art/reference.png"
+   ],
+   "prompt": "Pixel art character sprite, ONE figure only: the same person as in the attached reference sheet (same body, same proportions, same long loose chestnut hair, undershirt and shorts, same colors, same pixel size and style), now seen in a three-quarter BACK view: the person walks away from the viewer toward the upper right, so we see their back and a little of their right side; the face is not visible. Arms relaxed at the sides, standing, same height as in the reference. The image must look like an 18x32 pixel sprite enlarged 16 times: crisp square blocks of flat color, all blocks the same size, no anti-aliasing, no blur. No outline added, no shadow on the ground. Fully transparent background, nothing else in the picture."
+  },
+  {
+   "name": "hair_braid_ne",
+   "refs": [
+    "art_src/incoming/003/hair_braid.png",
+    "docs/proposals/004-style-pass/art/reference.png"
+   ],
+   "prompt": "Pixel art character sprite, ONE figure only: the same person as in the attached reference sheet (same body, same proportions, same chestnut hair in a single long braid, undershirt and shorts, same colors, same pixel size and style), now seen in a three-quarter BACK view: the person walks away from the viewer toward the upper right, so we see their back and a little of their right side; the face is not visible. Arms relaxed at the sides, standing, same height as in the reference. The image must look like an 18x32 pixel sprite enlarged 16 times: crisp square blocks of flat color, all blocks the same size, no anti-aliasing, no blur. No outline added, no shadow on the ground. Fully transparent background, nothing else in the picture."
+  },
+  {
+   "name": "outfit_villager_ne",
+   "refs": [
+    "art_src/incoming/003/outfit_villager.png",
+    "docs/proposals/004-style-pass/art/reference.png"
+   ],
+   "prompt": "Pixel art character sprite, ONE figure only: the same person as in the attached reference sheet (same body, same proportions, same linen shirt, work trousers, boots and belt, cropped head, same colors, same pixel size and style), now seen in a three-quarter BACK view: the person walks away from the viewer toward the upper right, so we see their back and a little of their right side; the face is not visible. Arms relaxed at the sides, standing, same height as in the reference. The image must look like an 18x32 pixel sprite enlarged 16 times: crisp square blocks of flat color, all blocks the same size, no anti-aliasing, no blur. No outline added, no shadow on the ground. Fully transparent background, nothing else in the picture."
+  },
+  {
+   "name": "outfit_baker_ne",
+   "refs": [
+    "art_src/incoming/003/outfit_baker.png",
+    "docs/proposals/004-style-pass/art/reference.png"
+   ],
+   "prompt": "Pixel art character sprite, ONE figure only: the same person as in the attached reference sheet (same body, same proportions, same jacket, light shirt and apron, cropped head, same colors, same pixel size and style), now seen in a three-quarter BACK view: the person walks away from the viewer toward the upper right, so we see their back and a little of their right side; the face is not visible. Arms relaxed at the sides, standing, same height as in the reference. The image must look like an 18x32 pixel sprite enlarged 16 times: crisp square blocks of flat color, all blocks the same size, no anti-aliasing, no blur. No outline added, no shadow on the ground. Fully transparent background, nothing else in the picture."
+  },
+  {
+   "name": "outfit_elder_ne",
+   "refs": [
+    "art_src/incoming/003/outfit_elder.png",
+    "docs/proposals/004-style-pass/art/reference.png"
+   ],
+   "prompt": "Pixel art character sprite, ONE figure only: the same person as in the attached reference sheet (same body, same proportions, same waistcoat, shirt, belt with a pouch and grey fringe of hair, same colors, same pixel size and style), now seen in a three-quarter BACK view: the person walks away from the viewer toward the upper right, so we see their back and a little of their right side; the face is not visible. Arms relaxed at the sides, standing, same height as in the reference. The image must look like an 18x32 pixel sprite enlarged 16 times: crisp square blocks of flat color, all blocks the same size, no anti-aliasing, no blur. No outline added, no shadow on the ground. Fully transparent background, nothing else in the picture."
   }
  ]
 }

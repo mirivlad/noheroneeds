@@ -27,6 +27,7 @@ def run(job, brief, common, env):
     name = job["name"]
     work = ROOT / "art_src" / "gen" / brief / name
     work.mkdir(parents=True, exist_ok=True)
+    (ROOT / "art_src" / ".gdignore").touch()  # sources, not game resources
     out = ROOT / "art_src" / "incoming" / brief / f"{name}.png"
     images = []
     for ref in job.get("refs", common.get("refs", [])):

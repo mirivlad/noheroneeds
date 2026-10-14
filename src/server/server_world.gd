@@ -68,6 +68,9 @@ var _closed := false
 ## rule set by the server, not part of the profile. Provisional, until crafts
 ## and gathering provide materials.
 var starter_kit := {}
+## Server setting: what a character wears when it wears nothing (slot ->
+## item), on arrival; also dresses characters made before clothes were drawn.
+var starter_outfit := {}
 ## Where characters appear the first time they enter this world.
 var spawn_location := SURFACE
 var spawn_position := Vector2i.ZERO
@@ -310,10 +313,20 @@ func enter(owner: String, c: PortableCharacter) -> String:
 	elif not stored.is_empty():
 		place = Cbor.decode(stored).value
 	var data: Dictionary = known["data"]
+	if (data.get("equipment", {}) as Dictionary).is_empty() and not starter_outfit.is_empty():
+		data["equipment"] = starter_outfit.duplicate()
+		_dirty_characters[id] = true
 	present[id] = {"location": String(place["location"]), "pos": Vector2i(int(place["x"]), int(place["y"])),
-		"name": data["name"], "appearance": data["appearance"]}
+		"name": data["name"], "appearance": shown_look(data)}
 	_dirty_world_characters[id] = true
 	return ""
+
+
+## What others see of a character: its appearance and what it wears.
+static func shown_look(data: Dictionary) -> Dictionary:
+	var look: Dictionary = (data["appearance"] as Dictionary).duplicate(true)
+	look["worn"] = (data.get("equipment", {}) as Dictionary).duplicate()
+	return look
 
 
 func leave(id: String) -> void:

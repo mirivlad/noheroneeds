@@ -401,6 +401,33 @@ def production_materials(visuals):
     atlas.save(OUT / "art" / "ground.png")
 
 
+def production_people(visuals):
+    """Paper-doll sheets (tools/art/import_people.py, ADR-0001): the body of
+    base:humanoid_adult with its animations and layer order, a layer for
+    each style, a worn picture for each wearable item."""
+    path = ROOT / "tools" / "art" / "imports" / "003.json"
+    if not path.exists():
+        return
+    m = json.loads(path.read_text())
+    out = Path(m["out"]).relative_to("content/base")
+    if not (OUT / out / "body.png").exists():
+        return
+    frame = {"rect": [0, 0, 48, 48], "origin": [24, 45]}
+    by_id = {v["for"]: v for v in visuals}
+    dirs = ["s", "se", "e", "ne", "n"]
+    by_id["base:humanoid_adult"].update(dict(frame, atlas=str(out / "body.png"), directions=dirs,
+        animations={"idle": {"from": 0, "frames": 4, "fps": 6}, "walk": {"from": 4, "frames": 6, "fps": 10}},
+        layer_order={d: m["layer_order"] for d in dirs}))
+    by_id["base:humanoid_adult"].pop("frames", None)
+    for name, spec in m["layers"].items():
+        sheet = str(out / f"{name}.png")
+        if spec["for"] in by_id and by_id[spec["for"]]["mode"] == "item":
+            by_id[spec["for"]]["worn"] = {"atlas": sheet, "layer": spec["layer"]}
+        else:
+            visuals.append(dict(frame, id="base:visual/" + spec["for"].split(":")[1], kind="visual",
+                                **{"for": spec["for"]}, atlas=sheet, mode="layer", layer=spec["layer"], variants=1))
+
+
 def _art_origin(img):
     """Where an imported sprite stands: the middle of its base (a trunk, the
     root of a tuft) goes to the middle of the cell, its bottom row on the
@@ -499,6 +526,7 @@ def main():
     })
     production_art(a.visuals)
     production_materials(a.visuals)
+    production_people(a.visuals)
     with open(OUT / "visuals.json", "w") as f:
         json.dump({"format": 1, "defs": a.visuals}, f, ensure_ascii=False, indent=1)
         f.write("\n")

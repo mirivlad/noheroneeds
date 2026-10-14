@@ -16,6 +16,8 @@ var content: ContentRegistry
 var state := "connecting"
 var reject_reason := ""
 var character_id := ""
+## The own character as the server shows it to others (name, appearance).
+var own := {}
 var location := ""
 ## The level label of the location (0 on the surface).
 var z := 0
@@ -173,6 +175,7 @@ func _on_snapshot(m: Dictionary) -> void:
 		if old < base_id:
 			_snapshots.erase(old)
 	entities = full.duplicate()
+	own = full.get(character_id, own)
 	entities.erase(character_id)
 	if full.has(character_id):
 		_reconcile(Vector2i(full[character_id]["x"], full[character_id]["y"]), m["input_ack"])

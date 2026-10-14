@@ -167,36 +167,36 @@
    "id": "base:visual/flower_yellow",
    "kind": "visual",
    "for": "base:flower_yellow",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/flowers_yellow.png",
    "rect": [
-    32,
-    112,
-    16,
-    16
+    0,
+    0,
+    14,
+    15
    ],
    "origin": [
-    0,
-    16
+    -2,
+    13
    ],
-   "mode": "flat",
+   "mode": "tall",
    "variants": 1
   },
   {
    "id": "base:visual/flower_blue",
    "kind": "visual",
    "for": "base:flower_blue",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/flowers_pink_blue.png",
    "rect": [
-    48,
-    112,
-    16,
+    0,
+    0,
+    19,
     16
    ],
    "origin": [
-    0,
-    16
+    -1,
+    14
    ],
-   "mode": "flat",
+   "mode": "tall",
    "variants": 1
   },
   {
@@ -221,70 +221,154 @@
    "id": "base:visual/tall_grass",
    "kind": "visual",
    "for": "base:tall_grass",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/tall_grass.png",
    "rect": [
-    80,
-    112,
-    16,
+    0,
+    0,
+    12,
     16
    ],
    "origin": [
-    0,
-    16
+    -1,
+    14
    ],
-   "mode": "flat",
-   "variants": 1
+   "mode": "tall",
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/plants/grass_tuft.png",
+     "rect": [
+      0,
+      0,
+      14,
+      11
+     ],
+     "origin": [
+      -1,
+      9
+     ]
+    },
+    {
+     "atlas": "art/plants/grass_short.png",
+     "rect": [
+      0,
+      0,
+      11,
+      8
+     ],
+     "origin": [
+      -3,
+      6
+     ]
+    },
+    {
+     "atlas": "art/plants/grass_reedy.png",
+     "rect": [
+      0,
+      0,
+      14,
+      19
+     ],
+     "origin": [
+      0,
+      17
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/bush",
    "kind": "visual",
    "for": "base:bush",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/bush_low.png",
    "rect": [
     0,
-    128,
-    32,
-    16
+    0,
+    40,
+    20
    ],
    "origin": [
-    8,
-    16
+    13,
+    18
    ],
    "mode": "tall",
-   "variants": 1
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/plants/bush.png",
+     "rect": [
+      0,
+      0,
+      27,
+      27
+     ],
+     "origin": [
+      5,
+      25
+     ]
+    },
+    {
+     "atlas": "art/plants/bush_round.png",
+     "rect": [
+      0,
+      0,
+      30,
+      18
+     ],
+     "origin": [
+      6,
+      16
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/berry_bush",
    "kind": "visual",
    "for": "base:berry_bush",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/berry_bush.png",
    "rect": [
-    32,
-    128,
-    32,
-    16
+    0,
+    0,
+    22,
+    20
    ],
    "origin": [
-    8,
-    16
+    3,
+    18
    ],
    "mode": "tall",
-   "variants": 1
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/plants/berry_bush_large.png",
+     "rect": [
+      0,
+      0,
+      29,
+      24
+     ],
+     "origin": [
+      7,
+      22
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/oak",
    "kind": "visual",
    "for": "base:oak",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/oak.png",
    "rect": [
     0,
-    144,
-    64,
-    80
+    0,
+    68,
+    92
    ],
    "origin": [
-    24,
-    80
+    26,
+    90
    ],
    "mode": "tall",
    "variants": 1
@@ -293,16 +377,16 @@
    "id": "base:visual/birch",
    "kind": "visual",
    "for": "base:birch",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/birch.png",
    "rect": [
-    64,
-    144,
-    48,
-    80
+    0,
+    0,
+    50,
+    103
    ],
    "origin": [
-    16,
-    80
+    24,
+    101
    ],
    "mode": "tall",
    "variants": 1
@@ -311,37 +395,67 @@
    "id": "base:visual/spruce",
    "kind": "visual",
    "for": "base:spruce",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/spruce.png",
    "rect": [
-    112,
-    144,
-    48,
-    80
+    0,
+    0,
+    49,
+    109
    ],
    "origin": [
     16,
-    80
+    107
    ],
    "mode": "tall",
-   "variants": 1
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/plants/spruce_young.png",
+     "rect": [
+      0,
+      0,
+      30,
+      87
+     ],
+     "origin": [
+      5,
+      85
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/reeds",
    "kind": "visual",
    "for": "base:reeds",
-   "atlas": "art/tiles.png",
+   "atlas": "art/plants/cattails.png",
    "rect": [
-    160,
-    144,
-    16,
-    32
+    0,
+    0,
+    19,
+    28
    ],
    "origin": [
-    0,
-    32
+    1,
+    26
    ],
    "mode": "tall",
-   "variants": 1
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/plants/reeds_plume.png",
+     "rect": [
+      0,
+      0,
+      37,
+      27
+     ],
+     "origin": [
+      12,
+      25
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/wood_wall",

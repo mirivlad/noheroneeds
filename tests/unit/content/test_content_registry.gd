@@ -62,6 +62,30 @@ func test_fingerprint_ignores_presentation() -> void:
 	eq(with_pack.visual_of("base:oak")["pack"], "tex", "the pack redraws the oak")
 
 
+## Alternate pictures of one thing (two spruces): checked and resolved like
+## the main picture, and still outside the rules.
+func test_visual_alternates() -> void:
+	var root := tmp_dir()
+	var tex := root.path_join("tex")
+	_write(tex, "pack.json", {"format": 1, "id": "tex", "version": "1", "depends": ["base"]})
+	var img := Image.create(32, 64, false, Image.FORMAT_RGBA8)
+	img.save_png(tex.path_join("a.png"))
+	img.save_png(tex.path_join("b.png"))
+	var def := {"id": "tex:visual/spruce", "kind": "visual", "for": "base:spruce", "atlas": "a.png",
+		"rect": [0, 0, 32, 64], "origin": [8, 62], "mode": "tall",
+		"alternates": [{"atlas": "b.png", "rect": [0, 0, 30, 60], "origin": [7, 58]}]}
+	_write(tex, "visuals.json", {"format": 1, "defs": [def]})
+	var reg := ContentRegistry.load_packs(["res://content/base", tex])
+	eq(reg.errors, PackedStringArray())
+	var alt: Dictionary = reg.visual_of("base:spruce")["alternates"][0]
+	eq(alt["atlas_path"], tex.path_join("b.png"), "resolved in the pack")
+	eq(alt["origin"], [7, 58], "integers")
+	eq(reg.fingerprint(), ContentRegistry.load_packs(["res://content/base"]).fingerprint(), "not rules")
+	def["alternates"] = [{"atlas": "missing.png", "rect": [0, 0, 1, 1], "origin": [0, 0]}, {"atlas": "b.png"}]
+	_write(tex, "visuals.json", {"format": 1, "defs": [def]})
+	eq(ContentRegistry.load_packs(["res://content/base", tex]).errors.size(), 2, "missing file, missing rect")
+
+
 func test_fingerprint_follows_content() -> void:
 	var root := tmp_dir()
 	var p := root.path_join("p")

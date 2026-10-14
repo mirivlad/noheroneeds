@@ -4,3 +4,4 @@ __pycache__/
 /addons/godot-sqlite/bin/
 /build/
 /art_src/
+/gen_img/

@@ -272,6 +272,23 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	d["atlas_path"] = dir.path_join(String(d.get("atlas", ""))) if dir != "" else ""
 	if dir != "" and not FileAccess.file_exists(d["atlas_path"]) and not ResourceLoader.exists(d["atlas_path"]):
 		errors.append("%s: atlas %s not found" % [id, d["atlas_path"]])
+	# Other pictures of the same thing (two spruces, kinds of grass): the
+	# view picks one by the cell, so it is the same for every player.
+	var alts: Variant = d.get("alternates", [])
+	if typeof(alts) != TYPE_ARRAY:
+		errors.append("%s: alternates must be a list" % id)
+		alts = []
+	for alt: Variant in alts:
+		if typeof(alt) != TYPE_DICTIONARY or typeof(alt.get("rect")) != TYPE_ARRAY or (alt["rect"] as Array).size() != 4 \
+				or typeof(alt.get("origin")) != TYPE_ARRAY or (alt["origin"] as Array).size() != 2:
+			errors.append("%s: an alternate needs atlas, rect and origin" % id)
+			continue
+		alt["rect"] = (alt["rect"] as Array).map(func(n: Variant) -> int: return int(n))
+		alt["origin"] = (alt["origin"] as Array).map(func(n: Variant) -> int: return int(n))
+		alt["atlas_path"] = dir.path_join(String(alt.get("atlas", d.get("atlas", "")))) if dir != "" else ""
+		if dir != "" and not FileAccess.file_exists(alt["atlas_path"]) and not ResourceLoader.exists(alt["atlas_path"]):
+			errors.append("%s: atlas %s not found" % [id, alt["atlas_path"]])
+	d["alternates"] = alts
 	var old: Dictionary = visuals.get(target, {})
 	if old.is_empty() or _pack_order(d["pack"]) >= _pack_order(old["pack"]):
 		visuals[target] = d

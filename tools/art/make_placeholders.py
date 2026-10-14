@@ -237,6 +237,51 @@ def wall_set(kind, opened=False):
     return strip
 
 
+def window(kind, mask, facing):
+    """A wall with an opening (ADR-0015), 16 x 32 like a wall and joining
+    walls the same way. kind: wood_window (a framed pane) or loophole (a
+    narrow slit in stone). The opening shows where it looks: on the front
+    face for "s"; for "n", "e", "w" as a dark slot in the wall top on that
+    side (the face it is cut in is out of sight)."""
+    base = "stone_wall" if kind == "loophole" else "wood_wall"
+    img = wall(base, mask)
+    d = ImageDraw.Draw(img)
+    dark, glass = hx("1e1618"), hx("3b4a5c")
+    frame = P["wood"][3] if kind == "wood_window" else hx("4a4850")
+    if facing == "s":
+        if kind == "wood_window":
+            d.rectangle((3, T + 3, 12, T + 10), frame)
+            d.rectangle((4, T + 4, 11, T + 9), glass)
+            d.line((7, T + 4, 7, T + 9), frame)
+            d.line((4, T + 6, 11, T + 6), frame)
+            d.point((5, T + 4), hx("8aa0b0"))  # a glint
+            d.line((2, T + 11, 13, T + 11), P["wood"][1])  # the sill
+        else:
+            d.rectangle((7, T + 2, 8, T + 11), dark)
+            d.rectangle((6, T + 5, 9, T + 7), dark)
+    else:
+        w = 4 if kind == "wood_window" else 2
+        if facing == "n":
+            box = (8 - w, 0, 7 + w, 2)
+        elif facing == "e":
+            box = (T - 3, 8 - w, T - 1, 7 + w)
+        else:
+            box = (0, 8 - w, 2, 7 + w)
+        d.rectangle(box, frame)
+        inner = (box[0] + (1 if facing != "w" else 0), box[1] + (1 if facing != "n" else 0),
+                 box[2] - (1 if facing != "e" else 0), box[3] - (1 if facing == "n" else 1))
+        d.rectangle(inner, glass if kind == "wood_window" else dark)
+    return img
+
+
+def window_set(kind, facing):
+    """16 variants side by side, indexed by the neighbour mask."""
+    strip = Image.new("RGBA", (16 * T, 2 * T), (0, 0, 0, 0))
+    for m in range(16):
+        strip.alpha_composite(window(kind, m, facing), (m * T, 0))
+    return strip
+
+
 def door_open():
     """The door swung inside: a dark doorway with the leaf at the side (16 x 32)."""
     img = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
@@ -672,7 +717,7 @@ def production_art(visuals):
 
 
 def main():
-    a = Atlas(16, 23)
+    a = Atlas(16, 39)
     for row, kind in enumerate(["grass", "grass_dry", "dirt", "moss", "forest_floor", "sand", "water"]):
         strip = Image.new("RGBA", (4 * T, T))
         for v in range(4):
@@ -695,6 +740,15 @@ def main():
         a.visuals[-1]["autotile"] = "wall"
     a.put(0, 21, wall_set("wood_door", opened=True), "base:wood_door_open_set", (0, 2 * T), "tall", variants=16)
     opened = a.visuals.pop()  # the door's "open" state, not a visual of its own
+    # Windows and loopholes (ADR-0015): a set for each facing, joining walls.
+    for k, kind in enumerate(("wood_window", "loophole")):
+        sets = {}
+        for f, facing in enumerate(("s", "e", "n", "w")):
+            a.put(0, 23 + (k * 4 + f) * 2, window_set(kind, facing), "base:" + kind, (0, 2 * T), "tall", variants=16)
+            sets[facing] = a.visuals.pop()["rect"]
+        a.visuals.append({"id": "base:visual/" + kind, "kind": "visual", "for": "base:" + kind, "atlas": "art/tiles.png",
+                          "rect": sets["s"], "origin": [0, 2 * T], "mode": "tall", "variants": 16, "autotile": "wall",
+                          "rotations": {f: sets[f] for f in ("e", "n", "w")}})
     for v in a.visuals:
         if v["for"] == "base:wood_door":
             v["states"] = {"open": opened["rect"]}
@@ -735,7 +789,7 @@ def main():
     toned = b3.grain(b3.tone(a.img, MIDDLE), dict(MIDDLE, grain=0.03), 7)
     if "wood_wall_face" in TEX:
         # Walls drawn from production textures are in the palette already.
-        rows = (15 * T, 23 * T)
+        rows = (15 * T, 39 * T)
         toned.paste(a.img.crop((0, rows[0], a.img.width, rows[1])), (0, rows[0]))
     toned.save(OUT / "art" / "tiles.png")
     people_sheet().save(OUT / "art" / "chibi_placeholder.png")

@@ -608,37 +608,6 @@ func has_daylight(location: String) -> bool:
 	return location == SURFACE or levels.kind(location) == Levels.BUILDING_LEVEL
 
 
-## Whether nothing opaque stands between two cells, the cells themselves not
-## counted (Bresenham's line). Sight asks it often: chunks are looked up once
-## for a run of cells, and cells by what Terrain keeps about them.
-func line_clear(location: String, a: Vector2i, b: Vector2i) -> bool:
-	var dx := absi(b.x - a.x)
-	var dy := -absi(b.y - a.y)
-	var sx := 1 if a.x < b.x else -1
-	var sy := 1 if a.y < b.y else -1
-	var err := dx + dy
-	var p := a
-	var at := Vector2i(1 << 30, 0)
-	var c: Chunk = null
-	while p != b:
-		var e2 := 2 * err
-		if e2 >= dy:
-			err += dy
-			p.x += sx
-		if e2 <= dx:
-			err += dx
-			p.y += sy
-		if p == b:
-			break
-		var here := Vector2i(p.x >> 5, p.y >> 5)  # Chunk.SIZE is 32
-		if here != at:
-			at = here
-			c = chunk(location, here.x, here.y)
-		if Terrain.is_opaque(c, p.x & 31, p.y & 31, content):
-			return false
-	return true
-
-
 func is_opaque(location: String, x: int, y: int) -> bool:
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)

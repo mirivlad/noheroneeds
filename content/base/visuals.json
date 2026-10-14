@@ -987,6 +987,84 @@
    }
   },
   {
+   "id": "base:visual/wood_window",
+   "kind": "visual",
+   "for": "base:wood_window",
+   "atlas": "art/tiles.png",
+   "rect": [
+    0,
+    368,
+    16,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "mode": "tall",
+   "variants": 16,
+   "autotile": "wall",
+   "rotations": {
+    "e": [
+     0,
+     400,
+     16,
+     32
+    ],
+    "n": [
+     0,
+     432,
+     16,
+     32
+    ],
+    "w": [
+     0,
+     464,
+     16,
+     32
+    ]
+   }
+  },
+  {
+   "id": "base:visual/loophole",
+   "kind": "visual",
+   "for": "base:loophole",
+   "atlas": "art/tiles.png",
+   "rect": [
+    0,
+    496,
+    16,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "mode": "tall",
+   "variants": 16,
+   "autotile": "wall",
+   "rotations": {
+    "e": [
+     0,
+     528,
+     16,
+     32
+    ],
+    "n": [
+     0,
+     560,
+     16,
+     32
+    ],
+    "w": [
+     0,
+     592,
+     16,
+     32
+    ]
+   }
+  },
+  {
    "id": "base:visual/plank",
    "kind": "visual",
    "for": "base:plank",

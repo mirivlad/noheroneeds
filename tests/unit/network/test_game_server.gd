@@ -162,6 +162,52 @@ func test_creatures_reach_clients_and_follow_them_on_a_bad_network() -> void:
 	check(not a.entities.has(hare.id), "left memory: gone from the client")
 
 
+## ADR-0015 through the network: one in the street sees one on a walkway on
+## a wall, not one behind a wall up there; one at a window upstairs sees the
+## street, and not from the room beside it.
+func test_seen_across_levels_from_walkways_and_windows() -> void:
+	for y in range(-7, 7):
+		for x in range(-4, 5):
+			var c := world.chunk("surface", floori(x / 32.0), floori(y / 32.0))
+			c.set_cell("ground", posmod(x, 32), posmod(y, 32), "base:grass")
+			c.set_cell("cover", posmod(x, 32), posmod(y, 32), "")
+	world.grant("builder", "base:plank", 200)
+	var level := ""
+	for x in range(-2, 3):
+		world.handle("builder", {"request_id": "w%d" % x, "type": "build", "location": "surface", "x": x, "y": -4, "part": "base:wood_wall"})
+		world.handle("builder", {"request_id": "c%d" % x, "type": "build", "location": "surface", "x": x, "y": -4, "part": "base:wood_ceiling"})
+		world.handle("builder", {"request_id": "d%d" % x, "type": "build", "location": "surface", "x": x, "y": -5, "part": "base:wood_ceiling"})
+	world.sync()
+	level = world.levels.level(world._ceiling_building("surface", 0, -4), 1)
+	var a := _client("owner", _character("Аня"))
+	var b := _client("other", _character("Боря"))
+	_run(30, [a, b])
+	world.move_character(a.character_id, Vector2i(128, 4 * 256 + 128))
+	world.present[b.character_id]["location"] = level
+	world.move_character(b.character_id, Vector2i(128, -4 * 256 + 128))
+	world.relocated[b.character_id] = true
+	_run(30, [a, b])
+	eq(b.z, 1, "up on the walkway")
+	eq(a.entities.get(b.character_id, {}).get("z"), 1, "the street sees the one on the walkway, up there")
+	eq(b.entities.get(a.character_id, {}).get("z"), 0, "and the walkway sees the street")
+	# Walls up there, a window in the middle facing the street.
+	world.move_character(b.character_id, Vector2i(128, -5 * 256 + 128))
+	for x in range(-2, 3):
+		world.handle("builder", {"request_id": "u%d" % x, "type": "build", "location": level, "x": x, "y": -4,
+			"part": "base:wood_window" if x == 0 else "base:wood_wall", "facing": "s"})
+	world.sync()
+	var hare := world.creatures._spawn("base:hare", "surface", Vector2i(0, 3), {}, 1)
+	world.world_time = 12 * Daylight.HOUR_MS
+	_run(8, [a, b])  # before it runs from the one in the street
+	check(b.entities.has(hare.id), "at the window: the hare in the street")
+	_run(22, [a, b])
+	check(b.entities.has(a.character_id), "and the one in the street")
+	world.move_character(b.character_id, Vector2i(256 + 128, -5 * 256 + 128))
+	_run(30, [a, b])
+	check(not b.entities.has(hare.id), "beside the window, behind the wall: no hare")
+	check(not a.entities.has(b.character_id), "nor is that one seen from the street")
+
+
 func test_request_result_after_commit_and_seen_by_others() -> void:
 	var a := _client("owner", _character("Аня", 10))
 	var b := _client("other", _character("Боря"))

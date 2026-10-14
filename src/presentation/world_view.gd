@@ -660,7 +660,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
 			seen[id] = true
-			_item(id, e)
+			_at_level(_item(id, e), int(e.get("z", client.z)))
 			continue
 		var kind := String(e.get("kind", ""))
 		if kind != "character" and kind != "creature":
@@ -672,7 +672,13 @@ func _update_characters(alpha: float, delta: float) -> void:
 		var looks: Dictionary = e.get("appearance", {})
 		if kind == "creature" and looks.is_empty():
 			looks = {"body_plan": String(e.get("creature", ""))}
-		_character(id, looks).show_at(target, delta, false)
+		# Seen on another level (ADR-0015): one on a walkway stands on the
+		# ceiling's picture, lifted as covers are; the street seen from upstairs
+		# lies dimmed under the floor, as the surface there does.
+		var dz := int(e.get("z", client.z)) - client.z
+		var sprite := _character(id, looks)
+		sprite.show_at(target - Vector2(0, COVER_LIFT * maxi(dz, 0)), delta, false)
+		_at_level(sprite, client.z + dz)
 	for id: String in _characters.keys():
 		if not seen.has(id):
 			_characters[id].queue_free()
@@ -686,10 +692,24 @@ func _update_characters(alpha: float, delta: float) -> void:
 var _items := {}
 
 
+## Draws a thing of level z over the covers (above us) or dimmed with the
+## surface below (under us), or as usual on our own level.
+func _at_level(n: Node2D, z: int) -> void:
+	if z > client.z:
+		n.z_index = 11
+		n.modulate = Color.WHITE
+	elif z < client.z:
+		n.z_index = -3
+		n.modulate = _below.modulate
+	else:
+		n.z_index = 0
+		n.modulate = Color.WHITE
+
+
 ## A thing on the ground: its picture, standing where it lies.
-func _item(id: String, e: Dictionary) -> void:
+func _item(id: String, e: Dictionary) -> Sprite2D:
 	if _items.has(id):
-		return
+		return _items[id]
 	var v := content.visual_of(String(e.get("item", "")))
 	var s := Sprite2D.new()
 	if v.is_empty():
@@ -702,6 +722,7 @@ func _item(id: String, e: Dictionary) -> void:
 	s.offset = Vector2(0, -4)
 	_sorted.add_child(s)
 	_items[id] = s
+	return s
 
 
 func _tile_texture(source: int) -> Texture2D:

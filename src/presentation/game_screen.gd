@@ -27,7 +27,7 @@ signal failed(reason: String)
 signal screenshot_taken
 
 const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:wood_ceiling",
-	"base:thatch_roof", "base:wood_stairs", "base:wood_column", "base:torch"]
+	"base:thatch_roof", "base:wood_stairs", "base:wood_column", "base:torch", "base:wood_window", "base:loophole"]
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 
 var content: ContentRegistry
@@ -205,7 +205,11 @@ func _process(delta: float) -> void:
 		for x in range(-3, 4):
 			for y in [-4, 2]:
 				var part := "base:wood_door" if x == 0 and y == 2 else ("base:stone_wall" if y == -4 else "base:wood_wall")
-				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": part})
+				var facing := ""
+				if absi(x) == 2:  # windows to the front, a loophole to the back (ADR-0015)
+					part = "base:wood_window" if y == 2 else "base:loophole"
+					facing = "s" if y == 2 else "n"
+				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": part, "facing": facing})
 		for y in range(-3, 2):
 			for x in [-3, 3]:
 				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_wall"})
@@ -261,8 +265,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed:
 		var k: int = (event as InputEventKey).keycode
-		if k >= KEY_1 and k < KEY_1 + PARTS.size():
-			_part = k - KEY_1
+		var slot := 9 if k == KEY_0 else k - KEY_1  # keys 1..9, then 0
+		if slot >= 0 and slot < mini(PARTS.size(), 10) and (k == KEY_0 or (k >= KEY_1 and k <= KEY_9)):
+			_part = slot
 			_facing = 0
 		elif k == KEY_R:
 			var turns := _turns()
@@ -467,7 +472,7 @@ func _update_hud() -> void:
 	var part_name := String(content.get_def(PARTS[_part]).get("name", ""))
 	if not _turns().is_empty():
 		part_name += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
-	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, _part + 1, part_name, cell.x, cell.y, note]
+	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, (_part + 1) % 10, part_name, cell.x, cell.y, note]
 	for i in _slots.size():
 		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
 

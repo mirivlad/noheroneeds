@@ -65,7 +65,7 @@ static func _traits(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> int
 	if part != "":
 		var d := content.get_def(part)
 		if not (d.get("openable", false) and c.get_props(lx, ly).get("open", false)) \
-				and bool(d.get("opaque", String(d.get("role", "")) in ["wall", "door"])):
+				and bool(d.get("opaque", String(d.get("role", "")) in ["wall", "door", "window"])):
 			t |= _OPAQUE
 	else:
 		var plant := c.get_cell("cover", lx, ly)

@@ -226,3 +226,32 @@ func test_a_chunk_unloads_with_its_creatures_and_brings_them_back() -> void:
 	check(not w.creatures.has(id), "its creature too")
 	w.chunk("surface", 8, 8)
 	check(w.creatures.has(id), "back with it")
+
+
+## ADR-0015: a creature below sees one on a walkway on a wall, not one
+## behind a wall upstairs.
+func test_a_creature_sees_one_on_a_walkway_not_behind_walls_upstairs() -> void:
+	_field()
+	w.world_time = 12 * Daylight.HOUR_MS
+	w.grant("b", "base:plank", 100)
+	var level := ""
+	for x in range(170, 177):
+		w.handle("b", {"request_id": "w%d" % x, "type": "build", "location": "surface", "x": x, "y": 170, "part": "base:wood_wall"})
+		w.handle("b", {"request_id": "c%d" % x, "type": "build", "location": "surface", "x": x, "y": 170, "part": "base:wood_ceiling"})
+		w.handle("b", {"request_id": "d%d" % x, "type": "build", "location": "surface", "x": x, "y": 169, "part": "base:wood_ceiling"})
+	w.sync()
+	level = w.levels.level(w._ceiling_building("surface", 173, 170), 1)
+	check(level != "", "a walkway up there")
+	var deer := _spawn("base:deer", Vector2i(173, 177))
+	var pid := _player(Vector2i(173, 160))
+	w.present[pid]["location"] = level
+	w.move_character(pid, _at(Vector2i(173, 170)))
+	_ticks(12, Vector2i(173, 177))
+	check(deer.memory.has(pid), "it saw the one on the walkway")
+	deer.memory.clear()
+	w.move_character(pid, _at(Vector2i(173, 169)))
+	w.handle("b", {"request_id": "up", "type": "build", "location": level, "x": 173, "y": 170, "part": "base:wood_wall"})
+	w.sync()
+	eq(w._part_at(level, 173, 170, "structure"), "base:wood_wall", "a wall upstairs")
+	_ticks(12, Vector2i(173, 177))
+	check(not deer.memory.has(pid), "not behind a wall upstairs")

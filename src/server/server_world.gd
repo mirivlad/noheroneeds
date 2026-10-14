@@ -81,6 +81,11 @@ var _items_by_chunk := {}
 var _dirty_items := {}
 var _removed_items := {}
 var _inventory_version := {}
+## Unloading (unload_idle): chunk key -> last tick a player needed it.
+var _needed := {}
+## chunk key -> id of the last batch that writes the chunk or things on it.
+var _written_by := {}
+var _last_committed := 0
 ## Raised by any chunk change anywhere (lets the server skip unchanged views).
 var revision_epoch := 0
 ## chunk key -> revision, raised on every change; clients compare it
@@ -201,6 +206,40 @@ func _item_chunk_key(it: Dictionary) -> String:
 
 func has_chunk(location: String, cx: int, cy: int) -> bool:
 	return _chunks.has(chunk_key(location, cx, cy))
+
+
+## Players need these chunks now (keeps them from being unloaded).
+func mark_needed(location: String, cx: int, cy: int) -> void:
+	_needed[chunk_key(location, cx, cy)] = tick
+
+
+## Unloads chunks nobody needed for `idle_ticks`, if nothing about them is
+## waiting for the disk: the chunk itself is not dirty, no thing on it is
+## dirty, and every batch that wrote it or its things is committed. Reading
+## it back later then gives exactly what was in memory. Returns how many.
+func unload_idle(idle_ticks: int) -> int:
+	var dirty_item_chunks := {}
+	for id: String in _dirty_items:
+		dirty_item_chunks[_item_chunk_key(items[id])] = true
+	var gone := 0
+	for key: String in _chunks.keys():
+		if tick - int(_needed.get(key, -idle_ticks - 1)) <= idle_ticks:
+			continue
+		if _dirty_chunks.has(key) or dirty_item_chunks.has(key) or int(_written_by.get(key, 0)) > _last_committed:
+			continue
+		for id: String in (_items_by_chunk.get(key, {}) as Dictionary):
+			items.erase(id)
+		_items_by_chunk.erase(key)
+		_chunks.erase(key)
+		_encoded.erase(key)
+		_needed.erase(key)
+		_written_by.erase(key)
+		gone += 1
+	return gone
+
+
+func loaded_chunks() -> int:
+	return _chunks.size()
 
 
 ## Asks the loader thread for a chunk that is not in memory yet.
@@ -379,18 +418,26 @@ func commit_async(force := false) -> void:
 			{"x": it["x"], "y": it["y"], "item": it["item"], "count": it["count"]}])
 	_dirty_items.clear()
 	b.removed_entities = _removed_items.keys()
+	var touched: Array = _dirty_chunks.keys()
+	for e: Array in b.items:
+		touched.append(chunk_key(e[1], e[2], e[3]))
+	touched.append_array(_removed_items.values())
 	_removed_items.clear()
 	b.prune_before = _prune_before
 	_prune_before = -1
 	_dirty_chunks.clear()
 	_dirty_inventories.clear()
-	_in_flight[writer.submit(b)] = _pending
+	var batch_id := writer.submit(b)
+	for key: String in touched:
+		_written_by[key] = batch_id
+	_in_flight[batch_id] = _pending
 	_pending = []
 
 
 ## Moves acknowledgements of committed batches to the outbox.
 func poll() -> void:
 	for id in writer.take_done():
+		_last_committed = maxi(_last_committed, id)
 		for p: Array in _in_flight.get(id, []):
 			_uncommitted.erase(p[0] + "|" + p[1])
 			_outbox.append(p)
@@ -540,10 +587,11 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 		if p["location"] != it["location"] or Vector2(p["pos"]).distance_to(Vector2(it["x"], it["y"])) > PICKUP_REACH:
 			return {"ok": false, "reason": "too_far"}
 	inventory(actor).add(it["item"], it["count"])
-	(_items_by_chunk[_item_chunk_key(it)] as Dictionary).erase(id)
+	var key := _item_chunk_key(it)
+	(_items_by_chunk[key] as Dictionary).erase(id)
 	items.erase(id)
 	_dirty_items.erase(id)
-	_removed_items[id] = true
+	_removed_items[id] = key
 	_touch_inventory(actor)
 	return {"ok": true, "item": it["item"], "count": it["count"]}
 

@@ -66,6 +66,12 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 	_frame(a, int(t * float(a["fps"])) % int(a["frames"]))
 
 
+## Turns to look along v without walking (menus, previews).
+func turn_to(v: Vector2) -> void:
+	_face(v)
+	_frame(_anim("idle"), 0)
+
+
 func _anim(name: String) -> Dictionary:
 	return _visual.get("animations", PLAIN).get(name, PLAIN[name])
 

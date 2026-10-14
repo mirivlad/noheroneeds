@@ -34,7 +34,6 @@ var _room_from := Vector2i(1 << 30, 0)
 var _sorted := Node2D.new()
 var _chunk_nodes := {}
 var _characters := {}
-var _textures := {}
 ## visual id -> [source id, first atlas cell Vector2i, variants]
 var _tiles := {}
 ## Grounds that lap over lower neighbours (ART_STANDARD 5): ground id ->
@@ -255,23 +254,7 @@ func hidden_room() -> Dictionary:
 
 
 func texture(path: String) -> Texture2D:
-	if not _textures.has(path):
-		if path.begins_with("res://") and not _from_source(path):
-			_textures[path] = load(path)
-		else:
-			var img := Image.new()
-			img.load_png_from_buffer(FileAccess.get_file_as_bytes(path))
-			_textures[path] = ImageTexture.create_from_image(img)
-			(_textures[path] as Texture2D).resource_name = path  # where it came from
-	return _textures[path]
-
-
-## Run from the sources (not an exported game): pictures are read from their
-## PNG files, never from the import cache, which is missing or stale after a
-## pull until something imports again (the editor or tools/run_game.sh).
-static func _from_source(path: String) -> bool:
-	return OS.has_feature("editor") and FileAccess.file_exists(path) \
-		and path.get_extension().to_lower() == "png"
+	return Art.texture(path)
 
 
 ## Call every frame. alpha: how far we are between the last tick and the next (0..1).
@@ -287,6 +270,14 @@ func update_view(alpha: float, delta: float) -> void:
 	_update_characters(alpha, delta)
 	_update_room()
 	_fade_occluders()
+
+
+func _notification(what: int) -> void:
+	# Layers made up front but never added (setup() not called) are freed too.
+	if what == NOTIFICATION_PREDELETE:
+		for n: Node in [_ground, _cover, _below, _covers, _sorted]:
+			if is_instance_valid(n) and n.get_parent() == null:
+				n.free()
 
 
 ## Chunks waiting to be drawn. Those in sight are drawn at once, the rest

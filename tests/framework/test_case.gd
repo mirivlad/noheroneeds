@@ -7,6 +7,13 @@ var failures: Array[String] = []
 var current := ""
 ## Command-line options of the run (--name=value pairs after "--").
 var options: Dictionary = {}
+## Engine errors the current test causes on purpose (a busy port); the
+## runner fails a test only for errors beyond these.
+var expected_errors := 0
+
+
+func expect_errors(n: int) -> void:
+	expected_errors += n
 
 
 func before_each() -> void:

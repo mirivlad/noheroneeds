@@ -37,6 +37,7 @@ func _run() -> void:
 	var one: String = opts.get("test", "")
 	var total := 0
 	var failed := 0
+	var expected := 0
 	var t0 := Time.get_ticks_msec()
 	for path in suites:
 		if only != "" and not path.contains(only):
@@ -58,17 +59,22 @@ func _run() -> void:
 			suite.current = "%s::%s" % [path.get_file().get_basename(), mname]
 			var before := suite.failures.size()
 			var errors_before := _errors.count
+			suite.expected_errors = 0
 			var t := Time.get_ticks_msec()
 			await suite.before_each()
 			await suite.call(mname)
 			await suite.after_each()
-			if _errors.count > errors_before:
-				suite.failures.append("%s: %d engine/script error(s), last: %s" % [suite.current, _errors.count - errors_before, _errors.last])
+			expected += mini(suite.expected_errors, _errors.count - errors_before)
+			if _errors.count - errors_before > suite.expected_errors:
+				suite.failures.append("%s: %d engine/script error(s), last: %s" % [suite.current,
+					_errors.count - errors_before - suite.expected_errors, _errors.last])
 			var ok := suite.failures.size() == before
 			print("%s %s (%d ms)" % ["PASS" if ok else "FAIL", suite.current, Time.get_ticks_msec() - t])
 			for f in suite.failures.slice(before):
 				print("    - " + f)
 		failed += suite.failures.size()
+	Art.clear()  # cached pictures and the theme, not to be held at exit
+	print("expected engine errors: %d" % expected)
 	print("\n%d tests, %d failed checks, %.1fs" % [total, failed, (Time.get_ticks_msec() - t0) / 1000.0])
 	quit(0 if failed == 0 and total > 0 else 1)
 

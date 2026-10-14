@@ -16,8 +16,11 @@ OUT="$(timeout -k 5 "${TEST_TIMEOUT:-600}" "$GODOT" --headless --audio-driver Du
 CODE=$?
 echo "$OUT" | grep -v '^\s*$' | grep -v '^Godot Engine'
 [[ $CODE -eq 124 ]] && echo "TIMEOUT: tests did not finish"
-# Script errors do not always fail a check; any engine error fails the run.
-if echo "$OUT" | grep -q "SCRIPT ERROR\|^ERROR:"; then
+# Script errors do not always fail a check; any engine error fails the run,
+# except those tests caused on purpose (expect_errors; the runner counts them).
+ERRS=$(echo "$OUT" | grep -c "SCRIPT ERROR\|^ERROR:")
+EXPECTED=$(echo "$OUT" | sed -n 's/^expected engine errors: \([0-9]*\)$/\1/p')
+if (( ERRS > ${EXPECTED:-0} )); then
   echo "engine errors detected"; CODE=1
 fi
 exit $CODE

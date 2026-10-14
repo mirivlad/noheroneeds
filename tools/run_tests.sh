@@ -6,9 +6,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GODOT="${GODOT:-godot}"
 "$ROOT/tools/fetch_addons.sh" || exit 1
 # Refresh imports and the global class cache (new class_name scripts).
-# With a fresh .godot/ the editor aborts on exit after loading the SQLite
-# extension for the first time (godot-sqlite v4.9 on 4.7.2); the import itself
-# is complete, and a second run exits cleanly.
+# fetch_addons.sh registers the extension first, which avoids a crash of the
+# very first import; a retry stays as a safety net.
 for _ in 1 2; do
   timeout -k 5 300 "$GODOT" --headless --audio-driver Dummy --path "$ROOT" --import >/dev/null 2>&1 && break
 done

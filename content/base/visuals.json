@@ -349,8 +349,8 @@
    "for": "base:wood_wall",
    "atlas": "art/tiles.png",
    "rect": [
-    144,
-    144,
+    0,
+    240,
     16,
     32
    ],
@@ -359,7 +359,8 @@
     32
    ],
    "mode": "tall",
-   "variants": 1
+   "variants": 16,
+   "autotile": "wall"
   },
   {
    "id": "base:visual/stone_wall",
@@ -367,8 +368,8 @@
    "for": "base:stone_wall",
    "atlas": "art/tiles.png",
    "rect": [
-    160,
-    144,
+    0,
+    272,
     16,
     32
    ],
@@ -377,7 +378,8 @@
     32
    ],
    "mode": "tall",
-   "variants": 1
+   "variants": 16,
+   "autotile": "wall"
   },
   {
    "id": "base:visual/wood_door",
@@ -385,8 +387,8 @@
    "for": "base:wood_door",
    "atlas": "art/tiles.png",
    "rect": [
-    176,
-    144,
+    0,
+    304,
     16,
     32
    ],
@@ -395,11 +397,12 @@
     32
    ],
    "mode": "tall",
-   "variants": 1,
+   "variants": 16,
+   "autotile": "wall",
    "states": {
     "open": [
-     192,
-     144,
+     0,
+     336,
      16,
      32
     ]
@@ -601,7 +604,15 @@
     32
    ],
    "mode": "tall",
-   "variants": 1
+   "variants": 1,
+   "states": {
+    "down": [
+     240,
+     144,
+     16,
+     32
+    ]
+   }
   },
   {
    "id": "base:visual/wood_column",

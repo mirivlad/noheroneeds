@@ -30,7 +30,8 @@ func test_view_follows_the_client() -> void:
 	# plan's order (feet under torso under hair).
 	var slots := []
 	for child: Node in dolls[0].get_children():
-		slots.append(String((child as Sprite2D).texture.resource_path.get_file()))
+		var t := (child as Sprite2D).texture
+		slots.append((t.resource_path if t.resource_path != "" else t.resource_name).get_file())
 	eq(slots, ["body.png", "boots.png", "linen_shirt.png", "hair_short.png"], "layers in order")
 	# Grounds meet with ragged edges: only on a cell next to a higher ground.
 	var edges := view.edge_cells()

@@ -14,6 +14,10 @@ extends RefCounted
 ## (or a slice at a time), never every tick.
 
 const SURFACE := "surface"
+## How far a character reaches, in movement units from its feet to a cell's centre.
+const USE_REACH := 2 * Movement.UNIT
+const PICKUP_REACH := 2 * Movement.UNIT
+const BUILD_REACH := 6 * Movement.UNIT
 
 var content: ContentRegistry
 ## Makes surface chunks nobody has visited (null if the content has no biomes).
@@ -69,6 +73,13 @@ var _dirty_world_characters := {}
 ## Places of characters that left this session: their last write may still be
 ## on its way to the disk, and the read connection would see an older one.
 var _left_places := {}
+## Things lying in the world: id -> {"location", "x", "y", "item", "count"}
+## (x, y in movement units). Written in operation batches with the
+## inventories they come from or go to, so nothing is lost or doubled.
+var items := {}
+var _items_by_chunk := {}
+var _dirty_items := {}
+var _removed_items := {}
 ## chunk key -> revision, raised on every change; clients compare it
 var _chunk_rev := {}
 ## chunk key -> [revision, encoded bytes], shared by all clients
@@ -152,8 +163,36 @@ func chunk(location: String, cx: int, cy: int) -> Chunk:
 		else:
 			c = Chunk.new()
 		_chunks[key] = c
+		_take_items(location, store.entities_in_chunk(location, cx, cy))
 		sync_loads += 1
 	return c
+
+
+## Ids of things lying in a chunk.
+func items_in_chunk(location: String, cx: int, cy: int) -> Array:
+	return (_items_by_chunk.get(chunk_key(location, cx, cy), {}) as Dictionary).keys()
+
+
+func _take_items(location: String, rows: Array) -> void:
+	for row: Dictionary in rows:
+		if row["kind"] != "item" or items.has(row["id"]):
+			continue
+		var d: Dictionary = Cbor.decode(row["data"]).value
+		_place_item(row["id"], {"location": location, "x": int(d["x"]), "y": int(d["y"]),
+			"item": String(d["item"]), "count": int(d["count"])})
+
+
+func _place_item(id: String, it: Dictionary) -> void:
+	items[id] = it
+	var key := _item_chunk_key(it)
+	if not _items_by_chunk.has(key):
+		_items_by_chunk[key] = {}
+	_items_by_chunk[key][id] = true
+
+
+func _item_chunk_key(it: Dictionary) -> String:
+	var cell := Movement.cell_of(Vector2i(it["x"], it["y"]))
+	return chunk_key(it["location"], floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
 
 
 func has_chunk(location: String, cx: int, cy: int) -> bool:
@@ -173,6 +212,7 @@ func poll_loaded() -> void:
 		if _chunks.has(key):
 			continue  # loaded meanwhile by chunk(); the same content
 		_chunks[key] = r[3]
+		_take_items(r[0], r[5])
 		if r[4]:
 			_dirty_chunks[key] = true
 
@@ -310,7 +350,8 @@ func handle(actor: String, request: Dictionary) -> void:
 ## If the writer is behind, the changes wait for a later call unless forced.
 func commit_async(force := false) -> void:
 	if _pending.is_empty() and _dirty_chunks.is_empty() and _dirty_inventories.is_empty() \
-			and _dirty_characters.is_empty() and _prune_before < 0:
+			and _dirty_characters.is_empty() and _dirty_items.is_empty() and _removed_items.is_empty() \
+			and _prune_before < 0:
 		return
 	if not force and writer.queued_operations() >= max_batches_in_flight:
 		return
@@ -325,6 +366,14 @@ func commit_async(force := false) -> void:
 	for id: String in _dirty_characters:
 		b.characters.append([id, _characters[id]["owner"], (_characters[id]["data"] as Dictionary).duplicate(true)])
 	_dirty_characters.clear()
+	for id: String in _dirty_items:
+		var it: Dictionary = items[id]
+		var cell := Movement.cell_of(Vector2i(it["x"], it["y"]))
+		b.items.append([id, it["location"], floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE), "item",
+			{"x": it["x"], "y": it["y"], "item": it["item"], "count": it["count"]}])
+	_dirty_items.clear()
+	b.removed_entities = _removed_items.keys()
+	_removed_items.clear()
 	b.prune_before = _prune_before
 	_prune_before = -1
 	_dirty_chunks.clear()
@@ -414,7 +463,83 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _dismantle(actor, r)
 		"transfer":
 			return _transfer(actor, r)
+		"use":
+			return _use(actor, r)
+		"drop":
+			return _drop(actor, r)
+		"pickup":
+			return _pickup(actor, r)
 	return {"ok": false, "reason": "unknown_type"}
+
+
+## Whether a present character reaches a cell (actors not in the world, such as
+## server tools, are not limited).
+func _reaches(actor: String, location: String, x: int, y: int, reach: int) -> bool:
+	if not present.has(actor):
+		return true
+	var p: Dictionary = present[actor]
+	if p["location"] != location:
+		return false
+	var centre := Vector2(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2)
+	return Vector2(p["pos"]).distance_to(centre) <= reach
+
+
+func _use(actor: String, r: Dictionary) -> Dictionary:
+	var at := _cell(r)
+	var x := int(r.get("x", 0))
+	var y := int(r.get("y", 0))
+	if not _reaches(actor, at[0], x, y, USE_REACH):
+		return {"ok": false, "reason": "too_far"}
+	var c := chunk(at[0], at[1], at[2])
+	var part := c.get_cell("structure", at[3], at[4])
+	if part == "" or not content.get_def(part).get("openable", false):
+		return {"ok": false, "reason": "nothing_to_use"}
+	var props := c.get_props(at[3], at[4]).duplicate()
+	var opening := not bool(props.get("open", false))
+	if not opening and _someone_stands_on(at[0], x, y):
+		return {"ok": false, "reason": "someone_there"}
+	props["open"] = opening
+	c.set_props(at[3], at[4], props)
+	_changed(chunk_key(at[0], at[1], at[2]))
+	return {"ok": true, "open": opening}
+
+
+## Puts items from the inventory on the ground at the actor's feet (or at
+## x, y in movement units for actors not in the world).
+func _drop(actor: String, r: Dictionary) -> Dictionary:
+	var item := String(r.get("item", ""))
+	var n := int(r.get("count", 0))
+	if content.kind_of(item) != "item" or n <= 0:
+		return {"ok": false, "reason": "bad_request"}
+	var where := {"location": String(r.get("location", "")), "x": int(r.get("x", 0)), "y": int(r.get("y", 0))}
+	if present.has(actor):
+		var p: Dictionary = present[actor]
+		where = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y}
+	if not inventory(actor).remove(item, n):
+		return {"ok": false, "reason": "not_enough"}
+	var id := Uuid.v4()
+	_place_item(id, {"location": where["location"], "x": where["x"], "y": where["y"], "item": item, "count": n})
+	_dirty_items[id] = true
+	_dirty_inventories[actor] = true
+	return {"ok": true, "entity": id}
+
+
+func _pickup(actor: String, r: Dictionary) -> Dictionary:
+	var id := String(r.get("entity", ""))
+	var it: Dictionary = items.get(id, {})
+	if it.is_empty():
+		return {"ok": false, "reason": "gone"}
+	if present.has(actor):
+		var p: Dictionary = present[actor]
+		if p["location"] != it["location"] or Vector2(p["pos"]).distance_to(Vector2(it["x"], it["y"])) > PICKUP_REACH:
+			return {"ok": false, "reason": "too_far"}
+	inventory(actor).add(it["item"], it["count"])
+	(_items_by_chunk[_item_chunk_key(it)] as Dictionary).erase(id)
+	items.erase(id)
+	_dirty_items.erase(id)
+	_removed_items[id] = true
+	_dirty_inventories[actor] = true
+	return {"ok": true, "item": it["item"], "count": it["count"]}
 
 
 func _someone_stands_on(location: String, x: int, y: int) -> bool:
@@ -446,6 +571,8 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	if content.kind_of(part) != "structure":
 		return {"ok": false, "reason": "unknown_part"}
 	var at := _cell(r)
+	if not _reaches(actor, at[0], int(r.get("x", 0)), int(r.get("y", 0)), BUILD_REACH):
+		return {"ok": false, "reason": "too_far"}
 	var c := chunk(at[0], at[1], at[2])
 	if c.get_cell("structure", at[3], at[4]) != "":
 		return {"ok": false, "reason": "occupied"}
@@ -468,6 +595,8 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 
 func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
+	if not _reaches(actor, at[0], int(r.get("x", 0)), int(r.get("y", 0)), BUILD_REACH):
+		return {"ok": false, "reason": "too_far"}
 	var c := chunk(at[0], at[1], at[2])
 	var part := c.get_cell("structure", at[3], at[4])
 	if part == "":

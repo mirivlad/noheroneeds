@@ -24,6 +24,7 @@ func test_memory_network_keeps_reliable_order_under_bad_conditions() -> void:
 	net.state_loss = 0.5
 	net.state_duplicate = 0.5
 	net.delay_steps = 2
+	net.rng.seed = 3
 	var server := net.server()
 	var client := net.client()
 	for i in 20:

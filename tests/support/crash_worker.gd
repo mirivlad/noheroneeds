@@ -37,9 +37,15 @@ func _initialize() -> void:
 				"part": ["test:wood_wall", "test:stone_wall"][rng.randi() % 2]})
 		elif roll < 0.75:
 			w.handle(a, {"request_id": rid, "type": "dismantle", "location": "surface", "x": x, "y": y})
-		else:
+		elif roll < 0.85:
 			w.handle(a, {"request_id": rid, "type": "transfer", "to": ACTORS[rng.randi() % ACTORS.size()],
 				"item": ["test:plank", "test:stone"][rng.randi() % 2], "count": rng.randi_range(1, 6)})
+		elif roll < 0.93 or w.items.is_empty():
+			w.handle(a, {"request_id": rid, "type": "drop", "location": "surface", "x": x * 256, "y": y * 256,
+				"item": ["test:plank", "test:stone"][rng.randi() % 2], "count": rng.randi_range(1, 4)})
+		else:
+			var ids: Array = w.items.keys()
+			w.handle(a, {"request_id": rid, "type": "pickup", "entity": ids[rng.randi() % ids.size()]})
 		i += 1
 		# Like a server tick: commit every few requests, but send whatever
 		# acknowledgements are ready after every request.

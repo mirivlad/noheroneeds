@@ -395,6 +395,140 @@
     32
    ],
    "mode": "tall",
+   "variants": 1,
+   "states": {
+    "open": [
+     192,
+     144,
+     16,
+     32
+    ]
+   }
+  },
+  {
+   "id": "base:visual/plank",
+   "kind": "visual",
+   "for": "base:plank",
+   "atlas": "art/tiles.png",
+   "rect": [
+    0,
+    208,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/log",
+   "kind": "visual",
+   "for": "base:log",
+   "atlas": "art/tiles.png",
+   "rect": [
+    16,
+    208,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/stone",
+   "kind": "visual",
+   "for": "base:stone",
+   "atlas": "art/tiles.png",
+   "rect": [
+    32,
+    208,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/linen_shirt",
+   "kind": "visual",
+   "for": "base:linen_shirt",
+   "atlas": "art/tiles.png",
+   "rect": [
+    48,
+    208,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/work_trousers",
+   "kind": "visual",
+   "for": "base:work_trousers",
+   "atlas": "art/tiles.png",
+   "rect": [
+    64,
+    208,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/boots",
+   "kind": "visual",
+   "for": "base:boots",
+   "atlas": "art/tiles.png",
+   "rect": [
+    80,
+    208,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
+   "variants": 1
+  },
+  {
+   "id": "base:visual/axe",
+   "kind": "visual",
+   "for": "base:axe",
+   "atlas": "art/tiles.png",
+   "rect": [
+    96,
+    208,
+    16,
+    16
+   ],
+   "origin": [
+    0,
+    16
+   ],
+   "mode": "item",
    "variants": 1
   },
   {

@@ -8,10 +8,12 @@ extends Node2D
 ## --demo builds a little enclosure through ordinary requests on arrival.
 ##
 ## Controls (temporary): WASD/arrows walk; 1-3 choose a part; left click
-## builds, right click takes down.
+## builds, right click takes down; E picks up what lies near or opens and
+## closes a door next to you; G drops one of the chosen material (Tab).
 
 const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door"]
 const LOCAL_KIT := {"base:plank": 60, "base:stone": 30, "base:log": 10}
+const MATERIALS := ["base:plank", "base:stone", "base:log"]
 
 var content: ContentRegistry
 var game: LocalGame
@@ -22,6 +24,7 @@ var hud := Label.new()
 var status := Label.new()
 var _accum := 0.0
 var _part := 0
+var _material := 0
 var _note := ""
 var _opts := {}
 var _frames := 0
@@ -94,6 +97,9 @@ func _process(delta: float) -> void:
 		for y in range(-3, 2):
 			for x in [-3, 3]:
 				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_wall"})
+		client.request({"type": "drop", "item": "base:stone", "count": 2})
+	if _opts.has("demo") and _frames == 30:
+		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
 	view.update_view(_accum / tick, delta)
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
@@ -109,6 +115,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		var k: int = (event as InputEventKey).keycode
 		if k >= KEY_1 and k < KEY_1 + PARTS.size():
 			_part = k - KEY_1
+		elif k == KEY_TAB:
+			_material = (_material + 1) % MATERIALS.size()
+		elif k == KEY_G and client.state == "playing":
+			client.request({"type": "drop", "item": MATERIALS[_material], "count": 1})
+		elif k == KEY_E and client.state == "playing":
+			_use_nearest()
 	elif event is InputEventMouseButton and event.pressed and client.state == "playing":
 		var cell := (get_global_mouse_position() / WorldView.CELL).floor()
 		var op := {"location": client.location, "x": int(cell.x), "y": int(cell.y)}
@@ -120,6 +132,32 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			return
 		client.request(op)
+
+
+## E: the nearest thing on the ground within reach, else a door next to us.
+func _use_nearest() -> void:
+	var best := ""
+	var best_d := float(ServerWorld.PICKUP_REACH)
+	for id: String in client.entities:
+		var e: Dictionary = client.entities[id]
+		if e.get("kind") == "item":
+			var dist := Vector2(client.position).distance_to(Vector2(int(e["x"]), int(e["y"])))
+			if dist <= best_d:
+				best = id
+				best_d = dist
+	if best != "":
+		client.request({"type": "pickup", "entity": best})
+		return
+	var me := Movement.cell_of(client.position)
+	for dy in [0, -1, 1]:
+		for dx in [0, 1, -1]:
+			var cell: Vector2i = me + Vector2i(dx, dy)
+			var cx := floori(cell.x / 32.0)
+			var cy := floori(cell.y / 32.0)
+			var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
+			if c and content.get_def(c.get_cell("structure", cell.x - cx * 32, cell.y - cy * 32)).get("openable", false):
+				client.request({"type": "use", "location": client.location, "x": cell.x, "y": cell.y})
+				return
 
 
 func _notification(what: int) -> void:
@@ -157,7 +195,6 @@ func _direction() -> Vector2i:
 
 
 func _update_hud() -> void:
-	hud.text = "Поверхность  0"
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
 		_note = "готово" if r.get("ok") else "нельзя: " + String(r.get("reason", "?"))
@@ -165,6 +202,12 @@ func _update_hud() -> void:
 	var cell := Movement.cell_of(client.position)
 	var state: String = {"playing": "", "connecting": "подключение…", "joining": "вход…", "disconnected": "нет связи",
 		"rejected": "отказ: " + client.reject_reason}.get(client.state, client.state)
+	var inv := client.inventory()
+	var bag := PackedStringArray()
+	for id: String in MATERIALS:
+		var mark := ">" if id == MATERIALS[_material] else " "
+		bag.append("%s%s %d" % [mark, content.get_def(id).get("name", id), int(inv.get(id, 0))])
+	hud.text = "Поверхность  0     " + "  ".join(bag)
 	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, _part + 1, content.get_def(PARTS[_part]).get("name", ""),
 		cell.x, cell.y, _note]
 

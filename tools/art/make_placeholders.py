@@ -155,6 +155,46 @@ def wall(kind):
     return mp.outline(img, STRONG if kind == "wood_door" else STYLE)
 
 
+def door_open():
+    """The door swung inside: a dark doorway with the leaf at the side (16 x 32)."""
+    img = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rectangle((0, 0, 15, 5), P["wood"][3])
+    d.rectangle((0, 6, 15, 31), hx("2a1e1c"))
+    d.rectangle((1, 6, 3, 31), P["wood"][1])
+    d.line((1, 6, 1, 31), P["wood"][3])
+    return mp.outline(img, STRONG)
+
+
+def icon(kind):
+    """Small pictures of things lying on the ground (16 x 16, item ~10 px)."""
+    img = Image.new("RGBA", (T, T), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    if kind == "plank":
+        d.rectangle((2, 6, 13, 9), P["wood"][3])
+        d.line((2, 9, 13, 9), P["wood"][1])
+    elif kind == "log":
+        d.rectangle((3, 6, 12, 10), P["bark"][2])
+        d.ellipse((10, 5, 14, 11), P["wood"][3])
+        d.point((12, 8), P["wood"][1])
+    elif kind == "stone":
+        d.ellipse((4, 6, 12, 12), P["stone"][2])
+        d.ellipse((5, 6, 9, 9), P["stone"][3])
+    elif kind == "linen_shirt":
+        d.polygon([(4, 5), (11, 5), (13, 8), (11, 8), (11, 12), (4, 12), (4, 8), (2, 8)], P["white"])
+    elif kind == "work_trousers":
+        d.polygon([(5, 4), (11, 4), (12, 12), (9, 12), (8, 7), (7, 12), (4, 12)], hx("4f4462"))
+    elif kind == "boots":
+        d.rectangle((4, 6, 6, 11), P["bark"][2])
+        d.rectangle((9, 6, 11, 11), P["bark"][2])
+        d.line((3, 11, 7, 11), P["bark"][0])
+        d.line((8, 11, 12, 11), P["bark"][0])
+    elif kind == "axe":
+        d.line((5, 12, 11, 4), P["wood"][3])
+        d.polygon([(9, 3), (13, 4), (12, 8)], P["stone"][3])
+    return mp.outline(img, STRONG)
+
+
 def chibi_sheet():
     """Rows: S, SE, E, NE, N (W-side rows are mirrored at run time).
     Columns: idle, step A, step B. Frames 48x48, feet at (24, 44)."""
@@ -194,7 +234,7 @@ def chibi_view(w, h, look, view, frame):
 
 
 def main():
-    a = Atlas(16, 13)
+    a = Atlas(16, 14)
     for row, kind in enumerate(["grass", "grass_dry", "dirt", "moss", "forest_floor", "sand", "water"]):
         strip = Image.new("RGBA", (4 * T, T))
         for v in range(4):
@@ -218,6 +258,13 @@ def main():
         a.put(col * 3, 9, fit(spr, 3 * T, 4 * T), "base:" + kind, (T, 4 * T), "tall")
     for col, kind in enumerate(["wood_wall", "stone_wall", "wood_door"]):
         a.put(9 + col, 9, wall(kind), "base:" + kind, (0, 2 * T), "tall")
+    a.put(12, 9, door_open(), "base:wood_door_open_frame", (0, 2 * T), "tall")
+    opened = a.visuals.pop()  # not a visual of its own: the door's "open" state
+    for v in a.visuals:
+        if v["for"] == "base:wood_door":
+            v["states"] = {"open": opened["rect"]}
+    for col, kind in enumerate(["plank", "log", "stone", "linen_shirt", "work_trousers", "boots", "axe"]):
+        a.put(col, 13, icon(kind), "base:" + kind, (0, T), "item")
     (OUT / "art").mkdir(parents=True, exist_ok=True)
     a.img.save(OUT / "art" / "tiles.png")
     chibi_sheet().save(OUT / "art" / "chibi_placeholder.png")

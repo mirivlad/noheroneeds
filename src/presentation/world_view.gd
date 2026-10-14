@@ -114,7 +114,8 @@ func _paint(key: String) -> void:
 					continue
 				var v := content.visual_of(id)
 				if v.get("mode") == "tall":
-					holder.add_child(_tall_sprite(v, cell))
+					var state := "open" if c.get_props(lx, ly).get("open", false) else ""
+					holder.add_child(_tall_sprite(v, cell, state))
 				else:
 					_set_flat(_cover, cell, id)  # flat, or the missing-picture mark
 
@@ -131,11 +132,12 @@ func _set_flat(layer: TileMapLayer, cell: Vector2i, id: String) -> void:
 	layer.set_cell(cell, t[0], t[1] + Vector2i(variant % t[2], 0))
 
 
-func _tall_sprite(v: Dictionary, cell: Vector2i) -> Sprite2D:
+func _tall_sprite(v: Dictionary, cell: Vector2i, state := "") -> Sprite2D:
 	var s := Sprite2D.new()
 	s.texture = texture(v["atlas_path"])
 	s.region_enabled = true
-	s.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+	var r: Array = v.get("states", {}).get(state, v["rect"])
+	s.region_rect = Rect2(r[0], r[1], r[2], r[3])
 	s.centered = false
 	# The sprite's origin pixel sits on the cell's bottom-left corner; that corner sorts it.
 	s.position = Vector2(cell.x * CELL, (cell.y + 1) * CELL)
@@ -150,6 +152,10 @@ func _update_characters(alpha: float, delta: float) -> void:
 		_character(client.character_id, client.location).show_at(own_pixel_position(alpha), delta, true)
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
+		if e.get("kind") == "item":
+			seen[id] = true
+			_item(id, e)
+			continue
 		if e.get("kind") != "character":
 			continue
 		seen[id] = true
@@ -159,6 +165,35 @@ func _update_characters(alpha: float, delta: float) -> void:
 		if not seen.has(id):
 			_characters[id].queue_free()
 			_characters.erase(id)
+	for id: String in _items.keys():
+		if not seen.has(id):
+			_items[id].queue_free()
+			_items.erase(id)
+
+
+var _items := {}
+
+
+## A thing on the ground: its picture, standing where it lies.
+func _item(id: String, e: Dictionary) -> void:
+	if _items.has(id):
+		return
+	var v := content.visual_of(String(e.get("item", "")))
+	var s := Sprite2D.new()
+	if v.is_empty():
+		s.texture = _tile_texture(_missing_source)
+	else:
+		s.texture = texture(v["atlas_path"])
+		s.region_enabled = true
+		s.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+	s.position = Vector2(int(e["x"]), int(e["y"])) / UNITS_PER_PIXEL
+	s.offset = Vector2(0, -4)
+	_sorted.add_child(s)
+	_items[id] = s
+
+
+func _tile_texture(source: int) -> Texture2D:
+	return (_ground.tile_set.get_source(source) as TileSetAtlasSource).texture
 
 
 func _character(id: String, plan: String) -> CharacterSprite:

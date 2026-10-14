@@ -9,6 +9,11 @@ const BLOCKING_LAYERS := ["ground", "cover", "structure"]
 static func is_solid(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> bool:
 	for layer: String in BLOCKING_LAYERS:
 		var id := c.get_cell(layer, lx, ly)
-		if id != "" and bool(content.get_def(id).get("solid", layer == "structure")):
+		if id == "":
+			continue
+		var d := content.get_def(id)
+		if layer == "structure" and d.get("openable", false) and c.get_props(lx, ly).get("open", false):
+			continue  # an open door
+		if bool(d.get("solid", layer == "structure")):
 			return true
 	return false

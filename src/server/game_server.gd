@@ -12,6 +12,10 @@ const CHUNKS_PER_TICK := 4
 const SNAPSHOT_HISTORY := 64
 ## Most queued inputs per client; beyond it the oldest are dropped.
 const MAX_QUEUED_INPUTS := 8
+## Chunks no player needed for this long leave memory (if safe, see
+## ServerWorld.unload_idle); checked every UNLOAD_EVERY ticks.
+var unload_after_ticks := TICK_RATE * 60
+const UNLOAD_EVERY := TICK_RATE * 10
 ## Entity state rows written per tick (the rest wait for later ticks).
 const STATE_ROWS_PER_TICK := 100
 
@@ -87,7 +91,7 @@ func take_stats() -> Dictionary:
 	var n := t.size()
 	var out := {"ticks": n, "p50": t[n / 2] if n else 0, "p99": t[mini(n - 1, n * 99 / 100)] if n else 0,
 		"max": t[-1] if n else 0, "bytes": transport.bytes_sent.duplicate(), "players": world.present.size(),
-		"sync_loads": world.sync_loads - _sync_loads_seen, "sections_ms": {}}
+		"sync_loads": world.sync_loads - _sync_loads_seen, "chunks": world.loaded_chunks(), "sections_ms": {}}
 	for k: String in _sections:
 		out["sections_ms"][k] = snappedf(_sections[k] / 1000.0, 0.1)
 	_sections.clear()
@@ -120,6 +124,12 @@ func _step() -> void:
 	for s: Session in _sessions.values():
 		if s.state == "playing":
 			_prefetch(s)
+	if tick % TICK_RATE == 0:
+		for s: Session in _sessions.values():
+			if s.state == "playing":
+				_mark_needed(s)
+	if tick % UNLOAD_EVERY == 0:
+		world.unload_idle(unload_after_ticks)
 	_lap("prefetch")
 	for s: Session in _sessions.values():
 		if s.state == "playing":
@@ -291,6 +301,17 @@ func _item_replica(id: String) -> Dictionary:
 		_replica[id] = {"kind": "item", "hot": {"x": it["x"], "y": it["y"]}, "hv": 1,
 			"cold": {"kind": "item", "item": it["item"], "count": it["count"]}, "cv": 1}
 	return _replica[id]
+
+
+## The chunks a player sees plus one ring stay in memory.
+func _mark_needed(s: Session) -> void:
+	var p: Dictionary = world.present[s.character_id]
+	var cell := Movement.cell_of(p["pos"])
+	var mc := Vector2i(floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
+	var r := view_chunks + 1
+	for cy in range(mc.y - r, mc.y + r + 1):
+		for cx in range(mc.x - r, mc.x + r + 1):
+			world.mark_needed(p["location"], cx, cy)
 
 
 func _send_snapshot(s: Session) -> void:

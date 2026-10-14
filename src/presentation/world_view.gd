@@ -716,7 +716,8 @@ const FLASH := 0.25
 ## An arrow in flight: its item's picture turned along its way, at the
 ## height it flies, easing to where the server has it.
 func _projectile(id: String, e: Dictionary, delta: float) -> void:
-	var target := Vector2(int(e.get("x", 0)), int(e.get("y", 0))) / UNITS_PER_PIXEL - Vector2(0, 10)
+	var dz := int(e.get("z", client.z)) - client.z
+	var target := Vector2(int(e.get("x", 0)), int(e.get("y", 0))) / UNITS_PER_PIXEL - Vector2(0, 10 + COVER_LIFT * maxi(dz, 0))
 	var s: Sprite2D = _projectiles.get(id)
 	if s == null:
 		var v := content.visual_of(String(e.get("item", "")))
@@ -732,6 +733,9 @@ func _projectile(id: String, e: Dictionary, delta: float) -> void:
 		add_child(s)
 		_projectiles[id] = s
 	s.position = s.position.lerp(target, minf(1.0, delta * 30.0))
+	_at_level(s, client.z + dz)
+	if dz == 0:
+		s.z_index = 5
 
 
 ## A health bar over one who is hurt, and a red flash when hurt again.

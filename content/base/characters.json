@@ -7,7 +7,8 @@
       "slots": ["back_item", "body", "legs", "feet", "torso", "belt", "hair_back", "head", "face", "eyes", "hair_front", "headwear", "main_hand", "off_hand"],
       "appearance_slots": ["hair", "face", "eyes"],
       "colors": ["skin", "hair", "eyes", "cloth_main", "cloth_accent"],
-      "health": 20, "unarmed": {"kind": "melee", "damage": 1, "reach": 0.8, "arc": 90, "cooldown_ms": 500}
+      "health": 20, "unarmed": {"kind": "melee", "damage": 1, "reach": 0.8, "arc": 90, "cooldown_ms": 500},
+      "fall_damage": [0, 2, 6, 12, 20]
     },
     {"id": "base:hair_short", "kind": "style", "slot": "hair", "body_plans": ["base:humanoid_adult"]},
     {"id": "base:hair_long", "kind": "style", "slot": "hair", "body_plans": ["base:humanoid_adult"]},

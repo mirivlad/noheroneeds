@@ -50,7 +50,13 @@ class Projectile:
 	var ammo := ""
 	var start := Vector2i.ZERO
 	var aim := Vector2i.ZERO
-
+	## Where it was shot from and at (Sight's openings ask).
+	var from_location := ""
+	var aim_location := ""
+	## Its height (levels, absolute) and how it changes per unit flown: flat
+	## on one level; from the eyes down to the street or up to a walkway.
+	var h := 0.0
+	var dh := 0.0
 
 func _init(w: ServerWorld) -> void:
 	world = w
@@ -183,7 +189,7 @@ func attack(actor: String, r: Dictionary) -> Dictionary:
 	_ready_at[actor] = _tick + _ticks(float(w["cooldown_ms"]))
 	var aim := Vector2i(int(r.get("x", 0)), int(r.get("y", 0)))
 	if w["kind"] == "ranged":
-		return _shoot(actor, p, w, aim)
+		return _shoot(actor, p, w, aim, int(r.get("z", -1)))
 	var hit := _blow(actor, String(p["location"]), p["pos"], aim, w)
 	world.creatures.noise(String(p["location"]), Movement.cell_of(p["pos"]))
 	return {"ok": true, "hit": hit}
@@ -268,7 +274,7 @@ func _ticks(ms: float) -> int:
 
 # --- arrows ------------------------------------------------------------------------
 
-func _shoot(actor: String, p: Dictionary, w: Dictionary, aim: Vector2i) -> Dictionary:
+func _shoot(actor: String, p: Dictionary, w: Dictionary, aim: Vector2i, aim_z: int) -> Dictionary:
 	var ammo := String(w["ammo"])
 	if world.inventory(actor).count(ammo) <= 0:
 		return {"ok": false, "reason": "no_ammo"}
@@ -288,57 +294,107 @@ func _shoot(actor: String, p: Dictionary, w: Dictionary, aim: Vector2i) -> Dicti
 	pr.damage = int(w["damage"])
 	pr.ammo = ammo
 	pr.start = Movement.cell_of(from)
-	pr.aim = Movement.cell_of(Vector2i(Vector2(from) + dir.normalized() * pr.left))
+	pr.aim = Movement.cell_of(aim)
+	pr.from_location = pr.location
+	pr.aim_location = _aim_location(pr.location, pr.aim, aim_z)
+	var z0 := world.levels.z(pr.location)
+	if pr.aim_location == pr.location:
+		pr.h = z0 + (Sight.EYE + Sight.BODY) / 2.0  # level, at body height
+	else:
+		pr.h = z0 + Sight.EYE
+		pr.dh = (world.levels.z(pr.aim_location) + Sight.BODY - pr.h) / maxf(dir.length(), 1.0)
 	projectiles[pr.id] = pr
 	world.creatures.noise(pr.location, pr.start)
 	return {"ok": true, "projectile": pr.id}
 
 
-## Arrows fly a tick further in small steps: the first one they pass near is
-## hit; what stands in their way (at the height they fly, Sight's spans)
-## stops them, and they fall there.
+## Arrows fly a tick further in small steps, over the plan and in height:
+## the first one they pass near at their height is hit; what stands in their
+## way (Sight's spans) stops them, and they fall there; below the ground they
+## land. Between levels they are in the location whose floor is under them.
 func _fly() -> void:
 	for id: String in projectiles.keys():
 		var pr: Projectile = projectiles[id]
 		var dist := pr.vel.length()
 		var steps := maxi(1, ceili(dist / PROJECTILE_STEP))
-		var done := false
-		var last_free := pr.pos
+		var on_plan := Sight.same_space(world, pr.location, Levels.SURFACE)
 		for i in steps:
 			var next := pr.pos + pr.vel / steps
+			var h := pr.h + pr.dh * dist / steps
 			var cell := Movement.cell_of(Vector2i(next))
-			if cell != pr.start and _stops(pr, cell):
-				_fall(pr, last_free)
-				done = true
+			if h < 0.0:
+				_fall(pr, pr.pos)  # into the ground
+				break
+			if cell != pr.start and _stops(pr, cell, minf(pr.h, h), maxf(pr.h, h)):
+				_fall(pr, pr.pos)
 				break
 			pr.pos = next
-			last_free = next
+			pr.h = h
+			if on_plan:
+				pr.location = location_under(cell, h)
 			pr.left -= dist / steps
 			var target := _hit_near(pr)
 			if target != "":
 				hurt(target, pr.damage, pr.owner)
 				projectiles.erase(id)
-				done = true
 				break
 			if pr.left <= 0.0:
 				_fall(pr, pr.pos)
-				done = true
 				break
-		if done:
-			continue
 
 
-func _stops(pr: Projectile, cell: Vector2i) -> bool:
+func _stops(pr: Projectile, cell: Vector2i, lo: float, hi: float) -> bool:
 	if not Sight.same_space(world, pr.location, Levels.SURFACE):
 		return world.is_solid(pr.location, cell.x, cell.y)
-	var h := world.levels.z(pr.location) + Sight.EYE
-	return Sight._blocked(world, cell, h, h, pr.location, pr.start, pr.location, pr.aim)
+	return Sight._blocked(world, cell, lo, hi, pr.from_location, pr.start, pr.aim_location, pr.aim)
 
 
+## Who is hit: in the location it flies over, at the height of a body there.
 func _hit_near(pr: Projectile) -> String:
+	if pr.h - world.levels.z(pr.location) > 1.0:
+		return ""  # over their heads
 	for id: String in _targets_near(pr.owner, pr.location, Vector2i(pr.pos), HIT_RADIUS):
 		return id
 	return ""
+
+
+## The location whose floor is under height h at a cell of the plan: the
+## surface, or a level of the building standing there.
+func location_under(cell: Vector2i, h: float) -> String:
+	var lx := cell.x & 31
+	var ly := cell.y & 31
+	var c := world.chunk(Levels.SURFACE, cell.x >> 5, cell.y >> 5)
+	var loc := Levels.SURFACE
+	if c.get_cell("ceiling", lx, ly) == "":
+		return loc
+	var building := String((c.get_props(lx, ly).get("ceiling", {}) as Dictionary).get("building", ""))
+	var z := 1
+	while z <= h:
+		var l := world.levels.level(building, z)
+		if l == "":
+			break
+		var lc := world.chunk(l, cell.x >> 5, cell.y >> 5)
+		if lc.get_cell("ground", lx, ly) == "":
+			break
+		loc = l
+		if lc.get_cell("ceiling", lx, ly) == "":
+			break
+		z += 1
+	return loc
+
+
+## What one aims at: the level `z` asked for, if there is a floor of it at
+## the cell; else one's own level, if it has floor there; else the floor below
+## (from a walkway: the street).
+func _aim_location(own: String, cell: Vector2i, z: int) -> String:
+	if not Sight.same_space(world, own, Levels.SURFACE):
+		return own
+	var top := float(world.levels.z(own)) + 0.5
+	if z >= 0:
+		var asked := location_under(cell, z + 0.5)
+		if world.levels.z(asked) == z:
+			return asked
+	return location_under(cell, top)
 
 
 func _fall(pr: Projectile, at: Vector2) -> void:

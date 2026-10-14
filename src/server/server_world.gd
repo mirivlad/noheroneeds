@@ -776,6 +776,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _pickup(actor, r)
 		"attack":
 			return combat.attack(actor, r)
+		"jump":
+			return _jump(actor, r)
 	return {"ok": false, "reason": "unknown_type"}
 
 
@@ -1085,6 +1087,43 @@ func _occupied(location: String, x: int, y: int) -> bool:
 ## from a cell with stairs to where they lead on the level above (that cell
 ## itself, or the one their top faces); down from where stairs below lead to,
 ## onto those stairs.
+## Off the edge of a level (ADR-0019, GDD scenario 12): into the next cell,
+## {"dx", "dy"} from where one stands, down to the first floor under it (the
+## street from a walkway, a lower floor of a building), hurt by the height
+## fallen (the body plan's "fall_damage", by levels). Not into a wall, not
+## onto a roof.
+func _jump(actor: String, r: Dictionary) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var p: Dictionary = present[actor]
+	var loc: String = p["location"]
+	if levels.kind(loc) != Levels.BUILDING_LEVEL:
+		return {"ok": false, "reason": "nothing_to_jump_from"}
+	var d := Vector2i(clampi(int(r.get("dx", 0)), -1, 1), clampi(int(r.get("dy", 0)), -1, 1))
+	if d == Vector2i.ZERO:
+		return {"ok": false, "reason": "bad_request"}
+	var to := Movement.cell_of(p["pos"]) + d
+	if _part_at(loc, to.x, to.y, "ground") != "":
+		return {"ok": false, "reason": "not_an_edge"}  # the floor goes on: walk
+	var z := levels.z(loc)
+	var below := combat.location_under(to, z - 0.5)
+	if is_solid(below, to.x, to.y):
+		return {"ok": false, "reason": "blocked"}
+	if _part_at(below, to.x, to.y, "roof") != "":
+		return {"ok": false, "reason": "roof_below"}
+	var fallen := z - levels.z(below)
+	p["location"] = below
+	p["pos"] = Vector2i(to.x * Movement.UNIT + Movement.UNIT / 2, to.y * Movement.UNIT + Movement.UNIT / 2)
+	_dirty_world_characters[actor] = true
+	relocated[actor] = true
+	var fall: Array = content.get_def(String((p["appearance"] as Dictionary).get("body_plan", ""))).get("fall_damage", [0, 2, 6, 12, 20])
+	var hurt := int(fall[mini(fallen, fall.size() - 1)]) if not fall.is_empty() else 0
+	creatures.noise(below, to)
+	if hurt > 0:
+		combat.hurt(actor, hurt, "")
+	return {"ok": true, "location": below, "z": levels.z(below), "hurt": hurt}
+
+
 func _climb(actor: String, r: Dictionary) -> Dictionary:
 	if not present.has(actor):
 		return {"ok": false, "reason": "not_here"}

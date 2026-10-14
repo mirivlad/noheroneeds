@@ -205,3 +205,82 @@ func test_health_comes_back_after_a_while() -> void:
 	eq(w.combat.health_of(p), 14, "not at once")
 	_ticks(Combat.REGEN_EVERY * 10)
 	check(w.combat.health_of(p) > 14, "then slowly back: %d" % w.combat.health_of(p))
+
+
+## A wall with a walkway on top (ceilings over it) along y = 168, x 166..174;
+## a second level over the middle. Returns [level 1, level 2].
+func _walkway() -> Array:
+	w.grant("b", "base:plank", 200)
+	for x in range(166, 175):
+		for y in [167, 168]:
+			if y == 168:
+				w.handle("b", {"request_id": "w%d" % x, "type": "build", "location": "surface", "x": x, "y": y, "part": "base:wood_wall"})
+			w.handle("b", {"request_id": "c%d_%d" % [x, y], "type": "build", "location": "surface", "x": x, "y": y, "part": "base:wood_ceiling"})
+	w.sync()
+	var l1 := w.levels.level(w._ceiling_building("surface", 170, 168), 1)
+	w.handle("b", {"request_id": "up", "type": "build", "location": l1, "x": 170, "y": 167, "part": "base:wood_ceiling"})
+	w.sync()
+	return [l1, w.levels.level(w._ceiling_building("surface", 170, 168), 2)]
+
+
+func _do(actor: String, r: Dictionary) -> Dictionary:
+	w.handle(actor, r)
+	w.sync()
+	for ack: Array in w.take_acks():
+		if ack[1] == r["request_id"]:
+			return ack[2]
+	return {}
+
+
+func _place(id: String, location: String, cell: Vector2i) -> void:
+	w.present[id]["location"] = location
+	w.move_character(id, _at(cell))
+
+
+func test_arrows_from_a_walkway_into_the_street_and_back_up() -> void:
+	w.world_time = 12 * Daylight.HOUR_MS
+	var l := _walkway()
+	var p := _player("Аня", Vector2i(170, 160))
+	_place(p, l[0], Vector2i(170, 168))
+	w.grant(p, "base:bow", 1)
+	w.grant(p, "base:arrow", 5)
+	var deer := w.creatures._spawn("base:deer", "surface", Vector2i(170, 175), {}, 1)
+	deer.pos = _at(Vector2i(170, 175))
+	check(_attack(p, Vector2i(170, 175), "base:bow").get("ok", false), "shot down from the walkway")
+	_fly(12)
+	eq(deer.health, 5, "over the wall, into the deer in the street")
+	# From the street up at one on the walkway (free PvP here).
+	w.creatures.remove(deer.id)  # else the arrow meets it first, on its way up
+	w.combat.pvp = "free"
+	var q := _player("Боря", Vector2i(170, 176))
+	w.grant(q, "base:bow", 1)
+	w.grant(q, "base:arrow", 5)
+	var r := {"request_id": "up", "type": "attack", "item": "base:bow", "x": _at(Vector2i(170, 168)).x, "y": _at(Vector2i(170, 168)).y, "z": 1}
+	w.handle(q, r)
+	w.sync()
+	_fly(12)
+	eq(w.combat.health_of(p), 15, "up at the one on the walkway")
+
+
+func test_jumping_off_a_level() -> void:
+	var l := _walkway()
+	var p := _player("Аня", Vector2i(170, 160))
+	_place(p, l[0], Vector2i(170, 168))
+	eq(_do(p, {"request_id": "j0", "type": "jump", "dx": -1, "dy": 0}).get("reason"), "not_an_edge", "the walkway goes on: walk")
+	w.handle(p, {"request_id": "j1", "type": "jump", "dx": 0, "dy": 1})
+	w.sync()
+	eq(w.present[p]["location"], "surface", "down in the street")
+	eq(Movement.cell_of(w.present[p]["pos"]), Vector2i(170, 169), "right below the edge")
+	eq(w.combat.health_of(p), 18, "a fall of one level hurts a little")
+	# From the second level, over the walkway, onto... the walkway below.
+	_place(p, l[1], Vector2i(170, 167))
+	w.handle(p, {"request_id": "j2", "type": "jump", "dx": 1, "dy": 0})
+	w.sync()
+	eq(w.present[p]["location"], l[0], "onto the floor below, not through it")
+	eq(w.combat.health_of(p), 16)
+	# Into a wall: no.
+	w.grant("b", "base:plank", 10)
+	w.handle("b", {"request_id": "wall", "type": "build", "location": "surface", "x": 165, "y": 168, "part": "base:wood_wall"})
+	w.sync()
+	_place(p, l[0], Vector2i(166, 168))
+	eq(_do(p, {"request_id": "j3", "type": "jump", "dx": -1, "dy": 0}).get("reason"), "blocked", "not into a wall")

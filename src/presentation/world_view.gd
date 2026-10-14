@@ -256,11 +256,22 @@ func hidden_room() -> Dictionary:
 
 func texture(path: String) -> Texture2D:
 	if not _textures.has(path):
-		if path.begins_with("res://"):
+		if path.begins_with("res://") and not _from_source(path):
 			_textures[path] = load(path)
 		else:
-			_textures[path] = ImageTexture.create_from_image(Image.load_from_file(path))
+			var img := Image.new()
+			img.load_png_from_buffer(FileAccess.get_file_as_bytes(path))
+			_textures[path] = ImageTexture.create_from_image(img)
+			(_textures[path] as Texture2D).resource_name = path  # where it came from
 	return _textures[path]
+
+
+## Run from the sources (not an exported game): pictures are read from their
+## PNG files, never from the import cache, which is missing or stale after a
+## pull until something imports again (the editor or tools/run_game.sh).
+static func _from_source(path: String) -> bool:
+	return OS.has_feature("editor") and FileAccess.file_exists(path) \
+		and path.get_extension().to_lower() == "png"
 
 
 ## Call every frame. alpha: how far we are between the last tick and the next (0..1).

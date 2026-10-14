@@ -9,6 +9,12 @@ SQLITE_SHA256="95e91b72fe32984a84edaf6357a78753661f37a170cb362f5b948e0ede7c2cb0"
 BIN="$ROOT/addons/godot-sqlite/bin"
 MARK="$BIN/.version"
 
+# Tell Godot about the extension before its first scan of a fresh checkout:
+# otherwise Godot 4.7.2 discovers it mid-import and crashes on exit.
+mkdir -p "$ROOT/.godot"
+EXT_LIST="$ROOT/.godot/extension_list.cfg"
+grep -qs "gdsqlite.gdextension" "$EXT_LIST" || echo "res://addons/godot-sqlite/gdsqlite.gdextension" >> "$EXT_LIST"
+
 if [[ "${1:-}" != "--force" && -f "$MARK" && "$(cat "$MARK")" == "$SQLITE_VERSION" ]]; then
   exit 0
 fi

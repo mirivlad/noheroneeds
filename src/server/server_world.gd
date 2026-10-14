@@ -725,6 +725,8 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	else:
 		_set_layer_props(c, layer, at[3], at[4], props)
 	_changed(chunk_key(loc, at[1], at[2]))
+	if role == "stairs":
+		_mark_stairs_down(loc, x, y, true)
 	if role == "ceiling":
 		var zl := levels.z(loc) + 1
 		upper = levels.level(building, zl)
@@ -795,6 +797,8 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 			return {"ok": false, "reason": "stairs_below"}
 		if upper != "" and _occupied(upper, x, y):
 			return {"ok": false, "reason": "occupied_above"}  # ADR-0007: take those down first
+	if layer == "structure" and _is_stairs(part):
+		_mark_stairs_down(loc, x, y, false)
 	c.set_cell(layer, at[3], at[4], "")
 	if layer == "structure":
 		var keep := c.get_props(at[3], at[4]).duplicate()
@@ -862,6 +866,28 @@ func _climb(actor: String, r: Dictionary) -> Dictionary:
 	_dirty_world_characters[actor] = true
 	relocated[actor] = true
 	return {"ok": true, "location": dest, "z": levels.z(dest)}
+
+
+## Marks (or unmarks) the cell above a staircase as the way down, so players
+## upstairs can see where to go down.
+func _mark_stairs_down(location: String, x: int, y: int, on: bool) -> void:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	var here := chunk(location, cx, cy)
+	var lx := x - cx * Chunk.SIZE
+	var ly := y - cy * Chunk.SIZE
+	var building := levels.building(location) if location != SURFACE else String(_layer_props(here, "ceiling", lx, ly).get("building", ""))
+	var upper := levels.level(building, levels.z(location) + 1)
+	if upper == "":
+		return
+	var uc := chunk(upper, cx, cy)
+	var props := uc.get_props(lx, ly).duplicate()
+	if on:
+		props["stairs_down"] = true
+	else:
+		props.erase("stairs_down")
+	uc.set_props(lx, ly, props)
+	_changed(chunk_key(upper, cx, cy))
 
 
 func _is_stairs(part: String) -> bool:

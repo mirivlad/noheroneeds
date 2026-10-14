@@ -33,6 +33,20 @@ var _note := ""
 var _opts := {}
 var _frames := 0
 var _demo_done := false
+## The chosen part under the mouse, as it would stand: green if in reach.
+var _ghost := Sprite2D.new()
+var _slots: Array[Panel] = []
+
+## What the server's refusals mean, for people.
+const REASONS := {
+	"occupied": "место занято", "blocked": "мешает вода или дерево", "someone_there": "там кто-то стоит",
+	"materials": "не хватает материалов", "too_far": "слишком далеко", "no_floor": "здесь нет пола",
+	"too_high": "выше строить нельзя (настройка сервера)", "occupied_above": "сверху что-то стоит — сначала уберите",
+	"no_opening_above": "лестнице нужно перекрытие над ней", "stairs_below": "сначала уберите лестницу",
+	"not_owner": "это не ваше", "empty": "здесь нечего разбирать", "no_stairs": "здесь нет лестницы",
+	"unknown_part": "неизвестная деталь", "nothing_to_use": "здесь нечего открыть", "gone": "уже подобрали",
+	"not_enough": "не хватает", "no_such_place": "здесь строить нельзя",
+}
 
 
 func _ready() -> void:
@@ -74,6 +88,11 @@ func _ready() -> void:
 		layer.add_child(l)
 	hud.position = Vector2(6, 2)
 	status.position = Vector2(6, 252)
+	_ghost.centered = false
+	_ghost.z_index = 20
+	_ghost.visible = false
+	add_child(_ghost)
+	_build_hotbar(layer)
 
 
 func _process(delta: float) -> void:
@@ -112,12 +131,15 @@ func _process(delta: float) -> void:
 		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
 	if _opts.get("demo") == "outside" and _frames == 40 and game:
 		game.world.move_character(client.character_id, Vector2i(128, 4 * 256 + 128))  # dev only: to the porch
+	if _opts.get("demo") == "behind" and _frames == 40 and game:
+		game.world.move_character(client.character_id, Vector2i(128, -5 * 256 + 200))  # dev only: behind the back wall
 	if _opts.get("demo") == "upstairs" and _frames == 40:
 		client.request({"type": "climb", "location": client.location, "x": 1, "y": 0})
 	view.update_view(_accum / tick, delta)
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
 	_update_hud()
+	_update_ghost()
 	_frames += 1
 	if _opts.has("screenshot") and _frames >= int(_opts.get("frames", "120")):
 		get_viewport().get_texture().get_image().save_png(String(_opts["screenshot"]))
@@ -136,18 +158,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif k == KEY_E and client.state == "playing":
 			_use_nearest()
 		elif k == KEY_F and client.state == "playing":
-			var me := Movement.cell_of(client.position)
-			client.request({"type": "climb", "location": client.location, "x": me.x, "y": me.y})
+			_climb_nearest()
 	elif event is InputEventMouseButton and event.pressed and client.state == "playing":
-		var cell := (get_global_mouse_position() / WorldView.CELL).floor()
-		var op := {"location": client.location, "x": int(cell.x), "y": int(cell.y)}
+		var op := {"location": client.location}
+		var cell: Vector2i
 		if event.button_index == MOUSE_BUTTON_LEFT:
+			cell = _build_cell()
 			op["type"] = "build"
 			op["part"] = PARTS[_part]
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			cell = view.pick(get_global_mouse_position())  # what the mouse points at
 			op["type"] = "dismantle"
 		else:
 			return
+		op["x"] = cell.x
+		op["y"] = cell.y
 		client.request(op)
 
 
@@ -175,6 +200,79 @@ func _use_nearest() -> void:
 			if c and content.get_def(c.get_cell("structure", cell.x - cx * 32, cell.y - cy * 32)).get("openable", false):
 				client.request({"type": "use", "location": client.location, "x": cell.x, "y": cell.y})
 				return
+
+
+## F: the stairs (up) or the way down nearest to the player, if any in reach.
+func _climb_nearest() -> void:
+	var me := Movement.cell_of(client.position)
+	for d: Vector2i in [Vector2i.ZERO, Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0),
+			Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
+		var cell := me + d
+		var cx := floori(cell.x / 32.0)
+		var cy := floori(cell.y / 32.0)
+		var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
+		if c == null:
+			continue
+		var lx := cell.x - cx * 32
+		var ly := cell.y - cy * 32
+		var part := c.get_cell("structure", lx, ly)
+		if c.get_props(lx, ly).get("stairs_down", false) or (part != "" and content.get_def(part).get("role") == "stairs"):
+			client.request({"type": "climb", "location": client.location, "x": cell.x, "y": cell.y})
+			return
+	_note = "рядом нет лестницы"
+
+
+## Where a click would build: the cell under the mouse, or for ceilings and
+## roofs the cell whose cover would be drawn there (covers sit a cell higher).
+func _build_cell() -> Vector2i:
+	var m := get_global_mouse_position()
+	var cell := Vector2i(floori(m.x / WorldView.CELL), floori(m.y / WorldView.CELL))
+	if Terrain.layer_for_role(String(content.get_def(PARTS[_part]).get("role", ""))) != "structure":
+		cell.y += 1
+	return cell
+
+
+func _update_ghost() -> void:
+	var v := content.visual_of(PARTS[_part])
+	if client.state != "playing" or v.is_empty() or _opts.has("screenshot"):
+		_ghost.visible = false
+		return
+	var cell := _build_cell()
+	_ghost.texture = view.texture(v["atlas_path"])
+	_ghost.region_enabled = true
+	_ghost.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+	if v["mode"] == "cover":
+		_ghost.position = Vector2(cell.x * WorldView.CELL, cell.y * WorldView.CELL - WorldView.COVER_LIFT)
+	else:
+		_ghost.position = Vector2(cell.x * WorldView.CELL, (cell.y + 1) * WorldView.CELL) - Vector2(v["origin"][0], v["origin"][1])
+	var centre := Vector2(cell.x * 256 + 128, cell.y * 256 + 128)
+	var near := Vector2(client.position).distance_to(centre) <= ServerWorld.BUILD_REACH
+	_ghost.modulate = Color(0.6, 1.0, 0.6, 0.6) if near else Color(1.0, 0.45, 0.45, 0.5)
+	_ghost.visible = true
+
+
+func _build_hotbar(layer: CanvasLayer) -> void:
+	var bar := HBoxContainer.new()
+	bar.add_theme_constant_override("separation", 2)
+	for i in PARTS.size():
+		var slot := Panel.new()
+		slot.custom_minimum_size = Vector2(20, 20)
+		var icon := TextureRect.new()
+		var v := content.visual_of(PARTS[i])
+		if not v.is_empty():
+			var at := AtlasTexture.new()
+			at.atlas = view.texture(v["atlas_path"])
+			at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+			icon.texture = at
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.position = Vector2(2, 2)
+		icon.size = Vector2(16, 16)
+		slot.add_child(icon)
+		bar.add_child(slot)
+		_slots.append(slot)
+	bar.position = Vector2(240 - PARTS.size() * 11, 228)
+	layer.add_child(bar)
 
 
 func _notification(what: int) -> void:
@@ -214,7 +312,7 @@ func _direction() -> Vector2i:
 func _update_hud() -> void:
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
-		_note = "готово" if r.get("ok") else "нельзя: " + String(r.get("reason", "?"))
+		_note = "готово" if r.get("ok") else "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 		client.results.erase(rid)
 	var cell := Movement.cell_of(client.position)
 	var state: String = {"playing": "", "connecting": "подключение…", "joining": "вход…", "disconnected": "нет связи",
@@ -228,6 +326,8 @@ func _update_hud() -> void:
 	hud.text = level + "     " + "  ".join(bag)
 	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, _part + 1, content.get_def(PARTS[_part]).get("name", ""),
 		cell.x, cell.y, _note]
+	for i in _slots.size():
+		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
 
 
 ## The player's character: made once with default looks, kept as a signed file.

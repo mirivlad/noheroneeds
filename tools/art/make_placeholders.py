@@ -127,32 +127,83 @@ def fit(sprite, w, h):
     return out
 
 
-def wall(kind):
-    """Top-front view: a cap on top, the front face below (16 x 32)."""
+N, E, S, W = 1, 2, 4, 8
+
+
+def wall(kind, mask, opened=False):
+    """A wall cell a full cell thick, 16 x 32: the top of the wall (seen from
+    above) over the cell to the north, the front face over the cell itself.
+    mask: which neighbours are walls too (N=1, E=2, S=4, W=8); edges are drawn
+    only where the wall ends, so runs join into one solid body. A wall below
+    covers this one's face with its own top, so north-south runs read as one
+    long wall top with a face at the end."""
     img = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
     px = img.load()
+    if kind == "stone_wall":
+        top = [hx("6d6b72"), hx("8f8c92"), hx("a8a4a8"), hx("c4c0c0")]
+        face = [hx("3a3840"), hx("55535a"), hx("6d6b72"), hx("85828a")]
+    else:
+        top = [hx("6e4428"), hx("93613a"), hx("a8743f"), hx("c08a52")]
+        face = [hx("3a2416"), hx("4e3220"), hx("6e4428"), hx("84552f")]
     for y in range(2 * T):
         for x in range(T):
-            if kind == "wood_wall":
-                cap, face = P["wood"][3], P["wood"][2]
-                c = cap if y < 6 else face
-                if y >= 6 and (y - 6) % 4 == 0:
-                    c = P["wood"][0]
-            elif kind == "stone_wall":
-                cap, face = P["stone"][3], P["stone"][2]
-                c = cap if y < 6 else face
-                if y >= 6 and ((y - 6) % 5 == 0 or (x + ((y - 6) // 5) * 4) % 8 == 0):
-                    c = P["stone"][0]
-            else:  # wood_door
-                c = P["wood"][1] if y >= 6 else P["wood"][3]
-                if y >= 6 and x in (5, 10):
-                    c = P["wood"][0]
-                if (x, y) in ((12, 19), (12, 20)):
-                    c = P["warm"][1]
+            wx = x + mask * 3  # vary the pattern a little between variants
+            if y < T:  # top of the wall
+                if kind == "stone_wall":
+                    joint = (y % 6 == 5) or ((x + (y // 6) * 5) % 8 == 7)
+                    c = top[0] if joint else (top[2] if h2(wx // 3, y // 3, 5) > 0.3 else top[1])
+                else:
+                    c = top[2] if (x % 5) != 4 else top[1]
+                    if h2(x, y, 9) > 0.93:
+                        c = top[3]
+            else:  # front face, darker toward the ground
+                fy = y - T
+                if kind == "stone_wall":
+                    joint = (fy % 5 == 4) or ((x + (fy // 5) * 4) % 8 == 7)
+                    c = face[0] if joint else (face[2] if fy < 8 else face[1])
+                    if not joint and h2(wx, y, 3) > 0.9:
+                        c = face[3]
+                else:
+                    c = face[2] if fy % 4 != 3 else face[0]
+                    if fy % 4 == 0:
+                        c = face[3]
+                    if fy >= 12 and fy % 4 != 3:
+                        c = face[1]
+                if fy == T - 1:
+                    c = lerp(face[0], P["ink"], 0.4)  # where the wall meets the ground
             px[x, y] = c
+    edge_top = lerp(top[0], P["ink"], 0.35)
     for x in range(T):
-        px[x, 6] = lerp(px[x, 6], P["ink"], 0.4)
-    return mp.outline(img, STRONG if kind == "wood_door" else STYLE)
+        px[x, T] = lerp(top[0], P["ink"], 0.25)  # the top's front edge
+        if not mask & N:
+            px[x, 0] = edge_top
+    for y in range(2 * T):
+        if not mask & W:
+            px[0, y] = lerp(px[0, y], top[3], 0.35) if y < T else lerp(face[0], P["ink"], 0.2)
+        if not mask & E:
+            px[T - 1, y] = lerp(top[0], P["ink"], 0.3) if y < T else lerp(face[0], P["ink"], 0.45)
+    if kind == "wood_door":
+        d = ImageDraw.Draw(img)
+        if opened:
+            d.rectangle((3, T + 1, 12, 2 * T - 1), hx("1e1618"))
+            d.rectangle((3, T + 1, 4, 2 * T - 1), P["wood"][1])
+        else:
+            d.rectangle((3, T + 1, 12, 2 * T - 1), P["wood"][2])
+            d.line((3, T + 1, 3, 2 * T - 1), P["wood"][0])
+            d.line((12, T + 1, 12, 2 * T - 1), P["wood"][0])
+            d.line((7, T + 2, 7, 2 * T - 1), P["wood"][1])
+            d.point((10, T + 8), P["warm"][1])
+        d.line((2, T, 13, T), lerp(top[0], P["ink"], 0.4))  # lintel
+    return img
+
+
+def wall_set(kind, opened=False):
+    """16 variants side by side, indexed by the neighbour mask."""
+    strip = Image.new("RGBA", (16 * T, 2 * T), (0, 0, 0, 0))
+    base = "wood_wall" if kind == "wood_door" else kind
+    for m in range(16):
+        strip.alpha_composite(wall(base if kind != "wood_door" else "wood_door", m, opened), (m * T, 0))
+    return strip
 
 
 def door_open():
@@ -282,7 +333,7 @@ def chibi_view(w, h, look, view, frame):
 
 
 def main():
-    a = Atlas(16, 14)
+    a = Atlas(16, 23)
     for row, kind in enumerate(["grass", "grass_dry", "dirt", "moss", "forest_floor", "sand", "water"]):
         strip = Image.new("RGBA", (4 * T, T))
         for v in range(4):
@@ -304,10 +355,12 @@ def main():
             import make_probe_b2 as b2  # noqa: E402
             spr = b2.birch(STYLE, 4) if src == "birch" else b2.spruce(STYLE, 4)
         a.put(col * 3, 9, fit(spr, 3 * T, 4 * T), "base:" + kind, (T, 4 * T), "tall")
-    for col, kind in enumerate(["wood_wall", "stone_wall", "wood_door"]):
-        a.put(9 + col, 9, wall(kind), "base:" + kind, (0, 2 * T), "tall")
-    a.put(12, 9, door_open(), "base:wood_door_open_frame", (0, 2 * T), "tall")
-    opened = a.visuals.pop()  # not a visual of its own: the door's "open" state
+    # Walls and doors join by neighbours (mask N=1 E=2 S=4 W=8): 16 variants a row.
+    for row, kind in ((15, "wood_wall"), (17, "stone_wall"), (19, "wood_door")):
+        a.put(0, row, wall_set(kind), "base:" + kind, (0, 2 * T), "tall", variants=16)
+        a.visuals[-1]["autotile"] = "wall"
+    a.put(0, 21, wall_set("wood_door", opened=True), "base:wood_door_open_set", (0, 2 * T), "tall", variants=16)
+    opened = a.visuals.pop()  # the door's "open" state, not a visual of its own
     for v in a.visuals:
         if v["for"] == "base:wood_door":
             v["states"] = {"open": opened["rect"]}
@@ -318,6 +371,17 @@ def main():
     a.put(8, 7, ceiling, "base:wood_ceiling", (0, T), "cover")
     a.put(9, 7, thatch, "base:thatch_roof", (0, T), "cover")
     a.put(13, 9, stairs, "base:wood_stairs", (0, 2 * T), "tall")
+    down = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
+    dd = ImageDraw.Draw(down)
+    dd.rectangle((1, T + 1, 14, 2 * T - 2), hx("1e1618"))
+    for k in range(3):
+        dd.rectangle((2, T + 3 + k * 4, 13, T + 4 + k * 4), P["wood"][2 - k % 2])
+    dd.rectangle((0, T, 15, 2 * T - 1), outline=P["wood"][0])
+    a.put(15, 9, down, "base:wood_stairs_down_frame", (0, 2 * T), "tall")
+    down_v = a.visuals.pop()
+    for v in a.visuals:
+        if v["for"] == "base:wood_stairs":
+            v["states"] = {"down": down_v["rect"]}
     a.put(14, 9, column, "base:wood_column", (0, 2 * T), "tall")
     (OUT / "art").mkdir(parents=True, exist_ok=True)
     a.img.save(OUT / "art" / "tiles.png")

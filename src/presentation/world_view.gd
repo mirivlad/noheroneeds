@@ -27,6 +27,9 @@ var _covers := Node2D.new()
 ## cell -> Sprite2D of the ceiling or roof over it
 var _cover_sprites := {}
 var _hidden_room := {}
+## Sprites made see-through because they stand in front of the player.
+var _faded: Array[Sprite2D] = []
+const FADED := 0.4
 var _room_from := Vector2i(1 << 30, 0)
 var _sorted := Node2D.new()
 var _chunk_nodes := {}
@@ -117,6 +120,7 @@ func update_view(alpha: float, delta: float) -> void:
 		_paint(key)
 	_update_characters(alpha, delta)
 	_update_room()
+	_fade_occluders()
 
 
 ## Forgets everything drawn (the client moved to another location).
@@ -140,7 +144,7 @@ func own_pixel_position(alpha: float) -> Vector2:
 	return a.lerp(b, alpha)
 
 
-func _paint(key: String) -> void:
+func _paint(key: String, spread := true) -> void:
 	var p := key.split("|")
 	if not client.chunks.has(key):
 		return
@@ -171,9 +175,22 @@ func _paint(key: String) -> void:
 				var v := content.visual_of(id)
 				if v.get("mode") == "tall":
 					var state := "open" if c.get_props(lx, ly).get("open", false) else ""
-					holder.add_child(_tall_sprite(v, cell, state))
+					var variant := _join_mask(p[0], cell, String(v.get("autotile", ""))) if v.has("autotile") else 0
+					var s := _tall_sprite(v, cell, state, variant)
+					s.set_meta("cell", cell)
+					holder.add_child(s)
 				else:
 					_set_flat(_cover, cell, id)  # flat, or the missing-picture mark
+			if c.get_props(lx, ly).get("stairs_down", false):
+				var mark := _stairs_down_sprite(cell)
+				if mark:
+					holder.add_child(mark)
+	# Walls on the edge join walls of the next chunk: redraw those once.
+	if spread:
+		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var nk := ServerWorld.chunk_key(p[0], int(p[1]) + d.x, int(p[2]) + d.y)
+			if _chunk_nodes.has(nk) and _edge_joins(c, d):
+				_paint(nk, false)
 
 
 ## The surface under a building level: ground and flat plants, dimmed.
@@ -247,17 +264,106 @@ func _set_flat(layer: TileMapLayer, cell: Vector2i, id: String) -> void:
 	layer.set_cell(cell, t[0], t[1] + Vector2i(variant % t[2], 0))
 
 
-func _tall_sprite(v: Dictionary, cell: Vector2i, state := "") -> Sprite2D:
+func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0) -> Sprite2D:
 	var s := Sprite2D.new()
 	s.texture = texture(v["atlas_path"])
 	s.region_enabled = true
 	var r: Array = v.get("states", {}).get(state, v["rect"])
-	s.region_rect = Rect2(r[0], r[1], r[2], r[3])
+	s.region_rect = Rect2(r[0] + variant * r[2], r[1], r[2], r[3])
 	s.centered = false
 	# The sprite's origin pixel sits on the cell's bottom-left corner; that corner sorts it.
 	s.position = Vector2(cell.x * CELL, (cell.y + 1) * CELL)
 	s.offset = -Vector2(v["origin"][0], v["origin"][1])
 	return s
+
+
+## Which neighbours (N=1, E=2, S=4, W=8) are drawn with the same join group.
+func _join_mask(location: String, cell: Vector2i, group: String) -> int:
+	var mask := 0
+	var bits := [[Vector2i(0, -1), 1], [Vector2i(1, 0), 2], [Vector2i(0, 1), 4], [Vector2i(-1, 0), 8]]
+	for b: Array in bits:
+		var id := _cell_part(location, cell + (b[0] as Vector2i))
+		if id != "" and content.visual_of(id).get("autotile", "") == group:
+			mask |= int(b[1])
+	return mask
+
+
+func _cell_part(location: String, cell: Vector2i) -> String:
+	var cx := floori(cell.x / float(Chunk.SIZE))
+	var cy := floori(cell.y / float(Chunk.SIZE))
+	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	return c.get_cell("structure", cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else ""
+
+
+## Whether a chunk has joining parts on its side facing direction d.
+func _edge_joins(c: Chunk, d: Vector2i) -> bool:
+	for i in Chunk.SIZE:
+		var lx := Chunk.SIZE - 1 if d.x > 0 else (0 if d.x < 0 else i)
+		var ly := Chunk.SIZE - 1 if d.y > 0 else (0 if d.y < 0 else i)
+		var id := c.get_cell("structure", lx, ly)
+		if id != "" and content.visual_of(id).has("autotile"):
+			return true
+	return false
+
+
+## On a building level, where the stairs from below come up: the way down.
+func _stairs_down_sprite(cell: Vector2i) -> Sprite2D:
+	for id: String in content.visuals:
+		var v: Dictionary = content.visuals[id]
+		if content.get_def(id).get("role") == "stairs" and v.get("states", {}).has("down"):
+			var s := _tall_sprite(v, cell, "down")
+			s.z_index = -1
+			return s
+	return null
+
+
+## Tall things drawn in front of the player's character fade, so the player
+## is never lost behind a wall, a tree or a roof (houses, fortresses).
+func _fade_occluders() -> void:
+	if not client.has_position or not _characters.has(client.character_id):
+		return
+	var me: Node2D = _characters[client.character_id]
+	var body := Rect2(me.position + Vector2(-10, -30), Vector2(20, 30))
+	for s: Sprite2D in _faded:
+		if is_instance_valid(s):
+			s.modulate.a = 1.0
+	_faded.clear()
+	var mc := Vector2i(floori(me.position.x / CELL / Chunk.SIZE), floori(me.position.y / CELL / Chunk.SIZE))
+	for dy in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var holder: Node2D = _chunk_nodes.get(ServerWorld.chunk_key(client.location, mc.x + dx, mc.y + dy))
+			if holder == null:
+				continue
+			for s: Sprite2D in holder.get_children():
+				if s.position.y > me.position.y and _sprite_rect(s).intersects(body):
+					s.modulate.a = FADED
+					_faded.append(s)
+	for cell: Vector2i in _cover_sprites:
+		var cs: Sprite2D = _cover_sprites[cell]
+		if cs.visible and (cell.y + 1) * CELL > me.position.y and _sprite_rect(cs).intersects(body):
+			cs.modulate.a = FADED
+			_faded.append(cs)
+
+
+func _sprite_rect(s: Sprite2D) -> Rect2:
+	return Rect2(s.position + s.offset, s.region_rect.size)
+
+
+## What the player points at: a visible cover, else a tall thing whose
+## picture is under the point, else the cell under it. [cell, layer hint]
+func pick(point: Vector2) -> Vector2i:
+	for cell: Vector2i in _cover_sprites:
+		var cs: Sprite2D = _cover_sprites[cell]
+		if cs.visible and _sprite_rect(cs).has_point(point):
+			return cell
+	var best := Vector2i(floori(point.x / CELL), floori(point.y / CELL))
+	var best_y := -INF
+	for holder: Node2D in _chunk_nodes.values():
+		for s: Sprite2D in holder.get_children():
+			if s.has_meta("cell") and s.position.y > best_y and _sprite_rect(s).has_point(point):
+				best = s.get_meta("cell")
+				best_y = s.position.y
+	return best
 
 
 func _update_characters(alpha: float, delta: float) -> void:

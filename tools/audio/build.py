@@ -214,6 +214,36 @@ def step(surface, seed):
     return tail_out(low(x, 3200 if bright else 1600, 2))
 
 
+def swing(seed=2100):
+    """A blow through the air: a short whoosh, rising then falling."""
+    sec = 0.22
+    t = t_axis(sec)
+    x = noise(sec, seed)
+    env = np.sin(np.pi * np.clip(t / sec, 0, 1)) ** 2
+    lo = low(x, 900, 2) * env
+    hi = high(low(x, 2600, 1), 500, 1) * env * 0.5
+    return tail_out(lo + hi, 0.6)
+
+
+def hit(seed=2200):
+    """A blow landing on a body: a dull thump and a short slap, no ring."""
+    sec = 0.16
+    x = thud(sec, seed, 300, 0.018)
+    x += high(low(noise(sec, seed + 1), 2500, 1), 600, 1) * decay(sec, 0.008, 0.001) * 0.6
+    return tail_out(low(x, 2000, 2), 0.5)
+
+
+def shoot(seed=2300):
+    """A bowstring let go: a low plucked thrum, damped fast, and a swish."""
+    sec = 0.3
+    t = t_axis(sec)
+    r = rng(seed)
+    f = r.uniform(105, 120)
+    x = (np.sin(2 * np.pi * f * t) + 0.4 * np.sin(2 * np.pi * 2.02 * f * t)) * decay(sec, 0.05, 0.002)
+    x += high(low(noise(sec, seed), 3000, 1), 800, 1) * decay(sec, 0.04, 0.01) * 0.35
+    return tail_out(low(x, 2500, 2), 0.5)
+
+
 def build_wood():
     """Something set up in wood: two hammer knocks and a settling rattle."""
     x = np.zeros(int(0.7 * SR))
@@ -422,6 +452,9 @@ def main():
         sound("step_" + ground.split(":")[1], ground, "step", steps[surface], -13.0, (0.92, 1.08))
     sound("step", "*", "step", steps["earth"], -13.0, (0.92, 1.08))
     sound("build", "*", "build", [write("build_wood", build_wood())], -4.0)
+    sound("swing", "*", "swing", [write("swing_%d" % (k + 1), swing(2100 + k)) for k in range(2)], -12.0)
+    sound("hit", "*", "hit", [write("hit_%d" % (k + 1), hit(2200 + k * 3)) for k in range(3)], -6.0)
+    sound("shoot", "*", "shoot", [write("shoot_bow", shoot())], -8.0)
     sound("build_stone", "base:stone_wall", "build", [write("build_stone", build_stone())], -4.0)
     sound("dismantle", "*", "dismantle", [write("dismantle_wood", dismantle_wood())], -4.0)
     sound("dismantle_stone", "base:stone_wall", "dismantle", [write("dismantle_stone", dismantle_stone())], -4.0)

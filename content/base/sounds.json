@@ -144,6 +144,51 @@
    ]
   },
   {
+   "id": "base:sound/swing",
+   "kind": "sound",
+   "for": "*",
+   "event": "swing",
+   "files": [
+    "audio/swing_1.wav",
+    "audio/swing_2.wav"
+   ],
+   "volume_db": -12.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/hit",
+   "kind": "sound",
+   "for": "*",
+   "event": "hit",
+   "files": [
+    "audio/hit_1.wav",
+    "audio/hit_2.wav",
+    "audio/hit_3.wav"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/shoot",
+   "kind": "sound",
+   "for": "*",
+   "event": "shoot",
+   "files": [
+    "audio/shoot_bow.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
    "id": "base:sound/build_stone",
    "kind": "sound",
    "for": "base:stone_wall",

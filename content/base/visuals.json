@@ -820,7 +820,7 @@
    "id": "base:visual/humanoid_adult",
    "kind": "visual",
    "for": "base:humanoid_adult",
-   "atlas": "art/chibi_placeholder.png",
+   "atlas": "art/people/villager.png",
    "rect": [
     0,
     0,

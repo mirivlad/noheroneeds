@@ -493,7 +493,8 @@ def main():
     people_sheet().save(OUT / "art" / "chibi_placeholder.png")
     a.visuals.append({
         "id": "base:visual/humanoid_adult", "kind": "visual", "for": "base:humanoid_adult",
-        "atlas": "art/chibi_placeholder.png", "rect": [0, 0, 48, 48], "origin": [24, 45], "mode": "character",
+        "atlas": "art/people/villager.png" if (OUT / "art" / "people" / "villager.png").exists() else "art/chibi_placeholder.png",
+        "rect": [0, 0, 48, 48], "origin": [24, 45], "mode": "character",
         "variants": 1, "directions": ["s", "se", "e", "ne", "n"], "frames": 3,
     })
     production_art(a.visuals)

@@ -1,0 +1,7 @@
+{
+ "brief": "003",
+ "dir": "art_src/incoming/003",
+ "out": "content/base/art/people/villager.png",
+ "_comment": "The player's look built from the brief 003 references on the one body: outfit + hair layer. Read by tools/art/import_people.py.",
+ "look": {"outfit": "outfit_villager", "hair": "hair_short", "hair_extra": 1}
+}

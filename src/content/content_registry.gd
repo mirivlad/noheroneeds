@@ -9,6 +9,12 @@ extends RefCounted
 ## has a validator that checks fields and references to other definitions.
 
 const PACK_FORMAT := 1
+## Fields only a player sees (texts). They and "visual" definitions are left
+## out of the rules fingerprint (ADR-0009): translations and texture packs
+## never stop anyone from joining.
+const PRESENTATION_FIELDS := ["name", "description"]
+## Fields the registry adds while loading.
+const DERIVED_FIELDS := ["pack", "atlas_path"]
 const DEFS_FORMAT := 1
 
 static var _id_pattern := RegEx.create_from_string("^[a-z0-9_]+:[a-z0-9_/]+$")
@@ -22,8 +28,6 @@ var packs := {}
 var visuals := {}
 ## Problems found while loading; a registry with errors must not be used.
 var errors: PackedStringArray = []
-var _hashing := HashingContext.new()
-var _file_hashes: PackedStringArray = []
 
 
 static func is_valid_id(id: String) -> bool:
@@ -108,16 +112,20 @@ func visual_of(id: String) -> Dictionary:
 	return visuals.get(id, {})
 
 
-## Identifies the exact content set (packs, versions, file bytes) for handshakes.
+## Identifies the game rules this content defines (ADR-0009): every
+## definition except visuals, without texts and loading details, as
+## deterministic CBOR. File bytes, pack versions and pictures do not count.
 func fingerprint() -> String:
-	var parts := PackedStringArray()
-	for pid: String in packs:
-		parts.append("%s@%s" % [pid, packs[pid]["version"]])
-	parts.append_array(_file_hashes)
-	parts.sort()
-	_hashing.start(HashingContext.HASH_SHA256)
-	_hashing.update("\n".join(parts).to_utf8_buffer())
-	return _hashing.finish().hex_encode()
+	var rules := {}
+	for id: String in defs:
+		var d: Dictionary = defs[id]
+		if d.get("kind") == "visual":
+			continue
+		var r := d.duplicate(true)
+		for f: String in PRESENTATION_FIELDS + DERIVED_FIELDS:
+			r.erase(f)
+		rules[id] = r
+	return Hash.sha256(Cbor.encode(rules)).hex_encode()
 
 
 func _load_pack(pid: String, info: Dictionary) -> void:
@@ -132,7 +140,6 @@ func _load_pack(pid: String, info: Dictionary) -> void:
 		var data := _read_json(path)
 		if data.is_empty():
 			continue
-		_file_hashes.append("%s/%s:%s" % [pid, f, FileAccess.get_sha256(path)])
 		if int(data.get("format", 0)) != DEFS_FORMAT:
 			errors.append("%s: unknown definitions format %s" % [path, data.get("format")])
 			continue

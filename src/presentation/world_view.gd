@@ -19,6 +19,9 @@ var _characters := {}
 var _textures := {}
 ## visual id -> [source id, first atlas cell Vector2i, variants]
 var _tiles := {}
+## Drawn where the content has no picture (a texture pack may lack one): a
+## loud magenta checker, so a gap is noticed rather than hidden.
+var _missing_source := -1
 
 
 func setup(registry: ContentRegistry, game_client: GameClient) -> void:
@@ -44,6 +47,15 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 			if not src.has_tile(at):
 				src.create_tile(at)
 		_tiles[target] = [sources[path][0], first, int(v["variants"])]
+	var miss := Image.create(CELL, CELL, false, Image.FORMAT_RGBA8)
+	for y in CELL:
+		for x in CELL:
+			miss.set_pixel(x, y, Color.MAGENTA if (x / 4 + y / 4) % 2 == 0 else Color.BLACK)
+	var ms := TileSetAtlasSource.new()
+	ms.texture = ImageTexture.create_from_image(miss)
+	ms.texture_region_size = Vector2i(CELL, CELL)
+	ms.create_tile(Vector2i.ZERO)
+	_missing_source = ts.add_source(ms)
 	_ground.tile_set = ts
 	_cover.tile_set = ts
 	_ground.z_index = -2
@@ -101,16 +113,19 @@ func _paint(key: String) -> void:
 				if id == "":
 					continue
 				var v := content.visual_of(id)
-				if v.get("mode") == "flat":
-					_set_flat(_cover, cell, id)
-				elif v.get("mode") == "tall":
+				if v.get("mode") == "tall":
 					holder.add_child(_tall_sprite(v, cell))
+				else:
+					_set_flat(_cover, cell, id)  # flat, or the missing-picture mark
 
 
 func _set_flat(layer: TileMapLayer, cell: Vector2i, id: String) -> void:
+	if id == "":
+		layer.erase_cell(cell)
+		return
 	var t: Array = _tiles.get(id, [])
 	if t.is_empty():
-		layer.erase_cell(cell)
+		layer.set_cell(cell, _missing_source, Vector2i.ZERO)
 		return
 	var variant := (cell.x * 73856093 ^ cell.y * 19349663) & 0x7fffffff
 	layer.set_cell(cell, t[0], t[1] + Vector2i(variant % t[2], 0))

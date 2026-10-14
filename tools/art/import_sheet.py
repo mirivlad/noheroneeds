@@ -45,11 +45,14 @@ def _lab(rgb):
 
 
 class Palette:
-    def __init__(self, groups=PALETTE_GROUPS):
+    def __init__(self, groups=PALETTE_GROUPS, ramps=None):
+        """ramps: only these ramps of the groups (all when None)."""
         data = json.loads((ROOT / "tools" / "art" / "palette.json").read_text())
         self.rgb, self.darker = [], []
         for g in groups:
-            for ramp in data[g].values():
+            for name, ramp in data[g].items():
+                if ramps is not None and name not in ramps:
+                    continue
                 base = len(self.rgb)
                 for i, c in enumerate(ramp):
                     self.rgb.append([int(c[k:k + 2], 16) for k in (0, 2, 4)])

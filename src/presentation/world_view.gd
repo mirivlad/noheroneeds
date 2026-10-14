@@ -387,7 +387,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 	var seen := {}
 	if client.has_position:
 		seen[client.character_id] = true
-		_character(client.character_id, client.location).show_at(own_pixel_position(alpha), delta, true)
+		_character(client.character_id, client.own.get("appearance", {})).show_at(own_pixel_position(alpha), delta, true)
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
@@ -398,7 +398,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 			continue
 		seen[id] = true
 		var target := Vector2(int(e.get("x", 0)), int(e.get("y", 0))) / UNITS_PER_PIXEL
-		_character(id, e.get("appearance", {}).get("body_plan", "")).show_at(target, delta, false)
+		_character(id, e.get("appearance", {})).show_at(target, delta, false)
 	for id: String in _characters.keys():
 		if not seen.has(id):
 			_characters[id].queue_free()
@@ -434,12 +434,28 @@ func _tile_texture(source: int) -> Texture2D:
 	return (_ground.tile_set.get_source(source) as TileSetAtlasSource).texture
 
 
-func _character(id: String, plan: String) -> CharacterSprite:
-	if not _characters.has(id):
-		var v := content.visual_of(plan)
-		if v.is_empty():
-			v = content.visual_of("base:humanoid_adult")
-		var cs := CharacterSprite.new(texture(v["atlas_path"]), v)
-		_sorted.add_child(cs)
-		_characters[id] = cs
-	return _characters[id]
+## A character as a paper doll: its body plan's body, then a layer for each
+## chosen style and worn thing that has a picture. Rebuilt when looks change.
+func _character(id: String, looks: Dictionary) -> CharacterSprite:
+	var old: CharacterSprite = _characters.get(id)
+	if old and old.look == looks:
+		return old
+	var v := content.visual_of(String(looks.get("body_plan", "")))
+	if v.is_empty():
+		v = content.visual_of("base:humanoid_adult")
+	var layers := []
+	for style: Variant in (looks.get("styles", {}) as Dictionary).values():
+		var sv := content.visual_of(String(style))
+		if sv.get("mode") == "layer":
+			layers.append([String(sv.get("layer", "")), texture(sv["atlas_path"])])
+	for item: Variant in (looks.get("worn", {}) as Dictionary).values():
+		var worn: Dictionary = content.visual_of(String(item)).get("worn", {})
+		if not worn.is_empty():
+			layers.append([String(worn.get("layer", "")), texture(worn["atlas_path"])])
+	var cs := CharacterSprite.new(texture(v["atlas_path"]), v, layers, looks.duplicate(true))
+	if old:
+		cs.position = old.position
+		old.queue_free()
+	_sorted.add_child(cs)
+	_characters[id] = cs
+	return cs

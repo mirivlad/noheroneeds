@@ -16,6 +16,11 @@ func test_base_pack_loads_clean() -> void:
 		{"id": "test:visual/g", "kind": "visual", "for": "test:g", "mode": "flat", "rect": [0, 0, 16, 16], "origin": [0, 16], "grid": [4, 0]}]) \
 		.errors.has("test:visual/g: grid needs two positive numbers"), true, "a grid needs positive sizes")
 	eq(reg.visual_of("base:grass").get("grid_size"), Vector2i(4, 4), "ground is a seamless 4 x 4 texture")
+	eq(reg.visual_of("base:hair_short").get("mode"), "layer", "a hairstyle is a paper-doll layer")
+	check(String(reg.visual_of("base:boots").get("worn", {}).get("atlas_path", "")).ends_with("boots.png"), "boots have a worn picture")
+	var bad := ContentRegistry.from_defs([{"id": "test:h", "kind": "style", "slot": "hair", "body_plans": []},
+		{"id": "test:visual/h", "kind": "visual", "for": "test:h", "mode": "layer", "rect": [0, 0, 48, 48], "origin": [24, 45]}])
+	check(bad.errors.has("test:visual/h: a layer needs the slot it is drawn in ('layer')"), "a layer names its slot: %s" % bad.errors)
 	check(reg.fingerprint().length() == 64, "fingerprint")
 
 

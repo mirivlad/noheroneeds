@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c2t1qnsxhgphi"
-path="res://.godot/imported/villager.png-c594104ddb484c82f2e7ede7a8913b50.ctex"
+uid="uid://bii1h7xlp7il4"
+path="res://.godot/imported/hair_braid.png-1d96257d24691f3af474c9452e7d5546.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/people/villager.png"
-dest_files=["res://.godot/imported/villager.png-c594104ddb484c82f2e7ede7a8913b50.ctex"]
+source_file="res://content/base/art/people/hair_braid.png"
+dest_files=["res://.godot/imported/hair_braid.png-1d96257d24691f3af474c9452e7d5546.ctex"]
 
 [params]
 

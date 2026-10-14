@@ -1,29 +1,48 @@
 class_name CharacterSprite
 extends Node2D
-## A character drawn from a sheet: rows are directions (s, se, e, ne, n; the
-## west side is mirrored), columns are frames (idle, step, step).
+## A character drawn as a paper doll (ADR-0001): the body and then a layer
+## per worn thing and chosen style (hair, shirt, boots), all sheets on the
+## same grid of frames. Rows are directions (s, se, e, ne, n; the west side
+## is mirrored), columns are frames of the animations the body's visual
+## lists. The order of the layers depends on the direction.
 ## Placed at the feet, so it sorts with trees and walls by where it stands.
 
 const DIRS := ["s", "se", "e", "ne", "n"]
-const FRAME_TIME := 0.15
+## Old sheets without "animations": idle, step, step.
+const PLAIN := {"idle": {"from": 0, "frames": 1, "fps": 1}, "walk": {"from": 1, "frames": 2, "fps": 6.67}}
 
-var _sprite := Sprite2D.new()
+## What it was built from, so a change of looks rebuilds it.
+var look := {}
 var _visual: Dictionary
+## [slot, Sprite2D], the body first.
+var _layers: Array = []
 var _shown := Vector2.ZERO
 var _dir := 0
 var _mirror := false
 var _walk := 0.0
+var _idle := 0.0
 var _placed := false
+var _order_dir := -1
 
 
-func _init(sheet: Texture2D, visual: Dictionary) -> void:
+## layers: [[slot, Texture2D], ...] drawn over the body.
+func _init(body: Texture2D, visual: Dictionary, layers: Array = [], looks: Dictionary = {}) -> void:
 	_visual = visual
-	_sprite.texture = sheet
-	_sprite.region_enabled = true
-	_sprite.centered = false
-	_sprite.offset = -Vector2(visual["origin"][0], visual["origin"][1])
-	add_child(_sprite)
-	_frame(0)
+	look = looks
+	_add_layer("body", body)
+	for l: Array in layers:
+		_add_layer(String(l[0]), l[1])
+	_order()
+	_frame(_anim("idle"), 0)
+
+
+func _add_layer(slot: String, tex: Texture2D) -> void:
+	var s := Sprite2D.new()
+	s.texture = tex
+	s.region_enabled = true
+	s.centered = false
+	add_child(s)
+	_layers.append([slot, s])
 
 
 ## exact: the own, already interpolated position; others are eased toward the target.
@@ -37,10 +56,18 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 	if step.length() > 0.05:
 		_face(step)
 		_walk += delta
+		_idle = 0.0
 	else:
 		_walk = 0.0
+		_idle += delta
 	position = _shown.round()
-	_frame(0 if _walk == 0.0 else 1 + int(_walk / FRAME_TIME) % 2)
+	var a := _anim("walk" if _walk > 0.0 else "idle")
+	var t := _walk if _walk > 0.0 else _idle
+	_frame(a, int(t * float(a["fps"])) % int(a["frames"]))
+
+
+func _anim(name: String) -> Dictionary:
+	return _visual.get("animations", PLAIN).get(name, PLAIN[name])
 
 
 func _face(v: Vector2) -> void:
@@ -49,11 +76,33 @@ func _face(v: Vector2) -> void:
 	var table := [[2, false], [1, false], [0, false], [1, true], [2, true], [3, true], [4, false], [3, false]]
 	_dir = table[octant][0]
 	_mirror = table[octant][1]
+	_order()
 
 
-func _frame(i: int) -> void:
+## Layers in the order the body plan's visual gives for this direction;
+## slots it does not name keep their place after the named ones.
+func _order() -> void:
+	if _dir == _order_dir:
+		return
+	_order_dir = _dir
+	var order: Array = _visual.get("layer_order", {}).get(DIRS[_dir], [])
+	var sorted := _layers.duplicate()
+	sorted.sort_custom(func(a: Array, b: Array) -> bool:
+		var ia := order.find(a[0])
+		var ib := order.find(b[0])
+		ia = order.size() if ia < 0 else ia
+		ib = order.size() if ib < 0 else ib
+		return ia < ib)
+	for i in sorted.size():
+		move_child(sorted[i][1], i)
+
+
+func _frame(anim: Dictionary, i: int) -> void:
 	var w: int = _visual["rect"][2]
 	var h: int = _visual["rect"][3]
-	_sprite.region_rect = Rect2(_visual["rect"][0] + i * w, _visual["rect"][1] + _dir * h, w, h)
-	_sprite.flip_h = _mirror
-	_sprite.offset = -Vector2(w - _visual["origin"][0] if _mirror else _visual["origin"][0], _visual["origin"][1])
+	var col := int(anim["from"]) + i
+	for l: Array in _layers:
+		var s: Sprite2D = l[1]
+		s.region_rect = Rect2(_visual["rect"][0] + col * w, _visual["rect"][1] + _dir * h, w, h)
+		s.flip_h = _mirror
+		s.offset = -Vector2(w - _visual["origin"][0] if _mirror else _visual["origin"][0], _visual["origin"][1])

@@ -249,8 +249,8 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	if not defs.has(target) or kind_of(target) == "visual":
 		errors.append("%s: draws '%s', which is not defined" % [id, target])
 		return
-	if not ["flat", "tall", "cover", "character", "item"].has(d.get("mode")):
-		errors.append("%s: mode must be flat, tall, cover, character or item" % id)
+	if not ["flat", "tall", "cover", "character", "item", "layer"].has(d.get("mode")):
+		errors.append("%s: mode must be flat, tall, cover, character, item or layer" % id)
 	var states: Variant = d.get("states", {})
 	if typeof(states) != TYPE_DICTIONARY:
 		errors.append("%s: states must map a state name to a rect" % id)
@@ -279,6 +279,18 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	d["atlas_path"] = dir.path_join(String(d.get("atlas", ""))) if dir != "" else ""
 	if dir != "" and not FileAccess.file_exists(d["atlas_path"]) and not ResourceLoader.exists(d["atlas_path"]):
 		errors.append("%s: atlas %s not found" % [id, d["atlas_path"]])
+	# A paper-doll layer (ADR-0001): a sheet on the body plan's frame grid.
+	# A style is one ("mode": "layer"); a wearable item has one as "worn".
+	if d.get("mode") == "layer" and String(d.get("layer", "")) == "":
+		errors.append("%s: a layer needs the slot it is drawn in ('layer')" % id)
+	var worn: Variant = d.get("worn")
+	if worn != null:
+		if typeof(worn) != TYPE_DICTIONARY or String(worn.get("atlas", "")) == "" or String(worn.get("layer", "")) == "":
+			errors.append("%s: worn needs atlas and layer" % id)
+		else:
+			worn["atlas_path"] = dir.path_join(String(worn["atlas"])) if dir != "" else ""
+			if dir != "" and not FileAccess.file_exists(worn["atlas_path"]) and not ResourceLoader.exists(worn["atlas_path"]):
+				errors.append("%s: atlas %s not found" % [id, worn["atlas_path"]])
 	# Other pictures of the same thing (two spruces, kinds of grass): the
 	# view picks one by the cell, so it is the same for every player.
 	var alts: Variant = d.get("alternates", [])

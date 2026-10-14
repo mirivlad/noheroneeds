@@ -182,3 +182,24 @@ class BatchSpy:
 
 	func queued() -> int:
 		return 0
+
+
+## A character that wears nothing gets the world's starter outfit, also one
+## that arrived before clothes existed; what it wears is part of its looks.
+func test_starter_outfit() -> void:
+	var w := _world()
+	var a := _arrive(w, "a", Vector2i(0, 0))
+	eq(w.present[a]["appearance"]["worn"], {}, "no outfit set: nothing worn")
+	w.leave(a)
+	w.starter_outfit = {"torso": "base:linen_shirt", "feet": "base:boots"}
+	var c := PortableCharacter.create("b", "base:humanoid_adult")
+	c.character_id = a
+	eq(w.enter("key-a", c), "")
+	eq(w.present[a]["appearance"]["worn"], {"torso": "base:linen_shirt", "feet": "base:boots"}, "dressed on its return")
+	w.sync()
+	w.close()
+	_worlds.clear()
+	var again := _world()
+	again.starter_outfit = {"torso": "base:axe"}
+	eq(again.enter("key-a", c), "")
+	eq(again.present[a]["appearance"]["worn"]["feet"], "base:boots", "kept: it wears something already")

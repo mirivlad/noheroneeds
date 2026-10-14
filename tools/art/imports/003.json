@@ -1,7 +1,17 @@
 {
  "brief": "003",
  "dir": "art_src/incoming/003",
- "out": "content/base/art/people/villager.png",
- "_comment": "The player's look built from the brief 003 references on the one body: outfit + hair layer. Read by tools/art/import_people.py.",
- "look": {"outfit": "outfit_villager", "hair": "hair_short", "hair_extra": 1}
+ "out": "content/base/art/people",
+ "_comment": "Paper-doll sheets from the brief 003 references (tools/art/import_people.py). body: the bare body of base:humanoid_adult. layers: sheet name -> reference it is cut from (hair by colour; clothes split into torso, legs, feet), the content id it draws and the slot it is drawn in. Read again by make_placeholders.py for the visuals.",
+ "body": "body",
+ "layers": {
+  "hair_short": {"from": "hair_short", "for": "base:hair_short", "layer": "hair_front"},
+  "hair_long": {"from": "hair_long", "for": "base:hair_long", "layer": "hair_front"},
+  "hair_braid": {"from": "hair_braid", "for": "base:hair_braid", "layer": "hair_front"},
+  "linen_shirt": {"from": "outfit_villager", "part": "torso", "for": "base:linen_shirt", "layer": "torso"},
+  "work_trousers": {"from": "outfit_villager", "part": "legs", "for": "base:work_trousers", "layer": "legs"},
+  "boots": {"from": "outfit_villager", "part": "feet", "for": "base:boots", "layer": "feet"}
+ },
+ "layer_order": ["body", "legs", "feet", "torso", "belt", "hair_back", "head", "face", "eyes", "hair_front", "headwear"],
+ "preview": ["work_trousers", "boots", "linen_shirt", "hair_short"]
 }

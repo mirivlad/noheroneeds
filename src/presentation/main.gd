@@ -17,6 +17,7 @@ extends Node2D
 const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:wood_ceiling",
 	"base:thatch_roof", "base:wood_stairs", "base:wood_column"]
 const LOCAL_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20}
+const LOCAL_OUTFIT := {"torso": "base:linen_shirt", "legs": "base:work_trousers", "feet": "base:boots"}
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 
 var content: ContentRegistry
@@ -71,6 +72,7 @@ func _ready() -> void:
 		game = LocalGame.start(path, content, me,
 			PlayerIdentity.load_or_create(_user("local_server_identity")), file)
 		game.world.starter_kit = LOCAL_KIT
+		game.world.starter_outfit = LOCAL_OUTFIT
 		client = game.client
 	view.setup(content, client)
 	add_child(view)

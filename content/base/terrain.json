@@ -39,7 +39,7 @@
       "ground": {"base:forest_floor": 6, "base:moss": 3, "base:grass": 1},
       "cover": {"base:fern": 6, "base:spruce": 4, "base:oak": 2, "base:birch": 2, "base:berry_bush": 1.5, "base:bush": 1, "base:tall_grass": 2},
       "cover_density": 0.35,
-      "fauna": {"base:deer": 1.5, "base:hare": 1}, "fauna_density": 1.4
+      "fauna": {"base:deer": 1.5, "base:hare": 1, "base:wolf": 0.25}, "fauna_density": 1.4
     }
   ]
 }

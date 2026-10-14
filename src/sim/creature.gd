@@ -22,6 +22,8 @@ var running := false
 var memory := {}
 ## World time it last thought (for catching up after a time away).
 var last_time := 0
+## Health (ADR-0019); -1 until it is given its definition's.
+var health := -1
 ## Looks of an NPC (as a character's appearance); empty for animals.
 var looks := {}
 ## Its own random sequence, from its id: the same world gives the same lives.
@@ -45,7 +47,7 @@ func to_data() -> Dictionary:
 		mem[k] = {"x": (m["pos"] as Vector2i).x, "y": (m["pos"] as Vector2i).y, "time": int(m["time"]), "what": String(m["what"])}
 	return {"kind": kind, "x": pos.x, "y": pos.y, "hx": home.x, "hy": home.y, "state": state,
 		"tx": target.x, "ty": target.y, "run": running, "memory": mem, "last_time": last_time,
-		"looks": looks.duplicate(true), "seed": seed}
+		"looks": looks.duplicate(true), "seed": seed, "health": health}
 
 
 static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
@@ -61,6 +63,7 @@ static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
 	c.last_time = int(d.get("last_time", 0))
 	c.looks = d.get("looks", {})
 	c.seed = int(d.get("seed", 0))
+	c.health = int(d.get("health", -1))
 	var mem: Dictionary = d.get("memory", {})
 	for k: String in mem:
 		var m: Dictionary = mem[k]

@@ -66,6 +66,11 @@ class Replica:
 	var y := 0
 	var hv := 1
 	var cv := 1
+	## The warm part: health, the most, deaths so far (ADR-0019).
+	var wv := 1
+	var health := 0
+	var max_health := 0
+	var deaths := 0
 	var cold := {}
 	## Encoded size of the cold part (to keep a snapshot within a packet).
 	var cold_size := 0
@@ -96,8 +101,19 @@ class Replica:
 		cv += 1
 
 	## Both versions in one number, as sessions remember them.
-	func version() -> int:
-		return hv << 32 | cv
+	func version() -> Vector3i:
+		return Vector3i(hv, wv, cv)
+
+	## Health (characters and creatures): changes often, goes apart from the
+	## cold part, packed. Returns whether it changed.
+	func set_health(h: int, top: int, died: int) -> bool:
+		if h == health and top == max_health and died == deaths:
+			return false
+		health = h
+		max_health = top
+		deaths = died
+		wv += 1
+		return true
 var _sessions := {}
 var _crypto := Crypto.new()
 
@@ -114,8 +130,8 @@ class Session:
 	var last_input_seq := 0
 	var direction := Vector2i.ZERO
 	## What the client has acknowledged (protocol 7): entity id ->
-	## Replica.version(); snapshots carry only differences from it.
-	## "~inventory" -> the inventory version.
+	## Replica.version() (hot, warm, cold); snapshots carry only differences
+	## from it. "~inventory" -> the inventory version.
 	var known := {}
 	## What the client may see (id -> Replica), worked out again at
 	## view_due, or sooner when the player moves to another grid cell or
@@ -232,6 +248,8 @@ func _step() -> void:
 	_lap("movement")
 	world.creatures.step(tick)
 	_lap("creatures")
+	world.combat.step(tick)
+	_lap("combat")
 	world.commit_async(wait_for_disk)
 	world.flush_state(STATE_ROWS_PER_TICK)
 	if wait_for_disk:
@@ -417,17 +435,31 @@ func _shown_locations(location: String) -> Array:
 func _update_replica() -> void:
 	for id: String in _others.keys():
 		var r: Replica = _replica[id]
-		if (r.kind == "character" and not world.present.has(id)) or (r.kind == "item" and not world.items.has(id)):
+		if (r.kind == "character" and not world.present.has(id)) or (r.kind == "item" and not world.items.has(id)) \
+				or (r.kind == "projectile" and not world.combat.projectiles.has(id)):
 			_gone(id)
+	for id: String in world.combat.projectiles:
+		var pr: Combat.Projectile = world.combat.projectiles[id]
+		var r: Replica = _replica.get(id)
+		if r == null:
+			r = Replica.new("projectile", pr.location, world.levels.z(pr.location), int(pr.pos.x), int(pr.pos.y),
+				{"kind": "projectile", "item": pr.ammo, "vx": int(pr.vel.x), "vy": int(pr.vel.y)})
+			_replica[id] = r
+			_others[id] = true
+		elif r.x != int(pr.pos.x) or r.y != int(pr.pos.y):
+			r.x = int(pr.pos.x)
+			r.y = int(pr.pos.y)
+			r.hv += 1
 	for id: String in world.present:
 		var p: Dictionary = world.present[id]
 		var pos: Vector2i = p["pos"]
 		var r: Replica = _replica.get(id)
 		if r == null:
-			_replica[id] = Replica.new("character", p["location"], world.levels.z(p["location"]), pos.x, pos.y,
+			r = Replica.new("character", p["location"], world.levels.z(p["location"]), pos.x, pos.y,
 				{"kind": "character", "name": p["name"], "appearance": p["appearance"]})
+			_replica[id] = r
 			_others[id] = true
-			continue
+		r.set_health(int(p.get("health", 0)), world.combat.max_health_of(id), int(p.get("deaths", 0)))
 		if r.location != p["location"]:
 			r.relocate(p["location"], world.levels.z(p["location"]))
 		if r.x != pos.x or r.y != pos.y:
@@ -468,10 +500,16 @@ func _update_creature_replicas() -> void:
 		if not c.looks.is_empty():
 			cold["appearance"] = c.looks
 		var r := Replica.new("creature", c.location, world.levels.z(c.location), c.pos.x, c.pos.y, cold)
+		r.set_health(c.health, world.combat.max_health_of(id), 0)
 		r.phase = absi(hash(id)) % CREATURE_HOT_TICKS
 		_replica[id] = r
 		_to_grid(id, r, c.location)
 	_lagging.merge(ch[2])
+	for id: String in world.combat.take_health_changes():
+		var c := world.creatures.get_creature(id)
+		var r: Replica = _replica.get(id)
+		if c and r:
+			r.set_health(c.health, world.combat.max_health_of(id), 0)
 	for id: String in _lagging.keys():
 		var c := world.creatures.get_creature(id)
 		var r: Replica = _replica.get(id)
@@ -626,10 +664,17 @@ func _on_plan(location: String) -> bool:
 func _send_snapshot(s: Session) -> void:
 	var view := _view(s)
 	var my_pos: Vector2i = world.present[s.character_id]["pos"]
+	# Arrows fly too fast to wait for the view: each tick, those near.
+	var my_loc: String = world.present[s.character_id]["location"]
+	for id: String in world.combat.projectiles:
+		var r: Replica = _replica.get(id)
+		if r and r.location == my_loc and absi(r.x - my_pos.x) <= CREATURE_VIEW.x * Movement.UNIT \
+				and absi(r.y - my_pos.y) <= CREATURE_VIEW.y * Movement.UNIT:
+			view[id] = r
 	var due := []
 	for id: String in view:
 		var r: Replica = view[id]
-		if s.known.get(id, -1) == (r.hv << 32 | r.cv) or r.gone:
+		if s.known.get(id) == Vector3i(r.hv, r.wv, r.cv) or r.gone:
 			continue
 		due.append([-1 if id == s.character_id else absi(r.x - my_pos.x) + absi(r.y - my_pos.y), id])
 	# A snapshot goes unreliably and must stay within a packet: entities up to
@@ -640,34 +685,44 @@ func _send_snapshot(s: Session) -> void:
 	var sent := {}
 	var changed := {}
 	var hot := PackedInt32Array()
+	var warm := PackedInt32Array()
 	for pair: Array in due:
 		var id: String = pair[1]
 		var r: Replica = view[id]
-		var k: int = s.known.get(id, -1)
+		var known: Variant = s.known.get(id)
+		var k: Vector3i = known if known != null else Vector3i(-1, -1, -1)
 		var cost := 12
-		if k == -1:
-			cost += r.cold_size + 46
-		elif k & 0xffffffff != r.cv:
+		if known == null:
+			cost += r.cold_size + 60
+		elif k.z != r.cv:
 			cost += r.cold_size + 4
+		if known != null and k.y != r.wv:
+			cost += 16
 		if cost > room and id != s.character_id:
 			continue
 		room -= cost
 		sent[id] = r.version()
 		var n := _net_id(s, id)
-		if k == -1:
+		if known == null:
 			s.shown[id] = true
 			s.removing.erase(id)
 			var entry := r.cold.duplicate()
 			entry["x"] = r.x
 			entry["y"] = r.y
 			entry["uid"] = id
+			if r.max_health > 0:
+				entry["health"] = r.health
+				entry["max_health"] = r.max_health
+				entry["deaths"] = r.deaths
 			changed[n] = entry
 			continue
-		if k >> 32 != r.hv:
+		if k.x != r.hv:
 			hot.append(n)
 			hot.append(r.x)
 			hot.append(r.y)
-		if k & 0xffffffff != r.cv:
+		if k.y != r.wv:
+			warm.append_array([n, r.health, r.max_health, r.deaths])
+		if k.z != r.cv:
 			changed[n] = r.cold.duplicate()
 	# The player's own inventory goes only to that player, and only when it changed.
 	var inv_v := world.inventory_version(s.character_id)
@@ -693,6 +748,7 @@ func _send_snapshot(s: Session) -> void:
 	if s.pending.size() > SNAPSHOT_HISTORY:
 		s.pending.erase(s.pending.keys().min())
 	_send(s, Transport.Channel.STATE, Protocol.SNAPSHOT, {"id": sid, "tick": tick, "hot": hot.to_byte_array(),
+		"warm": warm.to_byte_array(),
 		"entities": changed, "removed": removed.to_byte_array(), "input_ack": s.last_input_seq,
 		"time": world.world_time, "rate": world.time_rate})
 

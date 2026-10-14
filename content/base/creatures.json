@@ -4,18 +4,28 @@
     {
       "id": "base:hare", "kind": "creature", "name": "Заяц", "behavior": "prey",
       "speed": 1.1, "run_speed": 2.4, "sight": 9, "dark_sight": 0.5, "hearing": 8,
-      "flee_distance": 6, "home_radius": 10, "think_ticks": 8, "memory_s": 30
+      "flee_distance": 6, "home_radius": 10, "think_ticks": 8, "memory_s": 30,
+      "health": 3, "drops": {"base:raw_meat": 1}
     },
     {
       "id": "base:deer", "kind": "creature", "name": "Олень", "behavior": "prey",
       "speed": 0.9, "run_speed": 2.6, "sight": 12, "dark_sight": 0.4, "hearing": 10,
-      "flee_distance": 8, "home_radius": 16, "think_ticks": 10, "memory_s": 40
+      "flee_distance": 8, "home_radius": 16, "think_ticks": 10, "memory_s": 40,
+      "health": 10, "drops": {"base:raw_meat": 3, "base:hide": 1}
     },
     {
       "id": "base:villager", "kind": "creature", "name": "Житель", "behavior": "villager",
       "body_plan": "base:humanoid_adult",
       "speed": 0.8, "run_speed": 1.3, "sight": 10, "dark_sight": 0.3, "hearing": 8,
-      "flee_distance": 0, "home_radius": 8, "think_ticks": 20, "memory_s": 60
+      "flee_distance": 0, "home_radius": 8, "think_ticks": 20, "memory_s": 60,
+      "health": 15
+    },
+    {
+      "id": "base:wolf", "kind": "creature", "name": "Волк", "behavior": "predator",
+      "speed": 1.0, "run_speed": 2.2, "sight": 11, "dark_sight": 0.8, "hearing": 12,
+      "flee_distance": 0, "home_radius": 14, "think_ticks": 6, "memory_s": 25,
+      "health": 14, "territory": 4, "drops": {"base:raw_meat": 2, "base:hide": 1},
+      "attack": {"kind": "melee", "damage": 3, "reach": 0.9, "arc": 120, "cooldown_ms": 1100}
     }
   ]
 }

@@ -19,7 +19,9 @@ class_name Protocol
 ## 7: SNAPSHOT is a difference from what the client has acknowledged (no
 ##    "base"); positions go packed as int32 [net, x, y] in "hot", removed
 ##    nets as int32 in "removed".
-const VERSION := 7
+## 8: SNAPSHOT "warm": int32 [net, health, max health, deaths] (ADR-0019);
+##    REQUEST "attack".
+const VERSION := 8
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -57,7 +59,8 @@ const SERVER_FIELDS := {
 	# positions; entities: {net number: {field: value}} - whole when new to
 	# the client ("uid" with the entity id), else cold changes, inventory;
 	# removed: int32 nets; input_ack: last input seq applied for this client
-	SNAPSHOT: {"id": TYPE_INT, "tick": TYPE_INT, "hot": TYPE_PACKED_BYTE_ARRAY, "entities": TYPE_DICTIONARY,
+	SNAPSHOT: {"id": TYPE_INT, "tick": TYPE_INT, "hot": TYPE_PACKED_BYTE_ARRAY, "warm": TYPE_PACKED_BYTE_ARRAY,
+		"entities": TYPE_DICTIONARY,
 		"removed": TYPE_PACKED_BYTE_ARRAY, "input_ack": TYPE_INT, "time": TYPE_INT, "rate": TYPE_INT},
 	RESULT: {"request_id": TYPE_STRING, "result": TYPE_DICTIONARY},
 	CHUNK: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT, "data": TYPE_PACKED_BYTE_ARRAY},

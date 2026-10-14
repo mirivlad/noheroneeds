@@ -222,6 +222,14 @@ func _on_snapshot(m: Dictionary) -> void:
 		if id != "" and (id == character_id or entities.has(id)):
 			e["x"] = hot[i + 1]
 			e["y"] = hot[i + 2]
+	var warm := (m["warm"] as PackedByteArray).to_int32_array()
+	for i in range(0, warm.size() - 3, 4):
+		var id: String = _uid_of.get(warm[i], "")
+		var e: Dictionary = own if id == character_id else entities.get(id, {})
+		if id != "" and (id == character_id or entities.has(id)):
+			e["health"] = warm[i + 1]
+			e["max_health"] = warm[i + 2]
+			e["deaths"] = warm[i + 3]
 	_latest_snapshot = sid
 	time_rate = int(m["rate"])
 	# The server's clock, unless ours is just ahead by the ticks in flight.

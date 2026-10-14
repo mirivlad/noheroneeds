@@ -208,6 +208,36 @@ func test_seen_across_levels_from_walkways_and_windows() -> void:
 	check(not a.entities.has(b.character_id), "nor is that one seen from the street")
 
 
+## ADR-0019 through the network: health comes to clients (own and others'),
+## an arrow is seen flying, a blow is a request like any other.
+func test_health_and_arrows_reach_clients() -> void:
+	var a := _client("owner", _character("Аня"))
+	_run(30, [a])
+	world.grant(a.character_id, "base:bow", 1)
+	world.grant(a.character_id, "base:arrow", 3)
+	var me := Movement.cell_of(_server_pos(a))
+	# A villager stands to look at one who comes close (a deer would run).
+	var deer := world.creatures._spawn("base:villager", "surface", me + Vector2i(1, 0), {"body_plan": "base:humanoid_adult"}, 3)
+	_run(10, [a])
+	eq(a.entities.get(deer.id, {}).get("health"), 15, "a creature's health")
+	eq(a.own.get("health"), 20, "and one's own")
+	deer.pos = _server_pos(a) + Vector2i(200, 0)  # within reach of bare hands
+	a.request({"type": "attack", "item": "", "x": deer.pos.x, "y": deer.pos.y})
+	_run(10, [a])
+	eq(a.entities.get(deer.id, {}).get("health"), 14, "a blow with bare hands is seen")
+	world.combat.hurt(a.character_id, 4, "")
+	_run(5, [a])
+	eq(a.own.get("health"), 16, "being hurt is seen")
+	var aim := _server_pos(a) + Vector2i(0, 10 * 256)
+	a.request({"type": "attack", "item": "base:bow", "x": aim.x, "y": aim.y})
+	var seen := false
+	for i in 12:
+		_run(1, [a])
+		for id: String in a.entities:
+			seen = seen or a.entities[id].get("kind") == "projectile"
+	check(seen, "the arrow was seen flying")
+
+
 func test_request_result_after_commit_and_seen_by_others() -> void:
 	var a := _client("owner", _character("Аня", 10))
 	var b := _client("other", _character("Боря"))

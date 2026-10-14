@@ -363,43 +363,24 @@ def bubbles(sec, seed, count, f_lo=250, f_hi=700):
     return x
 
 
-def wave_slap(sec, seed):
-    """A small wave at the bank: a dull slosh as it washes in, gurgling as it
-    folds, a quiet draw back. Everything low: no hiss (that was steam)."""
-    r = rng(seed)
-    t = t_axis(sec)
-    rise = r.uniform(0.15, 0.3)
-    env = np.where(t < rise, (t / rise) ** 2, np.exp(-(t - rise) / r.uniform(0.35, 0.6)))
-    slosh = low(band(noise(sec, seed), 60, 600), 450, 3) * env
-    gurgle = bubbles(sec, seed + 1, int(r.integers(10, 22)))
-    return slosh + 0.35 * gurgle * np.exp(-t / 0.5)
-
-
-def splash(seed):
-    """Water thrown up and falling back: a low thump and a burst of gurgles."""
-    sec = 0.7
-    thump = low(noise(sec, seed), 180, 3) * decay(sec, 0.09, 0.008) * 2.0
-    fall = low(band(noise(sec, seed + 1), 150, 1200), 900, 2) * decay(sec, 0.2, 0.03)
-    return thump + 0.6 * fall + 0.4 * bubbles(sec, seed + 2, 18, 300, 900)
-
-
 def amb_water():
-    """By a lake: a deep, quiet body of water, waves sloshing at the bank one
-    after another, now and then a splash. Low and round, no hiss, no drops."""
-    sec = 18.0
-    body = low(noise(sec, 300), 140, 3) * slow_env(sec, 0.12, 301, 0.6, 1.0)
-    x = body * 0.6
+    """By the water: only its gurgle - small air pockets bursting where the
+    water folds at the bank, in bunches of different size with pauses of
+    1-7 s between them, at random (the author: no wash of waves, no noise).
+    A long loop, so the pauses do not repeat in a noticeable round."""
+    sec = 45.0
+    x = np.zeros(int(sec * SR))
     r = rng(302)
-    at = 0.2
+    at = r.uniform(0.3, 1.5)
     k = 0
-    while at < sec - 1.5:
-        place(x, wave_slap(r.uniform(1.4, 2.2), 310 + k), at, r.uniform(0.4, 0.8))
-        at += r.uniform(1.8, 3.8)
+    while at < sec - 2.0:
+        size = r.uniform(0.4, 1.6)                      # how long the bunch lasts
+        count = int(r.integers(4, 18))
+        place(x, bubbles(size, 310 + k, count), at, r.uniform(0.5, 1.0))
+        at += size + r.uniform(1.0, 7.0)
         k += 1
-    for j, at in enumerate((5.0, 12.5)):
-        place(x, splash(360 + j), at + r.uniform(-0.5, 0.5), r.uniform(0.25, 0.4))
-    x = loopify(low(x, 2500, 2), 1.5)
-    return at_rms(x, 0.0965 / 1.5)  # the author: 1.5 times quieter than the first water
+    x = loopify(low(x, 2500, 2), 1.0)
+    return norm(x, 0.44)  # peaks as loud as the water before
 
 
 # ------------------------------------------------------------ the pack

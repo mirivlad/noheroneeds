@@ -53,6 +53,18 @@ func test_view_follows_the_client() -> void:
 				higher = higher or (prio.has(n) and prio.has(own) and prio[n] > prio[own])
 		wrong += 0 if higher else 1
 	eq(wrong, 0, "every edge lies next to a higher ground")
+	# Sounds: the ground around is heard (ambience), a step is played.
+	var audio := AudioDirector.new()
+	audio.setup(content, g.client, view)
+	view.add_child(audio)
+	audio._process(0.6)
+	var amb := audio.find_children("*", "AudioStreamPlayer", false, false)
+	check(amb.size() > 0, "ambience of the ground around")
+	audio.step_at(g.client.location, view.own_pixel_position(0.0))
+	var playing := 0
+	for v: AudioStreamPlayer2D in audio.find_children("*", "AudioStreamPlayer2D", false, false):
+		playing += 1 if v.stream != null else 0
+	eq(playing, 1, "a footstep")
 	# A wall built at (2, 1) appears where it stands.
 	g.client.request({"type": "build", "location": "surface", "x": 2, "y": 1, "part": "base:wood_wall"})
 	for i in 10:

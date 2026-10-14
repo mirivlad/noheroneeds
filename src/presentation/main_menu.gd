@@ -296,14 +296,17 @@ func show_settings() -> void:
 	_field("Вид", zoom)
 	zoom.item_selected.connect(func(i: int) -> void: changed.call("view_zoom", 0.75 if i == 1 else 1.0))
 	_label("Звук", Art.TEXT_DIM)
-	var vol := HSlider.new()
-	vol.min_value = 0.0
-	vol.max_value = 1.0
-	vol.step = 0.05
-	vol.value = float(settings.get_value("volume"))
-	vol.custom_minimum_size = Vector2(110, 12)
-	_field("Громкость", vol)
-	vol.value_changed.connect(func(v: float) -> void: changed.call("volume", v))
+	for pair: Array in [["volume", "Общая"], ["music_volume", "Музыка"], ["effects_volume", "Эффекты"],
+			["ambience_volume", "Окружение"]]:
+		var key: String = pair[0]
+		var vol := HSlider.new()
+		vol.min_value = 0.0
+		vol.max_value = 1.0
+		vol.step = 0.05
+		vol.value = float(settings.get_value(key))
+		vol.custom_minimum_size = Vector2(100, 12)
+		_field(pair[1], vol)
+		vol.value_changed.connect(func(v: float) -> void: changed.call(key, v))
 	_into = right
 	_label("Игра", Art.TEXT_DIM)
 	_check("Подсказки управления", settings.get_value("show_hints")).toggled.connect(
@@ -330,6 +333,26 @@ func _start_world(id: String, mode: String, port := 0, players := 0) -> void:
 	play.emit(cfg)
 
 
+var _click_player := AudioStreamPlayer.new()
+
+
+func _click() -> void:
+	var d := content.sound_of("ui", "click")
+	if d.is_empty():
+		return
+	if _click_player.get_parent() == null:
+		_click_player.bus = &"Effects"
+		add_child(_click_player)
+	_click_player.stream = Art.audio(String((d["paths"] as PackedStringArray)[0]))
+	_click_player.volume_db = float(d["volume_db"])
+	_click_player.play()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and is_instance_valid(_click_player) and _click_player.get_parent() == null:
+		_click_player.free()
+
+
 func _current_character() -> String:
 	return characters.current(String(settings.get_value("character")))
 
@@ -351,6 +374,7 @@ func _clear(title: String) -> void:
 func _button(text: String, action: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
+	b.pressed.connect(_click)
 	b.pressed.connect(action)
 	_into.add_child(b)
 	return b
@@ -361,6 +385,7 @@ func _icon_button(kind: String, tip: String, action: Callable) -> Button:
 	b.icon = Art.icon(kind)
 	b.tooltip_text = tip
 	b.custom_minimum_size = Vector2(20, 18)
+	b.pressed.connect(_click)
 	b.pressed.connect(action)
 	return b
 

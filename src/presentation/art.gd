@@ -17,6 +17,7 @@ const FRAME := Color("6b5440")
 const FRAME_HOT := Color("c8a060")
 
 static var _textures := {}
+static var _sounds := {}
 static var _theme: Theme
 
 
@@ -36,10 +37,44 @@ static func texture(path: String) -> Texture2D:
 	return _textures[path]
 
 
-## Lets go of the cached pictures, font and theme (at exit, so nothing is
-## held when the engine shuts down).
+## A sound by path (WAV, OGG, MP3), the same way as pictures: from the file
+## itself when run from the sources. loop: plays around (ambience, music).
+static func audio(path: String, loop := false) -> AudioStream:
+	var key := path + ("#loop" if loop else "")
+	if _sounds.has(key):
+		return _sounds[key]
+	var s: AudioStream
+	if not OS.has_feature("editor") and ResourceLoader.exists(path):
+		s = load(path)
+	elif FileAccess.file_exists(path):
+		var bytes := FileAccess.get_file_as_bytes(path)
+		match path.get_extension().to_lower():
+			"wav":
+				s = AudioStreamWAV.load_from_buffer(bytes)
+			"ogg":
+				s = AudioStreamOggVorbis.load_from_buffer(bytes)
+			"mp3":
+				s = AudioStreamMP3.load_from_buffer(bytes)
+	if s and loop:
+		s = s.duplicate()
+		if s is AudioStreamWAV:
+			var w := s as AudioStreamWAV
+			w.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			w.loop_begin = 0
+			w.loop_end = int(w.get_length() * w.mix_rate)
+		elif s is AudioStreamOggVorbis:
+			(s as AudioStreamOggVorbis).loop = true
+		elif s is AudioStreamMP3:
+			(s as AudioStreamMP3).loop = true
+	_sounds[key] = s
+	return s
+
+
+## Lets go of the cached pictures, sounds, font and theme (at exit, so
+## nothing is held when the engine shuts down).
 static func clear() -> void:
 	_textures.clear()
+	_sounds.clear()
 	_theme = null
 
 

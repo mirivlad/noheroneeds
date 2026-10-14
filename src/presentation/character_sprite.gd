@@ -13,6 +13,9 @@ const WALK_PX_PER_SEC := float(Movement.WALK) / Movement.UNIT * 16.0 * Movement.
 ## Old sheets without "animations": idle, step, step.
 const PLAIN := {"idle": {"from": 0, "frames": 1, "fps": 1}, "walk": {"from": 1, "frames": 2, "fps": 6.67}}
 
+## A foot came down (a walk frame where it touches the ground).
+signal stepped
+
 ## What it was built from, so a change of looks rebuilds it.
 var look := {}
 var _visual: Dictionary
@@ -24,6 +27,7 @@ var _mirror := false
 var _walk := 0.0
 var _idle := 0.0
 var _placed := false
+var _last_walk_frame := -1
 var _order_dir := -1
 
 
@@ -67,7 +71,11 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 	position = _shown.round()
 	var a := _anim("walk" if _walk > 0.0 else "idle")
 	var t := _walk if _walk > 0.0 else _idle
-	_frame(a, int(t * float(a["fps"])) % int(a["frames"]))
+	var f := int(t * float(a["fps"])) % int(a["frames"])
+	if _walk > 0.0 and f != _last_walk_frame and (f == 0 or f * 2 == int(a["frames"])):
+		stepped.emit()  # the two contact frames of a walk cycle
+	_last_walk_frame = f if _walk > 0.0 else -1
+	_frame(a, f)
 
 
 ## Turns to look along v without walking (menus, previews).

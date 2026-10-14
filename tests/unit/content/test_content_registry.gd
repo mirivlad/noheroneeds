@@ -71,6 +71,30 @@ func test_fingerprint_ignores_presentation() -> void:
 	eq(with_pack.visual_of("base:oak")["pack"], "tex", "the pack redraws the oak")
 
 
+## Sounds: by thing and event, with a general one; never part of the rules.
+func test_sounds_by_thing_and_event() -> void:
+	var reg := ContentRegistry.load_packs(["res://content/base"])
+	eq(reg.errors, PackedStringArray())
+	check(String(reg.sound_of("base:forest_floor", "step")["paths"][0]).contains("leaves"), "leaves under the feet")
+	check(String(reg.sound_of("base:stone_wall", "build")["paths"][0]).contains("stone"), "its own sound")
+	check(String(reg.sound_of("base:wood_wall", "build")["paths"][0]).contains("wood"), "the general one")
+	eq(reg.sound_of("base:wood_wall", "open"), {}, "no sound for what does not happen")
+	check(reg.sound_of("base:water", "ambience")["loop"], "ambience loops")
+	var root := tmp_dir()
+	var snd := root.path_join("snd")
+	_write(snd, "pack.json", {"format": 1, "id": "snd", "version": "1", "depends": ["base"]})
+	FileAccess.open(snd.path_join("x.wav"), FileAccess.WRITE).store_buffer(FileAccess.get_file_as_bytes("res://content/base/audio/click.wav"))
+	_write(snd, "sounds.json", {"format": 1, "defs": [{"id": "snd:sound/door", "kind": "sound", "for": "base:wood_door", "event": "open", "files": ["x.wav"]}]})
+	var with_pack := ContentRegistry.load_packs(["res://content/base", snd])
+	eq(with_pack.errors, PackedStringArray())
+	eq(with_pack.sound_of("base:wood_door", "open")["pack"], "snd", "a sound pack replaces")
+	eq(with_pack.fingerprint(), reg.fingerprint(), "sounds are not rules")
+	_write(snd, "sounds.json", {"format": 1, "defs": [{"id": "snd:sound/a", "kind": "sound", "for": "base:nothing", "event": "open", "files": ["x.wav"]},
+		{"id": "snd:sound/b", "kind": "sound", "for": "*", "event": "sing", "files": ["x.wav"]},
+		{"id": "snd:sound/c", "kind": "sound", "for": "*", "event": "open", "files": ["missing.wav"]}]})
+	eq(ContentRegistry.load_packs(["res://content/base", snd]).errors.size(), 3, "unknown thing, unknown event, missing file")
+
+
 ## Alternate pictures of one thing (two spruces): checked and resolved like
 ## the main picture, and still outside the rules.
 func test_visual_alternates() -> void:

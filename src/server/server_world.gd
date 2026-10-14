@@ -13,13 +13,21 @@ extends RefCounted
 ## changing entity state to the writer; the server calls it periodically
 ## (or a slice at a time), never every tick.
 
-const SURFACE := "surface"
+const SURFACE := Levels.SURFACE
 ## How far a character reaches, in movement units from its feet to a cell's centre.
 const USE_REACH := 2 * Movement.UNIT
 const PICKUP_REACH := 2 * Movement.UNIT
 const BUILD_REACH := 6 * Movement.UNIT
 
 var content: ContentRegistry
+var levels := Levels.new()
+## Highest building level a new ceiling may create (ADR-0007): a server
+## setting, changeable; lowering it never removes existing levels.
+var max_levels := 3
+## Characters moved to another location since the server last asked
+## (stairs, merged buildings); the server tells their clients.
+var relocated := {}
+var _removed_location_chunks := {}
 ## Makes surface chunks nobody has visited (null if the content has no biomes).
 var generator: SurfaceGenerator
 var loader := ChunkLoader.new()
@@ -115,6 +123,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		return null
 	var world := ServerWorld.new(s, registry, w)
 	world.world_seed = int(s.read_meta("seed"))
+	world.levels.load_rows(s.all_locations())
 	var g := SurfaceGenerator.new(world.world_seed, registry)
 	world.generator = g if g.can_generate() else null
 	var lg := SurfaceGenerator.new(world.world_seed, registry) if world.generator else null
@@ -327,7 +336,7 @@ func move_character(id: String, pos: Vector2i) -> void:
 func is_solid(location: String, x: int, y: int) -> bool:
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)
-	return Terrain.is_solid(chunk(location, cx, cy), x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content)
+	return Terrain.is_solid(chunk(location, cx, cy), x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content, location != SURFACE)
 
 
 func chunk_revision(location: String, cx: int, cy: int) -> int:
@@ -396,6 +405,7 @@ func handle(actor: String, request: Dictionary) -> void:
 func commit_async(force := false) -> void:
 	if _pending.is_empty() and _dirty_chunks.is_empty() and _dirty_inventories.is_empty() \
 			and _dirty_characters.is_empty() and _dirty_items.is_empty() and _removed_items.is_empty() \
+			and levels.dirty.is_empty() and levels.removed.is_empty() \
 			and _prune_before < 0:
 		return
 	if not force and writer.queued_operations() >= max_batches_in_flight:
@@ -423,6 +433,13 @@ func commit_async(force := false) -> void:
 		touched.append(chunk_key(e[1], e[2], e[3]))
 	touched.append_array(_removed_items.values())
 	_removed_items.clear()
+	for loc: String in levels.dirty:
+		b.locations.append([loc, levels.kind(loc), levels.building(loc), levels.z(loc), {}])
+	levels.dirty.clear()
+	for loc: String in levels.removed:
+		b.removed_locations.append([loc, _removed_location_chunks.get(loc, [])])
+	levels.removed.clear()
+	_removed_location_chunks.clear()
 	b.prune_before = _prune_before
 	_prune_before = -1
 	_dirty_chunks.clear()
@@ -518,6 +535,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _transfer(actor, r)
 		"use":
 			return _use(actor, r)
+		"climb":
+			return _climb(actor, r)
 		"drop":
 			return _drop(actor, r)
 		"pickup":
@@ -635,51 +654,301 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	var part := String(r.get("part", ""))
 	if content.kind_of(part) != "structure":
 		return {"ok": false, "reason": "unknown_part"}
+	var def := content.get_def(part)
+	var role := String(def["role"])
 	var at := _cell(r)
-	if not _reaches(actor, at[0], int(r.get("x", 0)), int(r.get("y", 0)), BUILD_REACH):
+	var loc: String = at[0]
+	var x := int(r.get("x", 0))
+	var y := int(r.get("y", 0))
+	if loc != SURFACE and levels.kind(loc) != Levels.BUILDING_LEVEL:
+		return {"ok": false, "reason": "no_such_place"}
+	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
-	var c := chunk(at[0], at[1], at[2])
-	if c.get_cell("structure", at[3], at[4]) != "":
+	var c := chunk(loc, at[1], at[2])
+	var on_level := loc != SURFACE
+	if on_level and c.get_cell("ground", at[3], at[4]) == "":
+		return {"ok": false, "reason": "no_floor"}  # the contour of the level below
+	var layer := Terrain.layer_for_role(role)
+	if c.get_cell(layer, at[3], at[4]) != "":
 		return {"ok": false, "reason": "occupied"}
-	if Terrain.is_solid(c, at[3], at[4], content):
-		return {"ok": false, "reason": "blocked"}  # water, a tree...
-	if _someone_stands_on(at[0], int(r.get("x", 0)), int(r.get("y", 0))):
-		return {"ok": false, "reason": "someone_there"}
+	var building := ""
+	var upper := ""
+	match role:
+		"ceiling", "roof":
+			if Terrain.is_covered(c, at[3], at[4]):
+				return {"ok": false, "reason": "occupied"}
+			if not on_level and bool(content.get_def(c.get_cell("ground", at[3], at[4])).get("solid", false)):
+				return {"ok": false, "reason": "blocked"}
+			if role == "ceiling":
+				if levels.z(loc) + 1 > max_levels:
+					return {"ok": false, "reason": "too_high"}  # a server setting (ADR-0007)
+				building = levels.building(loc) if on_level else ""
+		"stairs":
+			if c.get_cell("ceiling", at[3], at[4]) == "":
+				return {"ok": false, "reason": "no_opening_above"}
+			if Terrain.is_solid(c, at[3], at[4], content, on_level):
+				return {"ok": false, "reason": "blocked"}
+		_:
+			if Terrain.is_solid(c, at[3], at[4], content, on_level):
+				return {"ok": false, "reason": "blocked"}  # water, a tree...
+			if _someone_stands_on(loc, x, y):
+				return {"ok": false, "reason": "someone_there"}
 	var costs := content.structure_cost(part)
 	var inv := inventory(actor)
 	if not inv.has_all(costs):
 		return {"ok": false, "reason": "materials"}
 	for id: String in costs:
 		inv.remove(id, int(costs[id]))
-	c.set_cell("structure", at[3], at[4], part)
-	c.set_props(at[3], at[4], {"owner": actor})
-	_changed(chunk_key(at[0], at[1], at[2]))
 	_touch_inventory(actor)
-	return {"ok": true}
+	var props := {"owner": actor}
+	var others: Array = []
+	if role == "ceiling" and not on_level:
+		# Ceilings joined side by side make one building; joining two merges them.
+		var found := {}
+		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var b := _ceiling_building(loc, x + d.x, y + d.y)
+			if b != "":
+				found[b] = true
+		var ids: Array = found.keys()
+		ids.sort()
+		building = ids[0] if not ids.is_empty() else Uuid.v4()
+		others = ids.slice(1)
+		props["building"] = building
+	c.set_cell(layer, at[3], at[4], part)
+	if layer == "structure":
+		# Keep what the ceiling or roof above this cell knows about itself.
+		var merged := props.duplicate()
+		for k: String in ["ceiling", "roof"]:
+			if c.get_props(at[3], at[4]).has(k):
+				merged[k] = c.get_props(at[3], at[4])[k]
+		c.set_props(at[3], at[4], merged)
+	else:
+		_set_layer_props(c, layer, at[3], at[4], props)
+	_changed(chunk_key(loc, at[1], at[2]))
+	if role == "ceiling":
+		var zl := levels.z(loc) + 1
+		upper = levels.level(building, zl)
+		if upper == "":
+			upper = levels.create_level(building, zl)
+		var uc := chunk(upper, at[1], at[2])
+		uc.set_cell("ground", at[3], at[4], String(def["floor"]))
+		_changed(chunk_key(upper, at[1], at[2]))
+		for other: String in others:
+			_merge_buildings(building, other)
+	return {"ok": true, "level": upper} if upper != "" else {"ok": true}
 
 
+## Props of a ceiling or roof are kept under the layer's name in the cell props,
+## apart from those of the part standing on the cell.
+func _set_layer_props(c: Chunk, layer: String, lx: int, ly: int, props: Dictionary) -> void:
+	var all := c.get_props(lx, ly).duplicate()
+	if props.is_empty():
+		all.erase(layer)
+	else:
+		all[layer] = props
+	c.set_props(lx, ly, all)
+
+
+func _layer_props(c: Chunk, layer: String, lx: int, ly: int) -> Dictionary:
+	var all := c.get_props(lx, ly)
+	return all.get(layer, {}) if layer != "structure" else all
+
+
+func _ceiling_building(location: String, x: int, y: int) -> String:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	var c := chunk(location, cx, cy)
+	var lx := x - cx * Chunk.SIZE
+	var ly := y - cy * Chunk.SIZE
+	if c.get_cell("ceiling", lx, ly) == "":
+		return ""
+	return String(_layer_props(c, "ceiling", lx, ly).get("building", ""))
+
+
+## Takes down what stands on the cell, else the roof, else the ceiling.
 func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
-	if not _reaches(actor, at[0], int(r.get("x", 0)), int(r.get("y", 0)), BUILD_REACH):
+	var loc: String = at[0]
+	var x := int(r.get("x", 0))
+	var y := int(r.get("y", 0))
+	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
-	var c := chunk(at[0], at[1], at[2])
-	var part := c.get_cell("structure", at[3], at[4])
-	if part == "":
+	var c := chunk(loc, at[1], at[2])
+	var layer := ""
+	for l: String in ["structure", "roof", "ceiling"]:
+		if c.get_cell(l, at[3], at[4]) != "":
+			layer = l
+			break
+	if layer == "":
 		return {"ok": false, "reason": "empty"}
-	if c.get_props(at[3], at[4]).get("owner", "") != actor:
+	var part := c.get_cell(layer, at[3], at[4])
+	if _layer_props(c, layer, at[3], at[4]).get("owner", "") != actor:
 		return {"ok": false, "reason": "not_owner"}
 	if not content.has(part):
 		# Its pack is gone: keep the part as it is rather than lose it unpaid.
 		return {"ok": false, "reason": "unknown_part"}
-	c.set_cell("structure", at[3], at[4], "")
-	c.set_props(at[3], at[4], {})
-	_changed(chunk_key(at[0], at[1], at[2]))
+	var upper := ""
+	if layer == "ceiling":
+		var building := levels.building(loc) if loc != SURFACE else String(_layer_props(c, "ceiling", at[3], at[4]).get("building", ""))
+		upper = levels.level(building, levels.z(loc) + 1)
+		if c.get_cell("structure", at[3], at[4]) != "" and content.get_def(c.get_cell("structure", at[3], at[4])).get("role") == "stairs":
+			return {"ok": false, "reason": "stairs_below"}
+		if upper != "" and _occupied(upper, x, y):
+			return {"ok": false, "reason": "occupied_above"}  # ADR-0007: take those down first
+	c.set_cell(layer, at[3], at[4], "")
+	if layer == "structure":
+		var keep := c.get_props(at[3], at[4]).duplicate()
+		for k: String in keep.keys():
+			if k != "ceiling" and k != "roof":
+				keep.erase(k)
+		c.set_props(at[3], at[4], keep)
+	else:
+		_set_layer_props(c, layer, at[3], at[4], {})
+	_changed(chunk_key(loc, at[1], at[2]))
+	if upper != "":
+		chunk(upper, at[1], at[2]).set_cell("ground", at[3], at[4], "")
+		_changed(chunk_key(upper, at[1], at[2]))
 	var costs := content.structure_cost(part)
 	var inv := inventory(actor)
 	for id: String in costs:
 		inv.add(id, int(costs[id]))
 	_touch_inventory(actor)
 	return {"ok": true, "part": part}
+
+
+## Anything on a cell of a level: a part, a ceiling, a roof, a thing, a person.
+func _occupied(location: String, x: int, y: int) -> bool:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	var c := chunk(location, cx, cy)
+	for l: String in ["structure", "ceiling", "roof"]:
+		if c.get_cell(l, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE) != "":
+			return true
+	for id: String in items_in_chunk(location, cx, cy):
+		if Movement.cell_of(Vector2i(items[id]["x"], items[id]["y"])) == Vector2i(x, y):
+			return true
+	return _someone_stands_on(location, x, y)
+
+
+## Up or down a staircase next to the character (ADR-0007): up from a cell
+## with stairs to the same cell of the level above; down when the cell below
+## has stairs.
+func _climb(actor: String, r: Dictionary) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var p: Dictionary = present[actor]
+	var loc: String = p["location"]
+	var x := int(r.get("x", 0))
+	var y := int(r.get("y", 0))
+	if String(r.get("location", "")) != loc or not _reaches(actor, loc, x, y, USE_REACH):
+		return {"ok": false, "reason": "too_far"}
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	var lx := x - cx * Chunk.SIZE
+	var ly := y - cy * Chunk.SIZE
+	var here := chunk(loc, cx, cy)
+	var dest := ""
+	if _is_stairs(here.get_cell("structure", lx, ly)):
+		var building := levels.building(loc) if loc != SURFACE else String(_layer_props(here, "ceiling", lx, ly).get("building", ""))
+		dest = levels.level(building, levels.z(loc) + 1)
+	elif loc != SURFACE:
+		var below := levels.level(levels.building(loc), levels.z(loc) - 1)
+		if below != "" and _is_stairs(chunk(below, cx, cy).get_cell("structure", lx, ly)):
+			dest = below
+	if dest == "":
+		return {"ok": false, "reason": "no_stairs"}
+	p["location"] = dest
+	p["pos"] = Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2)
+	_dirty_world_characters[actor] = true
+	relocated[actor] = true
+	return {"ok": true, "location": dest, "z": levels.z(dest)}
+
+
+func _is_stairs(part: String) -> bool:
+	return part != "" and content.get_def(part).get("role") == "stairs"
+
+
+## Joins building `absorbed` into `survivor`: surface ceilings change owner,
+## levels only the absorbed one had change owner, levels both had move their
+## cells, things and people into the survivor's location.
+func _merge_buildings(survivor: String, absorbed: String) -> void:
+	var first := levels.level(absorbed, 1)
+	if first != "":
+		# The first level's floor is exactly the surface ceilings of the building.
+		for xy: Vector2i in _cells_with_ground(first):
+			var cx := floori(float(xy.x) / Chunk.SIZE)
+			var cy := floori(float(xy.y) / Chunk.SIZE)
+			var c := chunk(SURFACE, cx, cy)
+			var lx := xy.x - cx * Chunk.SIZE
+			var ly := xy.y - cy * Chunk.SIZE
+			var props := _layer_props(c, "ceiling", lx, ly).duplicate()
+			if props.get("building", "") == absorbed:
+				props["building"] = survivor
+				_set_layer_props(c, "ceiling", lx, ly, props)
+				_changed(chunk_key(SURFACE, cx, cy))
+	for pair: Array in levels.absorb(survivor, absorbed):
+		_move_location(pair[0], pair[1])
+
+
+func _cells_with_ground(location: String) -> Array:
+	var out: Array = []
+	for key: String in _location_chunk_keys(location):
+		var p := key.split("|")
+		var cx := int(p[1])
+		var cy := int(p[2])
+		var c := chunk(location, cx, cy)
+		for i in Chunk.CELLS:
+			if c.get_cell("ground", i % Chunk.SIZE, i / Chunk.SIZE) != "":
+				out.append(Vector2i(cx * Chunk.SIZE + i % Chunk.SIZE, cy * Chunk.SIZE + i / Chunk.SIZE))
+	return out
+
+
+## Chunk keys of a location, in memory or on disk.
+func _location_chunk_keys(location: String) -> Array:
+	var keys := {}
+	for row: Dictionary in store.chunks_of(location):
+		keys[chunk_key(location, int(row["cx"]), int(row["cy"]))] = true
+	for key: String in _chunks:
+		if key.begins_with(location + "|"):
+			keys[key] = true
+	return keys.keys()
+
+
+func _move_location(from: String, to: String) -> void:
+	var gone: Array = []
+	for key: String in _location_chunk_keys(from):
+		var p := key.split("|")
+		var cx := int(p[1])
+		var cy := int(p[2])
+		var src := chunk(from, cx, cy)
+		var dst := chunk(to, cx, cy)
+		for i in Chunk.CELLS:
+			var lx := i % Chunk.SIZE
+			var ly := i / Chunk.SIZE
+			for layer: String in src.layers:
+				var id := src.get_cell(layer, lx, ly)
+				if id != "":
+					dst.set_cell(layer, lx, ly, id)
+			if not src.get_props(lx, ly).is_empty():
+				dst.set_props(lx, ly, src.get_props(lx, ly))
+		_changed(chunk_key(to, cx, cy))
+		for id: String in items_in_chunk(from, cx, cy):
+			var it: Dictionary = items[id]
+			(_items_by_chunk[key] as Dictionary).erase(id)
+			it["location"] = to
+			_place_item(id, it)
+			_dirty_items[id] = true
+		_chunks.erase(key)
+		_encoded.erase(key)
+		_dirty_chunks.erase(key)
+		gone.append([cx, cy])
+	for id: String in present:
+		if present[id]["location"] == from:
+			present[id]["location"] = to
+			_dirty_world_characters[id] = true
+			relocated[id] = true
+	_removed_location_chunks[from] = gone
+	levels.forget(from)
 
 
 func _transfer(actor: String, r: Dictionary) -> Dictionary:

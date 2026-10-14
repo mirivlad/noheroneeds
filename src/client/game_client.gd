@@ -17,6 +17,8 @@ var state := "connecting"
 var reject_reason := ""
 var character_id := ""
 var location := ""
+## The level label of the location (0 on the surface).
+var z := 0
 var server_id := ""
 ## Predicted own position (1/256 cell units).
 var position := Vector2i.ZERO
@@ -121,6 +123,12 @@ func _on_message(m: Dictionary) -> void:
 			state = "playing"
 			for rid: String in _requests:
 				_send(Transport.Channel.RELIABLE, Protocol.REQUEST, {"request": _requests[rid]})
+		Protocol.LOCATION:
+			location = m["location"]
+			z = m["z"]
+			has_position = false  # the next snapshot places us
+			_unacked_inputs.clear()
+			changed_chunks.append("*")  # the view redraws everything for the new place
 		Protocol.REJECT:
 			reject_reason = m["reason"]
 			state = "rejected"
@@ -191,7 +199,7 @@ func _solid(x: int, y: int) -> bool:
 	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
 	if c == null:
 		return false  # unknown ground: the server will correct us
-	return Terrain.is_solid(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content)
+	return Terrain.is_solid(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content, location != Levels.SURFACE)
 
 
 func _send(channel: Transport.Channel, type: String, fields: Dictionary) -> void:

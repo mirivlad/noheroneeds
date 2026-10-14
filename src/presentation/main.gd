@@ -5,14 +5,18 @@ extends Node2D
 ## "default"), e.g. for development runs.
 ## Dev options: --screenshot=PATH --frames=N saves a frame and quits;
 ## --walk=DX,DY holds a direction (for screenshots of movement);
-## --demo builds a little enclosure through ordinary requests on arrival.
+## --demo builds a little house through ordinary requests on arrival
+## (--demo=outside puts the player at the porch, --demo=upstairs goes up the
+## stairs; the player starts inside).
 ##
 ## Controls (temporary): WASD/arrows walk; 1-3 choose a part; left click
 ## builds, right click takes down; E picks up what lies near or opens and
-## closes a door next to you; G drops one of the chosen material (Tab).
+## closes a door next to you; G drops one of the chosen material (Tab);
+## F goes up or down the stairs you stand on.
 
-const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door"]
-const LOCAL_KIT := {"base:plank": 60, "base:stone": 30, "base:log": 10}
+const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:wood_ceiling",
+	"base:thatch_roof", "base:wood_stairs", "base:wood_column"]
+const LOCAL_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20}
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 
 var content: ContentRegistry
@@ -97,9 +101,19 @@ func _process(delta: float) -> void:
 		for y in range(-3, 2):
 			for x in [-3, 3]:
 				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_wall"})
+		# A ceiling over the room, thatch over its back row, stairs to the floor above.
+		for y in range(-3, 2):
+			for x in range(-2, 3):
+				var part := "base:thatch_roof" if y == -3 else "base:wood_ceiling"
+				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": part})
+		client.request({"type": "build", "location": client.location, "x": 1, "y": 0, "part": "base:wood_stairs"})
 		client.request({"type": "drop", "item": "base:stone", "count": 2})
-	if _opts.has("demo") and _frames == 30:
+	if _opts.get("demo") == "" and _frames == 30:
 		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
+	if _opts.get("demo") == "outside" and _frames == 40 and game:
+		game.world.move_character(client.character_id, Vector2i(128, 4 * 256 + 128))  # dev only: to the porch
+	if _opts.get("demo") == "upstairs" and _frames == 40:
+		client.request({"type": "climb", "location": client.location, "x": 1, "y": 0})
 	view.update_view(_accum / tick, delta)
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
@@ -121,6 +135,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			client.request({"type": "drop", "item": MATERIALS[_material], "count": 1})
 		elif k == KEY_E and client.state == "playing":
 			_use_nearest()
+		elif k == KEY_F and client.state == "playing":
+			var me := Movement.cell_of(client.position)
+			client.request({"type": "climb", "location": client.location, "x": me.x, "y": me.y})
 	elif event is InputEventMouseButton and event.pressed and client.state == "playing":
 		var cell := (get_global_mouse_position() / WorldView.CELL).floor()
 		var op := {"location": client.location, "x": int(cell.x), "y": int(cell.y)}
@@ -207,7 +224,8 @@ func _update_hud() -> void:
 	for id: String in MATERIALS:
 		var mark := ">" if id == MATERIALS[_material] else " "
 		bag.append("%s%s %d" % [mark, content.get_def(id).get("name", id), int(inv.get(id, 0))])
-	hud.text = "Поверхность  0     " + "  ".join(bag)
+	var level := "Поверхность  0" if client.z == 0 else "Этаж  %+d" % client.z
+	hud.text = level + "     " + "  ".join(bag)
 	status.text = "%s  [%d] %s  (%d, %d)  %s" % [state, _part + 1, content.get_def(PARTS[_part]).get("name", ""),
 		cell.x, cell.y, _note]
 

@@ -13,7 +13,8 @@ class_name Protocol
 ## 2: "content" in HELLO is the rules fingerprint (ADR-0009).
 ## 3: snapshots key entities by short per-connection numbers; the full id
 ##    comes once, as "uid", when an entity enters the client's view.
-const VERSION := 3
+## 4: LOCATION tells the client it is now in another location (stairs...).
+const VERSION := 4
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -30,6 +31,7 @@ const REQUEST := "request"
 const RESULT := "result"
 const SNAPSHOT := "snapshot"
 const CHUNK := "chunk"
+const LOCATION := "location"
 
 ## Field name -> Variant type, per message a client may send.
 const CLIENT_FIELDS := {
@@ -53,6 +55,8 @@ const SERVER_FIELDS := {
 		"removed": TYPE_ARRAY, "input_ack": TYPE_INT},
 	RESULT: {"request_id": TYPE_STRING, "result": TYPE_DICTIONARY},
 	CHUNK: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT, "data": TYPE_PACKED_BYTE_ARRAY},
+	# z: the level label (0 surface, +1 first floor...); identity is the id.
+	LOCATION: {"location": TYPE_STRING, "z": TYPE_INT},
 }
 
 

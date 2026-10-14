@@ -1,18 +1,33 @@
 class_name WorldView
 extends Node2D
 ## Draws what the client knows: ground and flat plants as tile layers, tall
-## things (trees, bushes, walls) and characters as Y-sorted sprites. Every
-## picture comes from the content's visual definitions; nothing here knows a
-## particular tree or wall.
+## things (trees, bushes, walls) and characters as Y-sorted sprites, ceilings
+## and roofs as covers above the walls. Every picture comes from the content's
+## visual definitions; nothing here knows a particular tree or wall.
+##
+## Only the client's own location is drawn in full. On a building level the
+## surface below shows dimmed. On any level the cover over the room the
+## player stands in is hidden, so the inside is visible (GDD scenario 7).
 
 const CELL := 16
 ## Simulation units per screen pixel (Movement.UNIT / CELL).
 const UNITS_PER_PIXEL := Movement.UNIT / CELL
+## Covers sit on top of the walls: this far above their cell.
+const COVER_LIFT := 16
+## Largest room whose cover is hidden around the player.
+const MAX_ROOM := 2048
 
 var content: ContentRegistry
 var client: GameClient
 var _ground := TileMapLayer.new()
 var _cover := TileMapLayer.new()
+## The surface seen from a building level, dimmed.
+var _below := TileMapLayer.new()
+var _covers := Node2D.new()
+## cell -> Sprite2D of the ceiling or roof over it
+var _cover_sprites := {}
+var _hidden_room := {}
+var _room_from := Vector2i(1 << 30, 0)
 var _sorted := Node2D.new()
 var _chunk_nodes := {}
 var _characters := {}
@@ -58,12 +73,28 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	_missing_source = ts.add_source(ms)
 	_ground.tile_set = ts
 	_cover.tile_set = ts
+	_below.tile_set = ts
+	_below.z_index = -3
+	_below.modulate = Color(0.42, 0.42, 0.52)
 	_ground.z_index = -2
 	_cover.z_index = -1
 	_sorted.y_sort_enabled = true
+	_covers.z_index = 10
+	add_child(_below)
 	add_child(_ground)
 	add_child(_cover)
 	add_child(_sorted)
+	add_child(_covers)
+
+
+## The tile layer of the ground (or floors) of the client's location.
+func ground_layer() -> TileMapLayer:
+	return _ground
+
+
+## Cells whose cover is hidden because the player stands in that room.
+func hidden_room() -> Dictionary:
+	return _hidden_room
 
 
 func texture(path: String) -> Texture2D:
@@ -77,10 +108,30 @@ func texture(path: String) -> Texture2D:
 
 ## Call every frame. alpha: how far we are between the last tick and the next (0..1).
 func update_view(alpha: float, delta: float) -> void:
-	for key: String in client.changed_chunks:
-		_paint(key)
+	var keys := client.changed_chunks.duplicate()
 	client.changed_chunks.clear()
+	if keys.has("*"):
+		_clear()
+		keys = client.chunks.keys()
+	for key: String in keys:
+		_paint(key)
 	_update_characters(alpha, delta)
+	_update_room()
+
+
+## Forgets everything drawn (the client moved to another location).
+func _clear() -> void:
+	_ground.clear()
+	_cover.clear()
+	_below.clear()
+	for key: String in _chunk_nodes:
+		(_chunk_nodes[key] as Node).queue_free()
+	_chunk_nodes.clear()
+	for cell: Vector2i in _cover_sprites:
+		(_cover_sprites[cell] as Node).queue_free()
+	_cover_sprites.clear()
+	_hidden_room.clear()
+	_room_from = Vector2i(1 << 30, 0)
 
 
 func own_pixel_position(alpha: float) -> Vector2:
@@ -91,9 +142,13 @@ func own_pixel_position(alpha: float) -> Vector2:
 
 func _paint(key: String) -> void:
 	var p := key.split("|")
-	if p[0] != client.location:
+	if not client.chunks.has(key):
 		return
 	var c: Chunk = client.chunks[key]
+	if p[0] != client.location:
+		if p[0] == Levels.SURFACE:
+			_paint_below(c, int(p[1]) * Chunk.SIZE, int(p[2]) * Chunk.SIZE)
+		return
 	var ox := int(p[1]) * Chunk.SIZE
 	var oy := int(p[2]) * Chunk.SIZE
 	var holder: Node2D = _chunk_nodes.get(key)
@@ -108,6 +163,7 @@ func _paint(key: String) -> void:
 			var cell := Vector2i(ox + lx, oy + ly)
 			_set_flat(_ground, cell, c.get_cell("ground", lx, ly))
 			_cover.erase_cell(cell)
+			_set_cover(cell, c.get_cell("roof", lx, ly) if c.get_cell("roof", lx, ly) != "" else c.get_cell("ceiling", lx, ly))
 			for layer in ["cover", "structure"]:
 				var id := c.get_cell(layer, lx, ly)
 				if id == "":
@@ -118,6 +174,65 @@ func _paint(key: String) -> void:
 					holder.add_child(_tall_sprite(v, cell, state))
 				else:
 					_set_flat(_cover, cell, id)  # flat, or the missing-picture mark
+
+
+## The surface under a building level: ground and flat plants, dimmed.
+func _paint_below(c: Chunk, ox: int, oy: int) -> void:
+	for ly in Chunk.SIZE:
+		for lx in Chunk.SIZE:
+			var cell := Vector2i(ox + lx, oy + ly)
+			_set_flat(_below, cell, c.get_cell("ground", lx, ly))
+
+
+func _set_cover(cell: Vector2i, id: String) -> void:
+	var old: Sprite2D = _cover_sprites.get(cell)
+	if old:
+		old.queue_free()
+		_cover_sprites.erase(cell)
+	if id == "":
+		return
+	var v := content.visual_of(id)
+	var s := Sprite2D.new()
+	s.centered = false
+	if v.is_empty():
+		s.texture = _tile_texture(_missing_source)
+	else:
+		s.texture = texture(v["atlas_path"])
+		s.region_enabled = true
+		s.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+	s.position = Vector2(cell.x * CELL, cell.y * CELL - COVER_LIFT)
+	s.visible = not _hidden_room.has(cell)
+	_covers.add_child(s)
+	_cover_sprites[cell] = s
+	_room_from = Vector2i(1 << 30, 0)  # covers changed: find the room again
+
+
+## Hides the covers of the room the player stands in: every covered cell
+## reachable from the player's cell through covered cells.
+func _update_room() -> void:
+	if not client.has_position:
+		return
+	var me := Movement.cell_of(client.position)
+	if me == _room_from:
+		return
+	_room_from = me
+	var room := {}
+	if _cover_sprites.has(me):
+		var todo: Array[Vector2i] = [me]
+		room[me] = true
+		while not todo.is_empty() and room.size() < MAX_ROOM:
+			var c: Vector2i = todo.pop_back()
+			for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var n := c + d
+				if _cover_sprites.has(n) and not room.has(n):
+					room[n] = true
+					todo.append(n)
+	for cell: Vector2i in _hidden_room:
+		if _cover_sprites.has(cell) and not room.has(cell):
+			(_cover_sprites[cell] as Sprite2D).visible = true
+	for cell: Vector2i in room:
+		(_cover_sprites[cell] as Sprite2D).visible = false
+	_hidden_room = room
 
 
 func _set_flat(layer: TileMapLayer, cell: Vector2i, id: String) -> void:

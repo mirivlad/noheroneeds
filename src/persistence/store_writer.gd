@@ -28,6 +28,10 @@ class Batch:
 	var items: Array = []
 	## Ids of entities taken out of the world (picked up...)
 	var removed_entities: Array = []
+	## [location_id, kind, building, z, data Dictionary]
+	var locations: Array = []
+	## location ids gone (absorbed when buildings merge) and their chunks: [id, [[cx, cy], ...]]
+	var removed_locations: Array = []
 	## [id, location, cx, cy, kind, data Dictionary] — a state batch has only
 	## these and world_characters
 	var entities: Array = []
@@ -67,6 +71,7 @@ func submit(batch: Batch) -> int:
 	_next_id += 1
 	if batch.chunks.is_empty() and batch.inventories.is_empty() and batch.requests.is_empty() \
 			and batch.characters.is_empty() and batch.items.is_empty() and batch.removed_entities.is_empty() \
+			and batch.locations.is_empty() and batch.removed_locations.is_empty() \
 			and batch.prune_before < 0:
 		_state.append(batch)
 	else:
@@ -180,6 +185,12 @@ func _write(b: Batch) -> bool:
 		ok = ok and _store.put_request(r[0], r[1], r[2], Cbor.encode(r[3]))
 	for c: Array in b.characters:
 		ok = ok and _store.put_character(c[0], c[1], Cbor.encode(c[2]))
+	for l: Array in b.locations:
+		ok = ok and _store.put_location(l[0], l[1], l[2], l[3], Cbor.encode(l[4]))
+	for r: Array in b.removed_locations:
+		ok = ok and _store.delete_location(r[0])
+		for xy: Array in r[1]:
+			ok = ok and _store.delete_chunk(r[0], xy[0], xy[1])
 	for e: Array in b.items:
 		ok = ok and _store.put_entity(e[0], e[1], e[2], e[3], e[4], Cbor.encode(e[5]))
 	for id: String in b.removed_entities:

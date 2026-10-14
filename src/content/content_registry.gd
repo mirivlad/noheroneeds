@@ -181,6 +181,8 @@ func _validate() -> void:
 				if not STRUCTURE_ROLES.has(d["role"]):
 					errors.append("%s: unknown role '%s'" % [id, d["role"]])
 				d["openable"] = bool(d.get("openable", false))
+				if d["role"] == "ceiling" and kind_of(String(d.get("floor", ""))) != "ground":
+					errors.append("%s: a ceiling needs the floor (a ground) it makes above" % id)
 			"recipe":
 				_check_amounts(id, "inputs", d.get("inputs", {}), true)
 				_check_amounts(id, "outputs", d.get("outputs", {}), true)
@@ -247,8 +249,8 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	if not defs.has(target) or kind_of(target) == "visual":
 		errors.append("%s: draws '%s', which is not defined" % [id, target])
 		return
-	if not ["flat", "tall", "character", "item"].has(d.get("mode")):
-		errors.append("%s: mode must be flat, tall, character or item" % id)
+	if not ["flat", "tall", "cover", "character", "item"].has(d.get("mode")):
+		errors.append("%s: mode must be flat, tall, cover, character or item" % id)
 	var states: Variant = d.get("states", {})
 	if typeof(states) != TYPE_DICTIONARY:
 		errors.append("%s: states must map a state name to a rect" % id)

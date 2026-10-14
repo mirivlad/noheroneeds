@@ -57,6 +57,7 @@ func test_single_player_goes_through_the_server() -> void:
 	c.inventory.add("base:plank", 3)
 	var g := LocalGame.start(tmp_dir().path_join("world.db"), content, owner,
 		PlayerIdentity.load_or_create(keys + "server"), CharacterFile.export_signed(c, owner, content))
+	g.server.wait_for_disk = true
 	for i in 20:
 		g.step()
 	eq(g.client.state, "playing", g.client.reject_reason)

@@ -119,6 +119,7 @@ func test_walk_across_chunks_seamlessly() -> void:
 	var world := ServerWorld.open(tmp_dir().path_join("world.db"), content, {"seed": 3})
 	var keys := ProjectSettings.globalize_path("user://test_keys/")
 	var server := GameServer.new(world, net.server(), PlayerIdentity.load_or_create(keys + "server"))
+	server.wait_for_disk = true
 	var owner := PlayerIdentity.load_or_create(keys + "owner")
 	var c := PortableCharacter.create("Аня", "test:body")
 	c.styles = {"hair": "test:hair"}

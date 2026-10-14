@@ -25,6 +25,7 @@ func _start() -> void:
 	net.rng.seed = 11
 	world = ServerWorld.open(db, content)
 	server = GameServer.new(world, net.server(), _key("server"))
+	server.wait_for_disk = true
 
 
 func _restart() -> void:

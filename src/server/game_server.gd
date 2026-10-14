@@ -23,6 +23,9 @@ var identity: PlayerIdentity
 var import_policy := {}
 ## Clients see this many chunks around their own in each direction.
 var view_chunks := 2
+## Tests and tools: every tick waits until its batch is on disk, so a
+## request's result always comes out in the same tick (real servers never wait).
+var wait_for_disk := false
 var tick := 0
 ## Microseconds each step() took, since the last take_stats().
 var _tick_usec: Array[int] = []
@@ -122,8 +125,10 @@ func _step() -> void:
 		if s.state == "playing":
 			_apply_input(s)
 	_lap("movement")
-	world.commit_async()
+	world.commit_async(wait_for_disk)
 	world.flush_state(STATE_ROWS_PER_TICK)
+	if wait_for_disk:
+		world.writer.wait_idle()
 	world.poll()
 	for ack: Array in world.take_acks():
 		var s := _session_of(ack[0])

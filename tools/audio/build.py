@@ -399,7 +399,7 @@ def amb_water():
     for j, at in enumerate((5.0, 12.5)):
         place(x, splash(360 + j), at + r.uniform(-0.5, 0.5), r.uniform(0.25, 0.4))
     x = loopify(low(x, 2500, 2), 1.5)
-    return at_rms(x, 0.0965)  # as loud as the first water was
+    return at_rms(x, 0.0965 / 1.5)  # the author: 1.5 times quieter than the first water
 
 
 # ------------------------------------------------------------ the pack

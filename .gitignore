@@ -3,3 +3,4 @@ __pycache__/
 .godot/
 /addons/godot-sqlite/bin/
 /build/
+/art_src/

@@ -112,6 +112,7 @@ func test_clients_see_things_and_their_own_inventory() -> void:
 	w.starter_kit = {"base:stone": 4}
 	var keys := ProjectSettings.globalize_path("user://test_keys/")
 	var server := GameServer.new(w, net.server(), PlayerIdentity.load_or_create(keys + "server"))
+	server.wait_for_disk = true
 	var clients: Array = []
 	for who: String in ["owner", "other"]:
 		var key := PlayerIdentity.load_or_create(keys + who)

@@ -12,6 +12,7 @@ func test_view_follows_the_client() -> void:
 	c.inventory.add("base:plank", 3)
 	var g := LocalGame.start(tmp_dir().path_join("world.db"), content, owner,
 		PlayerIdentity.load_or_create(keys + "server"), CharacterFile.export_signed(c, owner, content))
+	g.server.wait_for_disk = true
 	var view := WorldView.new()
 	view.setup(content, g.client)
 	(Engine.get_main_loop() as SceneTree).root.add_child(view)

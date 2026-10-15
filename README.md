@@ -37,6 +37,22 @@ tools/run_server.sh --world=/путь/к/world.db --port=24680
 
 Остановка — команда `stop` в его консоли или файл `STOP` рядом с базой мира.
 
+## Сборка для игроков
+
+```bash
+tools/export.sh
+```
+
+Собирает Linux (`build/linux/noheroneeds.x86_64`) и Windows (`build/windows/noheroneeds.exe`), рядом с каждым — библиотека SQLite, и архивы `build/noheroneeds-<версия>-<коммит>-linux-x86_64.tar.gz` и `…-windows-x86_64.zip`. Только одна платформа: `tools/export.sh linux` или `tools/export.sh windows`; отладочная сборка: `--debug`. Нужны шаблоны экспорта Godot той же версии (4.7.2).
+
+Собранная игра — она же выделенный сервер:
+
+```bash
+./noheroneeds.x86_64 --headless -- --server --world=/путь/к/world.db --port=24680
+```
+
+(в Windows — `noheroneeds.exe --headless -- --server …`; параметры те же, что у `tools/run_server.sh`).
+
 Нужен Godot 4.7.2 (`godot` в PATH или переменная `GODOT`).
 
 `tools/fetch_addons.sh` также заранее регистрирует расширение в `.godot/`: без этого самый первый импорт в Godot 4.7.2 падает на выходе (сам импорт при этом завершается).

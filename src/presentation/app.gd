@@ -8,6 +8,8 @@ extends Node
 ##   --profile=NAME   keeps identity, characters, worlds and settings apart
 ##                    (default "default"), e.g. for development runs;
 ##   --connect=HOST:PORT  joins a server at once, without the menu;
+##   --server [options]   (with --headless) runs a dedicated server instead
+##                        of the game (DedicatedServer lists the options);
 ##   --world=ID       plays a saved world (or makes it) at once;
 ## dev runs: --demo[=outside|upstairs|behind], --walk=DX,DY,
 ## --screenshot=PATH --frames=N (saves a frame and quits) start a local game
@@ -34,6 +36,8 @@ func configure(options: Dictionary) -> void:
 
 
 var _configured := false
+## Running as a dedicated server (--server): no menu, no game, no music.
+var _serving := false
 
 
 func _ready() -> void:
@@ -41,6 +45,19 @@ func _ready() -> void:
 		for a in OS.get_cmdline_user_args():
 			var kv := a.trim_prefix("--").split("=", true, 1)
 			_opts[kv[0]] = kv[1] if kv.size() > 1 else ""
+	if _opts.has("server"):
+		# A built game is a dedicated server too: noheroneeds --headless -- --server [options]
+		_serving = true
+		set_process(false)
+		music.free()  # no game here: what it would have shown goes
+		_menu_layer.free()
+		var server := DedicatedServer.new()
+		add_child(server)
+		var err := server.start(_opts)
+		if err != "":
+			printerr(err)
+			get_tree().quit(1)
+		return
 	content = ContentRegistry.load_packs(["res://content/base"])
 	if not content.errors.is_empty():
 		push_error("content: " + "; ".join(content.errors))
@@ -122,6 +139,9 @@ func start_game(cfg: Dictionary) -> void:
 
 
 func quit() -> void:
+	if _serving:
+		get_tree().quit()
+		return
 	_end_game()
 	music.silence()
 	if not _opts.has("profile_dir"):

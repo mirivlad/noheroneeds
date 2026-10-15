@@ -213,19 +213,36 @@ func test_creatures_live_below_and_a_spider_hunts_in_the_dark() -> void:
 	check(w.combat.health_of(p) < 20 or int(w.present[p]["deaths"]) > 0, "bitten in the dark at noon: %s" % spider.state)
 
 
-## ADR-0021: trees are felled with an axe in hand; taking apart names its
-## layer (a roof, not the wall under it).
+## ADR-0021: trees are felled with an axe in hand, in blows by their size
+## and wood (an oak 15, at the axe's pace; the work done is kept with the
+## tree); taking apart names its layer (a roof, not the wall under it).
 func test_felling_a_tree_and_taking_apart_a_chosen_layer() -> void:
 	var c := w.chunk("surface", 3, 3)
 	c.set_cell("ground", 5, 5, "base:grass")
 	c.set_cell("cover", 5, 5, "base:oak")
+	c.set_cell("cover", 6, 5, "base:birch")
 	var p := _player(Vector2i(100, 101))
 	w.grant(p, "base:axe", 1)
 	_req(p, {"type": "hold", "item": "base:axe"})
-	var r := _req(p, {"type": "gather", "location": "surface", "x": 101, "y": 101, "layer": "cover", "item": "base:axe"})
-	check(r.get("ok", false), "felled: %s" % r)
+	var fell := {"type": "gather", "location": "surface", "x": 101, "y": 101, "layer": "cover", "item": "base:axe"}
+	var r := _req(p, fell.duplicate())
+	eq([r.get("work"), r.get("of")], [1, 15], "a blow: one of fifteen")
+	eq(_req(p, fell.duplicate()).get("reason"), "not_ready", "not faster than the axe swings")
+	var blows := 1
+	while blows < 40 and not r.has("drops"):
+		w.tick += 14  # the axe's 0.7 s
+		w.combat.step(w.tick)
+		r = _req(p, fell.duplicate())
+		blows += 1
+		if blows == 7:
+			w.flush_state()
+			w.chunk("surface", 3, 3).get_props(5, 5)  # the work is with the tree
+			eq(int((w.chunk("surface", 3, 3).get_props(5, 5).get("cover", {}) as Dictionary).get("work", 0)), 7)
+	eq(blows, 15, "an oak falls at the fifteenth blow (about ten seconds)")
 	eq(w.inventory(p).count("base:log"), 3, "an oak gives three logs")
 	eq(w.chunk("surface", 3, 3).get_cell("cover", 5, 5), "", "the tree is gone")
+	check(not w.chunk("surface", 3, 3).get_props(5, 5).has("cover"), "and the work done on it")
+	eq(_content.get_def("base:birch")["gather"]["work"], 8, "a birch, thinner: eight")
 	w.grant(p, "base:plank", 20)
 	w.grant(p, "base:log", 5)
 	_req(p, {"type": "build", "location": "surface", "x": 102, "y": 100, "part": "base:wood_wall"})
@@ -233,3 +250,49 @@ func test_felling_a_tree_and_taking_apart_a_chosen_layer() -> void:
 	r = _req(p, {"type": "dismantle", "location": "surface", "x": 102, "y": 100, "layer": "roof"})
 	eq(r.get("part"), "base:thatch_roof", "the roof, as asked")
 	eq(_part("surface", Vector2i(102, 100)), "base:wood_wall", "the wall stays")
+
+
+## Arrows fly below as on the surface: the depth's heights are under 0, yet
+## an arrow there is not "in the ground" at once; it flies, hits, falls far.
+func test_arrows_fly_underground() -> void:
+	var loc := "depth:-1"
+	var at := Vector2i(400, 400)
+	for y in range(at.y - 2, at.y + 3):
+		for x in range(at.x - 2, at.x + 20):  # an open gallery to shoot along
+			var c := w.chunk(loc, floori(x / 32.0), floori(y / 32.0))
+			c.set_cell("structure", posmod(x, 32), posmod(y, 32), "")
+			c.set_cell("ground", posmod(x, 32), posmod(y, 32), "base:cave_floor")
+	for id: String in w.creatures.creatures.keys():
+		if w.creatures.creatures[id].location == loc:
+			w.creatures.remove(id)
+	var p := _player(at, loc)
+	w.grant(p, "base:bow", 1)
+	w.grant(p, "base:arrow", 2)
+	_req(p, {"type": "hold", "item": "base:bow"})
+	var rat := w.creatures._spawn("base:cave_rat", loc, at + Vector2i(6, 0), {}, 1)
+	var hp := rat.health
+	var aim := (at + Vector2i(12, 0)) * Movement.UNIT + Vector2i(128, 128)
+	check(_req(p, {"type": "attack", "item": "base:bow", "x": aim.x, "y": aim.y}).get("ok", false), "shot")
+	for i in 3:
+		w.tick += 1
+		w.combat.step(w.tick)
+	eq(w.combat.projectiles.size(), 1, "it flies, not dropped where it was shot")
+	if not w.combat.projectiles.is_empty():
+		var pr: Combat.Projectile = w.combat.projectiles.values()[0]
+		check(Movement.cell_of(Vector2i(pr.pos)).x > at.x + 1, "away from the bow")
+	for i in 30:
+		w.tick += 1
+		w.combat.step(w.tick)
+	check(rat.health < hp or not w.creatures.has(rat.id), "it hit the rat on its way")
+	w.creatures.remove(rat.id)
+	w.tick += 40
+	w.combat.step(w.tick)
+	_req(p, {"type": "attack", "item": "base:bow", "x": aim.x, "y": aim.y})
+	for i in 40:
+		w.tick += 1
+		w.combat.step(w.tick)
+	var lying := -1
+	for id: String in w.items:
+		if w.items[id]["location"] == loc and w.items[id]["item"] == "base:arrow":
+			lying = Movement.cell_of(Vector2i(w.items[id]["x"], w.items[id]["y"])).x
+	check(lying > at.x + 10, "a miss falls far away, at its range or a wall: %d" % lying)

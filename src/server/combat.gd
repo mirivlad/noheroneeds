@@ -361,11 +361,15 @@ func _fly() -> void:
 		var dist := pr.vel.length()
 		var steps := maxi(1, ceili(dist / PROJECTILE_STEP))
 		var on_plan := Sight.same_space(world, pr.location, Levels.SURFACE)
+		# The ground it flies over: the surface's on the plan; below, the
+		# floor of its depth (a depth's heights are under 0: an arrow there
+		# is not "in the ground" from the start).
+		var floor_h := 0.0 if on_plan else float(world.levels.z(pr.location))
 		for i in steps:
 			var next := pr.pos + pr.vel / steps
 			var h := pr.h + pr.dh * dist / steps
 			var cell := Movement.cell_of(Vector2i(next))
-			if h < 0.0:
+			if h < floor_h:
 				_fall(pr, pr.pos)  # into the ground
 				break
 			if cell != pr.start and _stops(pr, cell, minf(pr.h, h), maxf(pr.h, h)):

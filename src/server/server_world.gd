@@ -1537,7 +1537,27 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var tool := String(g["tool"])
 	if tool != "" and (item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool)):
 		return {"ok": false, "reason": "no_tool"}  # the tool must be in the hands, not in the bag
+	# Work takes blows (a tree by its size and wood), at the tool's pace; how
+	# far it has gone is kept with the thing (props of its layer).
+	var work := int(g.get("work", 1))
+	if work > 1:
+		var pace: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
+		if not combat.ready(actor, float(pace.get("cooldown_ms", 700))):
+			return {"ok": false, "reason": "not_ready"}
 	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
+	creatures.noise(loc, Vector2i(x, y))
+	var done := int(_layer_props(c, layer, at[3], at[4]).get("work", 0)) + 1
+	if done < work:
+		var props := _layer_props(c, layer, at[3], at[4]).duplicate()
+		props["work"] = done
+		if layer == "structure":
+			c.set_props(at[3], at[4], props)
+		else:
+			_set_layer_props(c, layer, at[3], at[4], props)
+		_changed(chunk_key(loc, at[1], at[2]))
+		return {"ok": true, "thing": thing, "work": done, "of": work}
+	if layer == "cover":
+		_set_layer_props(c, layer, at[3], at[4], {})
 	c.set_cell(layer, at[3], at[4], "")
 	_changed(chunk_key(loc, at[1], at[2]))
 	var inv := inventory(actor)
@@ -1545,7 +1565,6 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	for id: String in drops:
 		inv.add(id, int(drops[id]))
 	_touch_inventory(actor)
-	creatures.noise(loc, Vector2i(x, y))
 	return {"ok": true, "thing": thing, "drops": drops}
 
 

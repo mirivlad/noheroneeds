@@ -65,9 +65,32 @@ func test_doors_things_and_ones_own() -> void:
 	var a := Actions.of(content, client, view, "", _part("base:wood_door", Vector2i(3, 3)), Vector2i.ZERO)
 	eq(Actions.quick(a).get("name"), "Открыть", "E opens a door")
 	check(_ids(a).has("dismantle"), "one's own door may be taken apart")
+	eq(_ids(a).filter(func(i: String) -> bool: return i == "lock").size(), 1, "and locked by the one who set it up")
 	a = Actions.of(content, client, view, "", _part("base:wood_wall", Vector2i(4, 3)), Vector2i.ZERO)
-	check(not _ids(a).has("dismantle"), "not someone else's wall")
+	var apart: Dictionary = a.filter(func(x: Dictionary) -> bool: return x["id"] == "dismantle")[0]
+	check(not apart["enabled"] and String(apart["why"]).contains("сломать"), "someone else's wall: only broken")
+	check(_ids(a).has("strike_part"), "which anyone may do (ADR-0016)")
 	var thing := {"kind": "entity", "id": "i1", "location": "surface", "entity": {"kind": "item", "item": "base:stone", "count": 2}}
 	a = Actions.of(content, client, view, "", thing, Vector2i.ZERO)
 	eq(Actions.quick(a).get("id"), "pickup")
 	eq(Actions.describe(content, thing), "Камень ×2")
+
+
+## ADR-0016: a locked door says so; only the one who set it up locks it;
+## another person may be befriended; anyone mends a worn part.
+func test_locks_friends_and_mending() -> void:
+	var c: Chunk = client.chunks[ServerWorld.chunk_key("surface", 0, 0)]
+	c.set_props(3, 3, {"owner": "someone", "locked": true})
+	c.set_props(4, 3, {"owner": "someone", "damage": 7.5})
+	var a := Actions.of(content, client, view, "", _part("base:wood_door", Vector2i(3, 3)), Vector2i.ZERO)
+	eq(Actions.quick(a).get("name"), "Открыть (заперто)")
+	check(not _ids(a).has("lock"), "not someone else's lock")
+	a = Actions.of(content, client, view, "", _part("base:wood_wall", Vector2i(4, 3)), Vector2i.ZERO)
+	check(_ids(a).has("repair"), "someone else's wall mended")
+	var her := {"kind": "entity", "id": "c2", "location": "surface", "entity": {"kind": "character", "x": 0, "y": 0}}
+	a = Actions.of(content, client, view, "", her, Vector2i.ZERO)
+	var f: Dictionary = a.filter(func(x: Dictionary) -> bool: return x["id"] == "friend")[0]
+	eq(f["request"], {"type": "befriend", "character": "c2"})
+	client.own["friends"] = ["c2"]
+	a = Actions.of(content, client, view, "", her, Vector2i.ZERO)
+	eq(a.filter(func(x: Dictionary) -> bool: return x["id"] == "friend")[0]["name"], "Убрать из друзей")

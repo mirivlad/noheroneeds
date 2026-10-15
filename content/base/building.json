@@ -9,6 +9,6 @@
      "light": {"radius": 5, "intensity": 0.9, "color": "#ffb060"}},
     {"id": "base:wood_column", "kind": "structure", "role": "column", "name": "Деревянная колонна", "cost": {"base:log": 1}},
     {"id": "base:chest", "kind": "structure", "role": "furniture", "name": "Сундук", "cost": {"base:plank": 6},
-     "container": {"slots": 16}}
+     "container": {"slots": 16}, "durability": 60, "material": "wood"}
   ]
 }

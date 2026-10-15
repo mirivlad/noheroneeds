@@ -2086,6 +2086,80 @@
      "fps": 10
     }
    }
+  },
+  {
+   "id": "base:visual/poring",
+   "kind": "visual",
+   "for": "base:poring",
+   "atlas": "art/creatures/poring.png",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "mode": "character",
+   "variants": 1,
+   "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n"
+   ],
+   "animations": {
+    "idle": {
+     "from": 0,
+     "frames": 4,
+     "fps": 3
+    },
+    "walk": {
+     "from": 4,
+     "frames": 6,
+     "fps": 10
+    }
+   }
+  },
+  {
+   "id": "base:visual/poporing",
+   "kind": "visual",
+   "for": "base:poporing",
+   "atlas": "art/creatures/poporing.png",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "mode": "character",
+   "variants": 1,
+   "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n"
+   ],
+   "animations": {
+    "idle": {
+     "from": 0,
+     "frames": 4,
+     "fps": 3
+    },
+    "walk": {
+     "from": 4,
+     "frames": 6,
+     "fps": 10
+    }
+   }
   }
  ]
 }

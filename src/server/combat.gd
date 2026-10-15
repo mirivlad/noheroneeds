@@ -32,6 +32,12 @@ var projectiles := {}
 ## whether a character drops what it carried when it dies.
 var pvp := "off"
 var death_drops := true
+## What a dead character dropped is kept for them alone this long (s), then
+## anyone's (ADR-0016).
+var dead_keep_s := 600
+## Blows struck, for others to see the swing: id -> count * 8 + the
+## direction's octant (0 east, 2 south...). Not saved.
+var swings := {}
 ## Creatures whose health changed since the last take_health_changes().
 var _health_changed := {}
 var _hurt_at := {}
@@ -142,8 +148,9 @@ func _character_dies(id: String) -> void:
 	var p: Dictionary = world.present[id]
 	if death_drops:
 		var inv := world.inventory(id)
+		var until := world.tick + dead_keep_s * Movement.TICK_RATE
 		for item: String in inv.stacks.keys():
-			world.place_item(String(p["location"]), p["pos"], item, int(inv.stacks[item]))
+			world.place_item(String(p["location"]), p["pos"], item, int(inv.stacks[item]), id, until)
 			inv.remove(item, int(inv.stacks[item]))
 		world.touch_inventory(id)
 	p["location"] = world.spawn_location
@@ -159,6 +166,12 @@ func _creature_dies(c: Creature) -> void:
 	var drops: Dictionary = world.content.get_def(c.kind).get("drops", {})
 	for item: String in drops:
 		world.place_item(c.location, c.pos, item, int(drops[item]))
+	# A looter gives back what it had not digested yet.
+	world.creatures.digest(c)
+	for e: Dictionary in c.stomach:
+		world.place_item(c.location, c.pos, String(e["item"]), int(e["count"]))
+	c.stomach.clear()
+	swings.erase(c.id)
 	_hurt_at.erase(c.id)
 	world.creatures.remove(c.id)
 
@@ -192,6 +205,7 @@ func attack(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "not_ready"}
 	_ready_at[actor] = _tick + _ticks(float(w["cooldown_ms"]))
 	var aim := Vector2i(ServerWorld.ri(r, "x", 0), ServerWorld.ri(r, "y", 0))
+	swung(actor, aim)
 	if w["kind"] == "ranged":
 		return _shoot(actor, p, w, aim, ServerWorld.ri(r, "z", -1))
 	var hit := _blow(actor, String(p["location"]), p["pos"], aim, w)
@@ -208,7 +222,23 @@ func creature_attack(c: Creature, target: String) -> bool:
 	if at == NO_POS or _location(target) != c.location:
 		return false
 	_ready_at[c.id] = _tick + _ticks(float(w["cooldown_ms"]))
+	swung(c.id, at)
 	return _blow(c.id, c.location, c.pos, at, w) == target
+
+
+## Someone struck (or shot, or worked with a tool) toward `toward` (movement
+## units): counted, with the direction, so those who see it see the swing.
+func swung(id: String, toward: Vector2i) -> void:
+	var from := _position(id)
+	var octant := 0
+	if from != NO_POS and toward != from:
+		octant = int(round(fposmod(Vector2(toward - from).angle(), TAU) / (PI / 4))) % 8
+	var n := ((int(swings.get(id, 0)) >> 3) + 1) % (1 << 20)
+	swings[id] = (n << 3) | octant
+	if world.present.has(id):
+		world.present[id]["swing"] = swings[id]
+	else:
+		_health_changed[id] = true  # a creature's warm part goes out again
 
 
 ## The nearest one within reach and arc toward `aim`, seen from `from`: hurt.

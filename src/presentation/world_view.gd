@@ -760,6 +760,10 @@ func _update_characters(alpha: float, delta: float) -> void:
 		var dz := int(e.get("z", client.z)) - client.z
 		var sprite := _character(id, looks)
 		sprite.hold(item_picture(String(e.get("held", ""))))
+		var blows := int(e.get("swing", 0))
+		if _swing_seen.has(id) and int(_swing_seen[id]) != blows:
+			sprite.swing(Vector2.RIGHT.rotated((blows & 7) * PI / 4), swing_kind(String(e.get("held", ""))))
+		_swing_seen[id] = blows
 		sprite.show_at(target - Vector2(0, COVER_LIFT * maxi(dz, 0)), delta, false)
 		_at_level(sprite, client.z + dz)
 		_health(id, sprite, e, delta)
@@ -775,10 +779,34 @@ func _update_characters(alpha: float, delta: float) -> void:
 		if not seen.has(id):
 			_projectiles[id].queue_free()
 			_projectiles.erase(id)
+	for id: String in _swing_seen.keys():
+		if not seen.has(id):
+			_swing_seen.erase(id)
 	for id: String in _hp_seen.keys():
 		if not seen.has(id):
 			_hp_seen.erase(id)
 			_flash.erase(id)
+
+
+## Blows last seen struck, by id (a change: a swing to show).
+var _swing_seen := {}
+
+
+## How a blow with a thing looks (CharacterSprite.swing).
+func swing_kind(held: String) -> String:
+	var w: Dictionary = content.get_def(held).get("weapon", {}) if held != "" else {}
+	if w.get("kind") == "ranged":
+		return "draw"
+	if w.get("kind") == "melee" and float(w.get("arc", 90)) < 60.0:
+		return "thrust"
+	return "chop" if held != "" else "lunge"
+
+
+## The own character strikes toward `dir` at once, before the server answers.
+func swing_own(dir: Vector2) -> void:
+	var me: CharacterSprite = _characters.get(client.character_id)
+	if me:
+		me.swing(dir, swing_kind(own_held))
 
 
 var _items := {}

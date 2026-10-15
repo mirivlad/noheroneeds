@@ -563,6 +563,10 @@ ANIMALS = {
     "wolf": {"fur": ["3a3a40", "5a5a62", "7c7a80", "a09ca0"], "belly": "c8c2bc", "eye": "e8c040"},
     "cave_rat": {"fur": ["3a3236", "54484c", "6e6064", "8a7c7e"], "belly": "b8a8a4", "eye": "d84040"},
     "cave_spider": {"fur": ["1e1a22", "2e2834", "443a4c", "5e5068"], "belly": "6a3a48", "eye": "e8e060"},
+    # Looters (ADR-0016), a nod to Ragnarok Online: jelly that hops.
+    "poring": {"fur": ["a0405a", "d06480", "ee8ea4", "f8bccb"], "belly": "fff0f4", "eye": "2a1418"},
+    "poporing": {"fur": ["3e6a2a", "5e943c", "84b85a", "b4dc8a"], "belly": "eef8de", "eye": "1a2410",
+                 "leaf": ["2e5a1e", "4a8a2c"]},
 }
 
 
@@ -576,7 +580,29 @@ def _animal_frame(kind, view, anim, k):
     side = view in ("e", "se", "ne")
     back = view in ("n", "ne")
     walk = anim == "walk"
-    if kind == "hare":
+    if kind in ("poring", "poporing"):
+        # Squashed on the ground, stretched in the air.
+        rise = [0, -3, -6, -6, -3, 0][k] if walk else 0
+        squash = ([2, 0, -1, -1, 0, 2][k] if walk else [0, 1, 0, 1][k])
+        base = 45 + rise
+        w, h = 8 + squash, 13 - squash
+        if rise:
+            d.ellipse((24 - 6, 44, 24 + 6, 46), fill=(0, 0, 0, 60))                # shadow on the ground
+        d.ellipse((24 - w, base - h, 24 + w, base), fill=fur[1])
+        d.ellipse((24 - w + 1, base - h, 24 + w - 1, base - 2), fill=fur[2])
+        d.ellipse((24 - w + 3, base - h + 2, 24 - w + 7, base - h + 5), fill=fur[3])  # shine
+        d.point((24 - w + 4, base - h + 3), fill=belly)
+        fx = 3 if view in ("e", "se") else (2 if view == "ne" else 0)
+        if not back:
+            d.point((21 + fx, base - h // 2 - 1), fill=eye)
+            d.point((27 + fx, base - h // 2 - 1), fill=eye) if view != "e" else None
+            d.line((23 + fx, base - h // 2 + 2, 25 + fx, base - h // 2 + 2), fill=fur[0])
+        if "leaf" in a:
+            lf = [hx(c) for c in a["leaf"]]
+            d.line((24, base - h, 24, base - h - 3), fill=lf[0])
+            d.ellipse((24, base - h - 6, 29, base - h - 3), fill=lf[1])
+            d.ellipse((19, base - h - 5, 24, base - h - 2), fill=lf[0])
+    elif kind == "hare":
         hop = [0, -2, -4, -3, -1, 0][k] if walk else (0 if k < 3 else -1 * 0)
         base = 45 + hop
         if side:

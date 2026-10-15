@@ -116,7 +116,7 @@ func test_a_creature_that_dies_leaves_its_drops_and_is_gone_for_good() -> void:
 	w = ServerWorld.open(_db, _content)
 	w.chunk("surface", 5, 5)
 	check(not w.creatures.has(id), "not back after a restart")
-	eq(_items_at(Vector2i(171, 170)), {"base:raw_meat": 1}, "the meat still there")
+	eq(_items_at(Vector2i(171, 170)), {}, "nor its meat: a restart clears the ground (ADR-0016)")
 
 
 func test_characters_hurt_characters_only_where_the_rules_allow() -> void:

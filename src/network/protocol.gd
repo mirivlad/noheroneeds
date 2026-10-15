@@ -24,7 +24,10 @@ class_name Protocol
 ## 9: maps (ADR-0020): MAP_KNOWN (the chunks a character has seen in a
 ##    location), MAP_REQUEST for their tiles, MAP_TILES.
 ## 10: WELCOME tells the height limit (max_levels), for blueprints (ADR-0021).
-const VERSION := 10
+## 11: "warm" adds blows struck [.., swing] (count * 8 + octant), for swings to
+##    be seen; the own private part carries "friends" with the inventory;
+##    REQUESTs "lock", "befriend", "unfriend" (ADR-0016).
+const VERSION := 11
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.

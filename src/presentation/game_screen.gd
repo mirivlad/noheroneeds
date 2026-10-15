@@ -41,6 +41,9 @@ var hotbar := Hotbar.new()
 var catalog := BuildCatalog.new()
 var inventory_panel := InventoryPanel.new()
 var chest_panel := ChestPanel.new()
+var pin_panel := PinPanel.new()
+## Request id -> the door's cell, for a locked one to ask the code.
+var _door_rids := {}
 ## Requests about the open container: request id -> its cell.
 var _chest_rids := {}
 var _inv_seen := 0
@@ -71,6 +74,8 @@ var world_map := WorldMap.new()
 ## Where one last walked: a jump goes that way.
 var _last_dir := Vector2i(0, 1)
 var _attacks := {}
+## When the own next blow may be shown (ms, Time): the weapon's pace.
+var _swing_ready_ms := 0
 var _deaths_seen := -1
 var game: LocalGame
 var hosted: HostedGame
@@ -108,7 +113,9 @@ const REASONS := {
 	"materials": "не хватает материалов", "too_far": "слишком далеко", "no_floor": "здесь нет пола",
 	"too_high": "выше строить нельзя (настройка сервера)", "occupied_above": "сверху что-то стоит — сначала уберите",
 	"no_opening_above": "лестнице нужно перекрытие над ней или там, куда она ведёт", "stairs_below": "сначала уберите лестницу",
-	"not_owner": "это не ваше", "empty": "здесь нечего разбирать", "no_stairs": "здесь нет лестницы",
+	"not_owner": "это чужое", "locked": "заперто", "wrong_pin": "неверный код",
+	"pin_wait": "много неверных попыток — подождите", "bad_pin": "код — четыре цифры",
+	"kept_for_dead": "это вещи погибшего — пока только его", "empty": "здесь нечего разбирать", "no_stairs": "здесь нет лестницы",
 	"unknown_part": "неизвестная деталь", "nothing_to_use": "здесь нечего открыть", "gone": "уже подобрали",
 	"not_enough": "не хватает", "no_such_place": "здесь строить нельзя",
 	"no_ammo": "нет стрел", "not_carried": "этого нет при себе", "not_a_weapon": "это не оружие",
@@ -223,7 +230,7 @@ func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
 		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog,
-				inventory_panel, chest_panel, _menu]:
+				inventory_panel, chest_panel, pin_panel, _menu]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -340,6 +347,16 @@ func _process(delta: float) -> void:
 		if _frames == 70:
 			game.world.grant(client.character_id, "base:log", 2)
 			client.request({"type": "build", "location": client.location, "x": way.x + 1, "y": way.y + 1, "part": "base:torch"})
+	if _opts.get("demo") == "loot" and game:  # dev only: looters by things lying about (ADR-0016)
+		var me := Vector2i(0, 7)
+		if _frames == 40:
+			game.world.move_character(client.character_id, me * 256 + Vector2i(128, 128))
+			game.world.creatures._spawn("base:poring", "surface", me + Vector2i(3, 0), {}, 1)
+			game.world.creatures._spawn("base:poporing", "surface", me + Vector2i(-3, 1), {}, 2)
+			game.world.place_item("surface", (me + Vector2i(5, 1)) * 256 + Vector2i(128, 128), "base:plank", 3)
+			game.world.place_item("surface", (me + Vector2i(-5, -1)) * 256 + Vector2i(128, 128), "base:stone", 2)
+	if _opts.has("swing") and _frames == int(_opts.get("frames", "120")) - int(_opts["swing"]):  # dev: a blow caught midway
+		view.swing_own(Vector2.RIGHT)
 	if _opts.has("open_map") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of the map
 		world_map.open()
 	if _opts.has("ui") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of a panel
@@ -348,6 +365,8 @@ func _process(delta: float) -> void:
 				catalog.open(client.inventory())
 			"inventory":
 				inventory_panel.show_for(client.inventory(), hotbar.selected)
+			"pin":
+				pin_panel.open_for(Vector2i(0, 2), false)
 			"plan":  # a row of walls dragged, part of it out of reach
 				var me := Movement.cell_of(client.position)
 				_blueprint = "base:wood_wall"
@@ -392,7 +411,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
-		if catalog.visible or inventory_panel.visible or chest_panel.visible or _blueprint != "":
+		if catalog.visible or inventory_panel.visible or chest_panel.visible or pin_panel.visible or _blueprint != "":
 			_close_tools()
 			return
 		menu_requested.emit()
@@ -499,6 +518,9 @@ func _do(a: Dictionary) -> void:
 	if a.get("local") == "inspect":
 		_note = Actions.describe(content, target)
 		return
+	if a.get("local") == "lock":
+		pin_panel.open_for(Vector2i(int(a["request"]["x"]), int(a["request"]["y"])), true)
+		return
 	client.hold(hotbar.held(client.inventory()))  # the hands first: the action is done with them
 	var rid := client.request(a["request"])
 	if a.get("local") == "container":
@@ -507,11 +529,24 @@ func _do(a: Dictionary) -> void:
 	match String(a["id"]):
 		"strike", "shoot", "swing", "strike_part":
 			_attacks[rid] = true
-			if a["id"] != "shoot":
-				audio.play("swing", String(a["request"].get("item", "")), null)
-			hotbar.used(String(a["request"].get("item", "")))
+			# Shown at once, but only as often as the server lets one strike.
+			var item := String(a["request"].get("item", ""))
+			var w: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
+			if a["request"].get("unarmed", false):
+				w = {}
+			var now := Time.get_ticks_msec()
+			if now >= _swing_ready_ms:
+				_swing_ready_ms = now + int(w.get("cooldown_ms", 500))
+				view.swing_own(_mouse_world() - view.own_pixel_position(1.0))
+				if a["id"] != "shoot":
+					audio.play("swing", item, null)
+			hotbar.used(item)
+		"gather":
+			view.swing_own(_mouse_world() - view.own_pixel_position(1.0))
 		"pickup":
 			_sound_on_ok[rid] = "pickup"
+		"use":
+			_door_rids[rid] = Vector2i(int(a["request"]["x"]), int(a["request"]["y"]))
 
 
 func _open_menu() -> void:
@@ -571,6 +606,7 @@ func _close_tools() -> void:
 	catalog.visible = false
 	inventory_panel.visible = false
 	chest_panel.visible = false
+	pin_panel.visible = false
 	_blueprint = ""
 	_drag_from = NO_CELL
 
@@ -605,6 +641,14 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_chest_rids[client.request({"type": "store" if putting else "take", "location": client.location,
 			"x": c.x, "y": c.y, "item": item, "count": n})] = c)
 	layer.add_child(chest_panel)
+	pin_panel.setup()
+	pin_panel.position = Vector2(180, 90)
+	pin_panel.entered.connect(func(c: Vector2i, pin: String, new_code: bool) -> void:
+		var r := {"type": "lock" if new_code else "use", "location": client.location, "x": c.x, "y": c.y, "pin": pin}
+		var rid := client.request(r)
+		if not new_code:
+			_door_rids[rid] = c)
+	layer.add_child(pin_panel)
 	_menu.theme = Art.theme()
 	_menu.id_pressed.connect(func(i: int) -> void:
 		if i >= 0 and i < _menu_actions.size():
@@ -779,6 +823,8 @@ func _update_ghost() -> void:
 
 
 func _direction() -> Vector2i:
+	if pin_panel.visible:
+		return Vector2i.ZERO  # the keys type the code
 	if _opts.has("walk"):
 		var p := String(_opts["walk"]).split(",")
 		return Vector2i(int(p[0]), int(p[1]))
@@ -806,13 +852,21 @@ func _update_hud() -> void:
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			continue
+		if _door_rids.has(rid):
+			var door: Vector2i = _door_rids[rid]
+			_door_rids.erase(rid)
+			if r.get("reason") == "locked":
+				client.results.erase(rid)
+				pin_panel.open_for(door, false)  # the code is asked for
+				continue
 		if _attacks.has(rid):
 			_attacks.erase(rid)
 			client.results.erase(rid)
 			if not r.get("ok") and r.get("reason") != "not_ready":
 				_note = String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			continue
-		_note = "готово" if r.get("ok") else "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+		_note = "готово" if r.get("ok") else "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?"))) \
+			+ (" (ещё %d мин)" % ceili(int(r["seconds"]) / 60.0) if r.has("seconds") else "")
 		if r.get("ok") and _sound_on_ok.has(rid):
 			audio.play(_sound_on_ok[rid], "", null)
 		_sound_on_ok.erase(rid)

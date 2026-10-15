@@ -24,6 +24,9 @@ var memory := {}
 var last_time := 0
 ## Health (ADR-0019); -1 until it is given its definition's.
 var health := -1
+## What a looter swallowed (ADR-0016): [{"item", "count", "at": world ms}],
+## digested in time, given back if it is killed first.
+var stomach: Array = []
 ## Looks of an NPC (as a character's appearance); empty for animals.
 var looks := {}
 ## Its own random sequence, from its id: the same world gives the same lives.
@@ -47,7 +50,7 @@ func to_data() -> Dictionary:
 		mem[k] = {"x": (m["pos"] as Vector2i).x, "y": (m["pos"] as Vector2i).y, "time": int(m["time"]), "what": String(m["what"])}
 	return {"kind": kind, "x": pos.x, "y": pos.y, "hx": home.x, "hy": home.y, "state": state,
 		"tx": target.x, "ty": target.y, "run": running, "memory": mem, "last_time": last_time,
-		"looks": looks.duplicate(true), "seed": seed, "health": health}
+		"looks": looks.duplicate(true), "seed": seed, "health": health, "stomach": stomach.duplicate(true)}
 
 
 static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
@@ -64,6 +67,9 @@ static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
 	c.looks = d.get("looks", {})
 	c.seed = int(d.get("seed", 0))
 	c.health = int(d.get("health", -1))
+	for e: Variant in d.get("stomach", []):
+		if e is Dictionary:
+			c.stomach.append({"item": String(e.get("item", "")), "count": int(e.get("count", 0)), "at": int(e.get("at", 0))})
 	var mem: Dictionary = d.get("memory", {})
 	for k: String in mem:
 		var m: Dictionary = mem[k]

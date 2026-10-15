@@ -5,10 +5,14 @@ class_name Actions
 ##                                     a ranged one shoots where one aims;
 ##   a tool         ("tools": kinds) — gets what a part or plant holds when
 ##                                     its "gather" asks for that kind;
-##   a door         ("openable")     — opens and closes;
+##   a door         ("openable")     — opens and closes; the one who set it
+##                                     up locks it with a code (ADR-0016);
 ##   a thing lying  (an item entity) — is picked up;
 ##   a way up/down  (stairs, shafts) — is climbed;
-##   one's own part (props "owner")  — may be taken apart;
+##   one's own part (props "owner")  — may be taken apart (another's only
+##                                     broken, ADR-0016); any worn one mended;
+##   another person                   — befriended (opens one's chests and
+##                                     locked doors) or no longer;
 ##   anything                         — may be looked at.
 ## So a scythe and crops, a rod and fish come as data: a tool kind on the
 ## item, a "gather" on what it works on.
@@ -45,6 +49,10 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			hit["unarmed"] = true  # the free hand
 		var with := String(content.get_def(held).get("name", "")) if w.get("kind") == "melee" else "рукой"
 		out.append({"id": "strike", "name": "Ударить (%s)" % with, "request": hit, "primary": w.get("kind") == "melee"})
+	if living and entity.get("kind") == "character":
+		var friend := client.friends().has(target["id"])
+		out.append({"id": "friend", "name": "Убрать из друзей" if friend else "Добавить в друзья",
+			"request": {"type": "unfriend" if friend else "befriend", "character": target["id"]}})
 	if kind == "entity" and entity.get("kind") == "item":
 		out.append({"id": "pickup", "name": "Подобрать", "request": {"type": "pickup", "entity": target["id"]},
 			"quick": true})
@@ -62,28 +70,38 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 		if def.has("container") and layer == "structure":
 			out.append({"id": "open_container", "name": "Открыть", "quick": true, "local": "container",
 				"request": {"type": "look_in", "location": loc, "x": cell.x, "y": cell.y}})
+		var props := view.props_at(cell)
+		var owner := String((props.get(layer, {}) as Dictionary).get("owner", "") if layer != "structure" else props.get("owner", ""))
 		if def.get("openable", false) and layer == "structure":
-			var open := bool(view.props_at(cell).get("open", false))
-			out.append({"id": "use", "name": "Закрыть" if open else "Открыть", "quick": true,
+			var open := bool(props.get("open", false))
+			var locked := bool(props.get("locked", false))
+			out.append({"id": "use", "name": "Закрыть" if open else ("Открыть (заперто)" if locked else "Открыть"), "quick": true,
 				"request": {"type": "use", "location": loc, "x": cell.x, "y": cell.y}})
+			if owner != "" and owner == client.character_id:
+				out.append({"id": "lock", "name": "Сменить код замка" if locked else "Поставить замок", "local": "lock",
+					"request": {"type": "lock", "location": loc, "x": cell.x, "y": cell.y}})
+				if locked:
+					out.append({"id": "unlock", "name": "Снять замок",
+						"request": {"type": "lock", "location": loc, "x": cell.x, "y": cell.y, "pin": ""}})
 		var role := String(def.get("role", ""))
 		if role == "stairs" or role == "shaft":
 			var down := role == "shaft" and String(def.get("leads", "down")) == "down"
 			out.append({"id": "climb", "name": "Спуститься" if down else "Подняться", "quick": true,
 				"request": {"type": "climb", "location": loc, "x": cell.x, "y": cell.y, "dir": "down" if down else "up"}})
-		var props := view.props_at(cell)
-		var owner := String((props.get(layer, {}) as Dictionary).get("owner", "") if layer != "structure" else props.get("owner", ""))
 		if layer == "structure" and int(def.get("durability", 0)) > 0:
 			var with := String(content.get_def(held).get("name", "")) if w.get("kind") == "melee" else "рукой"
 			var blow := {"type": "strike_part", "location": loc, "x": cell.x, "y": cell.y, "item": held}
 			if w.get("kind") != "melee":
 				blow["unarmed"] = true
 			out.append({"id": "strike_part", "name": "Ударить (%s)" % with, "request": blow})
-			if int(props.get("damage", 0)) > 0 and owner == client.character_id:
+			if float(props.get("damage", 0)) > 0.0:
 				out.append({"id": "repair", "name": "Ремонтировать",
 					"request": {"type": "repair", "location": loc, "x": cell.x, "y": cell.y}})
-		if owner != "" and owner == client.character_id:
-			out.append({"id": "dismantle", "name": "Разобрать",
+		if owner != "":
+			var mine := owner == client.character_id
+			out.append({"id": "dismantle", "name": "Разобрать", "enabled": mine,
+				"why": "поставлено другим: разобрать нельзя, только сломать" if layer == "structure" \
+					else "поставлено другим: разобрать нельзя",
 				"request": {"type": "dismantle", "location": loc, "x": cell.x, "y": cell.y, "layer": layer}})
 	# A melee weapon swings at the air too: one need not aim exactly to defend.
 	if w.get("kind") == "melee" and not living:

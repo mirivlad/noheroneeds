@@ -35,6 +35,16 @@ var _held: Sprite2D = null
 ## whether the thing is behind the body (seen from behind).
 const HAND := [Vector2(6, -12), Vector2(6, -12), Vector2(4, -12), Vector2(3, -13), Vector2(-5, -13)]
 const HAND_BEHIND := [false, false, false, true, true]
+## A blow (ADR-0019, ADR-0021), drawn by moving what is held and the body,
+## not by frames of the sheets: "chop" (an axe, a pick, a club: raised and
+## brought down), "thrust" (a spear: pushed out), "draw" (a bow: pulled and
+## let go), "lunge" (empty hands, beasts: the body leans in).
+const SWING_S := 0.3
+## Where the grip is below the held thing's middle (pixels): it turns round it.
+const GRIP := Vector2(0, 5)
+var _swing_t := -1.0
+var _swing_kind := ""
+var _swing_dir := Vector2.RIGHT
 
 
 ## layers: [[slot, Texture2D], ...] drawn over the body.
@@ -66,7 +76,8 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 	_shown = target if exact else _shown.lerp(target, minf(1.0, delta * 12.0))
 	var step := _shown - before
 	if step.length() > 0.05:
-		_face(step)
+		if _swing_t < 0.0:
+			_face(step)  # a blow keeps one turned to it
 		# The walk plays as fast as the feet go: running steps come quicker.
 		var pace := clampf(step.length() / maxf(delta, 0.001) / WALK_PX_PER_SEC, 0.6, 1.8) if delta > 0.0 else 1.0
 		_walk += delta * pace
@@ -74,7 +85,7 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 	else:
 		_walk = 0.0
 		_idle += delta
-	position = _shown.round()
+	position = (_shown + _swing_step(delta)).round()
 	var a := _anim("walk" if _walk > 0.0 else "idle")
 	var t := _walk if _walk > 0.0 else _idle
 	var f := int(t * float(a["fps"])) % int(a["frames"])
@@ -82,6 +93,55 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 		stepped.emit()  # the two contact frames of a walk cycle
 	_last_walk_frame = f if _walk > 0.0 else -1
 	_frame(a, f)
+
+
+## Strikes toward `dir` (any length) in a manner (SWING kinds above).
+func swing(dir: Vector2, kind: String) -> void:
+	if dir.length() > 0.01:
+		_swing_dir = dir.normalized()
+		_face(dir)
+		_frame(_anim("idle"), 0)
+	_swing_kind = kind
+	_swing_t = 0.0
+
+
+func swinging() -> bool:
+	return _swing_t >= 0.0
+
+
+## Moves the swing on: where the body leans (pixels), and the held thing.
+func _swing_step(delta: float) -> Vector2:
+	if _swing_t < 0.0:
+		return Vector2.ZERO
+	_swing_t += delta / SWING_S
+	if _swing_t >= 1.0:
+		_swing_t = -1.0
+		_place_held()
+		return Vector2.ZERO
+	var t := _swing_t
+	var lean := sin(PI * t)
+	if _held == null:
+		return _swing_dir * lean * (3.0 if _swing_kind == "lunge" or _swing_kind == "chop" else 1.0)
+	_place_held()
+	var rest := _held.position
+	match _swing_kind:
+		"chop":
+			# Raised (a quarter of the time), brought down past the rest
+			# (another quarter), back.
+			var a := -1.9 * (t / 0.25) if t < 0.25 else (lerpf(-1.9, 0.7, (t - 0.25) / 0.25) if t < 0.5 \
+				else lerpf(0.7, 0.0, (t - 0.5) / 0.5))
+			a *= -1.0 if _mirror else 1.0
+			var grip := rest + GRIP
+			_held.rotation = a
+			_held.position = grip + (rest - grip).rotated(a)
+			return _swing_dir * (2.0 * lean if t > 0.25 else 0.0)
+		"thrust":
+			_held.position = rest + _swing_dir * 6.0 * lean
+			return _swing_dir * lean
+		"draw":
+			_held.position = rest - _swing_dir * 2.0 * (lean if t < 0.6 else 0.0)
+			return Vector2.ZERO
+	return _swing_dir * 3.0 * lean
 
 
 ## Turns to look along v without walking (menus, previews).
@@ -133,6 +193,8 @@ func hold(picture: Texture2D) -> void:
 		_held = Sprite2D.new()
 		_held.scale = Vector2(0.75, 0.75)
 		add_child(_held)
+	elif _held.texture == picture:
+		return  # the same thing (asked every frame): a swing goes on undisturbed
 	_held.texture = picture
 	_place_held()
 
@@ -142,6 +204,7 @@ func _place_held() -> void:
 		return
 	var at: Vector2 = HAND[_dir]
 	_held.position = Vector2(-at.x if _mirror else at.x, at.y)
+	_held.rotation = 0.0
 	_held.flip_h = _mirror
 	_held.show_behind_parent = false
 	_held.z_index = -1 if HAND_BEHIND[_dir] else 1

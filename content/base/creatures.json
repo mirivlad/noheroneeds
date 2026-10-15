@@ -26,6 +26,18 @@
       "flee_distance": 0, "home_radius": 14, "think_ticks": 6, "memory_s": 25,
       "health": 14, "territory": 4, "drops": {"base:raw_meat": 2, "base:hide": 1},
       "attack": {"kind": "melee", "damage": 3, "reach": 0.9, "arc": 120, "cooldown_ms": 1100}
+    },
+    {
+      "id": "base:poring", "kind": "creature", "name": "Поринг", "behavior": "looter", "fauna_since": 2,
+      "speed": 0.7, "run_speed": 1.6, "sight": 7, "dark_sight": 0.5, "hearing": 6,
+      "flee_distance": 0, "home_radius": 12, "think_ticks": 10, "memory_s": 20,
+      "health": 6, "stomach": 6, "digest_s": 7200
+    },
+    {
+      "id": "base:poporing", "kind": "creature", "name": "Попоринг", "behavior": "looter", "fauna_since": 2,
+      "speed": 0.8, "run_speed": 1.9, "sight": 9, "dark_sight": 0.6, "hearing": 8,
+      "flee_distance": 0, "home_radius": 16, "think_ticks": 8, "memory_s": 25,
+      "health": 14, "stomach": 12, "digest_s": 7200
     }
   ]
 }

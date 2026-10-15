@@ -655,11 +655,9 @@ func _build_tools(layer: CanvasLayer) -> void:
 		catalog.visible = false)
 	layer.add_child(catalog)
 	inventory_panel.setup(content, view)
-	inventory_panel.position = Vector2(130, 50)
-	inventory_panel.chosen.connect(func(item: String) -> void:
-		hotbar.assign(item)
-		_save_hotbar()
-		inventory_panel.show_for(client.inventory(), hotbar.selected))
+	inventory_panel.position = Vector2(90, 24)  # clear of the minimap and the quick slots
+	inventory_panel.unslot.connect(func(slot: int) -> void:
+		hotbar.put(slot, "", -1))
 	layer.add_child(inventory_panel)
 	inventory_panel.drop.connect(func(item: String, n: int) -> void:
 		_sound_on_ok[client.request({"type": "drop", "item": item, "count": n})] = "drop")

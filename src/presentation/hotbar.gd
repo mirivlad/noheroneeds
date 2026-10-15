@@ -46,6 +46,18 @@ class Slot:
 signal select_slot(index: int)
 signal changed
 var _slots: Array[Panel] = []
+## The slot in the hands stands out at once: a bright yellow frame on a
+## see-through violet (the author's choice); the others are quiet.
+var _chosen_box := _box(Color(0.5, 0.2, 0.75, 0.55), Color(1.0, 0.88, 0.1), 2)
+var _slot_box := _box(Color(0.08, 0.07, 0.1, 0.55), Color(0.45, 0.42, 0.4, 0.8), 1)
+
+
+static func _box(fill: Color, frame: Color, width: int) -> StyleBoxFlat:
+	var b := StyleBoxFlat.new()
+	b.bg_color = fill
+	b.border_color = frame
+	b.set_border_width_all(width)
+	return b
 var _icons: Array[TextureRect] = []
 var _counts: Array[Label] = []
 
@@ -71,19 +83,21 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		var count := Label.new()
 		count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		count.add_theme_font_override("font", Art.font())
-		count.add_theme_font_size_override("font_size", 8)
+		count.add_theme_font_size_override("font_size", 16)
 		count.add_theme_color_override("font_color", Art.TEXT)
 		count.add_theme_color_override("font_outline_color", Art.INK)
 		count.add_theme_constant_override("outline_size", 2)
-		count.position = Vector2(1, 9)
+		count.position = Vector2(1, 6)
 		slot.add_child(count)
 		var key := Label.new()
 		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		key.add_theme_font_override("font", Art.font())
-		key.add_theme_font_size_override("font_size", 8)
+		key.add_theme_font_size_override("font_size", 16)
 		key.add_theme_color_override("font_color", Art.TEXT_DIM)
+		key.add_theme_color_override("font_outline_color", Art.INK)
+		key.add_theme_constant_override("outline_size", 2)
 		key.text = str(i + 1)
-		key.position = Vector2(13, -2)
+		key.position = Vector2(14, -9)
 		slot.add_child(key)
 		add_child(slot)
 		_slots.append(slot)
@@ -155,10 +169,6 @@ func held(inventory: Dictionary) -> String:
 	return id if id != "" and int(inventory.get(id, 0)) > 0 else ""
 
 
-func assign(id: String) -> void:
-	put(selected, id, -1)
-
-
 ## A thing into a slot; dragged from another slot, the two swap.
 func put(slot: int, id: String, from_slot: int) -> void:
 	var was := items[slot]
@@ -197,4 +207,4 @@ func refresh(inventory: Dictionary) -> void:
 		var n := int(inventory.get(id, 0)) if id != "" else 0
 		_counts[i].text = str(n) if n > 1 else ""
 		_icons[i].modulate = Color.WHITE if id == "" or n > 0 else Color(1, 1, 1, 0.35)
-		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == selected else Color(0.7, 0.7, 0.7)
+		_slots[i].add_theme_stylebox_override("panel", _chosen_box if i == selected else _slot_box)

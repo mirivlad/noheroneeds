@@ -911,6 +911,12 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _jump(actor, r)
 		"gather":
 			return _gather(actor, r)
+		"look_in":
+			return _look_in(actor, r)
+		"store":
+			return _move_items(actor, r, true)
+		"take":
+			return _move_items(actor, r, false)
 	return {"ok": false, "reason": "unknown_type"}
 
 
@@ -1084,6 +1090,8 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 		inv.remove(id, int(costs[id]))
 	_touch_inventory(actor)
 	var props := {"owner": actor}
+	if def.has("container"):
+		props["store"] = Uuid.v4()  # its contents are an inventory of their own
 	if not (def["rotations"] as Array).is_empty():
 		props["facing"] = _facing(def, r)
 	if role == "stairs":
@@ -1191,6 +1199,9 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	if not content.has(part):
 		# Its pack is gone: keep the part as it is rather than lose it unpaid.
 		return {"ok": false, "reason": "unknown_part"}
+	if layer == "structure" and String(c.get_props(at[3], at[4]).get("store", "")) != "" \
+			and not inventory("store|" + String(c.get_props(at[3], at[4])["store"])).stacks.is_empty():
+		return {"ok": false, "reason": "not_empty"}  # empty it first: nothing is lost
 	var upper := ""
 	if layer == "ceiling":
 		var building := levels.building(loc) if loc != SURFACE else String(_layer_props(c, "ceiling", at[3], at[4]).get("building", ""))
@@ -1582,6 +1593,69 @@ func _move_location(from: String, to: String) -> void:
 			relocated[id] = true
 	_removed_location_chunks[from] = gone
 	levels.forget(from)
+
+
+# --- containers (chests) ---------------------------------------------------------
+
+## The container at a request's cell, if the actor may use it: [inventory
+## owner key, its definition's "container", ""] or [..., ..., reason].
+func _container(actor: String, r: Dictionary) -> Array:
+	var at := _cell(r)
+	var x := int(r.get("x", 0))
+	var y := int(r.get("y", 0))
+	if not _reaches(actor, at[0], x, y, USE_REACH):
+		return ["", {}, "too_far"]
+	var c := chunk(at[0], at[1], at[2])
+	var part := c.get_cell("structure", at[3], at[4])
+	var spec: Dictionary = content.get_def(part).get("container", {}) if part != "" else {}
+	var props := c.get_props(at[3], at[4])
+	if spec.is_empty() or String(props.get("store", "")) == "":
+		return ["", {}, "not_a_container"]
+	# Whose things are whose (ADR-0016): for now only the owner opens it.
+	if String(props.get("owner", "")) != actor:
+		return ["", {}, "not_owner"]
+	return ["store|" + String(props["store"]), spec, ""]
+
+
+## Cells a set of stacks takes in a container (by each item's stack size).
+func _slots_used(stacks: Dictionary) -> int:
+	var n := 0
+	for id: String in stacks:
+		n += ceili(float(stacks[id]) / maxi(1, int(content.get_def(id).get("stack", 1))))
+	return n
+
+
+func _look_in(actor: String, r: Dictionary) -> Dictionary:
+	var c := _container(actor, r)
+	if c[2] != "":
+		return {"ok": false, "reason": c[2]}
+	return {"ok": true, "contents": inventory(c[0]).stacks.duplicate(), "slots": int(c[1]["slots"])}
+
+
+## Puts into (store) or takes out of (take) a container {"item", "count"}.
+func _move_items(actor: String, r: Dictionary, putting: bool) -> Dictionary:
+	var c := _container(actor, r)
+	if c[2] != "":
+		return {"ok": false, "reason": c[2]}
+	var item := String(r.get("item", ""))
+	var n := int(r.get("count", 0))
+	if content.kind_of(item) != "item" or n <= 0:
+		return {"ok": false, "reason": "bad_request"}
+	var box := inventory(c[0])
+	var from := inventory(actor) if putting else box
+	var to := box if putting else inventory(actor)
+	if from.count(item) < n:
+		return {"ok": false, "reason": "not_enough"}
+	if putting:
+		var after := box.stacks.duplicate()
+		after[item] = int(after.get(item, 0)) + n
+		if _slots_used(after) > int(c[1]["slots"]):
+			return {"ok": false, "reason": "full"}
+	from.remove(item, n)
+	to.add(item, n)
+	_touch_inventory(actor)
+	_touch_inventory(c[0])
+	return {"ok": true, "contents": box.stacks.duplicate(), "slots": int(c[1]["slots"])}
 
 
 func _transfer(actor: String, r: Dictionary) -> Dictionary:

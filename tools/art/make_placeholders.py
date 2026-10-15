@@ -989,6 +989,16 @@ def main():
             v["rotations"] = {"e": east_v["rect"]}
             v["mirror"] = {"w": "e"}
     a.put(14, 9, column, "base:wood_column", (0, 2 * T), "tall")
+    # A chest (a container, ADR-0021): a wooden box with a lid and a lock.
+    chest = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
+    d = ImageDraw.Draw(chest)
+    d.rectangle((1, T + 4, 14, 2 * T - 2), P["wood"][2])
+    d.rectangle((1, T + 2, 14, T + 6), P["wood"][3])
+    d.line((1, T + 7, 14, T + 7), P["wood"][0])
+    for x in (4, 11):
+        d.line((x, T + 2, x, 2 * T - 2), P["wood"][1])
+    d.rectangle((7, T + 6, 8, T + 9), hx("c8a040"))
+    a.put(15, 7, strong(chest), "base:chest", (0, 2 * T), "tall")
     (OUT / "art").mkdir(parents=True, exist_ok=True)
     # The middle palette of B4 over everything, and its light grain.
     toned = b3.grain(b3.tone(a.img, MIDDLE), dict(MIDDLE, grain=0.03), 7)

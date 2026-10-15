@@ -40,6 +40,10 @@ var content: ContentRegistry
 var hotbar := Hotbar.new()
 var catalog := BuildCatalog.new()
 var inventory_panel := InventoryPanel.new()
+var chest_panel := ChestPanel.new()
+## Requests about the open container: request id -> its cell.
+var _chest_rids := {}
+var _inv_seen := 0
 ## The context menu (right button) and the actions it lists.
 var _menu := PopupMenu.new()
 var _menu_actions: Array[Dictionary] = []
@@ -105,7 +109,8 @@ const REASONS := {
 	"roof_below": "внизу крыша", "bad_request": "не получилось",
 	"no_tool": "этим этого не сделать", "nothing_to_gather": "здесь нечего добыть", "natural": "это не разобрать — только выкопать", "not_buildable": "это не строится",
 	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят",
-	"blocked_below": "внизу что-то построено", "too_deep": "глубже нельзя (настройка сервера)",
+	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
+	"not_a_container": "это не открыть", "too_deep": "глубже нельзя (настройка сервера)",
 }
 
 
@@ -214,7 +219,7 @@ func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
 		for n: Node in [view, camera, hud, status, _info, _ghost, audio, minimap, world_map, hotbar, catalog,
-				inventory_panel, _menu]:
+				inventory_panel, chest_panel, _menu]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -378,7 +383,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
-		if catalog.visible or inventory_panel.visible or _blueprint != "":
+		if catalog.visible or inventory_panel.visible or chest_panel.visible or _blueprint != "":
 			_close_tools()
 			return
 		menu_requested.emit()
@@ -425,6 +430,8 @@ func _key(k: int, shift: bool) -> void:
 		var held := hotbar.held(client.inventory())
 		if held != "":
 			_sound_on_ok[client.request({"type": "drop", "item": held, "count": 1})] = "drop"
+	elif k == KEY_E and chest_panel.visible:
+		chest_panel.visible = false
 	elif k == KEY_E:
 		var q := Actions.quick(actions)
 		if not q.is_empty():
@@ -480,6 +487,9 @@ func _do(a: Dictionary) -> void:
 		_note = Actions.describe(content, target)
 		return
 	var rid := client.request(a["request"])
+	if a.get("local") == "container":
+		_chest_rids[rid] = Vector2i(int(a["request"]["x"]), int(a["request"]["y"]))
+		return
 	match String(a["id"]):
 		"strike", "shoot", "swing":
 			_attacks[rid] = true
@@ -561,6 +571,7 @@ func _drag_cells(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 func _close_tools() -> void:
 	catalog.visible = false
 	inventory_panel.visible = false
+	chest_panel.visible = false
 	_blueprint = ""
 	_drag_from = NO_CELL
 
@@ -584,6 +595,17 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_save_hotbar()
 		inventory_panel.show_for(client.inventory(), hotbar.selected))
 	layer.add_child(inventory_panel)
+	inventory_panel.drop.connect(func(item: String, n: int) -> void:
+		_sound_on_ok[client.request({"type": "drop", "item": item, "count": n})] = "drop")
+	hotbar.select_slot.connect(func(i: int) -> void: _choose_slot(i))
+	hotbar.changed.connect(_save_hotbar)
+	chest_panel.setup(content, view)
+	chest_panel.position = Vector2(60, 50)
+	chest_panel.move.connect(func(item: String, n: int, putting: bool) -> void:
+		var c := chest_panel.cell
+		_chest_rids[client.request({"type": "store" if putting else "take", "location": client.location,
+			"x": c.x, "y": c.y, "item": item, "count": n})] = c)
+	layer.add_child(chest_panel)
 	_menu.theme = Art.theme()
 	_menu.id_pressed.connect(func(i: int) -> void:
 		if i >= 0 and i < _menu_actions.size():
@@ -733,6 +755,15 @@ func _direction() -> Vector2i:
 func _update_hud() -> void:
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
+		if _chest_rids.has(rid):
+			var at: Vector2i = _chest_rids[rid]
+			_chest_rids.erase(rid)
+			client.results.erase(rid)
+			if r.get("ok"):
+				chest_panel.open_at(at, r.get("contents", {}), int(r.get("slots", 0)), client.inventory())
+			else:
+				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+			continue
 		if _attacks.has(rid):
 			_attacks.erase(rid)
 			client.results.erase(rid)
@@ -800,6 +831,12 @@ func _update_hud() -> void:
 			doing = what
 	status.text = "%s  %s   %s   %s" % [state, hands, doing, note]
 	hotbar.refresh(inv)
+	if inv.hash() != _inv_seen:  # the open panels follow what one carries
+		_inv_seen = inv.hash()
+		if chest_panel.visible:
+			chest_panel.refresh(inv)
+		if inventory_panel.visible:
+			inventory_panel.show_for(inv, hotbar.selected)
 
 
 ## What the cursor points at and what can be done there (each frame), and

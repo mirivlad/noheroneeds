@@ -1724,6 +1724,24 @@
    "variants": 1
   },
   {
+   "id": "base:visual/chest",
+   "kind": "visual",
+   "for": "base:chest",
+   "atlas": "art/tiles.png",
+   "rect": [
+    240,
+    112,
+    16,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "mode": "tall",
+   "variants": 1
+  },
+  {
    "id": "base:visual/humanoid_adult",
    "kind": "visual",
    "for": "base:humanoid_adult",

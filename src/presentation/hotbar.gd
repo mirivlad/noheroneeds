@@ -11,6 +11,37 @@ var view: WorldView
 ## Item ids ("" empty), and the slot in the hands.
 var items: Array[String] = []
 var selected := 0
+## A slot: a thing may be dragged onto it (from the things, or another slot).
+class Slot:
+	extends Panel
+	var bar: Hotbar
+	var index := 0
+
+	func _get_drag_data(_at: Vector2) -> Variant:
+		var id := bar.items[index]
+		if id == "":
+			return null
+		var preview := TextureRect.new()
+		preview.texture = (get_child(0) as TextureRect).texture
+		preview.size = Vector2(16, 16)
+		set_drag_preview(preview)
+		return {"item": id, "from_slot": index}
+
+	func _can_drop_data(_at: Vector2, data: Variant) -> bool:
+		return typeof(data) == TYPE_DICTIONARY and data.has("item")
+
+	func _drop_data(_at: Vector2, data: Variant) -> void:
+		bar.put(index, String(data["item"]), int(data.get("from_slot", -1)))
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
+				and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			bar.select_slot.emit(index)
+
+
+## The player chose a slot with the mouse; the slots changed (to keep them).
+signal select_slot(index: int)
+signal changed
 var _slots: Array[Panel] = []
 var _icons: Array[TextureRect] = []
 var _counts: Array[Label] = []
@@ -23,16 +54,19 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	items.resize(SLOTS)
 	items.fill("")
 	for i in SLOTS:
-		var slot := Panel.new()
+		var slot := Slot.new()
+		slot.bar = self
+		slot.index = i
 		slot.custom_minimum_size = Vector2(20, 20)
-		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var icon := TextureRect.new()
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.position = Vector2(2, 2)
 		icon.size = Vector2(16, 16)
 		slot.add_child(icon)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var count := Label.new()
+		count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		count.add_theme_font_override("font", Art.font())
 		count.add_theme_font_size_override("font_size", 8)
 		count.add_theme_color_override("font_color", Art.TEXT)
@@ -41,6 +75,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		count.position = Vector2(1, 9)
 		slot.add_child(count)
 		var key := Label.new()
+		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		key.add_theme_font_override("font", Art.font())
 		key.add_theme_font_size_override("font_size", 8)
 		key.add_theme_color_override("font_color", Art.TEXT_DIM)
@@ -60,10 +95,19 @@ func held(inventory: Dictionary) -> String:
 
 
 func assign(id: String) -> void:
+	put(selected, id, -1)
+
+
+## A thing into a slot; dragged from another slot, the two swap.
+func put(slot: int, id: String, from_slot: int) -> void:
+	var was := items[slot]
 	for i in SLOTS:
 		if items[i] == id:
 			items[i] = ""  # one slot per thing
-	items[selected] = id
+	items[slot] = id
+	if from_slot >= 0 and from_slot != slot:
+		items[from_slot] = was
+	changed.emit()
 
 
 ## Slots filled for a character seen first: weapons and tools it carries.

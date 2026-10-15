@@ -206,6 +206,12 @@ func _validate() -> void:
 					_check_opening(id, d)
 				if d.has("gather"):
 					_check_gather(id, d)
+				if d.has("container"):
+					var box: Variant = d["container"]
+					if typeof(box) != TYPE_DICTIONARY or int(box.get("slots", 0)) < 1:
+						errors.append("%s: a container needs {slots}" % id)
+					else:
+						box["slots"] = int(box["slots"])
 				if d["role"] == "shaft" and not ["up", "down"].has(String(d.get("leads", ""))):
 					errors.append("%s: a shaft leads up or down" % id)
 				if d["role"] == "ceiling" and kind_of(String(d.get("floor", ""))) != "ground":

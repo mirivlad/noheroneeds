@@ -58,6 +58,9 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			out.append({"id": "gather", "name": String(g["verb"]), "primary": ok, "enabled": ok,
 				"why": "нужно взять в руки: " + tool_names(content, tool),
 				"request": {"type": "gather", "location": loc, "x": cell.x, "y": cell.y, "layer": layer, "item": held}})
+		if def.has("container") and layer == "structure":
+			out.append({"id": "open_container", "name": "Открыть", "quick": true, "local": "container",
+				"request": {"type": "look_in", "location": loc, "x": cell.x, "y": cell.y}})
 		if def.get("openable", false) and layer == "structure":
 			var open := bool(view.props_at(cell).get("open", false))
 			out.append({"id": "use", "name": "Закрыть" if open else "Открыть", "quick": true,

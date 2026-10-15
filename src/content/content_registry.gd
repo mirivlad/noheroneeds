@@ -204,8 +204,8 @@ func _validate() -> void:
 				_check_height(id, d, 1.0)
 				if d.has("opening"):
 					_check_opening(id, d)
-				if d.has("dig"):
-					_check_dig(id, d)
+				if d.has("gather"):
+					_check_gather(id, d)
 				if d["role"] == "shaft" and not ["up", "down"].has(String(d.get("leads", ""))):
 					errors.append("%s: a shaft leads up or down" % id)
 				if d["role"] == "ceiling" and kind_of(String(d.get("floor", ""))) != "ground":
@@ -247,6 +247,8 @@ func _validate() -> void:
 				pass
 			"ground", "plant":
 				d["solid"] = bool(d.get("solid", false))
+				if d.has("gather"):
+					_check_gather(id, d)
 				_check_height(id, d, 1.0)
 			"generator" when String(d.get("space", "surface")) == "underground":
 				_check_underground(id, d)
@@ -369,15 +371,18 @@ func _check_weapon(id: String, field: String, w: Variant, ranged_ok: bool) -> vo
 			errors.append("%s: %s kind must be melee or ranged" % [id, field])
 
 
-## Natural rock that is dug, not taken apart (ADR-0017): {"tool": a tool
-## kind one must carry ("" none), "drops": {item: n}}.
-func _check_dig(id: String, d: Dictionary) -> void:
-	var g: Variant = d["dig"]
+## What is got from a part or a plant (ADR-0017, ADR-0021): rock dug, a tree
+## felled. {"tool": the kind of tool to hold ("" bare hands), "verb": the
+## action's name, "drops": {item: n}}. Any tool whose "tools" list has that
+## kind does it: a new tool or a new thing to gather is data only.
+func _check_gather(id: String, d: Dictionary) -> void:
+	var g: Variant = d["gather"]
 	if typeof(g) != TYPE_DICTIONARY:
-		errors.append("%s: dig must be {tool, drops}" % id)
+		errors.append("%s: gather must be {tool, verb, drops}" % id)
 		return
 	g["tool"] = String(g.get("tool", ""))
-	_check_amounts(id, "dig drops", g.get("drops", {}), false)
+	g["verb"] = String(g.get("verb", "Добыть"))
+	_check_amounts(id, "gather drops", g.get("drops", {}), false)
 
 
 ## The underground generator: its floor, rock, pool water, the parts at the

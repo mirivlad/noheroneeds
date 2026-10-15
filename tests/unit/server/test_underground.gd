@@ -91,16 +91,24 @@ func test_a_way_down_near_the_spawn_point_and_back_up() -> void:
 	eq(_part("surface", way), "base:cave_mouth")
 
 
-func test_digging_needs_a_pick_and_gives_what_the_rock_holds() -> void:
+func test_digging_needs_a_pick_in_hand_and_gives_what_the_rock_holds() -> void:
 	var way := _spawn_way()
 	var at := _rock_beside_floor("depth:-1", way)
 	check(not at.is_empty(), "rock beside the hollow")
 	var rock: String = _part("depth:-1", at[0])
 	var p := _player(at[1], "depth:-1")
-	eq(_req(p, {"type": "dismantle", "location": "depth:-1", "x": at[0].x, "y": at[0].y}).get("reason"), "no_tool")
+	eq(_req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": ""}).get("reason"), "no_tool",
+		"not with bare hands")
+	eq(_req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"}).get("reason"),
+		"not_carried", "a pick one has")
+	eq(_req(p, {"type": "dismantle", "location": "depth:-1", "x": at[0].x, "y": at[0].y}).get("reason"), "natural",
+		"rock is dug, not taken apart")
 	w.grant(p, "base:pickaxe", 1)
+	w.grant(p, "base:axe", 1)
+	eq(_req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:axe"}).get("reason"),
+		"no_tool", "an axe does not dig")
 	var stone := w.inventory(p).count("base:stone")
-	var r := _req(p, {"type": "dismantle", "location": "depth:-1", "x": at[0].x, "y": at[0].y})
+	var r := _req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"})
 	check(r.get("ok", false), "dug: %s" % r)
 	eq(_part("depth:-1", at[0]), "", "the cell is open now")
 	check(w.inventory(p).count("base:stone") > stone or rock != "base:rock", "stone from rock")
@@ -112,7 +120,7 @@ func test_digging_needs_a_pick_and_gives_what_the_rock_holds() -> void:
 	w.grant(q, "base:pickaxe", 1)
 	var c := w.chunk("depth:-1", floori(at[0].x / 32.0), floori(at[0].y / 32.0))
 	c.set_cell("structure", posmod(at[0].x, 32), posmod(at[0].y, 32), "base:iron_ore_rock")
-	_req(q, {"type": "dismantle", "location": "depth:-1", "x": at[0].x, "y": at[0].y})
+	_req(q, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"})
 	eq(w.inventory(q).count("base:iron_ore"), 1, "iron ore from its vein")
 
 
@@ -196,3 +204,24 @@ func test_creatures_live_below_and_a_spider_hunts_in_the_dark() -> void:
 		w.creatures.step(w.tick)
 		w.combat.step(w.tick)
 	check(w.combat.health_of(p) < 20 or int(w.present[p]["deaths"]) > 0, "bitten in the dark at noon: %s" % spider.state)
+
+
+## ADR-0021: trees are felled with an axe in hand; taking apart names its
+## layer (a roof, not the wall under it).
+func test_felling_a_tree_and_taking_apart_a_chosen_layer() -> void:
+	var c := w.chunk("surface", 3, 3)
+	c.set_cell("ground", 5, 5, "base:grass")
+	c.set_cell("cover", 5, 5, "base:oak")
+	var p := _player(Vector2i(100, 101))
+	w.grant(p, "base:axe", 1)
+	var r := _req(p, {"type": "gather", "location": "surface", "x": 101, "y": 101, "layer": "cover", "item": "base:axe"})
+	check(r.get("ok", false), "felled: %s" % r)
+	eq(w.inventory(p).count("base:log"), 3, "an oak gives three logs")
+	eq(w.chunk("surface", 3, 3).get_cell("cover", 5, 5), "", "the tree is gone")
+	w.grant(p, "base:plank", 20)
+	w.grant(p, "base:log", 5)
+	_req(p, {"type": "build", "location": "surface", "x": 102, "y": 100, "part": "base:wood_wall"})
+	_req(p, {"type": "build", "location": "surface", "x": 102, "y": 100, "part": "base:thatch_roof"})
+	r = _req(p, {"type": "dismantle", "location": "surface", "x": 102, "y": 100, "layer": "roof"})
+	eq(r.get("part"), "base:thatch_roof", "the roof, as asked")
+	eq(_part("surface", Vector2i(102, 100)), "base:wood_wall", "the wall stays")

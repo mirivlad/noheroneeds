@@ -909,6 +909,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return combat.attack(actor, r)
 		"jump":
 			return _jump(actor, r)
+		"gather":
+			return _gather(actor, r)
 	return {"ok": false, "reason": "unknown_type"}
 
 
@@ -1167,16 +1169,21 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
 	var c := chunk(loc, at[1], at[2])
-	var layer := ""
-	for l: String in ["structure", "roof", "ceiling"]:
-		if c.get_cell(l, at[3], at[4]) != "":
-			layer = l
-			break
+	# The layer asked for (ADR-0021: the player points at a roof, a ceiling,
+	# a wall); older clients: what stands there, else the roof, the ceiling.
+	var layer := String(r.get("layer", ""))
+	if layer != "" and not layer in ["structure", "roof", "ceiling"]:
+		return {"ok": false, "reason": "bad_request"}
+	if layer != "" and c.get_cell(layer, at[3], at[4]) == "":
+		return {"ok": false, "reason": "empty"}
+	if layer == "":
+		for l: String in ["structure", "roof", "ceiling"]:
+			if c.get_cell(l, at[3], at[4]) != "":
+				layer = l
+				break
 	if layer == "":
 		return {"ok": false, "reason": "empty"}
 	var part := c.get_cell(layer, at[3], at[4])
-	if layer == "structure" and content.get_def(part).has("dig"):
-		return _dig(actor, loc, at, x, y, part)
 	if layer == "structure" and content.get_def(part).get("natural", false):
 		return {"ok": false, "reason": "natural"}
 	if _layer_props(c, layer, at[3], at[4]).get("owner", "") != actor:
@@ -1220,15 +1227,34 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	return {"ok": true, "part": part}
 
 
-## Digs out natural rock (ADR-0017): with the tool its "dig" asks for
-## carried; what it holds goes to the one digging; the cell is open floor.
-func _dig(actor: String, loc: String, at: Array, x: int, y: int, part: String) -> Dictionary:
-	var g: Dictionary = content.get_def(part)["dig"]
-	var tool := String(g["tool"])
-	if tool != "" and not _carries_tool(actor, tool):
-		return {"ok": false, "reason": "no_tool"}
+## Gets what a part or a plant holds (ADR-0017, ADR-0021): rock dug, a tree
+## felled — {"layer": "structure" or "cover", "item": what one holds}. The
+## thing's "gather" says which kind of tool it takes; the item held must be
+## carried and be that kind of tool. It is gone then; what it held goes to
+## the one who got it.
+func _gather(actor: String, r: Dictionary) -> Dictionary:
+	var at := _cell(r)
+	var loc: String = at[0]
+	var x := int(r.get("x", 0))
+	var y := int(r.get("y", 0))
+	var layer := String(r.get("layer", "structure"))
+	if not layer in ["structure", "cover"]:
+		return {"ok": false, "reason": "bad_request"}
+	if not _reaches(actor, loc, x, y, BUILD_REACH):
+		return {"ok": false, "reason": "too_far"}
 	var c := chunk(loc, at[1], at[2])
-	c.set_cell("structure", at[3], at[4], "")
+	var thing := c.get_cell(layer, at[3], at[4])
+	var g: Dictionary = content.get_def(thing).get("gather", {}) if thing != "" else {}
+	if g.is_empty():
+		return {"ok": false, "reason": "nothing_to_gather"}
+	var item := String(r.get("item", ""))
+	var tool := String(g["tool"])
+	if tool != "":
+		if item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool):
+			return {"ok": false, "reason": "no_tool"}
+		if present.has(actor) and inventory(actor).count(item) <= 0:
+			return {"ok": false, "reason": "not_carried"}
+	c.set_cell(layer, at[3], at[4], "")
 	_changed(chunk_key(loc, at[1], at[2]))
 	var inv := inventory(actor)
 	var drops: Dictionary = g.get("drops", {})
@@ -1236,17 +1262,7 @@ func _dig(actor: String, loc: String, at: Array, x: int, y: int, part: String) -
 		inv.add(id, int(drops[id]))
 	_touch_inventory(actor)
 	creatures.noise(loc, Vector2i(x, y))
-	return {"ok": true, "part": part, "drops": drops}
-
-
-func _carries_tool(actor: String, tool: String) -> bool:
-	if not present.has(actor) and not _inventories.has(actor):
-		return true  # server tools
-	var inv := inventory(actor)
-	for id: String in inv.stacks:
-		if (content.get_def(id).get("tools", []) as Array).has(tool):
-			return true
-	return false
+	return {"ok": true, "thing": thing, "drops": drops}
 
 
 ## Anything on a cell of a level: a part, a ceiling, a roof, a thing, a person.

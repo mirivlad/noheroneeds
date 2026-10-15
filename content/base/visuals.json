@@ -1994,6 +1994,80 @@
      "fps": 10
     }
    }
+  },
+  {
+   "id": "base:visual/cave_rat",
+   "kind": "visual",
+   "for": "base:cave_rat",
+   "atlas": "art/creatures/cave_rat.png",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "mode": "character",
+   "variants": 1,
+   "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n"
+   ],
+   "animations": {
+    "idle": {
+     "from": 0,
+     "frames": 4,
+     "fps": 3
+    },
+    "walk": {
+     "from": 4,
+     "frames": 6,
+     "fps": 10
+    }
+   }
+  },
+  {
+   "id": "base:visual/cave_spider",
+   "kind": "visual",
+   "for": "base:cave_spider",
+   "atlas": "art/creatures/cave_spider.png",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ],
+   "origin": [
+    24,
+    45
+   ],
+   "mode": "character",
+   "variants": 1,
+   "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n"
+   ],
+   "animations": {
+    "idle": {
+     "from": 0,
+     "frames": 4,
+     "fps": 3
+    },
+    "walk": {
+     "from": 4,
+     "frames": 6,
+     "fps": 10
+    }
+   }
   }
  ]
 }

@@ -117,9 +117,11 @@ func take_rows(location: String, rows: Array) -> void:
 
 ## A chunk came into memory: give a surface chunk its animals once.
 func on_chunk_ready(location: String, cx: int, cy: int, c: Chunk) -> void:
-	if location != Levels.SURFACE or world.generator == null or int(c.meta.get("fauna", 0)) >= FAUNA_VERSION:
+	var wild := (location == Levels.SURFACE and world.generator != null) \
+		or (Levels.is_depth(location) and world.underground != null)
+	if not wild or int(c.meta.get("fauna", 0)) >= FAUNA_VERSION:
 		return
-	_populate(cx, cy)
+	_populate(location, cx, cy)
 	c.meta["fauna"] = FAUNA_VERSION
 	world.mark_chunk_dirty(location, cx, cy)
 	if cx == 0 and cy == 0 and world.store.read_meta("villagers") == "":
@@ -127,18 +129,23 @@ func on_chunk_ready(location: String, cx: int, cy: int, c: Chunk) -> void:
 		world.note_fact("villagers", "1")
 
 
-func _populate(cx: int, cy: int) -> void:
-	var gen := world.generator
-	var centre := Vector2i(cx * Chunk.SIZE + Chunk.SIZE / 2, cy * Chunk.SIZE + Chunk.SIZE / 2)
-	var biome := gen.biome_id_at(centre.x, centre.y)
-	if biome == "":
-		return
-	var b := world.content.get_def(biome)
+## Who lives in a chunk made just now: the surface's biome's fauna, or the
+## underground's (its generator's "fauna"), on cells one can stand on.
+func _populate(location: String, cx: int, cy: int) -> void:
+	var b: Dictionary
+	if location == Levels.SURFACE:
+		var centre := Vector2i(cx * Chunk.SIZE + Chunk.SIZE / 2, cy * Chunk.SIZE + Chunk.SIZE / 2)
+		var biome := world.generator.biome_id_at(centre.x, centre.y)
+		if biome == "":
+			return
+		b = world.content.get_def(biome)
+	else:
+		b = world.content.get_def(UndergroundGenerator.ID)
 	var fauna: Dictionary = b.get("fauna", {})
 	if fauna.is_empty():
 		return
 	var r := RandomNumberGenerator.new()
-	r.seed = hash([world.world_seed, cx, cy, "fauna"])
+	r.seed = hash([world.world_seed, cx, cy, "fauna"] if location == Levels.SURFACE else [world.world_seed, location, cx, cy, "fauna"])
 	var n := int(float(b["fauna_density"]) + r.randf())
 	var kinds := fauna.keys()
 	kinds.sort()
@@ -155,8 +162,8 @@ func _populate(cx: int, cy: int) -> void:
 				break
 		for attempt in 8:
 			var cell := Vector2i(cx * Chunk.SIZE + r.randi_range(0, Chunk.SIZE - 1), cy * Chunk.SIZE + r.randi_range(0, Chunk.SIZE - 1))
-			if _walkable(Levels.SURFACE, cell):
-				_spawn(kind, Levels.SURFACE, cell, {}, hash([world.world_seed, cx, cy, i]))
+			if _walkable(location, cell):
+				_spawn(kind, location, cell, {}, hash([world.world_seed, location, cx, cy, i]))
 				break
 
 
@@ -459,7 +466,7 @@ func _prey(c: Creature, def: Dictionary) -> void:
 		return
 	if c.state == "alert" and not _nearest_threat(c, flee * 1.8, NOISE_S).is_empty():
 		return  # still watching what it ran from
-	if Daylight.is_night(world.world_time):
+	if Daylight.is_night(world.world_time) and world.has_daylight(c.location):
 		if c.target == Creature.NO_TARGET:
 			_go(c, "rest", Creature.NO_TARGET, false)
 		return
@@ -507,7 +514,7 @@ func _villager(c: Creature, def: Dictionary) -> void:
 ## where it last saw it. Otherwise it keeps near its den: resting by day,
 ## prowling by night.
 func _predator(c: Creature, def: Dictionary) -> void:
-	var night := Daylight.is_night(world.world_time)
+	var night := Daylight.is_night(world.world_time) or not world.has_daylight(c.location)  # below: always night
 	var max_hp := int(def["health"])
 	var prey := _nearest_character(c, float(def["sight"]))
 	var attacker := _attacker(c, float(def["sight"]))

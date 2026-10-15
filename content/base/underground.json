@@ -6,7 +6,8 @@
       "floor": "base:cave_floor", "rock": "base:rock", "water": "base:water",
       "cave_threshold": 0.35, "cave_frequency": 0.05, "passage_frequency": 0.02, "passage_width": 0.065, "water_threshold": 0.55,
       "entrance_chance": 0.04, "hollow": 3,
-      "way_down_surface": "base:cave_mouth", "way_down": "base:cave_drop", "way_up": "base:cave_climb"
+      "way_down_surface": "base:cave_mouth", "way_down": "base:cave_drop", "way_up": "base:cave_climb",
+      "fauna": {"base:cave_rat": 2, "base:cave_spider": 0.7}, "fauna_density": 0.9
     },
 
     {"id": "base:cave_floor", "kind": "ground", "name": "Пол пещеры"},
@@ -36,6 +37,20 @@
     {"id": "base:mine_ladder", "kind": "structure", "natural": true, "role": "shaft", "leads": "up", "solid": false, "name": "Лестница наверх"},
     {"id": "base:headframe", "kind": "structure", "role": "shaft", "leads": "down", "solid": false, "name": "Шахтный копёр",
       "surface_only": true, "cost": {"base:log": 40, "base:plank": 120, "base:stone": 60, "base:iron_ore": 10}},
+
+    {
+      "id": "base:cave_rat", "kind": "creature", "name": "Пещерная крыса", "behavior": "prey",
+      "speed": 1.0, "run_speed": 2.2, "sight": 6, "dark_sight": 0.9, "hearing": 10,
+      "flee_distance": 5, "home_radius": 8, "think_ticks": 8, "memory_s": 20,
+      "health": 2, "drops": {"base:raw_meat": 1}
+    },
+    {
+      "id": "base:cave_spider", "kind": "creature", "name": "Пещерный паук", "behavior": "predator",
+      "speed": 0.8, "run_speed": 1.9, "sight": 7, "dark_sight": 0.95, "hearing": 9,
+      "flee_distance": 0, "home_radius": 8, "think_ticks": 6, "memory_s": 20,
+      "health": 8, "territory": 5,
+      "attack": {"kind": "melee", "damage": 2, "reach": 0.8, "arc": 120, "cooldown_ms": 1000}
+    },
 
     {"id": "base:pickaxe", "kind": "item", "name": "Кирка", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"],
       "weapon": {"kind": "melee", "damage": 3, "reach": 1.0, "arc": 70, "cooldown_ms": 800}},

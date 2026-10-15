@@ -561,6 +561,8 @@ ANIMALS = {
     "hare": {"fur": ["5a4632", "7a5e42", "9a7a58", "b89a74"], "belly": "e6dcc8", "eye": "1e1612"},
     "deer": {"fur": ["4a3020", "6e4a2e", "8e6440", "ae8458"], "belly": "e2d4b8", "eye": "1e1612"},
     "wolf": {"fur": ["3a3a40", "5a5a62", "7c7a80", "a09ca0"], "belly": "c8c2bc", "eye": "e8c040"},
+    "cave_rat": {"fur": ["3a3236", "54484c", "6e6064", "8a7c7e"], "belly": "b8a8a4", "eye": "d84040"},
+    "cave_spider": {"fur": ["1e1a22", "2e2834", "443a4c", "5e5068"], "belly": "6a3a48", "eye": "e8e060"},
 }
 
 
@@ -598,6 +600,39 @@ def _animal_frame(kind, view, anim, k):
                 d.ellipse((22, base - 6, 26, base - 1), fill=belly)
             else:
                 d.ellipse((22, base - 4, 26, base), fill=belly)
+    elif kind == "cave_rat":
+        hop = [0, -1, 0, 0, -1, 0][k] if walk else 0
+        base = 45 + hop
+        if side:
+            d.line((14, base - 2, 9, base - 4), fill=fur[1])                # tail
+            d.ellipse((14, base - 6, 26, base), fill=fur[2])                 # body
+            d.ellipse((24, base - 6, 30, base - 1), fill=fur[2])             # head
+            d.point((30, base - 3), fill=fur[0])
+            d.ellipse((24, base - 8, 26, base - 6), fill=fur[3])             # ear
+            d.point((28, base - 4), fill=eye)
+        else:
+            d.ellipse((19, base - 7, 29, base), fill=fur[2])
+            d.ellipse((20, base - 9, 22, base - 7), fill=fur[3])
+            d.ellipse((26, base - 9, 28, base - 7), fill=fur[3])
+            if not back:
+                d.point((22, base - 5), fill=eye)
+                d.point((26, base - 5), fill=eye)
+            else:
+                d.line((24, base, 24, base + 2), fill=fur[1])
+    elif kind == "cave_spider":
+        step = [0, 1, 0, -1, 0, 1][k] if walk else 0
+        cy0 = 40
+        for i, (lx, ly) in enumerate(((-9, -3), (-10, 1), (-9, 4), (-6, 6))):
+            s2 = step if i % 2 == 0 else -step
+            d.line((24, cy0, 24 + lx, cy0 + ly + s2), fill=fur[1])
+            d.line((24, cy0, 24 - lx, cy0 + ly - s2), fill=fur[1])
+        d.ellipse((19, cy0 - 5, 29, cy0 + 4), fill=fur[2])                 # body
+        d.ellipse((21, cy0 - 3, 27, cy0 + 2), fill=belly)
+        if not back:
+            d.point((22, cy0 - 4), fill=eye)
+            d.point((26, cy0 - 4), fill=eye)
+            d.point((23, cy0 - 5), fill=eye)
+            d.point((25, cy0 - 5), fill=eye)
     elif kind == "wolf":
         lift = [0, -1, 0, 0, -1, 0][k] if walk else (0 if k < 2 else -1 * 0)
         top = 34 + lift

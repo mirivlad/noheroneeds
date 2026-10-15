@@ -19,6 +19,9 @@ func after_each() -> void:
 
 ## A clear field to test in: no plants, no water, nobody else around.
 func _field(cx := 5, cy := 5) -> void:
+	for dy in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			w.chunk("surface", cx + dx, cy + dy)  # around it loaded, as around a player
 	var c := w.chunk("surface", cx, cy)
 	for id: String in w.creatures.in_chunk("surface", cx, cy):
 		w.creatures.creatures.erase(id)

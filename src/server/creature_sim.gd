@@ -713,7 +713,7 @@ var _solid_fns := {}
 func _solid_in(location: String) -> Callable:
 	var f: Array = _solid_fns.get(location, [])
 	if f.is_empty():
-		var q := world.solid_in(location)
+		var q := world.solid_in(location, true)  # never loads a chunk for a creature
 		f = [q, q.solid]  # the object itself is kept: a method Callable does not keep it
 		_solid_fns[location] = f
 	return f[1]
@@ -725,8 +725,15 @@ func detach() -> void:
 	_solid_fns.clear()
 
 
+## For placing creatures as chunks are made (the same seed, the same
+## places, whatever order chunks come in): asks the world, loading if need be.
 func _walkable(location: String, cell: Vector2i) -> bool:
 	return not world.is_solid(location, cell.x, cell.y)
+
+
+## For where a creature goes: only what is loaded; beyond that, nowhere.
+func _free(location: String, cell: Vector2i) -> bool:
+	return not (_solid_in(location).call(cell.x, cell.y) as bool)
 
 
 ## A walkable cell within `radius` of `around`, or NO_TARGET.
@@ -735,7 +742,7 @@ func _spot_near(c: Creature, around: Vector2i, radius: float, salt: int) -> Vect
 		var a := c.rand(salt * 7 + attempt) * TAU
 		var r := sqrt(c.rand(salt * 13 + attempt + 1)) * radius
 		var cell := around + Vector2i(int(round(cos(a) * r)), int(round(sin(a) * r)))
-		if _walkable(c.location, cell):
+		if _free(c.location, cell):
 			return cell
 	return Creature.NO_TARGET
 
@@ -751,6 +758,6 @@ func _away_from(c: Creature, threat: Vector2i, far: float) -> Vector2i:
 	for turn: float in [0.0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5]:
 		var v := dir.rotated(turn) * far
 		var cell := me + Vector2i(int(round(v.x)), int(round(v.y)))
-		if _walkable(c.location, cell):
+		if _free(c.location, cell):
 			return cell
 	return Creature.NO_TARGET

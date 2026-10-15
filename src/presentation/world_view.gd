@@ -681,7 +681,9 @@ func pick_target(point: Vector2) -> Dictionary:
 			if s and s.has_meta("layer") and s.position.y > best_y and _sprite_rect(s).has_point(point):
 				best = {"kind": "part", "layer": s.get_meta("layer"), "id": s.get_meta("id"), "cell": s.get_meta("cell"),
 					"location": client.location}
-				var damage := int(props_at(s.get_meta("cell")).get("damage", 0))
+				var at_cell := props_at(s.get_meta("cell"))
+				var worn: Dictionary = at_cell if s.get_meta("layer") == "structure" else at_cell.get(s.get_meta("layer"), {})
+				var damage := int(worn.get("damage", 0))
 				if damage > 0:
 					best["damage"] = damage
 				best_y = s.position.y

@@ -1408,14 +1408,42 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	if layer == "structure" and String(c.get_props(at[3], at[4]).get("store", "")) != "" \
 			and not inventory("store|" + String(c.get_props(at[3], at[4])["store"])).stacks.is_empty():
 		return {"ok": false, "reason": "not_empty"}  # empty it first: nothing is lost
-	var upper := ""
-	if layer == "ceiling":
-		var building := levels.building(loc) if loc != SURFACE else String(_layer_props(c, "ceiling", at[3], at[4]).get("building", ""))
-		upper = levels.level(building, levels.z(loc) + 1)
-		if _stairs_leading_to(loc, Vector2i(x, y)) != NO_CELL:
-			return {"ok": false, "reason": "stairs_below"}  # stairs come up through it
-		if upper != "" and _occupied(upper, x, y):
-			return {"ok": false, "reason": "occupied_above"}  # ADR-0007: take those down first
+	var above := _above(loc, c, at, layer)
+	if above[0] != "":
+		return {"ok": false, "reason": above[0]}
+	_take_down(loc, c, at, layer, part, above[1])
+	creatures.noise(loc, Vector2i(x, y))
+	var costs := content.structure_cost(part)
+	var inv := inventory(actor)
+	for id: String in costs:
+		inv.add(id, int(costs[id]))
+	_touch_inventory(actor)
+	return {"ok": true, "part": part}
+
+
+## What keeps a part from going (ADR-0007, ADR-0016: nothing is left hanging):
+## a ceiling goes only with nothing on the level above it there — no part,
+## thing or person — and no stairs coming up through it. [reason or "", the
+## level above (for its floor to go too) or ""].
+func _above(loc: String, c: Chunk, at: Array, layer: String) -> Array:
+	if layer != "ceiling":
+		return ["", ""]
+	var x: int = at[1] * Chunk.SIZE + at[3]
+	var y: int = at[2] * Chunk.SIZE + at[4]
+	var building := levels.building(loc) if loc != SURFACE else String(_layer_props(c, "ceiling", at[3], at[4]).get("building", ""))
+	var upper := levels.level(building, levels.z(loc) + 1)
+	if _stairs_leading_to(loc, Vector2i(x, y)) != NO_CELL:
+		return ["stairs_below", upper]  # stairs come up through it
+	if upper != "" and _occupied(upper, x, y):
+		return ["occupied_above", upper]  # take those down first, from the top
+	return ["", upper]
+
+
+## A part leaves its cell (taken apart or broken): its marks and lock go, a
+## shaft leaves its hole, a ceiling takes the floor it made above.
+func _take_down(loc: String, c: Chunk, at: Array, layer: String, part: String, upper: String) -> void:
+	var x: int = at[1] * Chunk.SIZE + at[3]
+	var y: int = at[2] * Chunk.SIZE + at[4]
 	if layer == "structure" and _is_stairs(part):
 		_mark_stairs_down(loc, x, y, false)
 	if layer == "structure" and bool(content.get_def(part).get("openable", false)):
@@ -1437,13 +1465,6 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	if upper != "":
 		chunk(upper, at[1], at[2]).set_cell("ground", at[3], at[4], "")
 		_changed(chunk_key(upper, at[1], at[2]))
-	creatures.noise(loc, Vector2i(x, y))
-	var costs := content.structure_cost(part)
-	var inv := inventory(actor)
-	for id: String in costs:
-		inv.add(id, int(costs[id]))
-	_touch_inventory(actor)
-	return {"ok": true, "part": part}
 
 
 ## Gets what a part or a plant holds (ADR-0017, ADR-0021): rock dug, a tree
@@ -1879,15 +1900,19 @@ func blow_on(part_def: Dictionary, weapon: Dictionary, item_def: Dictionary) -> 
 	return damage * float(against.get(material, part_def.get("toughness", 1.0)))
 
 
-## A blow at a part standing on a cell ("structure"), with what one holds:
-## its damage grows; at its durability it breaks and half of what it cost
-## falls there, with whatever a chest held. Anyone's (ADR-0016), unless the
-## world forbids breaking others' things.
+## A blow at a part, with what one holds: one standing on a cell
+## ("structure"), or a ceiling or a roof ("layer") with nothing left over it
+## (ADR-0016: taken down from the top). Its damage grows; at its durability
+## it breaks and half of what it cost falls there, with whatever a chest
+## held. Anyone's, unless the world forbids breaking others' things.
 func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
 	var x := ri(r, "x", 0)
 	var y := ri(r, "y", 0)
+	var layer := rs(r, "layer", "structure")
+	if not layer in ["structure", "ceiling", "roof"]:
+		return {"ok": false, "reason": "bad_request"}
 	var why := check_held(actor, r)
 	if why != "":
 		return {"ok": false, "reason": why}
@@ -1899,14 +1924,17 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	if not _reaches(actor, loc, x, y, reach):
 		return {"ok": false, "reason": "too_far"}
 	var c := chunk(loc, at[1], at[2])
-	var part := c.get_cell("structure", at[3], at[4])
+	var part := c.get_cell(layer, at[3], at[4])
 	var def := content.get_def(part) if part != "" else {}
 	var durability := int(def.get("durability", 0))
 	if part == "" or durability <= 0:
 		return {"ok": false, "reason": "unbreakable"}
-	var props := c.get_props(at[3], at[4]).duplicate()
+	var props := _layer_props(c, layer, at[3], at[4]).duplicate()
 	if String(props.get("owner", "")) != actor and not break_others:
 		return {"ok": false, "reason": "not_owner"}
+	var above := _above(loc, c, at, layer)
+	if above[0] != "":
+		return {"ok": false, "reason": above[0]}
 	if not combat.ready(actor, float(w.get("cooldown_ms", 500))):
 		return {"ok": false, "reason": "not_ready"}
 	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
@@ -1914,7 +1942,10 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	creatures.noise(loc, Vector2i(x, y))
 	if damage < durability:
 		props["damage"] = damage
-		c.set_props(at[3], at[4], props)
+		if layer == "structure":
+			c.set_props(at[3], at[4], props)
+		else:
+			_set_layer_props(c, layer, at[3], at[4], props)
 		_changed(chunk_key(loc, at[1], at[2]))
 		return {"ok": true, "damage": floori(damage), "durability": durability}
 	# Broken: gone, half of what it cost lies there, and what a chest held.
@@ -1925,17 +1956,7 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 			place_item(loc, centre, it, int(box.stacks[it]))
 			box.remove(it, int(box.stacks[it]))
 		_touch_inventory("store|" + String(props["store"]))
-	if bool(content.get_def(part).get("openable", false)):
-		_forget_lock(loc, x, y)
-	if _is_stairs(part):
-		_mark_stairs_down(loc, x, y, false)
-	c.set_cell("structure", at[3], at[4], "")
-	var keep := props.duplicate()
-	for k: String in keep.keys():
-		if k != "ceiling" and k != "roof":
-			keep.erase(k)
-	c.set_props(at[3], at[4], keep)
-	_changed(chunk_key(loc, at[1], at[2]))
+	_take_down(loc, c, at, layer, part, above[1])
 	var cost := content.structure_cost(part)
 	for m: String in cost:
 		var half := int(cost[m]) / 2
@@ -1944,18 +1965,22 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	return {"ok": true, "broken": part}
 
 
-## Mends a damaged part, anyone's (ADR-0016): it costs its materials in
-## proportion to the damage (at least one of the first).
+## Mends a damaged part (a ceiling, a roof with "layer"), anyone's
+## (ADR-0016): it costs its materials in proportion to the damage (at least
+## one of the first).
 func _repair(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
 	var x := ri(r, "x", 0)
 	var y := ri(r, "y", 0)
+	var layer := rs(r, "layer", "structure")
+	if not layer in ["structure", "ceiling", "roof"]:
+		return {"ok": false, "reason": "bad_request"}
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
 	var c := chunk(loc, at[1], at[2])
-	var part := c.get_cell("structure", at[3], at[4])
-	var props := c.get_props(at[3], at[4]).duplicate()
+	var part := c.get_cell(layer, at[3], at[4])
+	var props := _layer_props(c, layer, at[3], at[4]).duplicate()
 	var damage := float(props.get("damage", 0))
 	if part == "" or damage <= 0.0:
 		return {"ok": false, "reason": "not_damaged"}
@@ -1972,7 +1997,10 @@ func _repair(actor: String, r: Dictionary) -> Dictionary:
 			inv.remove(m, int(need[m]))
 	_touch_inventory(actor)
 	props.erase("damage")
-	c.set_props(at[3], at[4], props)
+	if layer == "structure":
+		c.set_props(at[3], at[4], props)
+	else:
+		_set_layer_props(c, layer, at[3], at[4], props)
 	_changed(chunk_key(loc, at[1], at[2]))
 	creatures.noise(loc, Vector2i(x, y))
 	return {"ok": true, "spent": need}

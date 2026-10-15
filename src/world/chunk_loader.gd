@@ -8,6 +8,7 @@ extends RefCounted
 
 var _store := WorldStore.new()
 var _generator: SurfaceGenerator
+var _underground: UndergroundGenerator
 var _thread := Thread.new()
 var _mutex := Mutex.new()
 var _wake := Semaphore.new()
@@ -18,7 +19,8 @@ var _stop := false
 
 
 ## generator may be null (then missing surface chunks come back empty).
-func start(db_path: String, generator: SurfaceGenerator) -> bool:
+func start(db_path: String, generator: SurfaceGenerator, underground: UndergroundGenerator = null) -> bool:
+	_underground = underground
 	if not _store.open(db_path):
 		return false
 	_generator = generator
@@ -85,6 +87,10 @@ func _run() -> void:
 				c = ChunkCodec.decode(data)
 			elif r[0] == ServerWorld.SURFACE and _generator:
 				c = _generator.generate(r[1], r[2])
+				data = ChunkCodec.encode(c)
+				generated = true
+			elif Levels.is_depth(r[0]) and _underground:
+				c = _underground.generate(int(String(r[0]).substr(Levels.DEPTH_PREFIX.length())), r[1], r[2])
 				data = ChunkCodec.encode(c)
 				generated = true
 			else:

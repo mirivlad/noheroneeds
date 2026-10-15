@@ -7,6 +7,18 @@ extends RefCounted
 
 const SURFACE := "surface"
 const BUILDING_LEVEL := "building_level"
+## A depth of the underground (ADR-0017): one for the whole world, known by
+## its number ("depth:-1"), nothing to register or merge.
+const DEPTH := "depth"
+const DEPTH_PREFIX := "depth:"
+
+
+static func depth_id(z_level: int) -> String:
+	return DEPTH_PREFIX + str(z_level)
+
+
+static func is_depth(location: String) -> bool:
+	return location.begins_with(DEPTH_PREFIX)
 
 ## location id -> {"kind", "building", "z"}
 var info := {}
@@ -25,10 +37,14 @@ func load_rows(rows: Array) -> void:
 func kind(location: String) -> String:
 	if location == SURFACE:
 		return SURFACE
+	if is_depth(location):
+		return DEPTH
 	return String(info.get(location, {}).get("kind", ""))
 
 
 func z(location: String) -> int:
+	if is_depth(location):
+		return int(location.substr(DEPTH_PREFIX.length()))
 	return int(info.get(location, {}).get("z", 0))
 
 

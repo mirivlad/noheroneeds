@@ -14,6 +14,7 @@ const CELL := 16
 const UNITS_PER_PIXEL := Movement.UNIT / CELL
 ## Covers sit on top of the walls: this far above their cell.
 const COVER_LIFT := 16
+const UNDERGROUND_TINT := Color(0.2, 0.19, 0.22)
 ## Largest room whose cover is hidden around the player.
 const MAX_ROOM := 2048
 
@@ -292,8 +293,9 @@ func _notification(what: int) -> void:
 func _update_light() -> void:
 	if not client.has_time:
 		return
-	_tint.color = Daylight.tint(client.world_time)
-	var dark := 1.0 - Daylight.sun(client.world_time)
+	# Underground (ADR-0017) no day: dark but for torches; a little to see by.
+	_tint.color = Daylight.tint(client.world_time) if client.z >= 0 else UNDERGROUND_TINT
+	var dark := 1.0 - Daylight.sun(client.world_time) if client.z >= 0 else 1.0  # below, always night
 	for i in range(_lights.size() - 1, -1, -1):
 		var l := _lights[i]
 		if not is_instance_valid(l):

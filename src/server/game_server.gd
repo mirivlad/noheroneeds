@@ -428,7 +428,7 @@ func _prefetch(s: Session) -> void:
 ## and on a building level also the surface below it (seen dimmed). Things
 ## and people come only from the player's own location.
 func _shown_locations(location: String) -> Array:
-	return [location] if location == ServerWorld.SURFACE else [location, ServerWorld.SURFACE]
+	return [location, ServerWorld.SURFACE] if world.levels.kind(location) == Levels.BUILDING_LEVEL else [location]
 
 
 ## Character and item states for this tick, shared by every client's snapshot.

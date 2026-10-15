@@ -27,7 +27,8 @@ signal failed(reason: String)
 signal screenshot_taken
 
 const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:wood_ceiling",
-	"base:thatch_roof", "base:wood_stairs", "base:wood_column", "base:torch", "base:wood_window", "base:loophole"]
+	"base:thatch_roof", "base:wood_stairs", "base:wood_column", "base:torch", "base:wood_window", "base:loophole",
+	"base:mine_shaft", "base:headframe"]
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 
 var content: ContentRegistry
@@ -81,6 +82,9 @@ const REASONS := {
 	"no_ammo": "нет стрел", "not_carried": "этого нет при себе", "not_a_weapon": "это не оружие",
 	"nothing_to_jump_from": "прыгать можно с этажа", "not_an_edge": "пол продолжается — идите",
 	"roof_below": "внизу крыша", "bad_request": "не получилось",
+	"no_tool": "нужна кирка", "natural": "это не разобрать — только выкопать", "not_buildable": "это не строится",
+	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят",
+	"blocked_below": "внизу что-то построено", "too_deep": "глубже нельзя (настройка сервера)",
 }
 
 
@@ -253,6 +257,15 @@ func _process(delta: float) -> void:
 			game.world.combat.hurt(client.character_id, 6, "")
 		if _frames == 100:
 			client.request({"type": "attack", "item": "base:bow", "x": (me.x + 10) * 256, "y": me.y * 256 + 128})
+	if _opts.get("demo") == "cave" and game:  # dev only: down the way near the spawn point (ADR-0017)
+		var way := game.world._spawn_way()
+		if _frames == 40:
+			game.world.move_character(client.character_id, way * 256 + Vector2i(128, 128))
+		if _frames == 50:
+			client.request({"type": "climb", "location": "surface", "x": way.x, "y": way.y})
+		if _frames == 70:
+			game.world.grant(client.character_id, "base:log", 2)
+			client.request({"type": "build", "location": client.location, "x": way.x + 1, "y": way.y + 1, "part": "base:torch"})
 	if _opts.get("demo") == "outside" and _frames == 40 and game:
 		game.world.move_character(client.character_id, Vector2i(128, 7 * 256 + 128))  # dev only: before the house
 	if _opts.get("demo") == "behind" and _frames == 40 and game:
@@ -290,6 +303,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		var slot := 9 if k == KEY_0 else k - KEY_1  # keys 1..9, then 0
 		if slot >= 0 and slot < mini(PARTS.size(), 10) and (k == KEY_0 or (k >= KEY_1 and k <= KEY_9)):
 			_part = slot
+			_facing = 0
+		elif k == KEY_BRACKETLEFT or k == KEY_BRACKETRIGHT:  # all the parts, past the ten keys
+			_part = posmod(_part + (1 if k == KEY_BRACKETRIGHT else -1), PARTS.size())
 			_facing = 0
 		elif k == KEY_R:
 			var turns := _turns()
@@ -422,6 +438,8 @@ func _ways_at(cell: Vector2i) -> Array:
 	var part := c.get_cell("structure", lx, ly)
 	if part != "" and content.get_def(part).get("role") == "stairs":
 		ways.append("up")
+	if part != "" and content.get_def(part).get("role") == "shaft":
+		ways.append(String(content.get_def(part).get("leads", "down")))  # between depths (ADR-0017)
 	if c.get_props(lx, ly).get("stairs_down", false):
 		ways.append("down")
 	return ways
@@ -527,7 +545,7 @@ func _update_hud() -> void:
 	for id: String in MATERIALS:
 		var mark := ">" if id == MATERIALS[_material] else " "
 		bag.append("%s%s %d" % [mark, content.get_def(id).get("name", id), int(inv.get(id, 0))])
-	var level := "Поверхность  0" if client.z == 0 else "Этаж  %+d" % client.z
+	var level := "Поверхность  0" if client.z == 0 else ("Этаж  %+d" % client.z if client.z > 0 else "Глубина  −%d" % -client.z)
 	var clock := "День %d  %s     " % [Daylight.day_of(int(client.world_time)), Daylight.clock_text(client.world_time)] \
 		if client.has_time else ""
 	var top := int(client.own.get("max_health", 0))
@@ -556,7 +574,7 @@ func _update_hud() -> void:
 	var arms := "руки" if weapon == "" else String(content.get_def(weapon).get("name", weapon))
 	if weapon != "" and content.get_def(weapon)["weapon"]["kind"] == "ranged":
 		arms += " (%d)" % int(inv.get(String(content.get_def(weapon)["weapon"]["ammo"]), 0))
-	status.text = "%s  [%d] %s  (%d, %d)  [Q] %s  %s" % [state, (_part + 1) % 10, part_name, cell.x, cell.y, arms, note]
+	status.text = "%s  [%s] %s  (%d, %d)  [Q] %s  %s" % [state, str((_part + 1) % 10) if _part < 10 else "[ ]", part_name, cell.x, cell.y, arms, note]
 	for i in _slots.size():
 		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
 

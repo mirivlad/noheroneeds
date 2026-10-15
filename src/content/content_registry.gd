@@ -21,7 +21,8 @@ const PRESENTATION_KINDS := ["visual", "sound"]
 const SOUND_EVENTS := ["step", "build", "dismantle", "open", "close", "pickup", "drop", "climb", "click", "ambience", "wind",
 	"swing", "hit", "shoot"]
 ## What a structure part is for (ADR-0007). Columns and beams are decoration.
-const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture"]
+const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture",
+	"rock", "shaft"]
 ## Which way a part can be turned (ADR-0013): north is up the screen. A part
 ## lists the facings it allows, the first is its default; none: it does not turn.
 const FACINGS := {"n": Vector2i(0, -1), "e": Vector2i(1, 0), "s": Vector2i(0, 1), "w": Vector2i(-1, 0)}
@@ -189,7 +190,10 @@ func _validate() -> void:
 				if d["stack"] < 1:
 					errors.append("%s: stack must be at least 1" % id)
 			"structure":
-				_check_amounts(id, "cost", d.get("cost", {}), true)
+				# Natural parts (rock, cave ways) are found, not built: no cost.
+				d["natural"] = bool(d.get("natural", false))
+				if not d["natural"] or d.has("cost"):
+					_check_amounts(id, "cost", d.get("cost", {}), true)
 				d["role"] = String(d.get("role", "wall"))
 				if not STRUCTURE_ROLES.has(d["role"]):
 					errors.append("%s: unknown role '%s'" % [id, d["role"]])
@@ -200,6 +204,10 @@ func _validate() -> void:
 				_check_height(id, d, 1.0)
 				if d.has("opening"):
 					_check_opening(id, d)
+				if d.has("dig"):
+					_check_dig(id, d)
+				if d["role"] == "shaft" and not ["up", "down"].has(String(d.get("leads", ""))):
+					errors.append("%s: a shaft leads up or down" % id)
 				if d["role"] == "ceiling" and kind_of(String(d.get("floor", ""))) != "ground":
 					errors.append("%s: a ceiling needs the floor (a ground) it makes above" % id)
 			"recipe":
@@ -240,6 +248,19 @@ func _validate() -> void:
 			"ground", "plant":
 				d["solid"] = bool(d.get("solid", false))
 				_check_height(id, d, 1.0)
+			"generator" when String(d.get("space", "surface")) == "underground":
+				_check_underground(id, d)
+			"deposit":
+				if kind_of(String(d.get("rock", ""))) != "structure":
+					errors.append("%s: a deposit's rock must be a structure part" % id)
+				var depths: Variant = d.get("depths")
+				if typeof(depths) != TYPE_ARRAY or (depths as Array).size() != 2 or int(depths[0]) > -1 or int(depths[1]) > int(depths[0]):
+					errors.append("%s: depths are [top, bottom], both below the surface (-1, -2...), top first" % id)
+				if not ["vein", "single"].has(String(d.get("shape", "vein"))):
+					errors.append("%s: shape must be vein or single" % id)
+				d["threshold"] = float(d.get("threshold", 0.0))
+				if d["threshold"] <= 0.0 or d["threshold"] >= 1.0:
+					errors.append("%s: threshold (how much of the rock it takes) must be within 0..1" % id)
 			"generator":
 				for f: String in ["water", "shore"]:
 					if kind_of(String(d.get(f, ""))) != "ground":
@@ -346,6 +367,33 @@ func _check_weapon(id: String, field: String, w: Variant, ranged_ok: bool) -> vo
 				errors.append("%s: %s shoots '%s', which is not an item" % [id, field, w.get("ammo", "")])
 		_:
 			errors.append("%s: %s kind must be melee or ranged" % [id, field])
+
+
+## Natural rock that is dug, not taken apart (ADR-0017): {"tool": a tool
+## kind one must carry ("" none), "drops": {item: n}}.
+func _check_dig(id: String, d: Dictionary) -> void:
+	var g: Variant = d["dig"]
+	if typeof(g) != TYPE_DICTIONARY:
+		errors.append("%s: dig must be {tool, drops}" % id)
+		return
+	g["tool"] = String(g.get("tool", ""))
+	_check_amounts(id, "dig drops", g.get("drops", {}), false)
+
+
+## The underground generator: its floor, rock, pool water, the parts at the
+## ends of natural ways, how much is caves and how often a way goes down.
+func _check_underground(id: String, d: Dictionary) -> void:
+	for f: String in ["floor"]:
+		if kind_of(String(d.get(f, ""))) != "ground":
+			errors.append("%s: '%s' must be a ground" % [id, f])
+	if d.has("water") and kind_of(String(d["water"])) != "ground":
+		errors.append("%s: 'water' must be a ground" % id)
+	for f: String in ["rock", "way_down_surface", "way_down", "way_up"]:
+		if kind_of(String(d.get(f, ""))) != "structure":
+			errors.append("%s: '%s' must be a structure part" % [id, f])
+	d["entrance_chance"] = float(d.get("entrance_chance", 0.0))
+	if d["entrance_chance"] < 0.0 or d["entrance_chance"] > 1.0:
+		errors.append("%s: entrance_chance is a share of chunks, 0..1" % id)
 
 
 ## How tall it stands, in levels (ADR-0015: sight is checked on the plan with

@@ -274,6 +274,102 @@ def window(kind, mask, facing):
     return img
 
 
+ORE_SPECKS = {"rock": None, "iron_ore_rock": ("c86a3a", "e89a5a"), "copper_ore_rock": ("3a9a8a", "6ac8b0"),
+              "gem_rock": ("9a4ac8", "d8a0f0")}
+
+
+def rock(kind, mask):
+    """Natural cave rock (ADR-0017), 16 x 32 like a wall and joining its own
+    kind (any rock) the same way: a rough top, a darker face; ores show as
+    specks of their colour on both."""
+    img = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
+    px = img.load()
+    top = [hx("2e2a2c"), hx("403a3a"), hx("524a48"), hx("665c58")]
+    face = [hx("1e1a1c"), hx("2a2628"), hx("363032"), hx("443c3c")]
+    specks = ORE_SPECKS[kind]
+    for y in range(2 * T):
+        for x in range(T):
+            r = h2(x + mask * 5, y, 17)
+            if y < T:
+                c = top[2] if r > 0.55 else (top[1] if r > 0.15 else top[0])
+                if h2(x // 2, y // 2, mask + 3) > 0.92:
+                    c = top[3]
+            else:
+                fy = y - T
+                c = face[2] if fy < 5 else (face[1] if r > 0.3 else face[0])
+                if h2(x, fy // 3, mask + 7) > 0.9:
+                    c = face[0]
+                if fy == T - 1:
+                    c = lerp(face[0], P["ink"], 0.5)
+            if specks and h2((x + 3) // 2, (y + mask) // 2, 41) > 0.9 and h2(x, y, 45) > 0.35:
+                c = hx(specks[0]) if h2(x, y, 43) > 0.4 else hx(specks[1])
+            px[x, y] = c
+    for x in range(T):
+        px[x, T] = lerp(top[0], P["ink"], 0.3)
+        if not mask & N:
+            px[x, 0] = lerp(top[0], P["ink"], 0.4)
+    for y in range(2 * T):
+        if not mask & W:
+            px[0, y] = lerp(px[0, y], P["ink"], 0.3)
+        if not mask & E:
+            px[T - 1, y] = lerp(px[T - 1, y], P["ink"], 0.45)
+    return img
+
+
+def rock_set(kind):
+    strip = Image.new("RGBA", (16 * T, 2 * T), (0, 0, 0, 0))
+    for m in range(16):
+        strip.alpha_composite(rock(kind, m), (m * T, 0))
+    return strip
+
+
+def cave_floor(variant):
+    img = Image.new("RGBA", (T, T))
+    px = img.load()
+    ramp = [hx("3a3430"), hx("4a423c"), hx("5a5048"), hx("6a5e54")]
+    for y in range(T):
+        for x in range(T):
+            r = h2(x, y, variant * 13 + 5)
+            px[x, y] = ramp[2] if r > 0.8 else (ramp[0] if r < 0.12 else ramp[1])
+            if h2(x // 2, y // 2, variant + 21) > 0.95:
+                px[x, y] = ramp[3]
+    return img
+
+
+def way(kind):
+    """The parts at the ends of ways between depths (16 x 32; a headframe 16 x 48)."""
+    tall = 3 * T if kind == "headframe" else 2 * T
+    img = Image.new("RGBA", (T, tall), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    base = tall - T  # the cell's own square starts here
+    hole, rim = hx("0e0a0c"), hx("4a423c")
+    if kind in ("cave_mouth", "cave_drop", "shaft_hole", "mine_shaft", "headframe"):
+        d.ellipse((1, base + 2, 14, base + 14), rim)
+        d.ellipse((3, base + 4, 12, base + 12), hole)
+        if kind == "cave_mouth":
+            for (x, y) in ((1, base + 1), (12, base + 2), (2, base + 12), (13, base + 11)):
+                d.ellipse((x - 2, y - 2, x + 2, y + 2), hx("6a6060"))
+    if kind in ("mine_shaft", "headframe"):
+        d.rectangle((2, base + 3, 13, base + 4), P["wood"][2])
+        d.rectangle((2, base + 12, 13, base + 13), P["wood"][2])
+        d.line((6, base + 4, 6, base + 12), P["wood"][3])
+        d.line((9, base + 4, 9, base + 12), P["wood"][3])
+    if kind in ("cave_climb", "mine_ladder"):
+        rail = P["wood"][3] if kind == "mine_ladder" else hx("8a7a5a")
+        d.line((4, base - 12, 4, base + 14), rail)
+        d.line((11, base - 12, 11, base + 14), rail)
+        for k in range(6):
+            d.line((4, base - 10 + k * 4, 11, base - 10 + k * 4), P["wood"][2])
+    if kind == "headframe":
+        d.line((1, 2, 3, base + 8), P["wood"][1], width=2)
+        d.line((14, 2, 12, base + 8), P["wood"][1], width=2)
+        d.line((1, 2, 14, 2), P["wood"][2], width=2)
+        d.ellipse((5, 0, 10, 5), P["wood"][3])
+        d.point((7, 2), P["wood"][0])
+        d.line((7, 5, 7, base + 8), hx("b8b0a0"))
+    return strong(img) if kind in ("cave_climb", "mine_ladder", "headframe", "mine_shaft") else img
+
+
 def window_set(kind, facing):
     """16 variants side by side, indexed by the neighbour mask."""
     strip = Image.new("RGBA", (16 * T, 2 * T), (0, 0, 0, 0))
@@ -319,6 +415,17 @@ def icon(kind):
     elif kind == "axe":
         d.line((5, 12, 11, 4), P["wood"][3])
         d.polygon([(9, 3), (13, 4), (12, 8)], P["stone"][3])
+    elif kind == "pickaxe":
+        d.line((5, 13, 10, 4), P["wood"][3])
+        d.arc((3, 1, 15, 9), 190, 350, P["stone"][3], width=2)
+    elif kind in ("iron_ore", "copper_ore"):
+        d.ellipse((3, 5, 13, 13), hx("4a4244"))
+        sp = hx("d87a48") if kind == "iron_ore" else hx("5ac8b0")
+        for (x, y) in ((6, 8), (9, 7), (8, 10), (10, 10)):
+            d.point((x, y), sp)
+    elif kind == "raw_gem":
+        d.polygon([(8, 3), (12, 7), (8, 13), (4, 7)], hx("a050d8"))
+        d.polygon([(8, 3), (10, 7), (8, 9), (6, 7)], hx("e0b0ff"))
     elif kind == "spear":
         d.line((3, 13, 12, 4), P["wood"][3])
         d.polygon([(11, 2), (14, 2), (14, 5), (12, 5)], P["stone"][3])
@@ -767,7 +874,7 @@ def production_art(visuals):
 
 
 def main():
-    a = Atlas(16, 39)
+    a = Atlas(16, 51)
     for row, kind in enumerate(["grass", "grass_dry", "dirt", "moss", "forest_floor", "sand", "water"]):
         strip = Image.new("RGBA", (4 * T, T))
         for v in range(4):
@@ -802,8 +909,20 @@ def main():
     for v in a.visuals:
         if v["for"] == "base:wood_door":
             v["states"] = {"open": opened["rect"]}
+    # The underground (ADR-0017): rock of any kind joins rock; the cave floor;
+    # the ways between depths.
+    for k, kind in enumerate(ORE_SPECKS):
+        a.put(0, 39 + k * 2, rock_set(kind), "base:" + kind, (0, 2 * T), "tall", variants=16)
+        a.visuals[-1]["autotile"] = "rock"
+    strip = Image.new("RGBA", (4 * T, T))
+    for v in range(4):
+        strip.alpha_composite(cave_floor(v), (v * T, 0))
+    a.put(0, 47, strip, "base:cave_floor", (0, T), "flat", variants=4)
+    for col, kind in enumerate(["cave_mouth", "cave_drop", "shaft_hole", "cave_climb", "mine_ladder", "mine_shaft"]):
+        a.put(col, 48, way(kind), "base:" + kind, (0, 2 * T), "tall")
+    a.put(6, 47, way("headframe"), "base:headframe", (0, 3 * T), "tall")
     for col, kind in enumerate(["plank", "log", "stone", "linen_shirt", "work_trousers", "boots", "axe",
-                                "spear", "bow", "arrow", "raw_meat", "hide"]):
+                                "spear", "bow", "arrow", "raw_meat", "hide", "pickaxe", "iron_ore", "copper_ore", "raw_gem"]):
         a.put(col, 14, icon(kind), "base:" + kind, (0, T), "item")
     floor, ceiling, thatch, stairs, column, stairs_e = building_tiles()
     a.put(7, 7, floor, "base:wood_floor", (0, T), "flat")

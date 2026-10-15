@@ -21,7 +21,7 @@ const RULES := {
 	"death_drops": true,
 }
 ## What "starter kit" and "starter outfit" give (world rules of the base game).
-const STARTER_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20, "base:axe": 1, "base:bow": 1, "base:arrow": 20}
+const STARTER_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20, "base:axe": 1, "base:bow": 1, "base:arrow": 20, "base:pickaxe": 1}
 const STARTER_OUTFIT := {"torso": "base:linen_shirt", "legs": "base:work_trousers", "feet": "base:boots"}
 
 var root := ""

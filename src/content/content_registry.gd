@@ -391,6 +391,8 @@ func _check_underground(id: String, d: Dictionary) -> void:
 	for f: String in ["rock", "way_down_surface", "way_down", "way_up"]:
 		if kind_of(String(d.get(f, ""))) != "structure":
 			errors.append("%s: '%s' must be a structure part" % [id, f])
+	_check_weights(id, "fauna", d.get("fauna", {}), ["creature"], false)
+	d["fauna_density"] = float(d.get("fauna_density", 0.0))
 	d["entrance_chance"] = float(d.get("entrance_chance", 0.0))
 	if d["entrance_chance"] < 0.0 or d["entrance_chance"] > 1.0:
 		errors.append("%s: entrance_chance is a share of chunks, 0..1" % id)

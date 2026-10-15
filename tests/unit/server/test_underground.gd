@@ -170,3 +170,29 @@ func test_no_daylight_underground_only_torches() -> void:
 	w.grant(B, "base:log", 2)
 	_req(B, {"type": "build", "location": "depth:-1", "x": way.x + 1, "y": way.y + 1, "part": "base:torch"})
 	check(w.light_at("depth:-1", way + Vector2i(1, 0)) > 0.5, "a torch lights it")
+
+
+## Passive and hostile creatures below (ADR-0017 p. 8): depths are
+## populated as they are made; a spider hunts at noon too (no day below).
+func test_creatures_live_below_and_a_spider_hunts_in_the_dark() -> void:
+	var found := {}
+	for cy in range(-3, 4):
+		for cx in range(-3, 4):
+			w.chunk("depth:-1", cx, cy)
+	for c: Creature in w.creatures.creatures.values():
+		if c.location == "depth:-1":
+			found[c.kind] = true
+	check(found.has("base:cave_rat") and found.has("base:cave_spider"), "rats and spiders below: %s" % found)
+	var way := _spawn_way()
+	var p := _player(way + Vector2i(1, 0), "depth:-1")
+	var spider := w.creatures._spawn("base:cave_spider", "depth:-1", way + Vector2i(-1, 1), {}, 3)
+	w.world_time = 12 * Daylight.HOUR_MS
+	for i in 120:
+		w.tick += 1
+		w.advance_time()
+		for dy in [-1, 0, 1]:
+			for dx in [-1, 0, 1]:
+				w.mark_needed("depth:-1", floori(way.x / 32.0) + dx, floori(way.y / 32.0) + dy)
+		w.creatures.step(w.tick)
+		w.combat.step(w.tick)
+	check(w.combat.health_of(p) < 20 or int(w.present[p]["deaths"]) > 0, "bitten in the dark at noon: %s" % spider.state)

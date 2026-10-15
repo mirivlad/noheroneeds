@@ -1,7 +1,8 @@
 extends TestCase
 ## A server process is killed at a random moment, several times over the same
 ## world. Every acknowledged operation must be in the database, the database
-## must be intact, and no material may appear or vanish.
+## must be intact, and no material may appear or vanish — but for what lay
+## on the ground, which goes when the world starts again (ADR-0016).
 
 const COSTS := {"test:wood_wall": {"test:plank": 3}, "test:stone_wall": {"test:stone": 2, "test:plank": 1}}
 const ACTORS := ["a", "b", "c", "d", "e", "f"]
@@ -12,6 +13,7 @@ func test_kill_during_load() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(options.get("seed", Time.get_ticks_usec()))
 	var rounds := int(options.get("crash_rounds", 4))
+	var expected := {"test:plank": 60 * ACTORS.size(), "test:stone": 30 * ACTORS.size()}
 	for round in rounds:
 		var acked := _run_and_kill(db, round, rng.randi(), rng.randi_range(5, 400))
 		if acked.is_empty() and round == 0:
@@ -27,14 +29,21 @@ func test_kill_during_load() -> void:
 			if stored.is_empty() or bool(Cbor.decode(stored).value["ok"]) != (ack[2] == "ok"):
 				missing += 1
 		eq(missing, 0, "acknowledged operations missing after round %d (of %d)" % [round, acked.size()])
+		var ground := {}
+		for row: Dictionary in store.query_rows("SELECT data FROM entities WHERE kind='item'"):
+			var d: Dictionary = Cbor.decode(row["data"]).value
+			ground[d["item"]] = ground.get(d["item"], 0) + int(d["count"])
 		store.close()
 		var w := ServerWorld.open(db, sample_content())
 		var totals := _totals(w)
-		var store2 := w.store
-		for row: Dictionary in store2.query_rows("SELECT data FROM entities WHERE kind='item'"):
-			var d: Dictionary = Cbor.decode(row["data"]).value
-			totals[d["item"]] = totals.get(d["item"], 0) + int(d["count"])
-		eq(totals, {"test:plank": 60 * ACTORS.size(), "test:stone": 30 * ACTORS.size()}, "materials (with things on the ground) after round %d" % round)
+		var all := totals.duplicate()
+		for id: String in ground:
+			all[id] = all.get(id, 0) + int(ground[id])
+		eq(all, expected, "materials (with things on the ground) after round %d" % round)
+		eq(w.items.size(), 0, "the ground is bare once the world starts again")
+		expected = totals  # what lay on the ground is gone now
+		for id: String in ["test:plank", "test:stone"]:
+			expected[id] = expected.get(id, 0)
 		w.close()
 
 

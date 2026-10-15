@@ -161,6 +161,12 @@ func inventory() -> Dictionary:
 	return own.get("inventory", {})
 
 
+## Characters the player has befriended (ADR-0016): they open its chests and
+## locked doors.
+func friends() -> Array:
+	return own.get("friends", [])
+
+
 func unanswered_requests() -> int:
 	return _requests.size()
 
@@ -317,16 +323,22 @@ func _on_snapshot(m: Dictionary) -> void:
 			e["x"] = hot[i + 1]
 			e["y"] = hot[i + 2]
 	var warm := (m["warm"] as PackedByteArray).to_int32_array()
-	for i in range(0, warm.size() - 3, 4):
+	for i in range(0, warm.size() - 4, 5):
 		var id: String = _uid_of.get(warm[i], "")
 		var e: Dictionary = own if id == character_id else entities.get(id, {})
 		if id != "" and (id == character_id or entities.has(id)):
 			if warm[i + 1] < int(e.get("health", warm[i + 1])) and e.has("x"):
 				world_events.append({"type": "hit", "location": location, "part": "",
 					"cell": Movement.cell_of(Vector2i(int(e["x"]), int(e["y"])))})
+			# A blow struck (ADR-0019): others' swings are seen and heard; the
+			# own one was shown when it was asked for.
+			if e.has("swing") and warm[i + 4] != int(e["swing"]) and id != character_id and e.has("x"):
+				world_events.append({"type": "swing", "id": id, "octant": warm[i + 4] & 7, "location": location,
+					"part": String(e.get("held", "")), "cell": Movement.cell_of(Vector2i(int(e["x"]), int(e["y"])))})
 			e["health"] = warm[i + 1]
 			e["max_health"] = warm[i + 2]
 			e["deaths"] = warm[i + 3]
+			e["swing"] = warm[i + 4]
 	_latest_snapshot = sid
 	time_rate = int(m["rate"])
 	# The server's clock, unless ours is just ahead by the ticks in flight.

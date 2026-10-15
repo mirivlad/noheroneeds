@@ -66,11 +66,13 @@ class Replica:
 	var y := 0
 	var hv := 1
 	var cv := 1
-	## The warm part: health, the most, deaths so far (ADR-0019).
+	## The warm part: health, the most, deaths so far (ADR-0019), and blows
+	## struck (Combat.swings: count and direction) for the swing to be seen.
 	var wv := 1
 	var health := 0
 	var max_health := 0
 	var deaths := 0
+	var swing := 0
 	var cold := {}
 	## Encoded size of the cold part (to keep a snapshot within a packet).
 	var cold_size := 0
@@ -106,12 +108,13 @@ class Replica:
 
 	## Health (characters and creatures): changes often, goes apart from the
 	## cold part, packed. Returns whether it changed.
-	func set_health(h: int, top: int, died: int) -> bool:
-		if h == health and top == max_health and died == deaths:
+	func set_health(h: int, top: int, died: int, swung := 0) -> bool:
+		if h == health and top == max_health and died == deaths and swung == swing:
 			return false
 		health = h
 		max_health = top
 		deaths = died
+		swing = swung
 		wv += 1
 		return true
 var _sessions := {}
@@ -469,7 +472,7 @@ func _update_replica() -> void:
 				{"kind": "character", "name": p["name"], "appearance": p["appearance"]})
 			_replica[id] = r
 			_others[id] = true
-		r.set_health(int(p.get("health", 0)), world.combat.max_health_of(id), int(p.get("deaths", 0)))
+		r.set_health(int(p.get("health", 0)), world.combat.max_health_of(id), int(p.get("deaths", 0)), int(p.get("swing", 0)))
 		if r.location != p["location"]:
 			r.relocate(p["location"], world.levels.z(p["location"]))
 		if String(r.cold.get("held", "")) != String(p.get("held", "")):
@@ -515,7 +518,7 @@ func _update_creature_replicas() -> void:
 		if not c.looks.is_empty():
 			cold["appearance"] = c.looks
 		var r := Replica.new("creature", c.location, world.levels.z(c.location), c.pos.x, c.pos.y, cold)
-		r.set_health(c.health, world.combat.max_health_of(id), 0)
+		r.set_health(c.health, world.combat.max_health_of(id), 0, int(world.combat.swings.get(id, 0)))
 		r.phase = absi(hash(id)) % CREATURE_HOT_TICKS
 		_replica[id] = r
 		_to_grid(id, r, c.location)
@@ -524,7 +527,7 @@ func _update_creature_replicas() -> void:
 		var c := world.creatures.get_creature(id)
 		var r: Replica = _replica.get(id)
 		if c and r:
-			r.set_health(c.health, world.combat.max_health_of(id), 0)
+			r.set_health(c.health, world.combat.max_health_of(id), 0, int(world.combat.swings.get(id, 0)))
 	for id: String in _lagging.keys():
 		var c := world.creatures.get_creature(id)
 		var r: Replica = _replica.get(id)
@@ -730,6 +733,7 @@ func _send_snapshot(s: Session) -> void:
 				entry["health"] = r.health
 				entry["max_health"] = r.max_health
 				entry["deaths"] = r.deaths
+				entry["swing"] = r.swing  # blows from now on are seen as swings
 			changed[n] = entry
 			continue
 		if k.x != r.hv:
@@ -737,7 +741,7 @@ func _send_snapshot(s: Session) -> void:
 			hot.append(r.x)
 			hot.append(r.y)
 		if k.y != r.wv:
-			warm.append_array([n, r.health, r.max_health, r.deaths])
+			warm.append_array([n, r.health, r.max_health, r.deaths, r.swing])
 		if k.z != r.cv:
 			changed[n] = r.cold.duplicate()
 	# The player's own inventory goes only to that player, and only when it changed.
@@ -748,6 +752,7 @@ func _send_snapshot(s: Session) -> void:
 		if not changed.has(mine_n):
 			changed[mine_n] = {}
 		changed[mine_n]["inventory"] = world.inventory(s.character_id).stacks.duplicate()
+		changed[mine_n]["friends"] = world.friends_of(s.character_id).keys()
 	# Who left the view: only when it was worked out again or something went.
 	for id: String in (s.shown.keys() if s.view_built == tick or _gone_tick == tick else []):
 		var r: Replica = view.get(id)

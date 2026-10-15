@@ -189,6 +189,12 @@ func _validate() -> void:
 				d["stack"] = int(d.get("stack", 1))
 				if d["stack"] < 1:
 					errors.append("%s: stack must be at least 1" % id)
+				# What its blows do to parts of a material (ADR-0016): a pick
+				# against stone; otherwise the part's toughness counts.
+				var against: Variant = d.get("against", {})
+				if typeof(against) != TYPE_DICTIONARY or (against as Dictionary).values().any(
+						func(v: Variant) -> bool: return typeof(v) not in [TYPE_INT, TYPE_FLOAT] or v < 0):
+					errors.append("%s: against maps a material to how much of a blow it takes" % id)
 			"structure":
 				# Natural parts (rock, cave ways) are found, not built: no cost.
 				d["natural"] = bool(d.get("natural", false))
@@ -210,6 +216,12 @@ func _validate() -> void:
 				d["durability"] = int(d.get("durability", 0 if d["natural"] else 30))
 				if d["durability"] < 0:
 					errors.append("%s: durability must not be negative" % id)
+				# What it is made of, and how much of a blow by a thing not made
+				# for that material it takes (stone: little).
+				d["material"] = String(d.get("material", ""))
+				d["toughness"] = float(d.get("toughness", 1.0))
+				if d["toughness"] < 0.0 or d["toughness"] > 1.0:
+					errors.append("%s: toughness is the share of a blow it takes, 0..1" % id)
 				if d.has("container"):
 					var box: Variant = d["container"]
 					if typeof(box) != TYPE_DICTIONARY or int(box.get("slots", 0)) < 1:
@@ -302,7 +314,7 @@ func _validate() -> void:
 
 ## A living creature (ADR-0018): how it behaves is data, the code knows
 ## only the behaviours by name.
-const BEHAVIORS := ["prey", "villager", "predator"]
+const BEHAVIORS := ["prey", "villager", "predator", "looter"]
 
 
 func _check_creature(id: String, d: Dictionary) -> void:
@@ -313,6 +325,7 @@ func _check_creature(id: String, d: Dictionary) -> void:
 		if d[f] < 0.0:
 			errors.append("%s: %s must not be negative" % [id, f])
 	d["think_ticks"] = maxi(1, int(d.get("think_ticks", 10)))
+	d["fauna_since"] = maxi(1, int(d.get("fauna_since", 1)))  # CreatureSim.FAUNA_VERSION it came with
 	d["health"] = int(d.get("health", 5))
 	d["territory"] = float(d.get("territory", 0.0))
 	if d["health"] < 1:
@@ -323,6 +336,12 @@ func _check_creature(id: String, d: Dictionary) -> void:
 		errors.append("%s: a predator needs an attack" % id)
 	if d.has("drops"):
 		_check_amounts(id, "drops", d["drops"], false)
+	# A looter (ADR-0016): picks up what lies about, digests it in time.
+	if String(d.get("behavior", "")) == "looter":
+		d["digest_s"] = float(d.get("digest_s", 7200.0))
+		d["stomach"] = int(d.get("stomach", 10))
+		if d["digest_s"] <= 0.0 or d["stomach"] < 1:
+			errors.append("%s: a looter needs digest_s above 0 and a stomach of at least 1 stack" % id)
 	if d["speed"] <= 0.0 or d["run_speed"] < d["speed"] or d["run_speed"] * Movement.WALK >= Movement.UNIT:
 		errors.append("%s: speeds must be positive, running not slower, a step shorter than a cell" % id)
 	if d["dark_sight"] > 1.0:

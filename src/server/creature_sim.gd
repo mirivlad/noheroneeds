@@ -21,7 +21,10 @@ extends RefCounted
 ## its meta gets them then); villagers come once, near the spawn point.
 
 const THINKS_PER_TICK := 48
-const FAUNA_VERSION := 1
+## Raised when kinds come to the fauna; a creature's "fauna_since" says from
+## which: chunks populated before get those kinds only (old worlds meet the
+## looters too, without a second crowd of hares).
+const FAUNA_VERSION := 2
 const VILLAGERS := 3
 ## A creature away longer than this (real seconds) catches up on return.
 const CATCH_UP_S := 20.0
@@ -119,9 +122,10 @@ func take_rows(location: String, rows: Array) -> void:
 func on_chunk_ready(location: String, cx: int, cy: int, c: Chunk) -> void:
 	var wild := (location == Levels.SURFACE and world.generator != null) \
 		or (Levels.is_depth(location) and world.underground != null)
-	if not wild or int(c.meta.get("fauna", 0)) >= FAUNA_VERSION:
+	var had := int(c.meta.get("fauna", 0))
+	if not wild or had >= FAUNA_VERSION:
 		return
-	_populate(location, cx, cy)
+	_populate(location, cx, cy, had)
 	c.meta["fauna"] = FAUNA_VERSION
 	world.mark_chunk_dirty(location, cx, cy)
 	if cx == 0 and cy == 0 and world.store.read_meta("villagers") == "":
@@ -130,8 +134,9 @@ func on_chunk_ready(location: String, cx: int, cy: int, c: Chunk) -> void:
 
 
 ## Who lives in a chunk made just now: the surface's biome's fauna, or the
-## underground's (its generator's "fauna"), on cells one can stand on.
-func _populate(location: String, cx: int, cy: int) -> void:
+## underground's (its generator's "fauna"), on cells one can stand on; a
+## chunk populated before (fauna version `had`) gets only kinds new since.
+func _populate(location: String, cx: int, cy: int, had := 0) -> void:
 	var b: Dictionary
 	if location == Levels.SURFACE:
 		var centre := Vector2i(cx * Chunk.SIZE + Chunk.SIZE / 2, cy * Chunk.SIZE + Chunk.SIZE / 2)
@@ -142,11 +147,24 @@ func _populate(location: String, cx: int, cy: int) -> void:
 	else:
 		b = world.content.get_def(UndergroundGenerator.ID)
 	var fauna: Dictionary = b.get("fauna", {})
+	var share := 1.0  # of the chunk's creatures: in an old chunk, as many as the new kinds' weight
+	if had > 0:
+		var all := 0.0
+		for k: String in fauna:
+			all += float(fauna[k])
+		fauna = fauna.duplicate()
+		for k: String in fauna.keys():
+			if int(world.content.get_def(k).get("fauna_since", 1)) <= had:
+				fauna.erase(k)
+		var new := 0.0
+		for k: String in fauna:
+			new += float(fauna[k])
+		share = new / maxf(all, 0.001)
 	if fauna.is_empty():
 		return
 	var r := RandomNumberGenerator.new()
 	r.seed = hash([world.world_seed, cx, cy, "fauna"] if location == Levels.SURFACE else [world.world_seed, location, cx, cy, "fauna"])
-	var n := int(float(b["fauna_density"]) + r.randf())
+	var n := int(float(b["fauna_density"]) * share + r.randf())
 	var kinds := fauna.keys()
 	kinds.sort()
 	var total := 0.0
@@ -362,11 +380,13 @@ func _think(c: Creature, tick: int) -> void:
 			_villager(c, def)
 		"predator":
 			_predator(c, def)
+		"looter":
+			_looter(c, def)
 	if c.target != Creature.NO_TARGET:
 		_movers[c.id] = true
 	else:
 		_movers.erase(c.id)
-	var soon := c.state in ["flee", "alert", "hunt", "attack"]
+	var soon := c.state in ["flee", "alert", "hunt", "attack", "loot"]
 	_schedule(c, tick + (maxi(2, int(def["think_ticks"]) / 2) if soon else int(def["think_ticks"])))
 
 
@@ -543,6 +563,71 @@ func _predator(c: Creature, def: Dictionary) -> void:
 			_go(c, "prowl" if night else "wander", spot, false)
 			return
 	_go(c, "rest" if not night else "idle", Creature.NO_TARGET, false)
+
+
+## Looters (ADR-0016): about their range they go for things lying near that
+## are anyone's (what a dead one dropped is left while it is kept for them)
+## and swallow them, a stack each, as many as the stomach holds; swallowed
+## things are gone in digest_s, killed first it gives them back. Hurt, it
+## runs; people it lets come close.
+func _looter(c: Creature, def: Dictionary) -> void:
+	digest(c)
+	var attacker := _attacker(c, float(def["sight"]))
+	if not attacker.is_empty():
+		var away := _away_from(c, attacker[0], 10.0)
+		if away != Creature.NO_TARGET:
+			_go(c, "flee", away, true)
+			return
+	if c.stomach.size() < int(def["stomach"]):
+		var found := _thing_near(c, float(def["sight"]))
+		if found != "":
+			var it: Dictionary = world.items[found]
+			var at := Vector2i(int(it["x"]), int(it["y"]))
+			if Movement.cell_of(at) == c.cell() or Vector2(c.pos).distance_to(Vector2(at)) <= Movement.UNIT:
+				world.take_item(found, null)
+				c.stomach.append({"item": String(it["item"]), "count": int(it["count"]), "at": world.world_time})
+				c.changed()
+				_go(c, "eat", Creature.NO_TARGET, false)
+				return
+			_go(c, "loot", Movement.cell_of(at), false)
+			return
+	if c.target != Creature.NO_TARGET and c.state == "wander":
+		return
+	if c.rand(int(world.world_time / 1000) + c.next_think) < 0.4:
+		var spot := _spot_near(c, c.home, float(def["home_radius"]), c.next_think)
+		if spot != Creature.NO_TARGET:
+			_go(c, "wander", spot, false)
+			return
+	_go(c, "idle", Creature.NO_TARGET, false)
+
+
+## Swallowed things whose time is up are gone (a looter's digest_s).
+func digest(c: Creature) -> void:
+	if c.stomach.is_empty():
+		return
+	var keep := _ms(float(world.content.get_def(c.kind).get("digest_s", 7200.0)))
+	var left := c.stomach.filter(func(e: Dictionary) -> bool: return world.world_time - int(e["at"]) < keep)
+	if left.size() != c.stomach.size():
+		c.stomach = left
+		c.changed()
+
+
+## The nearest thing lying within `within` cells that it may take and sees: its id or "".
+func _thing_near(c: Creature, within: float) -> String:
+	var me := c.cell()
+	var r := ceili(within)
+	var best := ""
+	var best_d := INF
+	for cy in range(floori(float(me.y - r) / Chunk.SIZE), floori(float(me.y + r) / Chunk.SIZE) + 1):
+		for cx in range(floori(float(me.x - r) / Chunk.SIZE), floori(float(me.x + r) / Chunk.SIZE) + 1):
+			for id: String in world.items_in_chunk(c.location, cx, cy):
+				var it: Dictionary = world.items[id]
+				var d := Vector2(c.pos).distance_to(Vector2(int(it["x"]), int(it["y"]))) / Movement.UNIT
+				if d <= within and d < best_d and world.may_take(c.id, it) \
+						and Sight.clear(world, c.location, me, c.location, Movement.cell_of(Vector2i(int(it["x"]), int(it["y"])))):
+					best = id
+					best_d = d
+	return best
 
 
 ## The nearest character it remembers (seen or hurt by), within `within`

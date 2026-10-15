@@ -134,6 +134,11 @@ func delete_entity(id: String) -> bool:
 	return _exec_b("DELETE FROM entities WHERE id=?", [id])
 
 
+## Drops every entity of a kind (things on the ground go when a world starts).
+func delete_entities_of_kind(kind: String) -> bool:
+	return _exec_b("DELETE FROM entities WHERE kind=?", [kind])
+
+
 ## Array of {id, kind, data}.
 func entities_in_chunk(location: String, cx: int, cy: int) -> Array:
 	_db.query_with_bindings("SELECT id, kind, data FROM entities WHERE location=? AND cx=? AND cy=?", [location, cx, cy])

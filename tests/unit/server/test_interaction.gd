@@ -83,17 +83,20 @@ func test_drop_and_pick_up_once() -> void:
 	eq(w.inventory(a).count("base:stone") + w.inventory(b).count("base:stone"), 5, "nothing doubled")
 
 
-func test_things_on_the_ground_survive_restart() -> void:
+## ADR-0016: things lie as long as the server runs; a restart clears the ground.
+func test_things_on_the_ground_lie_until_a_restart() -> void:
 	var w := _world()
 	var a := _arrive(w, "a", Vector2i(3, 3))
 	w.grant(a, "base:log", 2)
 	var dropped := _req(w, a, {"type": "drop", "item": "base:log", "count": 2})
+	w.tick += 20 * 60 * 60
+	eq(w.items.get(dropped["entity"], {}).get("count", 0), 2, "still lying there an hour later")
 	w.close()
 	_worlds.clear()
 	var w2 := _world()
 	w2.chunk("surface", 0, 0)
-	eq(w2.items.get(dropped["entity"], {}).get("count", 0), 2, "still lying there")
-	eq(w2.items_in_chunk("surface", 0, 0), [dropped["entity"]])
+	eq(w2.items.size(), 0, "gone after a restart")
+	eq(w2.inventory(a).count("base:log"), 0, "and not given back")
 
 
 func test_pickup_needs_reach() -> void:

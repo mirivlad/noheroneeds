@@ -136,6 +136,9 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		push_error(w.last_error())
 		s.close()
 		return null
+	# Things on the ground lie until the server restarts (ADR-0016): a world
+	# starts with none.
+	s.delete_entities_of_kind("item")
 	var world := ServerWorld.new(s, registry, w)
 	world.creatures = CreatureSim.new(world)
 	world.combat = Combat.new(world)
@@ -311,8 +314,12 @@ func _take_items(location: String, rows: Array) -> void:
 		if row["kind"] != "item" or items.has(row["id"]):
 			continue
 		var d: Dictionary = Cbor.decode(row["data"]).value
-		_place_item(row["id"], {"location": location, "x": int(d["x"]), "y": int(d["y"]),
-			"item": String(d["item"]), "count": int(d["count"])})
+		var it := {"location": location, "x": int(d["x"]), "y": int(d["y"]),
+			"item": String(d["item"]), "count": int(d["count"])}
+		if d.has("for"):
+			it["for"] = String(d["for"])
+			it["until"] = int(d.get("until", 0))
+		_place_item(row["id"], it)
 
 
 func _place_item(id: String, it: Dictionary) -> void:
@@ -549,11 +556,38 @@ func note_character(id: String) -> void:
 
 ## Puts `n` of `item` on the ground at `pos` (movement units): what a
 ## creature leaves, what a character drops when it dies, a fallen arrow.
-func place_item(location: String, pos: Vector2i, item: String, n: int) -> String:
+## kept_for: a character only who may take it until tick `until` (what a dead
+## one dropped, ADR-0016).
+func place_item(location: String, pos: Vector2i, item: String, n: int, kept_for := "", until := 0) -> String:
 	var id := Uuid.v4()
-	_place_item(id, {"location": location, "x": pos.x, "y": pos.y, "item": item, "count": n})
+	var it := {"location": location, "x": pos.x, "y": pos.y, "item": item, "count": n}
+	if kept_for != "":
+		it["for"] = kept_for
+		it["until"] = until
+	_place_item(id, it)
 	_dirty_items[id] = true
 	return id
+
+
+## Whether `who` may take a thing lying there: anyone, unless it is a dead
+## one's and still kept for them (ADR-0016).
+func may_take(who: String, it: Dictionary) -> bool:
+	return String(it.get("for", "")) in ["", who] or tick >= int(it.get("until", 0))
+
+
+## Takes a thing off the ground: into an inventory, or (null) into a
+## looter's stomach, which keeps it itself. Returns what it was.
+func take_item(id: String, into: Inventory) -> Dictionary:
+	var it: Dictionary = items[id]
+	if into:
+		into.add(it["item"], it["count"])
+	var key := _item_chunk_key(it)
+	(_items_by_chunk[key] as Dictionary).erase(id)
+	items.erase(id)
+	items_rev += 1
+	_dirty_items.erase(id)
+	_removed_items[id] = key
+	return it
 
 
 ## An entity leaves the world for good (a creature that died).
@@ -666,8 +700,11 @@ func commit_async(force := false) -> void:
 	for id: String in _dirty_items:
 		var it: Dictionary = items[id]
 		var cell := Movement.cell_of(Vector2i(it["x"], it["y"]))
-		b.items.append([id, it["location"], floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE), "item",
-			{"x": it["x"], "y": it["y"], "item": it["item"], "count": it["count"]}])
+		var data := {"x": it["x"], "y": it["y"], "item": it["item"], "count": it["count"]}
+		if it.has("for"):
+			data["for"] = it["for"]
+			data["until"] = it["until"]
+		b.items.append([id, it["location"], floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE), "item", data])
 	_dirty_items.clear()
 	b.removed_entities = _removed_items.keys()
 	var touched: Array = _dirty_chunks.keys()
@@ -943,6 +980,12 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _move_items(actor, r, true)
 		"take":
 			return _move_items(actor, r, false)
+		"lock":
+			return _lock(actor, r)
+		"befriend":
+			return _befriend(actor, r, true)
+		"unfriend":
+			return _befriend(actor, r, false)
 	return {"ok": false, "reason": "unknown_type"}
 
 
@@ -972,11 +1015,134 @@ func _use(actor: String, r: Dictionary) -> Dictionary:
 	var opening := not bool(props.get("open", false))
 	if not opening and _someone_stands_on(at[0], x, y):
 		return {"ok": false, "reason": "someone_there"}
+	if opening and bool(props.get("locked", false)):
+		var why := _unlocks(actor, String(props.get("owner", "")), _lock_key(at[0], x, y), r)
+		if why != "":
+			return {"ok": false, "reason": why}
 	props["open"] = opening
 	c.set_props(at[3], at[4], props)
 	_changed(chunk_key(at[0], at[1], at[2]))
 	creatures.noise(at[0], Vector2i(x, y))
 	return {"ok": true, "open": opening}
+
+
+# --- locks and friends (ADR-0016) ---------------------------------------------------
+
+## Wrong codes one may try before waiting, and how long one waits (ticks).
+const PIN_TRIES := 3
+const PIN_WAIT_TICKS := 30 * Movement.TICK_RATE
+## Lock key -> {"pin": "1234", "known": {character id: true}}; read once.
+var _locks := {}
+## Character -> [wrong tries, tick of the last].
+var _pin_fails := {}
+## Character -> {friend id: true}; read once.
+var _friends := {}
+
+
+static func _lock_key(location: String, x: int, y: int) -> String:
+	return "lock|%s|%d|%d" % [location, x, y]
+
+
+func _lock_of(key: String) -> Dictionary:
+	if not _locks.has(key):
+		var raw := store.read_meta(key)
+		var d: Variant = JSON.parse_string(raw) if raw != "" else null
+		_locks[key] = {"pin": String(d.get("pin", "")), "known": d.get("known", {})} if d is Dictionary else {}
+	return _locks[key]
+
+
+func _save_lock(key: String) -> void:
+	var l: Dictionary = _locks.get(key, {})
+	note_fact(key, JSON.stringify(l) if not l.is_empty() else "")
+
+
+## Whether `actor` gets through a lock: the one who set it, their friends and
+## whoever once gave the code (until it changes) need none; a wrong code
+## counts, and after PIN_TRIES of them one waits. "" or a reason.
+func _unlocks(actor: String, owner: String, key: String, r: Dictionary) -> String:
+	var l := _lock_of(key)
+	if l.is_empty() or actor == owner or is_friend(owner, actor) or (l["known"] as Dictionary).has(actor):
+		return ""
+	if not r.has("pin"):
+		return "locked"
+	var fails: Array = _pin_fails.get(actor, [0, 0])
+	if int(fails[0]) >= PIN_TRIES and tick - int(fails[1]) < PIN_WAIT_TICKS:
+		return "pin_wait"
+	if rs(r, "pin") != String(l["pin"]):
+		_pin_fails[actor] = [(int(fails[0]) if tick - int(fails[1]) < PIN_WAIT_TICKS else 0) + 1, tick]
+		return "wrong_pin"
+	_pin_fails.erase(actor)
+	(l["known"] as Dictionary)[actor] = true
+	_save_lock(key)
+	return ""
+
+
+## The one who set up a door puts a lock with a code of four digits on it,
+## changes the code (those who knew the old one must give the new one) or,
+## with an empty code, takes the lock off.
+func _lock(actor: String, r: Dictionary) -> Dictionary:
+	var at := _cell(r)
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
+	if not _reaches(actor, at[0], x, y, USE_REACH):
+		return {"ok": false, "reason": "too_far"}
+	var c := chunk(at[0], at[1], at[2])
+	var part := c.get_cell("structure", at[3], at[4])
+	if part == "" or not content.get_def(part).get("openable", false):
+		return {"ok": false, "reason": "nothing_to_use"}
+	var props := c.get_props(at[3], at[4]).duplicate()
+	if String(props.get("owner", "")) != actor:
+		return {"ok": false, "reason": "not_owner"}
+	var pin := rs(r, "pin")
+	if (r.has("pin") and typeof(r["pin"]) != TYPE_STRING) or pin != "" and not (pin.length() == 4 and pin.is_valid_int() and not pin.contains("-") and not pin.contains("+")):
+		return {"ok": false, "reason": "bad_pin"}
+	var key := _lock_key(at[0], x, y)
+	_locks[key] = {"pin": pin, "known": {}} if pin != "" else {}
+	_save_lock(key)
+	if pin != "":
+		props["locked"] = true
+	else:
+		props.erase("locked")
+	c.set_props(at[3], at[4], props)
+	_changed(chunk_key(at[0], at[1], at[2]))
+	return {"ok": true, "locked": pin != ""}
+
+
+## A door's lock goes with the door.
+func _forget_lock(location: String, x: int, y: int) -> void:
+	var key := _lock_key(location, x, y)
+	if not _lock_of(key).is_empty():
+		_locks[key] = {}
+		_save_lock(key)
+
+
+func friends_of(character: String) -> Dictionary:
+	if not _friends.has(character):
+		var raw := store.read_meta("friends|" + character)
+		var f := {}
+		for id: String in (raw.split(",", false) if raw != "" else PackedStringArray()):
+			f[id] = true
+		_friends[character] = f
+	return _friends[character]
+
+
+## Whether `who` is among `character`'s friends (a list of its own: one-way).
+func is_friend(character: String, who: String) -> bool:
+	return character != "" and friends_of(character).has(who)
+
+
+func _befriend(actor: String, r: Dictionary, add: bool) -> Dictionary:
+	var who := rs(r, "character")
+	if who == "" or who == actor or (add and not present.has(who) and _known_character(who).is_empty()):
+		return {"ok": false, "reason": "bad_request"}
+	var f := friends_of(actor)
+	if add:
+		f[who] = true
+	else:
+		f.erase(who)
+	note_fact("friends|" + actor, ",".join(PackedStringArray(f.keys())))
+	_touch_inventory(actor)  # the own private part goes out again, friends with it
+	return {"ok": true, "friends": f.keys()}
 
 
 ## Puts items from the inventory on the ground at the actor's feet (or at
@@ -1008,13 +1174,9 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 		var p: Dictionary = present[actor]
 		if p["location"] != it["location"] or Vector2(p["pos"]).distance_to(Vector2(it["x"], it["y"])) > PICKUP_REACH:
 			return {"ok": false, "reason": "too_far"}
-	inventory(actor).add(it["item"], it["count"])
-	var key := _item_chunk_key(it)
-	(_items_by_chunk[key] as Dictionary).erase(id)
-	items.erase(id)
-	items_rev += 1
-	_dirty_items.erase(id)
-	_removed_items[id] = key
+	if not may_take(actor, it):
+		return {"ok": false, "reason": "kept_for_dead", "seconds": ceili(float(int(it["until"]) - tick) / Movement.TICK_RATE)}
+	take_item(id, inventory(actor))
 	_touch_inventory(actor)
 	return {"ok": true, "item": it["item"], "count": it["count"]}
 
@@ -1235,6 +1397,9 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	var part := c.get_cell(layer, at[3], at[4])
 	if layer == "structure" and content.get_def(part).get("natural", false):
 		return {"ok": false, "reason": "natural"}
+	# Taken apart whole, all it cost back, at once: only by the one who set it
+	# up (ADR-0016). Others break it — and stone takes long; were it not so, a
+	# lock or a castle wall would mean nothing.
 	if _layer_props(c, layer, at[3], at[4]).get("owner", "") != actor:
 		return {"ok": false, "reason": "not_owner"}
 	if not content.has(part):
@@ -1253,6 +1418,8 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 			return {"ok": false, "reason": "occupied_above"}  # ADR-0007: take those down first
 	if layer == "structure" and _is_stairs(part):
 		_mark_stairs_down(loc, x, y, false)
+	if layer == "structure" and bool(content.get_def(part).get("openable", false)):
+		_forget_lock(loc, x, y)
 	c.set_cell(layer, at[3], at[4], "")
 	if layer == "structure" and content.get_def(part).get("role") == "shaft":
 		# The equipment goes, the hole stays (ADR-0017): the way and what is
@@ -1306,6 +1473,7 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var tool := String(g["tool"])
 	if tool != "" and (item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool)):
 		return {"ok": false, "reason": "no_tool"}  # the tool must be in the hands, not in the bag
+	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
 	c.set_cell(layer, at[3], at[4], "")
 	_changed(chunk_key(loc, at[1], at[2]))
 	var inv := inventory(actor)
@@ -1643,8 +1811,10 @@ func _container(actor: String, r: Dictionary) -> Array:
 	var props := c.get_props(at[3], at[4])
 	if spec.is_empty() or String(props.get("store", "")) == "":
 		return ["", {}, "not_a_container"]
-	# Whose things are whose (ADR-0016): for now only the owner opens it.
-	if String(props.get("owner", "")) != actor:
+	# Whose things are whose (ADR-0016): the owner and the owner's friends open
+	# it; others can only break it.
+	var owner := String(props.get("owner", ""))
+	if owner != actor and not is_friend(owner, actor):
 		return ["", {}, "not_owner"]
 	return ["store|" + String(props["store"]), spec, ""]
 
@@ -1693,13 +1863,26 @@ func _move_items(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 # --- wear and repair of parts (ADR-0021) -------------------------------------------
 
 ## Whether one may hurt someone else's building (ADR-0016: a world rule apart
-## from PvP; raids and sieges later).
-var break_others := false
+## from PvP). The author's default: buildings are nobody's to defend but by
+## what they are made of — anyone breaks anything; a server may forbid it.
+var break_others := true
+
+
+## How much of a blow a part takes: the blow's damage, times what the thing
+## held does to the part's material ("against") or else the part's
+## "toughness" (stone: a pick goes through it slowly, an axe or a fist
+## hardly at all).
+func blow_on(part_def: Dictionary, weapon: Dictionary, item_def: Dictionary) -> float:
+	var damage := float(weapon["damage"]) if not weapon.is_empty() else 1.0
+	var against: Dictionary = item_def.get("against", {}) if not weapon.is_empty() else {}
+	var material := String(part_def.get("material", ""))
+	return damage * float(against.get(material, part_def.get("toughness", 1.0)))
 
 
 ## A blow at a part standing on a cell ("structure"), with what one holds:
 ## its damage grows; at its durability it breaks and half of what it cost
-## falls there. One's own always; another's where the world allows it.
+## falls there, with whatever a chest held. Anyone's (ADR-0016), unless the
+## world forbids breaking others' things.
 func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
@@ -1724,18 +1907,26 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	var props := c.get_props(at[3], at[4]).duplicate()
 	if String(props.get("owner", "")) != actor and not break_others:
 		return {"ok": false, "reason": "not_owner"}
-	if String(props.get("store", "")) != "" and not inventory("store|" + String(props["store"])).stacks.is_empty():
-		return {"ok": false, "reason": "not_empty"}  # a chest's things are not lost
 	if not combat.ready(actor, float(w.get("cooldown_ms", 500))):
 		return {"ok": false, "reason": "not_ready"}
-	var damage := int(props.get("damage", 0)) + (int(w["damage"]) if not w.is_empty() else 1)
+	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
+	var damage := float(props.get("damage", 0)) + blow_on(def, w, content.get_def(item) if item != "" else {})
 	creatures.noise(loc, Vector2i(x, y))
 	if damage < durability:
 		props["damage"] = damage
 		c.set_props(at[3], at[4], props)
 		_changed(chunk_key(loc, at[1], at[2]))
-		return {"ok": true, "damage": damage, "durability": durability}
-	# Broken: gone, half of what it cost lies there.
+		return {"ok": true, "damage": floori(damage), "durability": durability}
+	# Broken: gone, half of what it cost lies there, and what a chest held.
+	var centre := Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2)
+	if String(props.get("store", "")) != "":
+		var box := inventory("store|" + String(props["store"]))
+		for it: String in box.stacks.keys():
+			place_item(loc, centre, it, int(box.stacks[it]))
+			box.remove(it, int(box.stacks[it]))
+		_touch_inventory("store|" + String(props["store"]))
+	if bool(content.get_def(part).get("openable", false)):
+		_forget_lock(loc, x, y)
 	if _is_stairs(part):
 		_mark_stairs_down(loc, x, y, false)
 	c.set_cell("structure", at[3], at[4], "")
@@ -1749,12 +1940,12 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	for m: String in cost:
 		var half := int(cost[m]) / 2
 		if half > 0:
-			place_item(loc, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2), m, half)
+			place_item(loc, centre, m, half)
 	return {"ok": true, "broken": part}
 
 
-## Mends a damaged part of one's own: it costs its materials in proportion
-## to the damage (at least one of the first).
+## Mends a damaged part, anyone's (ADR-0016): it costs its materials in
+## proportion to the damage (at least one of the first).
 func _repair(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
@@ -1765,11 +1956,9 @@ func _repair(actor: String, r: Dictionary) -> Dictionary:
 	var c := chunk(loc, at[1], at[2])
 	var part := c.get_cell("structure", at[3], at[4])
 	var props := c.get_props(at[3], at[4]).duplicate()
-	var damage := int(props.get("damage", 0))
-	if part == "" or damage <= 0:
+	var damage := float(props.get("damage", 0))
+	if part == "" or damage <= 0.0:
 		return {"ok": false, "reason": "not_damaged"}
-	if String(props.get("owner", "")) != actor:
-		return {"ok": false, "reason": "not_owner"}
 	var durability := maxi(1, int(content.get_def(part).get("durability", 1)))
 	var cost := content.structure_cost(part)
 	var need := {}

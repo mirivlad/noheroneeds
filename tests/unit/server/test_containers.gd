@@ -76,8 +76,8 @@ func test_a_chest_holds_so_many_cells() -> void:
 	eq(_req(a, _at({"type": "store", "item": "base:plank", "count": 1})).get("reason"), "full")
 
 
-## Parts wear and break under blows (one's own; another's where the world
-## allows), and are mended for materials; what one holds is seen.
+## Parts wear and break under blows (anyone's, unless the world forbids
+## breaking others'), and are mended for materials; what one holds is seen.
 func test_parts_break_under_blows_and_are_mended() -> void:
 	var a := _player("Аня")
 	w.grant(a, "base:plank", 20)
@@ -97,8 +97,9 @@ func test_parts_break_under_blows_and_are_mended() -> void:
 	eq(planks - w.inventory(a).count("base:plank"), 2, "half worn: half of its three planks, rounded up")
 	eq(int(w.chunk("surface", 0, 0).get_props(4, 3).get("damage", 0)), 0)
 	var b := _player("Боря")
-	eq(_req(b, _at({"type": "strike_part"})).get("reason"), "not_owner", "not someone else's, by default")
-	w.break_others = true
+	w.break_others = false
+	eq(_req(b, _at({"type": "strike_part"})).get("reason"), "not_owner", "not someone else's where the world forbids it")
+	w.break_others = true  # the default (ADR-0016): anyone breaks anything
 	for i in 40:
 		w.tick += 20
 		w.combat.step(w.tick)

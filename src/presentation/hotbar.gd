@@ -24,7 +24,10 @@ class Slot:
 		var preview := TextureRect.new()
 		preview.texture = (get_child(0) as TextureRect).texture
 		preview.size = Vector2(16, 16)
-		set_drag_preview(preview)
+		if get_viewport() and get_viewport().gui_is_dragging():
+			set_drag_preview(preview)
+		else:
+			preview.free()
 		return {"item": id, "from_slot": index}
 
 	func _can_drop_data(_at: Vector2, data: Variant) -> bool:
@@ -86,6 +89,64 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		_slots.append(slot)
 		_icons.append(icon)
 		_counts.append(count)
+
+
+## Q (ADR-0021): the weapon last chosen or used comes into the hands; Q again
+## gives back what was held before. Remembered by the things, not the slots,
+## so moving things between slots, dropping or storing them breaks nothing.
+var _weapon_item := ""
+var _back_item := ""
+var _back_slot := -1
+var _snatched := false
+
+
+## A weapon to fight with (an axe counts: a tool too, but a weapon); a pick
+## strikes too, but is a tool first ("improvised").
+func is_arm(id: String) -> bool:
+	if id == "":
+		return false
+	var w: Dictionary = content.get_def(id).get("weapon", {})
+	return not w.is_empty() and not bool(w.get("improvised", false))
+
+
+## The player picked a slot (keys, wheel, click).
+func choose(slot: int) -> void:
+	selected = slot
+	_snatched = false
+	if is_arm(items[slot]):
+		_weapon_item = items[slot]
+
+
+## A weapon was used: it is the one Q brings next time.
+func used(id: String) -> void:
+	if is_arm(id):
+		_weapon_item = id
+
+
+## Q. Returns a note for the player ("" when done).
+func snatch(inventory: Dictionary) -> String:
+	if _snatched and items[selected] == _weapon_item:
+		var back := items.find(_back_item) if _back_item != "" else -1
+		selected = back if back >= 0 else maxi(_back_slot, 0)
+		_snatched = false
+		return ""
+	var target := items.find(_weapon_item) if _weapon_item != "" else -1
+	if target < 0 or not is_arm(items[target]) or int(inventory.get(items[target], 0)) <= 0:
+		target = -1
+		for i in SLOTS:
+			if is_arm(items[i]) and int(inventory.get(items[i], 0)) > 0:
+				target = i
+				break
+	if target < 0:
+		return "оружия в ячейках нет (I — положить)"
+	if target == selected:
+		return "оружие уже в руках"
+	_back_item = items[selected]
+	_back_slot = selected
+	selected = target
+	_weapon_item = items[target]
+	_snatched = true
+	return ""
 
 
 ## The item in the hands: the chosen slot's, if it is carried.

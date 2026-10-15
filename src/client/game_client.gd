@@ -46,6 +46,13 @@ var previous_position := Vector2i.ZERO
 var changed_chunks: Array[String] = []
 ## Changes seen in the world since the view last took them (see _note_changes).
 var world_events: Array[Dictionary] = []
+## What the player has in the hands (ADR-0021), as told to the server with
+## hold(); told again first thing after a reconnect.
+var held := ""
+## The server's height limit (ADR-0007), for showing blueprints.
+var max_levels := 3
+var _quiet := {}
+var _hold_sent_at := -100000
 ## Maps (ADR-0020): location -> {"z": level label, "chunks": {Vector2i: true}}
 ## the character has seen; "location|cx|cy" -> MapTile ({palette, cells}).
 var map_known := {}
@@ -83,6 +90,7 @@ func step() -> void:
 					state = "disconnected"
 			Transport.Kind.PACKET:
 				_on_message(Protocol.decode(e.data, false))
+	_reassert_hold()
 	if has_time:
 		world_time += time_rate
 	if state == "playing" and has_position:
@@ -92,6 +100,34 @@ func step() -> void:
 		position = Movement.step(position, move.x, move.y, _solid, run)
 		_send(Transport.Channel.STATE, Protocol.INPUT, {"inputs": _unacked_inputs.slice(-Protocol.INPUT_REDUNDANCY),
 			"ack": _latest_snapshot})
+
+
+## Takes `item` into the hands ("" empty) and tells the server, if it changed.
+## Requests go in order on one reliable channel: an action sent after this is
+## done with this item, however quickly it follows.
+func hold(item: String) -> void:
+	if item == held:
+		return
+	held = item
+	if state == "playing":
+		_send_hold()
+
+
+## If the server shows other hands than ours (it emptied them when the thing
+## ran out, and we got another since), we tell it again, now and then.
+func _reassert_hold() -> void:
+	if state != "playing" or not own.has("held") or String(own["held"]) == held:
+		return
+	if Time.get_ticks_msec() - _hold_sent_at < 1000:
+		return
+	_send_hold()
+
+
+func _send_hold() -> void:
+	_hold_sent_at = Time.get_ticks_msec()
+	var rid := Uuid.v4()
+	_quiet[rid] = true  # its answer is not news for the player
+	_send(Transport.Channel.RELIABLE, Protocol.REQUEST, {"request": {"type": "hold", "item": held, "request_id": rid}})
 
 
 ## Sends a request (build, transfer...) and returns its id. It is resent after
@@ -140,7 +176,12 @@ func _on_message(m: Dictionary) -> void:
 		Protocol.WELCOME:
 			character_id = m["character_id"]
 			location = m["location"]
+			max_levels = int(m["max_levels"])
 			state = "playing"
+			# The server knows nothing of our hands after a (re)join: they come
+			# before anything resent that may be done with them.
+			if held != "":
+				_send_hold()
 			for rid: String in _requests:
 				_send(Transport.Channel.RELIABLE, Protocol.REQUEST, {"request": _requests[rid]})
 		Protocol.LOCATION:
@@ -153,6 +194,9 @@ func _on_message(m: Dictionary) -> void:
 			reject_reason = m["reason"]
 			state = "rejected"
 		Protocol.RESULT:
+			if _quiet.has(m["request_id"]):
+				_quiet.erase(m["request_id"])
+				return
 			results[m["request_id"]] = m["result"]
 			_requests.erase(m["request_id"])
 		Protocol.CHUNK:

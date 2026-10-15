@@ -334,7 +334,7 @@ func _on_message(s: Session, m: Dictionary) -> void:
 				Protocol.MAP_REQUEST:
 					_queue_map_tiles(s, String(m["location"]), (m["chunks"] as PackedByteArray).to_int32_array())
 				Protocol.REQUEST:
-					_request_at[String((m["request"] as Dictionary).get("request_id", ""))] = Time.get_ticks_usec()
+					_request_at[ServerWorld.rs(m["request"], "request_id")] = Time.get_ticks_usec()
 					world.handle(s.character_id, m["request"])
 
 
@@ -356,7 +356,8 @@ func _join(s: Session, file: PackedByteArray) -> void:
 	s.character_id = id
 	s.state = "playing"
 	var p: Dictionary = world.present[id]
-	_send(s, Transport.Channel.RELIABLE, Protocol.WELCOME, {"character_id": id, "location": p["location"], "tick": tick})
+	_send(s, Transport.Channel.RELIABLE, Protocol.WELCOME, {"character_id": id, "location": p["location"], "tick": tick,
+		"max_levels": world.max_levels})
 	_send_map_known(s)
 	_tell_location(s)
 

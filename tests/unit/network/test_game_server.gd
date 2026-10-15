@@ -232,6 +232,7 @@ func test_health_and_arrows_reach_clients() -> void:
 	_run(5, [a])
 	eq(a.own.get("health"), 16, "being hurt is seen")
 	var aim := _server_pos(a) + Vector2i(0, 10 * 256)
+	a.hold("base:bow")  # into the hands first, then the shot: in order
 	a.request({"type": "attack", "item": "base:bow", "x": aim.x, "y": aim.y})
 	var seen := false
 	for i in 12:
@@ -264,6 +265,40 @@ func test_the_map_of_what_was_seen_survives_a_restart() -> void:
 	var tile: Dictionary = b.map_tiles.get("surface|0|0", {})
 	eq((tile.get("cells", PackedByteArray()) as PackedByteArray).size(), Chunk.CELLS, "the tile came")
 	check(not b.map_tiles.has("surface|50|50"), "nothing unseen")
+
+
+## ADR-0021 through the network: the other player sees what is really in the
+## hands (and empty hands once it is dropped); taking a thing and using it at
+## once works (requests keep their order); after a reconnect the hands are told
+## again before anything else.
+func test_what_is_held_through_the_network() -> void:
+	var a := _client("owner", _character("Аня"))
+	var b := _client("other", _character("Боря"))
+	_run(30, [a, b])
+	world.grant(a.character_id, "base:bow", 1)
+	world.grant(a.character_id, "base:axe", 1)
+	_run(5, [a, b])
+	a.hold("base:bow")
+	_run(10, [a, b])
+	eq(b.entities.get(a.character_id, {}).get("held"), "base:bow", "the other sees the bow")
+	a.request({"type": "drop", "item": "base:bow", "count": 1})
+	_run(10, [a, b])
+	eq(b.entities.get(a.character_id, {}).get("held"), "", "and empty hands once it is dropped")
+	# A tree beside it, the axe taken and swung in the same tick.
+	var me := Movement.cell_of(_server_pos(a)) + Vector2i(1, 0)
+	var c := world.chunk("surface", floori(me.x / 32.0), floori(me.y / 32.0))
+	c.set_cell("cover", posmod(me.x, 32), posmod(me.y, 32), "base:oak")
+	a.hold("base:axe")
+	var rid := a.request({"type": "gather", "location": "surface", "x": me.x, "y": me.y, "layer": "cover", "item": "base:axe"})
+	_run(10, [a, b])
+	eq(a.results.get(rid, {}).get("ok"), true, "taken and used at once: %s" % a.results.get(rid))
+	eq(b.entities.get(a.character_id, {}).get("held"), "base:axe")
+	net.cut(a.transport.own_id())
+	_run(5, [a, b])
+	a.reconnect(net.client())
+	_run(30, [a, b])
+	eq(world.held_of(a.character_id), "base:axe", "after a reconnect the hands are told again")
+	eq(b.entities.get(a.character_id, {}).get("held"), "base:axe", "and seen")
 
 
 func test_request_result_after_commit_and_seen_by_others() -> void:

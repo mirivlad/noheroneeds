@@ -230,6 +230,26 @@ func abandon() -> void:
 	combat.world = null
 
 
+# --- request fields (input from the network: any type may come) ----------------
+
+## A request's text field, or `default` if it is missing or not text.
+static func rs(r: Dictionary, key: String, default := "") -> String:
+	var v: Variant = r.get(key, default)
+	return v if typeof(v) == TYPE_STRING else default
+
+
+## A request's whole-number field (a float is cut), or `default`.
+static func ri(r: Dictionary, key: String, default := 0) -> int:
+	var v: Variant = r.get(key, default)
+	return int(v) if typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT else default
+
+
+## A request's yes/no field, or `default`.
+static func rb(r: Dictionary, key: String, default := false) -> bool:
+	var v: Variant = r.get(key, default)
+	return v if typeof(v) == TYPE_BOOL else default
+
+
 static func chunk_key(location: String, cx: int, cy: int) -> String:
 	return "%s|%d|%d" % [location, cx, cy]
 
@@ -600,7 +620,7 @@ func set_entity(id: String, location: String, x: int, y: int, kind: String, data
 
 
 func handle(actor: String, request: Dictionary) -> void:
-	var rid := String(request.get("request_id", ""))
+	var rid := rs(request, "request_id")
 	if rid == "":
 		_outbox.append([actor, rid, {"ok": false, "reason": "no_request_id"}])
 		return
@@ -890,7 +910,7 @@ func _is_pending(key: String) -> bool:
 
 
 func _apply(actor: String, r: Dictionary) -> Dictionary:
-	match String(r.get("type", "")):
+	match rs(r, "type"):
 		"build":
 			return _build(actor, r)
 		"dismantle":
@@ -940,8 +960,8 @@ func _reaches(actor: String, location: String, x: int, y: int, reach: int) -> bo
 
 func _use(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
 	if not _reaches(actor, at[0], x, y, USE_REACH):
 		return {"ok": false, "reason": "too_far"}
 	var c := chunk(at[0], at[1], at[2])
@@ -962,11 +982,11 @@ func _use(actor: String, r: Dictionary) -> Dictionary:
 ## Puts items from the inventory on the ground at the actor's feet (or at
 ## x, y in movement units for actors not in the world).
 func _drop(actor: String, r: Dictionary) -> Dictionary:
-	var item := String(r.get("item", ""))
-	var n := int(r.get("count", 0))
+	var item := rs(r, "item")
+	var n := ri(r, "count", 0)
 	if content.kind_of(item) != "item" or n <= 0:
 		return {"ok": false, "reason": "bad_request"}
-	var where := {"location": String(r.get("location", "")), "x": int(r.get("x", 0)), "y": int(r.get("y", 0))}
+	var where := {"location": rs(r, "location"), "x": ri(r, "x", 0), "y": ri(r, "y", 0)}
 	if present.has(actor):
 		var p: Dictionary = present[actor]
 		where = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y}
@@ -980,7 +1000,7 @@ func _drop(actor: String, r: Dictionary) -> Dictionary:
 
 
 func _pickup(actor: String, r: Dictionary) -> Dictionary:
-	var id := String(r.get("entity", ""))
+	var id := rs(r, "entity")
 	var it: Dictionary = items.get(id, {})
 	if it.is_empty():
 		return {"ok": false, "reason": "gone"}
@@ -1002,12 +1022,30 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 func _someone_stands_on(location: String, x: int, y: int) -> bool:
 	for id: String in present:
 		var p: Dictionary = present[id]
-		var pos: Vector2i = p["pos"]
-		if p["location"] == location \
-				and pos.x + Movement.HALF_X > x * Movement.UNIT and pos.x - Movement.HALF_X < (x + 1) * Movement.UNIT \
-				and pos.y + Movement.HALF_Y > y * Movement.UNIT and pos.y - Movement.HALF_Y < (y + 1) * Movement.UNIT:
+		if p["location"] == location and BuildRules.stands_on(p["pos"], x, y):
 			return true
 	return false
+
+
+# The server's view for BuildRules: the world as it is.
+func build_chunk(location: String, cx: int, cy: int) -> Chunk:
+	return chunk(location, cx, cy)
+
+
+func build_kind(location: String) -> String:
+	return levels.kind(location)
+
+
+func build_z(location: String) -> int:
+	return levels.z(location)
+
+
+func build_max_levels() -> int:
+	return max_levels
+
+
+func build_someone_on(location: String, x: int, y: int) -> bool:
+	return _someone_stands_on(location, x, y)
 
 
 func _changed(key: String) -> void:
@@ -1020,6 +1058,29 @@ func _changed(key: String) -> void:
 func _touch_inventory(owner: String) -> void:
 	_dirty_inventories[owner] = true
 	_inventory_version[owner] = _inventory_version.get(owner, 0) + 1
+	# What is no longer carried is no longer in the hands (dropped, put into a
+	# chest, lost in death): others see empty hands at once (ADR-0021).
+	if present.has(owner):
+		var held := String(present[owner].get("held", ""))
+		if held != "" and inventory(owner).count(held) <= 0:
+			present[owner]["held"] = ""
+
+
+## What a character has in its hands (ADR-0021): the server's word, set by
+## hold, and always something it carries ("" empty hands).
+func held_of(actor: String) -> String:
+	if not present.has(actor):
+		return ""
+	var held := String(present[actor].get("held", ""))
+	return held if held != "" and inventory(actor).count(held) > 0 else ""
+
+
+## An action that names the item it is done with must name what is in the
+## hands: "" if so (or if it names none), else "not_held".
+func check_held(actor: String, r: Dictionary) -> String:
+	if not r.has("item"):
+		return ""
+	return "" if typeof(r["item"]) == TYPE_STRING and String(r["item"]) == held_of(actor) else "not_held"
 
 
 ## Raised whenever an inventory changes (clients get theirs only then).
@@ -1028,70 +1089,44 @@ func inventory_version(owner: String) -> int:
 
 
 func _cell(r: Dictionary) -> Array:
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)
-	return [String(r.get("location", "")), cx, cy, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE]
+	return [rs(r, "location"), cx, cy, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE]
 
 
 func _build(actor: String, r: Dictionary) -> Dictionary:
-	var part := String(r.get("part", ""))
+	var part := rs(r, "part")
 	if content.kind_of(part) != "structure":
 		return {"ok": false, "reason": "unknown_part"}
 	var def := content.get_def(part)
 	var role := String(def["role"])
 	var at := _cell(r)
 	var loc: String = at[0]
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
-	if loc != SURFACE and levels.kind(loc) != Levels.BUILDING_LEVEL and not Levels.is_depth(loc):
-		return {"ok": false, "reason": "no_such_place"}
-	if def.get("natural", false):
-		return {"ok": false, "reason": "not_buildable"}
-	if Levels.is_depth(loc) and role in ["ceiling", "roof", "stairs"]:
-		return {"ok": false, "reason": "underground"}  # up is the depth above (ADR-0017)
-	if def.get("surface_only", false) and loc != SURFACE or def.get("underground_only", false) and not Levels.is_depth(loc):
-		return {"ok": false, "reason": "wrong_place"}
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
+	# The rules the client also shows its blueprints by (BuildRules).
+	var why := BuildRules.check(self, content, part, loc, x, y, _facing(def, r))
+	if why != "":
+		return {"ok": false, "reason": why}
 	var c := chunk(loc, at[1], at[2])
 	var on_level := loc != SURFACE
-	if on_level and c.get_cell("ground", at[3], at[4]) == "":
-		return {"ok": false, "reason": "no_floor"}  # the contour of the level below
 	var layer := Terrain.layer_for_role(role)
-	if c.get_cell(layer, at[3], at[4]) != "":
-		return {"ok": false, "reason": "occupied"}
 	var building := ""
 	var upper := ""
-	match role:
-		"ceiling", "roof":
-			if Terrain.is_covered(c, at[3], at[4]):
-				return {"ok": false, "reason": "occupied"}
-			if not on_level and bool(content.get_def(c.get_cell("ground", at[3], at[4])).get("solid", false)):
-				return {"ok": false, "reason": "blocked"}
-			if role == "ceiling":
-				if levels.z(loc) + 1 > max_levels:
-					return {"ok": false, "reason": "too_high"}  # a server setting (ADR-0007)
-				building = levels.building(loc) if on_level else ""
-		"stairs":
-			if _stairs_arrival(loc, x, y, _facing(def, r)) == NO_CELL:
-				return {"ok": false, "reason": "no_opening_above"}
-			if Terrain.is_solid(c, at[3], at[4], content, on_level):
-				return {"ok": false, "reason": "blocked"}
-		_:
-			if Terrain.is_solid(c, at[3], at[4], content, on_level):
-				return {"ok": false, "reason": "blocked"}  # water, a tree...
-			if _someone_stands_on(loc, x, y):
-				return {"ok": false, "reason": "someone_there"}
+	if role == "ceiling":
+		building = levels.building(loc) if on_level else ""
 	var costs := content.structure_cost(part)
 	var inv := inventory(actor)
 	if not inv.has_all(costs):
 		return {"ok": false, "reason": "materials"}
 	if role == "shaft":
-		var why := _open_below(loc, Vector2i(x, y), part, true)
-		if why != "":
-			return {"ok": false, "reason": why}
+		var below := _open_below(loc, Vector2i(x, y), part, true)
+		if below != "":
+			return {"ok": false, "reason": below}
 	for id: String in costs:
 		inv.remove(id, int(costs[id]))
 	_touch_inventory(actor)
@@ -1178,14 +1213,14 @@ func _ceiling_building(location: String, x: int, y: int) -> String:
 func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
 	var c := chunk(loc, at[1], at[2])
 	# The layer asked for (ADR-0021: the player points at a roof, a ceiling,
 	# a wall); older clients: what stands there, else the roof, the ceiling.
-	var layer := String(r.get("layer", ""))
+	var layer := rs(r, "layer")
 	if layer != "" and not layer in ["structure", "roof", "ceiling"]:
 		return {"ok": false, "reason": "bad_request"}
 	if layer != "" and c.get_cell(layer, at[3], at[4]) == "":
@@ -1252,9 +1287,9 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
-	var layer := String(r.get("layer", "structure"))
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
+	var layer := rs(r, "layer", "structure")
 	if not layer in ["structure", "cover"]:
 		return {"ok": false, "reason": "bad_request"}
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
@@ -1264,13 +1299,13 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var g: Dictionary = content.get_def(thing).get("gather", {}) if thing != "" else {}
 	if g.is_empty():
 		return {"ok": false, "reason": "nothing_to_gather"}
-	var item := String(r.get("item", ""))
+	var why := check_held(actor, r)
+	if why != "":
+		return {"ok": false, "reason": why}
+	var item := held_of(actor)
 	var tool := String(g["tool"])
-	if tool != "":
-		if item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool):
-			return {"ok": false, "reason": "no_tool"}
-		if present.has(actor) and inventory(actor).count(item) <= 0:
-			return {"ok": false, "reason": "not_carried"}
+	if tool != "" and (item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool)):
+		return {"ok": false, "reason": "no_tool"}  # the tool must be in the hands, not in the bag
 	c.set_cell(layer, at[3], at[4], "")
 	_changed(chunk_key(loc, at[1], at[2]))
 	var inv := inventory(actor)
@@ -1312,7 +1347,7 @@ func _jump(actor: String, r: Dictionary) -> Dictionary:
 	var loc: String = p["location"]
 	if levels.kind(loc) != Levels.BUILDING_LEVEL:
 		return {"ok": false, "reason": "nothing_to_jump_from"}
-	var d := Vector2i(clampi(int(r.get("dx", 0)), -1, 1), clampi(int(r.get("dy", 0)), -1, 1))
+	var d := Vector2i(clampi(ri(r, "dx", 0), -1, 1), clampi(ri(r, "dy", 0), -1, 1))
 	if d == Vector2i.ZERO:
 		return {"ok": false, "reason": "bad_request"}
 	var to := Movement.cell_of(p["pos"]) + d
@@ -1342,9 +1377,9 @@ func _climb(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "not_here"}
 	var p: Dictionary = present[actor]
 	var loc: String = p["location"]
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
-	if String(r.get("location", "")) != loc or not _reaches(actor, loc, x, y, USE_REACH):
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
+	if rs(r, "location") != loc or not _reaches(actor, loc, x, y, USE_REACH):
 		return {"ok": false, "reason": "too_far"}
 	var shaft := _part_at(loc, x, y, "structure")
 	if shaft != "" and content.get_def(shaft).get("role") == "shaft":
@@ -1353,7 +1388,7 @@ func _climb(actor: String, r: Dictionary) -> Dictionary:
 	var to := Vector2i(x, y)
 	# "dir": "up" or "down" where stairs stand over stairs and both ways lead
 	# on from one cell; without it, up first (older clients).
-	var dir := String(r.get("dir", ""))
+	var dir := rs(r, "dir")
 	if dir != "down" and _is_stairs(_part_at(loc, x, y, "structure")):
 		var arrive := _arrival_of(loc, x, y)
 		var building := levels.building(loc) if loc != SURFACE else _ceiling_building(loc, arrive.x, arrive.y)
@@ -1440,11 +1475,7 @@ func _open_below(loc: String, at: Vector2i, part: String, check_only: bool) -> S
 ## The facing a part is built in: the one asked for if the part allows it,
 ## else its default (the first it lists); "" for parts that do not turn.
 func _facing(def: Dictionary, r: Dictionary) -> String:
-	var turns: Array = def.get("rotations", [])
-	if turns.is_empty():
-		return ""
-	var want := String(r.get("facing", ""))
-	return want if turns.has(want) else String(turns[0])
+	return BuildRules.facing_of(def, rs(r, "facing"))
 
 
 ## Where stairs at (x, y) facing `facing` would lead on the level above: the
@@ -1452,12 +1483,7 @@ func _facing(def: Dictionary, r: Dictionary) -> String:
 ## their top faces if that one is (onto a wall, a gallery, the next room);
 ## NO_CELL if neither.
 func _stairs_arrival(loc: String, x: int, y: int, facing: String) -> Vector2i:
-	if _part_at(loc, x, y, "ceiling") != "":
-		return Vector2i(x, y)
-	var top: Vector2i = Vector2i(x, y) + (ContentRegistry.FACINGS.get(facing, Vector2i(0, -1)) as Vector2i)
-	if facing != "" and _part_at(loc, top.x, top.y, "ceiling") != "":
-		return top
-	return NO_CELL
+	return BuildRules.stairs_arrival(self, loc, x, y, facing)
 
 
 ## Where built stairs lead (stairs built before they remembered it: their
@@ -1607,8 +1633,8 @@ func _move_location(from: String, to: String) -> void:
 ## owner key, its definition's "container", ""] or [..., ..., reason].
 func _container(actor: String, r: Dictionary) -> Array:
 	var at := _cell(r)
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
 	if not _reaches(actor, at[0], x, y, USE_REACH):
 		return ["", {}, "too_far"]
 	var c := chunk(at[0], at[1], at[2])
@@ -1643,8 +1669,8 @@ func _move_items(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 	var c := _container(actor, r)
 	if c[2] != "":
 		return {"ok": false, "reason": c[2]}
-	var item := String(r.get("item", ""))
-	var n := int(r.get("count", 0))
+	var item := rs(r, "item")
+	var n := ri(r, "count", 0)
 	if content.kind_of(item) != "item" or n <= 0:
 		return {"ok": false, "reason": "bad_request"}
 	var box := inventory(c[0])
@@ -1677,12 +1703,15 @@ var break_others := false
 func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
-	var item := String(r.get("item", ""))
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
+	var why := check_held(actor, r)
+	if why != "":
+		return {"ok": false, "reason": why}
+	var item := held_of(actor)
 	var w: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
-	if item != "" and (w.get("kind") != "melee" or (present.has(actor) and inventory(actor).count(item) <= 0)):
-		return {"ok": false, "reason": "not_a_weapon"}
+	if w.get("kind") != "melee" or rb(r, "unarmed", false):
+		w = {}  # the free hand
 	var reach := int((float(w.get("reach", 1.0)) + 0.8) * Movement.UNIT)
 	if not _reaches(actor, loc, x, y, reach):
 		return {"ok": false, "reason": "too_far"}
@@ -1729,8 +1758,8 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 func _repair(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
-	var x := int(r.get("x", 0))
-	var y := int(r.get("y", 0))
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
 	var c := chunk(loc, at[1], at[2])
@@ -1765,17 +1794,20 @@ func _repair(actor: String, r: Dictionary) -> Dictionary:
 func _hold(actor: String, r: Dictionary) -> Dictionary:
 	if not present.has(actor):
 		return {"ok": false, "reason": "not_here"}
-	var item := String(r.get("item", ""))
+	if r.has("item") and typeof(r["item"]) != TYPE_STRING:
+		return {"ok": false, "reason": "bad_request"}
+	var item := rs(r, "item")
 	if item != "" and (content.kind_of(item) != "item" or inventory(actor).count(item) <= 0):
+		present[actor]["held"] = ""  # what it meant to take is not there: empty hands, not the old thing
 		return {"ok": false, "reason": "not_carried"}
 	present[actor]["held"] = item
 	return {"ok": true}
 
 
 func _transfer(actor: String, r: Dictionary) -> Dictionary:
-	var to := String(r.get("to", ""))
-	var item := String(r.get("item", ""))
-	var n := int(r.get("count", 0))
+	var to := rs(r, "to")
+	var item := rs(r, "item")
+	var n := ri(r, "count", 0)
 	if to == "" or to == actor or n <= 0:
 		return {"ok": false, "reason": "bad_request"}
 	if not inventory(actor).remove(item, n):

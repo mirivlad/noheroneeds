@@ -168,28 +168,32 @@ func _creature_dies(c: Creature) -> void:
 const NO_POS := Vector2i(1 << 30, 1 << 30)
 
 
-## A player's attack request: {"item": weapon id or "" (bare hands), "x",
-## "y": where it aims (movement units)}. A ranged weapon shoots its ammo.
+## A player's attack request: {"x", "y": where it aims (movement units),
+## "item": what it believes it holds (checked), "unarmed": true for a blow of
+## the free hand}. With the held weapon; a ranged one shoots its ammo.
 func attack(actor: String, r: Dictionary) -> Dictionary:
 	if not world.present.has(actor):
 		return {"ok": false, "reason": "not_here"}
 	var p: Dictionary = world.present[actor]
-	var item := String(r.get("item", ""))
+	# What is in the hands is the server's (ADR-0021): the request may name it
+	# to be sure both sides agree, never choose it.
+	var why := world.check_held(actor, r)
+	if why != "":
+		return {"ok": false, "reason": why}
+	var item := world.held_of(actor)
 	var w: Dictionary
-	if item == "":
-		w = world.content.get_def(_body_plan(p)).get("unarmed", {})
+	if item == "" or ServerWorld.rb(r, "unarmed", false):
+		w = world.content.get_def(_body_plan(p)).get("unarmed", {})  # a fist, or the free hand
 	else:
-		if world.inventory(actor).count(item) <= 0:
-			return {"ok": false, "reason": "not_carried"}
 		w = world.content.get_def(item).get("weapon", {})
 	if w.is_empty():
 		return {"ok": false, "reason": "not_a_weapon"}
 	if _tick < int(_ready_at.get(actor, 0)):
 		return {"ok": false, "reason": "not_ready"}
 	_ready_at[actor] = _tick + _ticks(float(w["cooldown_ms"]))
-	var aim := Vector2i(int(r.get("x", 0)), int(r.get("y", 0)))
+	var aim := Vector2i(ServerWorld.ri(r, "x", 0), ServerWorld.ri(r, "y", 0))
 	if w["kind"] == "ranged":
-		return _shoot(actor, p, w, aim, int(r.get("z", -1)))
+		return _shoot(actor, p, w, aim, ServerWorld.ri(r, "z", -1))
 	var hit := _blow(actor, String(p["location"]), p["pos"], aim, w)
 	world.creatures.noise(String(p["location"]), Movement.cell_of(p["pos"]))
 	return {"ok": true, "hit": hit}

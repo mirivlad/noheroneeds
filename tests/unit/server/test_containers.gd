@@ -83,6 +83,7 @@ func test_parts_break_under_blows_and_are_mended() -> void:
 	w.grant(a, "base:plank", 20)
 	w.grant(a, "base:axe", 1)
 	_req(a, _at({"type": "build", "part": "base:wood_wall"}))
+	_req(a, {"type": "hold", "item": "base:axe"})
 	var r := _req(a, _at({"type": "strike_part", "item": "base:axe"}))
 	eq(r.get("damage"), 4, "an axe takes 4 of 40")
 	eq(_req(a, _at({"type": "strike_part", "item": "base:axe"})).get("reason"), "not_ready", "not again at once")
@@ -119,3 +120,40 @@ func test_what_one_holds_is_seen() -> void:
 	w.grant(a, "base:bow", 1)
 	check(_req(a, {"type": "hold", "item": "base:bow"}).get("ok", false), "held")
 	eq(w.present[a]["held"], "base:bow")
+
+
+## ADR-0007: nothing falls. A wall broken under a walkway leaves the walkway
+## and the level over it; wear is kept over a restart.
+func test_a_broken_wall_takes_nothing_else_and_wear_is_kept() -> void:
+	var a := _player("Аня")
+	w.grant(a, "base:plank", 50)
+	w.grant(a, "base:axe", 1)
+	_req(a, _at({"type": "build", "part": "base:wood_wall"}))
+	_req(a, _at({"type": "build", "part": "base:wood_ceiling"}))
+	_req(a, {"type": "build", "location": "surface", "x": 5, "y": 3, "part": "base:wood_wall"})
+	_req(a, {"type": "hold", "item": "base:axe"})
+	eq(_req(a, _at({"type": "strike_part"})).get("damage"), 4)
+	w.flush_state()
+	w.close()
+	w = ServerWorld.open(_db, _content)
+	eq(int(w.chunk("surface", 0, 0).get_props(4, 3).get("damage", 0)), 4, "wear kept over a restart")
+	var known: Dictionary = w._known_character(a)
+	w.enter(known["owner"], PortableCharacter.from_data(known["data"]))
+	w.move_character(a, Vector2i(3 * 256 + 128, 3 * 256 + 128))
+	w.break_others = true
+	var level := w.levels.level(w._ceiling_building("surface", 4, 3), 1)
+	check(level != "", "a level over the walkway")
+	_req(a, {"type": "hold", "item": "base:axe"})
+	var r := {}
+	for i in 20:
+		w.tick += 20
+		w.combat.step(w.tick)
+		r = _req(a, _at({"type": "strike_part"}))
+		if r.has("broken"):
+			break
+	eq(r.get("broken"), "base:wood_wall", "the wall under the walkway broken")
+	eq(w.chunk("surface", 0, 0).get_cell("ceiling", 4, 3), "base:wood_ceiling", "the walkway stays")
+	eq(w._part_at(level, 4, 3, "ground"), "base:wood_floor", "and the floor over it")
+	eq(w.chunk("surface", 0, 0).get_cell("structure", 5, 3), "base:wood_wall", "the next wall untouched")
+	eq(_req(a, _at({"type": "strike_part", "location": "surface", "x": 4, "y": 3})).get("reason"), "unbreakable",
+		"the walkway itself is not struck (nothing there now but the ceiling)")

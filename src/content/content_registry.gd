@@ -358,6 +358,8 @@ func _check_weapon(id: String, field: String, w: Variant, ranged_ok: bool) -> vo
 		errors.append("%s: %s must be a weapon {kind, damage...}" % [id, field])
 		return
 	w["kind"] = String(w.get("kind", "melee"))
+	# A tool one can strike with (a pick): not what Q snatches to fight.
+	w["improvised"] = bool(w.get("improvised", false))
 	w["damage"] = int(w.get("damage", 0))
 	w["cooldown_ms"] = float(w.get("cooldown_ms", 800))
 	if w["damage"] < 1 or w["cooldown_ms"] < 50.0:

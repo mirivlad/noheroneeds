@@ -807,6 +807,10 @@ class SolidIn:
 	var world: ServerWorld
 	var location := ""
 	var empty_ground_blocks := false
+	## Chunks not in memory count as solid, and are not loaded for the asking
+	## (creatures: one wandering to the edge of what is loaded must not have
+	## the world load, or make, a chunk in the middle of a tick).
+	var loaded_only := false
 	var _at := Vector2i(1 << 30, 0)
 	var _epoch := -1
 	var _chunk: Chunk = null
@@ -816,18 +820,23 @@ class SolidIn:
 		if here != _at or _epoch != world.chunks_epoch:
 			_at = here
 			_epoch = world.chunks_epoch
-			_chunk = world.chunk(location, here.x, here.y)
+			_chunk = world._chunks.get(ServerWorld.chunk_key(location, here.x, here.y)) if loaded_only \
+				else world.chunk(location, here.x, here.y)
+		if _chunk == null:
+			_at = Vector2i(1 << 30, 0)  # asked again next time: it may have come by then
+			return true
 		return Terrain.is_solid(_chunk, x & 31, y & 31, world.content, empty_ground_blocks)
 
 
 ## Answers whether a cell of `location` is solid (its .solid(x, y)), as
 ## is_solid, but cheaper for runs of questions about nearby cells. Keep the
 ## object while using its method as a Callable.
-func solid_in(location: String) -> SolidIn:
+func solid_in(location: String, loaded_only := false) -> SolidIn:
 	var q := SolidIn.new()
 	q.world = self
 	q.location = location
 	q.empty_ground_blocks = location != SURFACE
+	q.loaded_only = loaded_only
 	return q
 
 

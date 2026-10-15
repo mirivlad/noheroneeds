@@ -284,16 +284,23 @@ def rock(kind, mask):
     specks of their colour on both."""
     img = Image.new("RGBA", (T, 2 * T), (0, 0, 0, 0))
     px = img.load()
-    top = [hx("2e2a2c"), hx("403a3a"), hx("524a48"), hx("665c58")]
+    # The top of solid rock reads as stone, not as the earth floor beside it:
+    # cool slate, darker, broken into blocks by cracks (16.10.2026: a mass of
+    # rock looked like an empty floor in the dark).
+    top = [hx("17161c"), hx("23222b"), hx("2f2d38"), hx("44414f")]
     face = [hx("1e1a1c"), hx("2a2628"), hx("363032"), hx("443c3c")]
     specks = ORE_SPECKS[kind]
     for y in range(2 * T):
         for x in range(T):
             r = h2(x + mask * 5, y, 17)
             if y < T:
-                c = top[2] if r > 0.55 else (top[1] if r > 0.15 else top[0])
-                if h2(x // 2, y // 2, mask + 3) > 0.92:
+                c = top[2] if r > 0.6 else (top[1] if r > 0.1 else top[0])
+                if h2(x // 2, y // 2, mask + 3) > 0.9:
                     c = top[3]
+                # Cracks between blocks, offset row by row like masonry of nature.
+                bx = (x + (3 if (y // 5) % 2 else 0)) % 6
+                if y % 5 == 4 or bx == 5 and h2(x // 6, y // 5, 29) > 0.25:
+                    c = top[0]
             else:
                 fy = y - T
                 c = face[2] if fy < 5 else (face[1] if r > 0.3 else face[0])
@@ -326,7 +333,7 @@ def rock_set(kind):
 def cave_floor(variant):
     img = Image.new("RGBA", (T, T))
     px = img.load()
-    ramp = [hx("3a3430"), hx("4a423c"), hx("5a5048"), hx("6a5e54")]
+    ramp = [hx("4a3c30"), hx("5c4b3c"), hx("6e5a46"), hx("826a52")]  # warm earth: not the rock's slate
     for y in range(T):
         for x in range(T):
             r = h2(x, y, variant * 13 + 5)
@@ -413,8 +420,15 @@ def icon(kind):
         d.line((3, 11, 7, 11), P["bark"][0])
         d.line((8, 11, 12, 11), P["bark"][0])
     elif kind == "axe":
-        d.line((5, 12, 11, 4), P["wood"][3])
-        d.polygon([(9, 3), (13, 4), (12, 8)], P["stone"][3])
+        # Held by the shaft's foot (bottom-left), the head at the top-right:
+        # a socket and a fanned blade with a bright edge.
+        d.line((2, 13, 10, 5), P["wood"][3])
+        d.line((3, 13, 11, 5), P["wood"][1])
+        d.polygon([(9, 3), (11, 1), (12, 2), (11, 4)], P["stone"][1])
+        d.polygon([(11, 3), (13, 3), (14, 5), (14, 8), (12, 8), (11, 6)], P["stone"][2])
+        d.line((14, 4, 14, 8), P["white"])
+        d.line((13, 3, 14, 4), P["stone"][3])
+        d.point((12, 5), P["stone"][3])
     elif kind == "pickaxe":
         d.line((5, 13, 10, 4), P["wood"][3])
         d.arc((3, 1, 15, 9), 190, 350, P["stone"][3], width=2)
@@ -430,13 +444,28 @@ def icon(kind):
         d.line((3, 13, 12, 4), P["wood"][3])
         d.polygon([(11, 2), (14, 2), (14, 5), (12, 5)], P["stone"][3])
     elif kind == "bow":
-        d.arc((2, 2, 14, 14), 225, 45, P["wood"][3], width=2)
-        d.line((4, 12, 12, 4), P["white"])
+        # Limbs curving from tip to tip, bulging up-left; the string straight
+        # between the nocks; a wrapped grip in the middle.
+        outer = [(13, 1), (11, 1), (8, 2), (5, 4), (3, 6), (2, 8), (1, 11), (1, 13)]
+        inner = [(13, 2), (11, 2), (8, 3), (5, 5), (3, 7), (2, 9), (2, 11), (2, 13)]
+        for a, b in zip(outer, outer[1:]):
+            d.line((a, b), P["wood"][2])
+        for a, b in zip(inner, inner[1:]):
+            d.line((a, b), P["wood"][3])
+        d.line((13, 2, 2, 13), hx("e8e0c8"))
+        d.rectangle((4, 4, 5, 5), hx("6a4a30"))
+        d.point((14, 1), P["wood"][1])
+        d.point((1, 14), P["wood"][1])
     elif kind == "arrow":
-        d.line((3, 12, 12, 3), P["wood"][3])
-        d.polygon([(11, 2), (14, 2), (13, 5)], P["stone"][3])
-        d.line((3, 12, 2, 10), P["white"])
-        d.line((3, 12, 5, 13), P["white"])
+        # A shaft, a broad head, a feather each side of the tail, the nock.
+        d.line((3, 12, 10, 5), P["wood"][3])
+        d.polygon([(14, 1), (9, 3), (12, 6)], P["stone"][2])
+        d.line((14, 1, 10, 3), P["stone"][3])
+        for x, y in ((2, 10), (3, 9), (3, 10), (4, 9)):
+            d.point((x, y), hx("c84a3c"))
+        for x, y in ((4, 13), (5, 12), (5, 13), (6, 12)):
+            d.point((x, y), hx("e07a60"))
+        d.point((2, 13), P["white"])
     elif kind == "raw_meat":
         d.ellipse((3, 5, 13, 12), hx("b04a48"))
         d.ellipse((5, 6, 9, 9), hx("d87870"))

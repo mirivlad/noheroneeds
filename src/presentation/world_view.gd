@@ -375,8 +375,9 @@ func sprite_count() -> int:
 	return n
 
 
+## Chunks not drawn whole yet (waiting, being drawn, or their last steps).
 func pending_chunks() -> int:
-	return _pending.size()
+	return _pending.size() + _jobs.size() + _after.size()
 
 
 ## The player's chunk changed: chunks come into the drawing radius (painted)
@@ -394,6 +395,7 @@ func _keep_near() -> void:
 			(_chunk_nodes[key] as Node).queue_free()
 			_chunk_nodes.erase(key)
 			_cell_sprites.erase(key)
+			_jobs.erase(key)
 	for key: String in client.chunks:
 		if _near(key, DRAW_RADIUS) and not _chunk_nodes.has(key) and key.begins_with(client.location + "|"):
 			_pending[key] = true
@@ -408,6 +410,7 @@ func _near(key: String, radius: int) -> bool:
 
 func _paint_pending() -> void:
 	if _pending.is_empty():
+		_paint_jobs()
 		return
 	var me := Vector2(client.position) / UNITS_PER_PIXEL if client.has_position else Vector2.ZERO
 	var sight := Rect2(me - SIGHT / 2, SIGHT)
@@ -425,7 +428,8 @@ func _paint_pending() -> void:
 		if dist[key] >= 0.0 and Time.get_ticks_usec() - start > PAINT_BUDGET_USEC:
 			break
 		_pending.erase(key)
-		_paint(key)
+		_paint(key, true, dist[key] < 0.0)  # out of sight: a few rows a frame
+	_paint_jobs()
 
 
 ## Forgets everything drawn (the client moved to another location).
@@ -441,6 +445,8 @@ func _clear() -> void:
 		(_chunk_nodes[key] as Node).queue_free()
 	_chunk_nodes.clear()
 	_cell_sprites.clear()
+	_jobs.clear()
+	_after.clear()
 	_rock_tops.clear()
 	_drawn_around = Vector2i(1 << 30, 0)
 	for cell: Vector2i in _cover_sprites:
@@ -456,7 +462,16 @@ func own_pixel_position(alpha: float) -> Vector2:
 	return a.lerp(b, alpha)
 
 
-func _paint(key: String, spread := true) -> void:
+## Chunks being drawn a few rows a frame (out of sight): key -> PaintContext.
+var _jobs := {}
+## What is left to do for chunks drawn whole (ground edges, the sides of the
+## chunks around), a step at a time within the budget.
+var _after: Array[Callable] = []
+const JOB_BUDGET_USEC := 3000
+
+
+## Draws a chunk: at once (`now`), or a few rows a frame (_paint_pending).
+func _paint(key: String, spread := true, now := true) -> void:
 	var p := key.split("|")
 	if not client.chunks.has(key):
 		return
@@ -471,9 +486,8 @@ func _paint(key: String, spread := true) -> void:
 			old.queue_free()
 			_chunk_nodes.erase(key)
 			_cell_sprites.erase(key)
+		_jobs.erase(key)
 		return  # drawn when the player comes near (_keep_near)
-	var ox := int(p[1]) * Chunk.SIZE
-	var oy := int(p[2]) * Chunk.SIZE
 	var holder: Node2D = _chunk_nodes.get(key)
 	if holder:
 		holder.queue_free()
@@ -481,63 +495,235 @@ func _paint(key: String, spread := true) -> void:
 	holder.y_sort_enabled = true
 	_sorted.add_child(holder)
 	_chunk_nodes[key] = holder
-	var by_cell := {}
-	_cell_sprites[key] = by_cell
+	_cell_sprites[key] = {}
+	var ctx := _context(key, c)
+	ctx.spread = spread
+	_jobs.erase(key)
+	if not now:
+		_jobs[key] = ctx
+		return
 	for ly in Chunk.SIZE:
 		for lx in Chunk.SIZE:
-			var cell := Vector2i(ox + lx, oy + ly)
-			_set_flat(_ground, cell, c.get_cell("ground", lx, ly))
-			_cover.erase_cell(cell)
-			_set_cover(cell, c.get_cell("roof", lx, ly) if c.get_cell("roof", lx, ly) != "" else c.get_cell("ceiling", lx, ly),
-				"roof" if c.get_cell("roof", lx, ly) != "" else "ceiling")
-			_rock_tops.erase_cell(cell + Vector2i(0, -1))
-			for layer in ["cover", "structure"]:
-				var id := c.get_cell(layer, lx, ly)
-				if id == "":
-					continue
-				var v := content.visual_of(id)
-				if v.get("mode") == "tall":
-					var state := "open" if c.get_props(lx, ly).get("open", false) else ""
-					var variant := _join_mask(p[0], cell, String(v.get("autotile", ""))) if v.has("autotile") else 0
-					if layer == "structure" and _rock_top_tiles.has(id) and _deep_in_rock(p[0], cell):
-						var t: Array = _rock_top_tiles[id]
-						_rock_tops.set_cell(cell + Vector2i(0, -1), t[0], (t[1] as Vector2i) + Vector2i(variant, 0))
-						continue
-					var facing := String(c.get_props(lx, ly).get("facing", ""))
-					var s := _tall_sprite(v, cell, state, variant, facing)
-					s.set_meta("cell", cell)
-					s.set_meta("layer", layer)
-					s.set_meta("id", id)
-					var damage := int(c.get_props(lx, ly).get("damage", 0)) if layer == "structure" else 0
-					if damage > 0:  # worn: darker as it nears breaking (ADR-0021)
-						var ratio := clampf(float(damage) / maxf(1.0, float(content.get_def(id).get("durability", 1))), 0.0, 1.0)
-						s.self_modulate = Color.WHITE.lerp(Color(0.5, 0.45, 0.45), ratio)
-					var work := int((c.get_props(lx, ly).get(layer, {}) as Dictionary).get("work", 0)) if layer != "structure" else 0
-					if work > 0:  # being felled: paler as it nears falling
-						var of := maxf(1.0, float(content.get_def(id).get("gather", {}).get("work", 1)))
-						s.self_modulate = Color.WHITE.lerp(Color(0.75, 0.62, 0.5), clampf(work / of, 0.0, 1.0))
-					holder.add_child(s)
-					(by_cell.get_or_add(cell, []) as Array).append(s)
-					var light: Dictionary = content.get_def(id).get("light", {})
-					if not light.is_empty():
-						holder.add_child(_light_for(light, cell))
-				else:
-					_set_flat(_cover, cell, id)  # flat, or the missing-picture mark
-			if c.get_props(lx, ly).get("stairs_down", false):
-				var mark := _stairs_down_sprite(cell)
-				if mark:
-					holder.add_child(mark)
-			if client.z > 0 and c.get_cell("ground", lx, ly) == "":
-				_drop_rims(holder, cell)
-	# Walls on the edge join walls of the next chunk: redraw those once.
+			_paint_cell(ctx, lx, ly)
+	for step in _finish(ctx):
+		step.call()
+
+
+## Rows of the chunks being drawn, and steps after them, within the frame's budget.
+func _paint_jobs() -> void:
+	var start := Time.get_ticks_usec()
+	while not _after.is_empty():
+		_after.pop_front().call()
+		if Time.get_ticks_usec() - start > JOB_BUDGET_USEC:
+			return
+	for key: String in _jobs.keys():
+		var ctx: PaintContext = _jobs[key]
+		while ctx.row < Chunk.SIZE:
+			for lx in Chunk.SIZE:
+				_paint_cell(ctx, lx, ctx.row)
+			ctx.row += 1
+			if Time.get_ticks_usec() - start > JOB_BUDGET_USEC:
+				return
+		_jobs.erase(key)
+		_after.append_array(_finish(ctx))
+		if Time.get_ticks_usec() - start > JOB_BUDGET_USEC:
+			return
+
+
+## What is left once a chunk is drawn whole, as steps: its ground edges, and
+## the side of each chunk around that faces it.
+func _finish(ctx: PaintContext) -> Array[Callable]:
+	var p := ctx.key.split("|")
+	var steps: Array[Callable] = []
+	# Edges here, and on the rim of the chunks around, which depend on this one.
 	if not _edges.is_empty():
-		# Edges here, and on the rim of the chunks around, which depend on this one.
-		_paint_edges(p[0], ox - 1, oy - 1, Chunk.SIZE + 2, Chunk.SIZE + 2)
-	if spread:
+		steps.append(func() -> void:
+			if p[0] == client.location:
+				_paint_edges(p[0], ctx.ox - 1, ctx.oy - 1, Chunk.SIZE + 2, Chunk.SIZE + 2))
+	if ctx.spread:
 		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 			var nk := ServerWorld.chunk_key(p[0], int(p[1]) + d.x, int(p[2]) + d.y)
-			if _chunk_nodes.has(nk) and _edge_joins(c, d):
-				_paint(nk, false)
+			steps.append(func() -> void: _border(nk, d))
+	return steps
+
+
+## The side of a drawn chunk facing a chunk drawn now (-d from it): only that
+## row or column depends on its neighbour (joins, rock deep in the mass).
+func _border(nk: String, d: Vector2i) -> void:
+	if not (_chunk_nodes.has(nk) and client.chunks.has(nk)):
+		return
+	var nctx := _context(nk, client.chunks[nk])
+	var done := Chunk.SIZE
+	if _jobs.has(nk):
+		# Still being drawn: it goes on with what is known now, and
+		# only its rows drawn so far are drawn again.
+		var job: PaintContext = _jobs[nk]
+		nctx.row = job.row
+		nctx.spread = job.spread
+		_jobs[nk] = nctx
+		done = job.row
+	for i in Chunk.SIZE:
+		var lx := (Chunk.SIZE - 1 if d.x < 0 else 0) if d.x != 0 else i
+		var ly := (Chunk.SIZE - 1 if d.y < 0 else 0) if d.y != 0 else i
+		if ly >= done:
+			continue
+		_clear_cell(nctx, lx, ly)
+		_paint_cell(nctx, lx, ly)
+
+
+## What painting a chunk's cells needs, read once: its layers as ids, and the
+## join groups of its parts with a rim of one cell from the chunks around.
+class PaintContext:
+	var key := ""
+	var location := ""
+	var ox := 0
+	var oy := 0
+	var chunk: Chunk
+	var holder: Node2D
+	var by_cell: Dictionary
+	## The chunk's palette and its layers' cells as indices into it (empty: a
+	## layer it has nothing on) — read in place, not turned into ids.
+	var palette: PackedStringArray
+	var ground: PackedInt32Array
+	var structure: PackedInt32Array
+	var cover: PackedInt32Array
+	var roof: PackedInt32Array
+	var ceiling: PackedInt32Array
+
+	func at(cells: PackedInt32Array, i: int) -> String:
+		return palette[cells[i]] if not cells.is_empty() else ""
+	## The structure layers of the chunk and the eight around it (index
+	## (dy + 1) * 3 + dx + 1), and their palettes' join group codes.
+	var near_cells: Array[PackedInt32Array] = []
+	var near_codes: Array[PackedInt32Array] = []
+	var row := 0
+	var spread := true
+
+	## The join group code (0: none) of the part on a cell, -1..SIZE around.
+	func group(lx: int, ly: int) -> int:
+		var dx := -1 if lx < 0 else (1 if lx >= Chunk.SIZE else 0)
+		var dy := -1 if ly < 0 else (1 if ly >= Chunk.SIZE else 0)
+		var k := (dy + 1) * 3 + dx + 1
+		var cells := near_cells[k]
+		if cells.is_empty():
+			return 0
+		return near_codes[k][cells[(ly - dy * Chunk.SIZE) * Chunk.SIZE + lx - dx * Chunk.SIZE]]
+
+
+var _group_codes := {"": 0}
+
+
+func _group_of(id: String) -> int:
+	if id == "":
+		return 0
+	var g := String(content.visual_of(id).get("autotile", ""))
+	if g == "":
+		return 0
+	return _group_codes.get_or_add(g, _group_codes.size())
+
+
+func _context(key: String, c: Chunk) -> PaintContext:
+	var p := key.split("|")
+	var ctx := PaintContext.new()
+	ctx.key = key
+	ctx.location = p[0]
+	ctx.ox = int(p[1]) * Chunk.SIZE
+	ctx.oy = int(p[2]) * Chunk.SIZE
+	ctx.chunk = c
+	ctx.holder = _chunk_nodes[key]
+	ctx.by_cell = _cell_sprites[key]
+	ctx.palette = c.palette
+	ctx.ground = c.layers.get("ground", PackedInt32Array())
+	ctx.structure = c.layers.get("structure", PackedInt32Array())
+	ctx.cover = c.layers.get("cover", PackedInt32Array())
+	ctx.roof = c.layers.get("roof", PackedInt32Array())
+	ctx.ceiling = c.layers.get("ceiling", PackedInt32Array())
+	for dy in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var n: Chunk = c if dx == 0 and dy == 0 else client.chunks.get(ServerWorld.chunk_key(p[0], int(p[1]) + dx, int(p[2]) + dy))
+			var cells: PackedInt32Array = n.layers.get("structure", PackedInt32Array()) if n else PackedInt32Array()
+			var codes := PackedInt32Array()
+			if not cells.is_empty():
+				for id in n.palette:
+					codes.append(_group_of(id))
+			ctx.near_cells.append(cells)
+			ctx.near_codes.append(codes)
+	return ctx
+
+
+## Lets go of what was drawn for a cell (to draw it again).
+func _clear_cell(ctx: PaintContext, lx: int, ly: int) -> void:
+	var cell := Vector2i(ctx.ox + lx, ctx.oy + ly)
+	for n: Node in ctx.by_cell.get(cell, []):
+		if is_instance_valid(n):
+			n.queue_free()
+	ctx.by_cell.erase(cell)
+
+
+func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
+	var i := ly * Chunk.SIZE + lx
+	var cell := Vector2i(ctx.ox + lx, ctx.oy + ly)
+	var ground := ctx.at(ctx.ground, i)
+	_set_flat(_ground, cell, ground)
+	_cover.erase_cell(cell)
+	var roof := ctx.at(ctx.roof, i)
+	var ceiling := ctx.at(ctx.ceiling, i)
+	if roof != "" or ceiling != "" or _cover_sprites.has(cell):
+		_set_cover(cell, roof if roof != "" else ceiling, "roof" if roof != "" else "ceiling")
+	_rock_tops.erase_cell(cell + Vector2i(0, -1))
+	var c := ctx.chunk
+	for layer in ["cover", "structure"]:
+		var id := ctx.at(ctx.cover, i) if layer == "cover" else ctx.at(ctx.structure, i)
+		if id == "":
+			continue
+		var v := content.visual_of(id)
+		if v.get("mode") == "tall":
+			var own := ctx.group(lx, ly) if layer == "structure" else 0
+			var variant := 0
+			var north := 0
+			if own != 0:
+				north = ctx.group(lx, ly - 1)
+				variant = (1 if north == own else 0) | (2 if ctx.group(lx + 1, ly) == own else 0) \
+					| (4 if ctx.group(lx, ly + 1) == own else 0) | (8 if ctx.group(lx - 1, ly) == own else 0)
+			if layer == "structure" and own != 0 and own == _group_codes.get("rock", -1) and _rock_top_tiles.has(id) \
+					and variant & 5 == 5 and ctx.group(lx - 1, ly - 1) == own and ctx.group(lx + 1, ly - 1) == own:
+				# Rock deep in the mass: nobody can stand where its top is drawn or
+				# just behind it, nor in front of its face — a tile, not a sprite.
+				var t: Array = _rock_top_tiles[id]
+				_rock_tops.set_cell(cell + Vector2i(0, -1), t[0], (t[1] as Vector2i) + Vector2i(variant, 0))
+				continue
+			var props := c.get_props(lx, ly)
+			var state := "open" if props.get("open", false) else ""
+			var s := _tall_sprite(v, cell, state, variant, String(props.get("facing", "")))
+			s.set_meta("cell", cell)
+			s.set_meta("layer", layer)
+			s.set_meta("id", id)
+			var damage := int(props.get("damage", 0)) if layer == "structure" else 0
+			if damage > 0:  # worn: darker as it nears breaking (ADR-0021)
+				var ratio := clampf(float(damage) / maxf(1.0, float(content.get_def(id).get("durability", 1))), 0.0, 1.0)
+				s.self_modulate = Color.WHITE.lerp(Color(0.5, 0.45, 0.45), ratio)
+			var work := int((props.get(layer, {}) as Dictionary).get("work", 0)) if layer != "structure" else 0
+			if work > 0:  # being felled: paler as it nears falling
+				var of := maxf(1.0, float(content.get_def(id).get("gather", {}).get("work", 1)))
+				s.self_modulate = Color.WHITE.lerp(Color(0.75, 0.62, 0.5), clampf(work / of, 0.0, 1.0))
+			_add(ctx, cell, s)
+			var light: Dictionary = content.get_def(id).get("light", {})
+			if not light.is_empty():
+				_add(ctx, cell, _light_for(light, cell))
+		else:
+			_set_flat(_cover, cell, id)  # flat, or the missing-picture mark
+	if c.props.has(i):
+		if c.get_props(lx, ly).get("stairs_down", false):
+			var mark := _stairs_down_sprite(cell)
+			if mark:
+				_add(ctx, cell, mark)
+	if client.z > 0 and ground == "":
+		_drop_rims(ctx, cell)
+
+
+func _add(ctx: PaintContext, cell: Vector2i, n: Node2D) -> void:
+	ctx.holder.add_child(n)
+	(ctx.by_cell.get_or_add(cell, []) as Array).append(n)
 
 
 ## The surface under a building level: ground and flat plants, dimmed.
@@ -659,16 +845,6 @@ func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0, faci
 	return s
 
 
-## Rock with rock north, south and at both northern corners: nobody can stand
-## where its top is drawn or just behind it, nor in front of its face.
-func _deep_in_rock(location: String, cell: Vector2i) -> bool:
-	for d: Vector2i in [Vector2i(0, -1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(0, 1)]:
-		var id := _cell_part(location, cell + d)
-		if id == "" or content.visual_of(id).get("autotile", "") != "rock":
-			return false
-	return true
-
-
 ## Tall things standing on cells within `left`..`right` columns and `up`..
 ## `down` rows of `around` (drawn chunks only).
 func _sprites_near(around: Vector2i, left: int, right: int, up: int, down: int) -> Array:
@@ -677,19 +853,10 @@ func _sprites_near(around: Vector2i, left: int, right: int, up: int, down: int) 
 		for x in range(around.x - left, around.x + right + 1):
 			var key := ServerWorld.chunk_key(client.location, floori(x / float(Chunk.SIZE)), floori(y / float(Chunk.SIZE)))
 			var by_cell: Dictionary = _cell_sprites.get(key, {})
-			out.append_array(by_cell.get(Vector2i(x, y), []))
+			for n: Node in by_cell.get(Vector2i(x, y), []):
+				if n is Sprite2D:
+					out.append(n)
 	return out
-
-
-## Which neighbours (N=1, E=2, S=4, W=8) are drawn with the same join group.
-func _join_mask(location: String, cell: Vector2i, group: String) -> int:
-	var mask := 0
-	var bits := [[Vector2i(0, -1), 1], [Vector2i(1, 0), 2], [Vector2i(0, 1), 4], [Vector2i(-1, 0), 8]]
-	for b: Array in bits:
-		var id := _cell_part(location, cell + (b[0] as Vector2i))
-		if id != "" and content.visual_of(id).get("autotile", "") == group:
-			mask |= int(b[1])
-	return mask
 
 
 func _cell_part(location: String, cell: Vector2i) -> String:
@@ -699,24 +866,13 @@ func _cell_part(location: String, cell: Vector2i) -> String:
 	return c.get_cell("structure", cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else ""
 
 
-## Whether a chunk has joining parts on its side facing direction d.
-func _edge_joins(c: Chunk, d: Vector2i) -> bool:
-	for i in Chunk.SIZE:
-		var lx := Chunk.SIZE - 1 if d.x > 0 else (0 if d.x < 0 else i)
-		var ly := Chunk.SIZE - 1 if d.y > 0 else (0 if d.y < 0 else i)
-		var id := c.get_cell("structure", lx, ly)
-		if id != "" and content.visual_of(id).has("autotile"):
-			return true
-	return false
-
-
 ## On a building level a cell without floor is a drop — an opening, or the
 ## level's edge: its sides along the floor are shaded, so an opening reads as
 ## a hole one may jump down through (ADR-0007), not as more floor.
 const RIM := 4
 
 
-func _drop_rims(holder: Node2D, cell: Vector2i) -> void:
+func _drop_rims(ctx: PaintContext, cell: Vector2i) -> void:
 	for d: Vector2i in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:
 		if ground_at(client.location, cell + d) == "":
 			continue
@@ -727,7 +883,8 @@ func _drop_rims(holder: Node2D, cell: Vector2i) -> void:
 		r.position = Vector2(cell * CELL) + Vector2(CELL - RIM if d.x > 0 else 0, CELL - RIM if d.y > 0 else 0)
 		r.z_as_relative = false
 		r.z_index = -1
-		holder.add_child(r)
+		ctx.holder.add_child(r)
+		(ctx.by_cell.get_or_add(cell, []) as Array).append(r)
 
 
 ## On a building level, where the stairs from below come up: the way down.

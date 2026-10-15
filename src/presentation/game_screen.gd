@@ -364,6 +364,9 @@ func _process(delta: float) -> void:
 			game.world.creatures._spawn("base:poporing", "surface", me + Vector2i(-3, 1), {}, 2)
 			game.world.place_item("surface", (me + Vector2i(5, 1)) * 256 + Vector2i(128, 128), "base:plank", 3)
 			game.world.place_item("surface", (me + Vector2i(-5, -1)) * 256 + Vector2i(128, 128), "base:stone", 2)
+	if _opts.has("glide") and game and _frames > 80 and client.has_position:  # dev: run east through anything (load spikes)
+		var pos: Vector2i = game.world.present[client.character_id]["pos"]
+		game.world.move_character(client.character_id, pos + Vector2i(int(delta * Movement.TICK_RATE * Movement.WALK * 1.5), 0))
 	if _opts.has("swing") and _frames == int(_opts.get("frames", "120")) - int(_opts["swing"]):  # dev: a blow caught midway
 		view.swing_own(Vector2.RIGHT)
 	if _opts.has("open_map") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of the map
@@ -821,6 +824,8 @@ func _plan_cells() -> Array:
 ## Shows the plan: a picture on each cell, green where it can stand, red
 ## where not; the status line says how many, what it costs, why not.
 var _perf_sum := PackedInt64Array([0, 0, 0, 0, 0, 0])
+## The worst frame in the period: [frame, map, sim, view, ui] (us).
+var _perf_worst := PackedInt64Array([0, 0, 0, 0, 0])
 
 
 func _perf(map_us: int, sim_us: int, view_us: int, ui_us: int, delta: float) -> void:
@@ -828,14 +833,23 @@ func _perf(map_us: int, sim_us: int, view_us: int, ui_us: int, delta: float) -> 
 		_perf_sum[i] += [map_us, sim_us, view_us, ui_us][i]
 	_perf_sum[4] += int(delta * 1e6)
 	_perf_sum[5] += 1
+	var own := map_us + sim_us + view_us + ui_us
+	if own > _perf_worst[1] + _perf_worst[2] + _perf_worst[3] + _perf_worst[4]:
+		_perf_worst = PackedInt64Array([int(delta * 1e6), map_us, sim_us, view_us, ui_us])
 	if _perf_sum[5] < 120:
 		return
 	var n := float(_perf_sum[5])
-	print("perf z=%d frame %.1f ms: map %.2f sim %.2f view %.2f ui %.2f; nodes %d, sprites in chunks %d, draw calls %d" % [
+	print("perf z=%d frame %.1f ms: map %.2f sim %.2f view %.2f ui %.2f; worst ours %.1f (map %.1f sim %.1f view %.1f ui %.1f); nodes %d, sprites %d, chunks %d" % [
 		client.z, _perf_sum[4] / n / 1000.0, _perf_sum[0] / n / 1000.0, _perf_sum[1] / n / 1000.0,
-		_perf_sum[2] / n / 1000.0, _perf_sum[3] / n / 1000.0, Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
-		view.sprite_count(), Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
+		_perf_sum[2] / n / 1000.0, _perf_sum[3] / n / 1000.0,
+		(_perf_worst[1] + _perf_worst[2] + _perf_worst[3] + _perf_worst[4]) / 1000.0, _perf_worst[1] / 1000.0,
+		_perf_worst[2] / 1000.0, _perf_worst[3] / 1000.0, _perf_worst[4] / 1000.0,
+		Performance.get_monitor(Performance.OBJECT_NODE_COUNT), view.sprite_count(), client.chunks.size()])
 	_perf_sum.fill(0)
+	_perf_worst.fill(0)
+	if game:
+		var st := game.server.take_stats()
+		print("  server slowest tick %.1f ms: %s; sync loads %d" % [st["max"] / 1000.0, st["slowest_ms"], st["sync_loads"]])
 
 
 func _update_ghost() -> void:

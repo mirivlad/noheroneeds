@@ -24,9 +24,18 @@ static func start(world_path: String, content: ContentRegistry, player: PlayerId
 
 
 ## One tick of both sides.
+## Time the last step took, server and client (us; dev measurements).
+var server_us := 0
+var client_us := 0
+
+
 func step() -> void:
+	var t0 := Time.get_ticks_usec()
 	server.step()
+	var t1 := Time.get_ticks_usec()
 	client.step()
+	server_us = t1 - t0
+	client_us = Time.get_ticks_usec() - t1
 
 
 func close() -> void:

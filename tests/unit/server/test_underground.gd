@@ -100,13 +100,17 @@ func test_digging_needs_a_pick_in_hand_and_gives_what_the_rock_holds() -> void:
 	eq(_req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": ""}).get("reason"), "no_tool",
 		"not with bare hands")
 	eq(_req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"}).get("reason"),
-		"not_carried", "a pick one has")
+		"not_held", "a pick one has in the hands")
 	eq(_req(p, {"type": "dismantle", "location": "depth:-1", "x": at[0].x, "y": at[0].y}).get("reason"), "natural",
 		"rock is dug, not taken apart")
 	w.grant(p, "base:pickaxe", 1)
 	w.grant(p, "base:axe", 1)
+	eq(_req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"}).get("reason"),
+		"not_held", "carried is not enough: the pick must be in the hands")
+	_req(p, {"type": "hold", "item": "base:axe"})
 	eq(_req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:axe"}).get("reason"),
 		"no_tool", "an axe does not dig")
+	_req(p, {"type": "hold", "item": "base:pickaxe"})
 	var stone := w.inventory(p).count("base:stone")
 	var r := _req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"})
 	check(r.get("ok", false), "dug: %s" % r)
@@ -118,6 +122,7 @@ func test_digging_needs_a_pick_in_hand_and_gives_what_the_rock_holds() -> void:
 	# Ore gives ore: put a vein's rock beside one and dig it.
 	var q := _player(at[1], "depth:-1")
 	w.grant(q, "base:pickaxe", 1)
+	_req(q, {"type": "hold", "item": "base:pickaxe"})
 	var c := w.chunk("depth:-1", floori(at[0].x / 32.0), floori(at[0].y / 32.0))
 	c.set_cell("structure", posmod(at[0].x, 32), posmod(at[0].y, 32), "base:iron_ore_rock")
 	_req(q, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"})
@@ -130,8 +135,10 @@ func test_a_shaft_to_the_next_depth_opens_a_working_with_a_ladder() -> void:
 	var p := _player(way, "depth:-1")
 	w.grant(p, "base:plank", 20)
 	w.grant(p, "base:log", 5)
-	eq(_req(p, {"type": "build", "location": "surface", "x": way.x + 3, "y": way.y + 3, "part": "base:mine_shaft"}).get("reason"),
+	w.present[p]["location"] = "surface"  # up there for a moment
+	eq(_req(p, {"type": "build", "location": "surface", "x": way.x + 1, "y": way.y + 1, "part": "base:mine_shaft"}).get("reason"),
 		"wrong_place", "a mine shaft is dug underground")
+	w.present[p]["location"] = "depth:-1"
 	var r := _req(p, {"type": "build", "location": "depth:-1", "x": spot.x, "y": spot.y, "part": "base:mine_shaft"})
 	check(r.get("ok", false), "built: %s" % r)
 	eq(_part("depth:-2", spot), "base:mine_ladder", "a ladder up in the depth below")
@@ -214,6 +221,7 @@ func test_felling_a_tree_and_taking_apart_a_chosen_layer() -> void:
 	c.set_cell("cover", 5, 5, "base:oak")
 	var p := _player(Vector2i(100, 101))
 	w.grant(p, "base:axe", 1)
+	_req(p, {"type": "hold", "item": "base:axe"})
 	var r := _req(p, {"type": "gather", "location": "surface", "x": 101, "y": 101, "layer": "cover", "item": "base:axe"})
 	check(r.get("ok", false), "felled: %s" % r)
 	eq(w.inventory(p).count("base:log"), 3, "an oak gives three logs")

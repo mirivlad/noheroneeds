@@ -23,7 +23,8 @@ class_name Protocol
 ##    REQUEST "attack".
 ## 9: maps (ADR-0020): MAP_KNOWN (the chunks a character has seen in a
 ##    location), MAP_REQUEST for their tiles, MAP_TILES.
-const VERSION := 9
+## 10: WELCOME tells the height limit (max_levels), for blueprints (ADR-0021).
+const VERSION := 10
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -60,7 +61,7 @@ const CLIENT_FIELDS := {
 ## Same for messages from the server.
 const SERVER_FIELDS := {
 	CHALLENGE: {"nonce": TYPE_PACKED_BYTE_ARRAY, "server_id": TYPE_STRING},
-	WELCOME: {"character_id": TYPE_STRING, "location": TYPE_STRING, "tick": TYPE_INT},
+	WELCOME: {"character_id": TYPE_STRING, "location": TYPE_STRING, "tick": TYPE_INT, "max_levels": TYPE_INT},
 	REJECT: {"reason": TYPE_STRING},
 	# Differences from what the client acknowledged. hot: int32 [net, x, y]
 	# positions; entities: {net number: {field: value}} - whole when new to

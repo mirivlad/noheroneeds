@@ -40,8 +40,9 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 				shot["z"] = int(entity["z"])
 		out.append({"id": "shoot", "name": "Выстрелить", "request": shot, "primary": true})
 	if living:
-		var hit := {"type": "attack", "item": held if w.get("kind") == "melee" else "",
-			"x": int(entity.get("x", aim.x)), "y": int(entity.get("y", aim.y))}
+		var hit := {"type": "attack", "item": held, "x": int(entity.get("x", aim.x)), "y": int(entity.get("y", aim.y))}
+		if w.get("kind") != "melee":
+			hit["unarmed"] = true  # the free hand
 		var with := String(content.get_def(held).get("name", "")) if w.get("kind") == "melee" else "рукой"
 		out.append({"id": "strike", "name": "Ударить (%s)" % with, "request": hit, "primary": w.get("kind") == "melee"})
 	if kind == "entity" and entity.get("kind") == "item":
@@ -74,9 +75,10 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 		var owner := String((props.get(layer, {}) as Dictionary).get("owner", "") if layer != "structure" else props.get("owner", ""))
 		if layer == "structure" and int(def.get("durability", 0)) > 0:
 			var with := String(content.get_def(held).get("name", "")) if w.get("kind") == "melee" else "рукой"
-			out.append({"id": "strike_part", "name": "Ударить (%s)" % with,
-				"request": {"type": "strike_part", "location": loc, "x": cell.x, "y": cell.y,
-					"item": held if w.get("kind") == "melee" else ""}})
+			var blow := {"type": "strike_part", "location": loc, "x": cell.x, "y": cell.y, "item": held}
+			if w.get("kind") != "melee":
+				blow["unarmed"] = true
+			out.append({"id": "strike_part", "name": "Ударить (%s)" % with, "request": blow})
 			if int(props.get("damage", 0)) > 0 and owner == client.character_id:
 				out.append({"id": "repair", "name": "Ремонтировать",
 					"request": {"type": "repair", "location": loc, "x": cell.x, "y": cell.y}})

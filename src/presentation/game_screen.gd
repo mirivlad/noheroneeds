@@ -52,15 +52,19 @@ var _menu_actions: Array[Dictionary] = []
 var _blueprint := ""
 var _drag_from := NO_CELL
 const NO_CELL := Vector2i(1 << 30, 1 << 30)
-## Q: the slot of the weapon last held, and the slot before it.
-var _weapon_slot := -1
-var _back_slot := 0
 ## What the cursor points at, and what can be done there with what is held.
 var target := {}
 var actions: Array[Dictionary] = []
 var _cursor_aim := false
 var _hotbar_loaded := false
-var _held_sent := "~"
+## Where the cursor is in the world; tests that push mouse events set it
+## (a window-less viewport keeps no mouse position of its own).
+var mouse_at: Variant = null
+
+
+func _mouse_world() -> Vector2:
+	return mouse_at if mouse_at != null else get_global_mouse_position()
+
 var painter := MapPainter.new()
 var minimap := Minimap.new()
 var world_map := WorldMap.new()
@@ -93,8 +97,10 @@ var _note := ""
 var _opts := {}
 var _frames := 0
 var _demo_done := false
-## The blueprint under the mouse, as it would stand: green if in reach.
-var _ghost := Sprite2D.new()
+## The blueprint's cells this frame ([cell, why not]) and their pictures.
+var _plan: Array = []
+var _ghosts: Array[Sprite2D] = []
+var _build_view: ClientBuildView
 
 ## What the server's refusals mean, for people.
 const REASONS := {
@@ -165,11 +171,8 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	status.position = Vector2(6, 252)
 	_info.position = Vector2(6, 16)
 	_info.add_theme_color_override("font_color", Art.TEXT_DIM)
-	_ghost.centered = false
-	_ghost.z_index = 20
-	_ghost.visible = false
-	add_child(_ghost)
 	_build_tools(layer)
+	_build_view = ClientBuildView.new(client)
 	painter.setup(content, view, client)
 	minimap.setup(painter, client)
 	minimap.position = Vector2(480 - Minimap.SIZE - 4, 34)
@@ -219,7 +222,7 @@ func _exit_tree() -> void:
 func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [view, camera, hud, status, _info, _ghost, audio, minimap, world_map, hotbar, catalog,
+		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog,
 				inventory_panel, chest_panel, _menu]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
@@ -345,6 +348,11 @@ func _process(delta: float) -> void:
 				catalog.open(client.inventory())
 			"inventory":
 				inventory_panel.show_for(client.inventory(), hotbar.selected)
+			"plan":  # a row of walls dragged, part of it out of reach
+				var me := Movement.cell_of(client.position)
+				_blueprint = "base:wood_wall"
+				_drag_from = me + Vector2i(-4, 2)
+				mouse_at = Vector2((me.x + 9) * WorldView.CELL + 8, (me.y + 2) * WorldView.CELL + 8)
 	if _opts.get("demo") == "outside" and _frames == 40 and game:
 		game.world.move_character(client.character_id, Vector2i(128, 7 * 256 + 128))  # dev only: before the house
 	if _opts.get("demo") == "behind" and _frames == 40 and game:
@@ -455,14 +463,18 @@ func _mouse(b: InputEventMouseButton) -> void:
 			_blueprint = ""  # the blueprint is let go
 			_drag_from = NO_CELL
 		elif b.button_index == MOUSE_BUTTON_LEFT and _blueprint == BuildCatalog.DEMOLISH and b.pressed:
-			var t := view.pick_target(get_global_mouse_position())
+			var t := view.pick_target(_mouse_world())
 			if t.get("kind") == "part":
 				var c: Vector2i = t["cell"]
 				client.request({"type": "dismantle", "location": client.location, "x": c.x, "y": c.y, "layer": t["layer"]})
 		elif b.button_index == MOUSE_BUTTON_LEFT and b.pressed:
 			_drag_from = _build_cell()
 		elif b.button_index == MOUSE_BUTTON_LEFT and not b.pressed and _drag_from != NO_CELL:
-			for cell in _drag_cells(_drag_from, _build_cell()):
+			# Only the cells shown as allowed; the server judges each again.
+			for p: Array in _plan_cells():
+				if p[1] != "":
+					continue
+				var cell: Vector2i = p[0]
 				var op := {"type": "build", "location": client.location, "x": cell.x, "y": cell.y, "part": _blueprint}
 				if not _turns().is_empty():
 					op["facing"] = _turns()[_facing % _turns().size()]
@@ -487,6 +499,7 @@ func _do(a: Dictionary) -> void:
 	if a.get("local") == "inspect":
 		_note = Actions.describe(content, target)
 		return
+	client.hold(hotbar.held(client.inventory()))  # the hands first: the action is done with them
 	var rid := client.request(a["request"])
 	if a.get("local") == "container":
 		_chest_rids[rid] = Vector2i(int(a["request"]["x"]), int(a["request"]["y"]))
@@ -496,9 +509,7 @@ func _do(a: Dictionary) -> void:
 			_attacks[rid] = true
 			if a["id"] != "shoot":
 				audio.play("swing", String(a["request"].get("item", "")), null)
-			var item := String(a["request"].get("item", ""))
-			if item != "":
-				_weapon_slot = hotbar.items.find(item)
+			hotbar.used(String(a["request"].get("item", "")))
 		"pickup":
 			_sound_on_ok[rid] = "pickup"
 
@@ -522,33 +533,18 @@ func _open_menu() -> void:
 
 
 func _choose_slot(slot: int) -> void:
-	if slot != hotbar.selected:
-		_back_slot = hotbar.selected
-	hotbar.selected = slot
+	hotbar.choose(slot)
 	if inventory_panel.visible:
 		inventory_panel.show_for(client.inventory(), slot)
 
 
-## Q: the weapon into the hands at once (the last one used, else the first in
-## the slots); again, back to what was held before.
+## Q: the weapon into the hands at once, and back (Hotbar.snatch).
 func _snatch_weapon() -> void:
-	var held := hotbar.items[hotbar.selected]
-	if held != "" and content.get_def(held).has("weapon") and not content.get_def(held).has("tools"):
-		_choose_slot(_back_slot)
-		return
-	var slot := _weapon_slot
-	if slot < 0 or hotbar.items[slot] == "" or not content.get_def(hotbar.items[slot]).has("weapon"):
-		slot = -1
-		for i in Hotbar.SLOTS:
-			var id := hotbar.items[i]
-			if id != "" and content.get_def(id).has("weapon") and int(client.inventory().get(id, 0)) > 0:
-				slot = i
-				break
-	if slot >= 0:
-		_choose_slot(slot)
-		_weapon_slot = slot
-	else:
-		_note = "оружия в ячейках нет (I — положить)"
+	var note := hotbar.snatch(client.inventory())
+	if note != "":
+		_note = note
+	if inventory_panel.visible:
+		inventory_panel.show_for(client.inventory(), hotbar.selected)
 
 
 ## Cells a drag of the blueprint covers: an area for ceilings and roofs, a
@@ -566,7 +562,9 @@ func _drag_cells(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 	else:
 		for y in range(mini(a.y, b.y), maxi(a.y, b.y) + 1):
 			out.append(Vector2i(a.x, y))
-	return out.slice(0, DRAG_MAX)
+	while out.size() > DRAG_MAX:
+		out.pop_back()  # one drag builds so many at most
+	return out
 
 
 func _close_tools() -> void:
@@ -707,34 +705,77 @@ func _turns() -> Array:
 ## Where a click would build: the cell under the mouse, or for ceilings and
 ## roofs the cell whose cover would be drawn there (covers sit a cell higher).
 func _build_cell() -> Vector2i:
-	var m := get_global_mouse_position()
+	var m := _mouse_world()
 	var cell := Vector2i(floori(m.x / WorldView.CELL), floori(m.y / WorldView.CELL))
 	if Terrain.layer_for_role(String(content.get_def(_blueprint).get("role", ""))) != "structure":
 		cell.y += 1
 	return cell
 
 
+## The blueprint's cells as they would be built (ADR-0021): the dragged row
+## or area (or the cell under the cursor), each judged by the same rules the
+## server will use (BuildRules), with reach and the materials as they run out
+## along the drag. [[cell, reason or ""], ...]
+func _plan_cells() -> Array:
+	var out := []
+	var cells: Array[Vector2i] = []
+	if _drag_from != NO_CELL:
+		cells = _drag_cells(_drag_from, _build_cell())
+	else:
+		cells.append(_build_cell())
+	var have := client.inventory().duplicate()
+	var cost := content.structure_cost(_blueprint)
+	var facing := String(_turns()[_facing % _turns().size()]) if not _turns().is_empty() else ""
+	for cell: Vector2i in cells:
+		var why := ""
+		if not BuildRules.reaches(client.position, cell.x, cell.y):
+			why = "too_far"
+		else:
+			why = BuildRules.check(_build_view, content, _blueprint, client.location, cell.x, cell.y, facing)
+			if why == "unknown":
+				why = ""  # not known here: the server will say
+		if why == "":
+			for m: String in cost:
+				if int(have.get(m, 0)) < int(cost[m]):
+					why = "materials"
+			if why == "":
+				for m: String in cost:
+					have[m] = int(have.get(m, 0)) - int(cost[m])
+		out.append([cell, why])
+	return out
+
+
+## Shows the plan: a picture on each cell, green where it can stand, red
+## where not; the status line says how many, what it costs, why not.
 func _update_ghost() -> void:
 	var v := content.visual_of(_blueprint) if _blueprint != "" and _blueprint != BuildCatalog.DEMOLISH else {}
-	if client.state != "playing" or v.is_empty() or _opts.has("screenshot") or world_map.visible:
-		_ghost.visible = false
-		return
-	var cell := _build_cell()
-	_ghost.texture = view.texture(v["atlas_path"])
-	_ghost.region_enabled = true
-	var facing := String(_turns()[_facing % _turns().size()]) if not _turns().is_empty() else ""
-	var turned: String = v.get("mirror", {}).get(facing, facing)
-	var r: Array = v.get("rotations", {}).get(turned, v["rect"])
-	_ghost.region_rect = Rect2(r[0], r[1], r[2], r[3])
-	_ghost.flip_h = v.get("mirror", {}).has(facing)
-	if v["mode"] == "cover":
-		_ghost.position = Vector2(cell.x * WorldView.CELL, cell.y * WorldView.CELL - WorldView.COVER_LIFT)
-	else:
-		_ghost.position = Vector2(cell.x * WorldView.CELL, (cell.y + 1) * WorldView.CELL) - Vector2(v["origin"][0], v["origin"][1])
-	var centre := Vector2(cell.x * 256 + 128, cell.y * 256 + 128)
-	var near := Vector2(client.position).distance_to(centre) <= ServerWorld.BUILD_REACH
-	_ghost.modulate = Color(0.6, 1.0, 0.6, 0.6) if near else Color(1.0, 0.45, 0.45, 0.5)
-	_ghost.visible = true
+	_plan = [] if client.state != "playing" or v.is_empty() or world_map.visible else _plan_cells()
+	if _opts.has("screenshot") and not _opts.has("ui"):
+		_plan = []
+	while _ghosts.size() < _plan.size():
+		var g := Sprite2D.new()
+		g.centered = false
+		g.z_index = 20
+		add_child(g)
+		_ghosts.append(g)
+	for i in _ghosts.size():
+		var g: Sprite2D = _ghosts[i]
+		g.visible = i < _plan.size()
+		if not g.visible:
+			continue
+		var cell: Vector2i = _plan[i][0]
+		g.texture = view.texture(v["atlas_path"])
+		g.region_enabled = true
+		var facing := String(_turns()[_facing % _turns().size()]) if not _turns().is_empty() else ""
+		var turned: String = v.get("mirror", {}).get(facing, facing)
+		var r: Array = v.get("rotations", {}).get(turned, v["rect"])
+		g.region_rect = Rect2(r[0], r[1], r[2], r[3])
+		g.flip_h = v.get("mirror", {}).has(facing)
+		if v["mode"] == "cover":
+			g.position = Vector2(cell.x * WorldView.CELL, cell.y * WorldView.CELL - WorldView.COVER_LIFT)
+		else:
+			g.position = Vector2(cell.x * WorldView.CELL, (cell.y + 1) * WorldView.CELL) - Vector2(v["origin"][0], v["origin"][1])
+		g.modulate = Color(0.6, 1.0, 0.6, 0.6) if _plan[i][1] == "" else Color(1.0, 0.4, 0.4, 0.5)
 
 
 func _direction() -> Vector2i:
@@ -808,9 +849,7 @@ func _update_hud() -> void:
 		_load_hotbar(inv)
 	var held := hotbar.held(inv)
 	view.own_held = held
-	if held != _held_sent and client.character_id != "":
-		_held_sent = held
-		_attacks[client.request({"type": "hold", "item": held})] = true  # for the others to see; quiet
+	client.hold(held)  # the server's word on the hands follows (only when it changes)
 	var hands := "в руках: " + (String(content.get_def(held).get("name", held)) if held != "" else "ничего")
 	if held != "" and content.get_def(held).get("weapon", {}).get("kind") == "ranged":
 		hands += " (%d)" % int(inv.get(String(content.get_def(held)["weapon"]["ammo"]), 0))
@@ -821,12 +860,17 @@ func _update_hud() -> void:
 		doing = "чертёж: " + String(content.get_def(_blueprint).get("name", _blueprint))
 		if not _turns().is_empty():
 			doing += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
+		var ok := _plan.filter(func(p: Array) -> bool: return p[1] == "").size()
 		var cost := content.structure_cost(_blueprint)
-		var n := _drag_cells(_drag_from, _build_cell()).size() if _drag_from != NO_CELL else 1
 		var parts := PackedStringArray()
 		for m: String in cost:
-			parts.append("%s %d/%d" % [String(content.get_def(m).get("name", m)).to_lower(), int(cost[m]) * n, int(inv.get(m, 0))])
-		doing += ("  ×%d" % n if n > 1 else "") + "  " + ", ".join(parts) + "  ПКМ — отпустить"
+			parts.append("%s %d/%d" % [String(content.get_def(m).get("name", m)).to_lower(), int(cost[m]) * ok, int(inv.get(m, 0))])
+		doing += "  %d из %d  %s" % [ok, _plan.size(), ", ".join(parts)]
+		for p: Array in _plan:
+			if p[1] != "":
+				doing += "  нельзя: " + String(REASONS.get(p[1], p[1]))
+				break
+		doing += "  ПКМ — отпустить"
 	else:
 		var p := Actions.primary(actions)
 		var what := Actions.describe(content, target)
@@ -849,7 +893,7 @@ func _update_hud() -> void:
 func _update_target() -> void:
 	if client.state != "playing" or world_map.visible:
 		return
-	var mouse := get_global_mouse_position()
+	var mouse := _mouse_world()
 	target = view.pick_target(mouse)
 	var aim := Vector2i(mouse * WorldView.UNITS_PER_PIXEL)
 	actions = Actions.of(content, client, view, hotbar.held(client.inventory()), target, aim)

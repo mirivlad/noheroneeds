@@ -15,12 +15,17 @@ class DragList:
 
 	func _get_drag_data(at: Vector2) -> Variant:
 		var i := get_item_at_position(at, true)
+		if i < 0 and is_anything_selected():
+			i = get_selected_items()[0]  # the row the press chose
 		if i < 0 or i >= ids.size():
 			return null
 		var preview := TextureRect.new()
 		preview.texture = get_item_icon(i)
 		preview.size = Vector2(16, 16)
-		set_drag_preview(preview)
+		if get_viewport() and get_viewport().gui_is_dragging():
+			set_drag_preview(preview)
+		else:
+			preview.free()
 		return {"item": ids[i]}
 
 

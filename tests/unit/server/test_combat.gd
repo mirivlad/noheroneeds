@@ -43,7 +43,9 @@ func _player(name: String, cell: Vector2i) -> String:
 	return c.character_id
 
 
+## Takes `item` into the hands (as the client does before acting), then strikes.
 func _attack(actor: String, aim_cell: Vector2i, item := "") -> Dictionary:
+	w.handle(actor, {"request_id": Uuid.v4(), "type": "hold", "item": item})
 	var r := {"request_id": Uuid.v4(), "type": "attack", "item": item, "x": _at(aim_cell).x, "y": _at(aim_cell).y}
 	w.handle(actor, r)
 	w.sync()
@@ -91,7 +93,7 @@ func test_a_blow_hits_within_reach_and_arc_and_not_through_walls() -> void:
 	eq(_attack(p, Vector2i(172, 170), "base:axe").get("hit"), deer.id, "aimed at it: a hit")
 	eq(deer.health, 10 - 4, "an axe takes 4")
 	eq(_attack(p, Vector2i(172, 170), "base:axe").get("reason"), "not_ready", "not again at once")
-	eq(_attack(p, Vector2i(172, 170), "base:spear").get("reason"), "not_carried", "only what one carries")
+	eq(_attack(p, Vector2i(172, 170), "base:spear").get("reason"), "not_held", "only what is in the hands (and carried)")
 	_ticks(20)
 	deer.pos = _at(Vector2i(172, 170))
 	w.grant("b", "base:plank", 10)
@@ -256,6 +258,7 @@ func test_arrows_from_a_walkway_into_the_street_and_back_up() -> void:
 	w.grant(q, "base:bow", 1)
 	w.grant(q, "base:arrow", 5)
 	var r := {"request_id": "up", "type": "attack", "item": "base:bow", "x": _at(Vector2i(170, 168)).x, "y": _at(Vector2i(170, 168)).y, "z": 1}
+	w.handle(q, {"request_id": "hold-up", "type": "hold", "item": "base:bow"})
 	w.handle(q, r)
 	w.sync()
 	_fly(12)

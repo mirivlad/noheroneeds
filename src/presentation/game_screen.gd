@@ -35,6 +35,14 @@ var content: ContentRegistry
 ## The weapon chosen with Q (index into _weapons()), attack requests in flight,
 ## deaths already told (-1: none seen yet).
 var _weapon := 0
+## Two ways of using the mouse (Tab): peace — the wheel picks a part, the
+## left button builds or uses, the right takes down or digs (a cursor of
+## corners); combat — the wheel picks a weapon, the left button strikes or
+## shoots where the cursor is (a crosshair).
+var combat := false
+var painter := MapPainter.new()
+var minimap := Minimap.new()
+var world_map := WorldMap.new()
 ## Where one last walked: a jump goes that way.
 var _last_dir := Vector2i(0, 1)
 var _attacks := {}
@@ -143,14 +151,54 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	_ghost.visible = false
 	add_child(_ghost)
 	_build_hotbar(layer)
+	painter.setup(content, view, client)
+	minimap.setup(painter, client)
+	minimap.position = Vector2(480 - Minimap.SIZE - 4, 34)
+	layer.add_child(minimap)
+	var map_layer := CanvasLayer.new()
+	map_layer.layer = 5
+	add_child(map_layer)
+	world_map.setup(painter, client)
+	map_layer.add_child(world_map)
+	_set_cursor()
 	apply_settings()
 	return ""
+
+
+## The cursor of the mode: corners of a square in peace, a crosshair in combat.
+func _set_cursor() -> void:
+	var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	var ink := Color(0.1, 0.08, 0.07)
+	var light := Color(0.98, 0.94, 0.82) if not combat else Color(1.0, 0.45, 0.35)
+	for pass_ in 2:
+		var c := ink if pass_ == 0 else light
+		var o := 1 if pass_ == 0 else 0  # the outline one pixel round
+		if combat:
+			for d in range(-9 - o, 10 + o):
+				if absi(d) > 3 - o:
+					for w in range(-o, o + 1):
+						img.set_pixel(16 + d, 16 + w, c)
+						img.set_pixel(16 + w, 16 + d, c)
+			img.set_pixel(16, 16, c)
+		else:
+			for corner: Vector2i in [Vector2i(6, 6), Vector2i(25, 6), Vector2i(6, 25), Vector2i(25, 25)]:
+				var sx := 1 if corner.x < 16 else -1
+				var sy := 1 if corner.y < 16 else -1
+				for d in range(-o, 6 + o):
+					for w in range(-o, o + 1):
+						img.set_pixel(corner.x + d * sx, corner.y + w, c)
+						img.set_pixel(corner.x + w, corner.y + d * sy, c)
+	Input.set_custom_mouse_cursor(ImageTexture.create_from_image(img), Input.CURSOR_ARROW, Vector2(16, 16))
+
+
+func _exit_tree() -> void:
+	Input.set_custom_mouse_cursor(null)  # the menu has its own
 
 
 func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [view, camera, hud, status, _info, _ghost, audio]:
+		for n: Node in [view, camera, hud, status, _info, _ghost, audio, minimap, world_map]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -194,7 +242,8 @@ func close() -> void:
 func _process(delta: float) -> void:
 	if client == null:
 		return
-	client.move = _direction() if not paused else Vector2i.ZERO
+	painter.refresh()
+	client.move = _direction() if not paused and not world_map.visible else Vector2i.ZERO
 	if client.move != Vector2i.ZERO:
 		_last_dir = client.move
 	client.run = not paused and (_opts.has("run") or Input.is_physical_key_pressed(KEY_CTRL))
@@ -266,6 +315,8 @@ func _process(delta: float) -> void:
 		if _frames == 70:
 			game.world.grant(client.character_id, "base:log", 2)
 			client.request({"type": "build", "location": client.location, "x": way.x + 1, "y": way.y + 1, "part": "base:torch"})
+	if _opts.has("open_map") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of the map
+		world_map.open()
 	if _opts.get("demo") == "outside" and _frames == 40 and game:
 		game.world.move_character(client.character_id, Vector2i(128, 7 * 256 + 128))  # dev only: before the house
 	if _opts.get("demo") == "behind" and _frames == 40 and game:
@@ -294,6 +345,14 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if paused or client == null:
 		return
+	if event is InputEventKey and event.pressed and world_map.visible:
+		var mk: int = (event as InputEventKey).keycode
+		if mk == KEY_ESCAPE or mk == KEY_M:
+			world_map.close()
+		else:
+			world_map.key(mk)
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
 		menu_requested.emit()
@@ -304,9 +363,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		if slot >= 0 and slot < mini(PARTS.size(), 10) and (k == KEY_0 or (k >= KEY_1 and k <= KEY_9)):
 			_part = slot
 			_facing = 0
-		elif k == KEY_BRACKETLEFT or k == KEY_BRACKETRIGHT:  # all the parts, past the ten keys
-			_part = posmod(_part + (1 if k == KEY_BRACKETRIGHT else -1), PARTS.size())
-			_facing = 0
+		elif k == KEY_TAB and not (event as InputEventKey).echo:
+			combat = not combat
+			_set_cursor()
+		elif k == KEY_M:
+			world_map.open()
+		elif k == KEY_MINUS or k == KEY_KP_SUBTRACT:
+			minimap.zoom(1)  # farther out
+		elif k == KEY_EQUAL or k == KEY_KP_ADD:
+			minimap.zoom(-1)
 		elif k == KEY_R:
 			var turns := _turns()
 			if not turns.is_empty():
@@ -315,26 +380,39 @@ func _unhandled_input(event: InputEvent) -> void:
 			_sound_on_ok[client.request({"type": "jump", "dx": _last_dir.x, "dy": _last_dir.y})] = "climb"
 		elif k == KEY_Q:
 			_weapon = (_weapon + 1) % _weapons().size()
-		elif k == KEY_SPACE and not (event as InputEventKey).echo and client.state == "playing":
-			_attack()
-		elif k == KEY_TAB:
-			_material = (_material + 1) % MATERIALS.size()
 		elif k == KEY_G and client.state == "playing":
 			_sound_on_ok[client.request({"type": "drop", "item": MATERIALS[_material], "count": 1})] = "drop"
 		elif k == KEY_E and client.state == "playing":
 			_use_nearest()
 		elif k == KEY_F and client.state == "playing":
 			_climb_nearest("down" if (event as InputEventKey).shift_pressed else "up")
-	elif event is InputEventMouseButton and event.pressed and client.state == "playing":
+	elif event is InputEventMouseButton and event.pressed:
+		var b := event as InputEventMouseButton
+		if b.button_index == MOUSE_BUTTON_WHEEL_UP or b.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			var step := -1 if b.button_index == MOUSE_BUTTON_WHEEL_UP else 1
+			if combat:
+				_weapon = posmod(_weapon + step, _weapons().size())
+			elif b.shift_pressed:
+				_material = posmod(_material + step, MATERIALS.size())
+			else:
+				_part = posmod(_part + step, PARTS.size())
+				_facing = 0
+			return
+		if client.state != "playing":
+			return
+		if combat:
+			if b.button_index == MOUSE_BUTTON_LEFT:
+				_attack()
+			return
 		var op := {"location": client.location}
 		var cell: Vector2i
-		if event.button_index == MOUSE_BUTTON_LEFT:
+		if b.button_index == MOUSE_BUTTON_LEFT:
 			cell = _build_cell()
 			op["type"] = "build"
 			op["part"] = PARTS[_part]
 			if not _turns().is_empty():
 				op["facing"] = _turns()[_facing % _turns().size()]
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
+		elif b.button_index == MOUSE_BUTTON_RIGHT:
 			cell = view.pick(get_global_mouse_position())  # what the mouse points at
 			op["type"] = "dismantle"
 		else:
@@ -462,7 +540,7 @@ func _build_cell() -> Vector2i:
 
 func _update_ghost() -> void:
 	var v := content.visual_of(PARTS[_part])
-	if client.state != "playing" or v.is_empty() or _opts.has("screenshot"):
+	if client.state != "playing" or v.is_empty() or _opts.has("screenshot") or combat or world_map.visible:
 		_ghost.visible = false
 		return
 	var cell := _build_cell()
@@ -561,7 +639,8 @@ func _update_hud() -> void:
 	if settings.get_value("show_fps"):
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
-		info.append("Ctrl — бег, ЛКМ/ПКМ — строить/разобрать, Пробел — удар, Q — оружие, J — прыжок с края, E — взять, F — лестница, Esc — меню")
+		info.append(("Tab — мирный режим, колесо — оружие, ЛКМ — удар/выстрел" if combat else
+			"Tab — бой, колесо — деталь, ЛКМ/ПКМ — строить/разобрать") + ", Ctrl — бег, J — прыжок, E — взять, F — лестница, M — карта, −/= — миникарта, Esc — меню")
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:
@@ -574,7 +653,9 @@ func _update_hud() -> void:
 	var arms := "руки" if weapon == "" else String(content.get_def(weapon).get("name", weapon))
 	if weapon != "" and content.get_def(weapon)["weapon"]["kind"] == "ranged":
 		arms += " (%d)" % int(inv.get(String(content.get_def(weapon)["weapon"]["ammo"]), 0))
-	status.text = "%s  [%s] %s  (%d, %d)  [Q] %s  %s" % [state, str((_part + 1) % 10) if _part < 10 else "[ ]", part_name, cell.x, cell.y, arms, note]
+	if combat:
+		part_name = "БОЙ"
+	status.text = "%s  [%s] %s  (%d, %d)  [Q] %s  %s" % [state, str((_part + 1) % 10) if _part < 10 else "-", part_name, cell.x, cell.y, arms, note]
 	for i in _slots.size():
 		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
 

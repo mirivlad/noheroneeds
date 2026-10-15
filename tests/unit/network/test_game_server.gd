@@ -238,6 +238,31 @@ func test_health_and_arrows_reach_clients() -> void:
 	check(seen, "the arrow was seen flying")
 
 
+## ADR-0020: what a character has seen is kept in the world; after a restart
+## the client is told it, and gets the map tiles of far chunks it asks for
+## (and nothing it has not seen).
+func test_the_map_of_what_was_seen_survives_a_restart() -> void:
+	var c := _character("Аня")
+	var a := _client("owner", c)
+	_run(40, [a])
+	var seen: Dictionary = world.explored(a.character_id).get("surface", {})
+	check(seen.size() >= 9, "the chunks round it were seen: %d" % seen.size())
+	check(a.map_tiles.has("surface|0|0"), "the client made tiles of what it got")
+	world.move_character(a.character_id, Vector2i(200 * 32 * 256, 0))  # far away
+	_run(40, [a])
+	_restart()
+	var b := _client("owner", c)
+	_run(30, [b])
+	var known: Dictionary = b.map_known.get("surface", {}).get("chunks", {})
+	check(known.has(Vector2i(0, 0)), "told what it had seen near the start")
+	check(not b.map_tiles.has("surface|0|0"), "not sent until asked")
+	b.request_map("surface", [Vector2i(0, 0), Vector2i(50, 50)])
+	_run(5, [b])
+	var tile: Dictionary = b.map_tiles.get("surface|0|0", {})
+	eq((tile.get("cells", PackedByteArray()) as PackedByteArray).size(), Chunk.CELLS, "the tile came")
+	check(not b.map_tiles.has("surface|50|50"), "nothing unseen")
+
+
 func test_request_result_after_commit_and_seen_by_others() -> void:
 	var a := _client("owner", _character("Аня", 10))
 	var b := _client("other", _character("Боря"))

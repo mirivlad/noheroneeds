@@ -347,6 +347,7 @@ func unload_idle(idle_ticks: int) -> int:
 		_last_chunk = null
 		chunks_epoch += 1
 		_encoded.erase(key)
+		_map_tiles.erase(key)
 		_needed.erase(key)
 		_written_by.erase(key)
 		gone += 1
@@ -444,6 +445,81 @@ func leave(id: String) -> void:
 		_dirty_world_characters[id] = true
 		flush_state()  # its last position goes out with this batch
 		present.erase(id)
+
+
+# --- maps (ADR-0020) ----------------------------------------------------------
+
+## Chunks each character has seen, by location: char -> {location -> {Vector2i: true}}.
+## Kept in the world's meta ("explored|char|location", "explored|char").
+var _explored := {}
+var _explored_dirty := {}
+## location|cx|cy -> [chunk revision, encoded MapTile]
+var _map_tiles := {}
+
+
+## {location: {Vector2i(cx, cy): true}} a character has seen (read once).
+func explored(character: String) -> Dictionary:
+	if not _explored.has(character):
+		var all := {}
+		var locs := store.read_meta("explored|" + character)
+		for loc: String in (locs.split(",", false) if locs != "" else PackedStringArray()):
+			var cells := {}
+			var pairs := Marshalls.base64_to_raw(store.read_meta("explored|%s|%s" % [character, loc])).to_int32_array()
+			for i in range(0, pairs.size() - 1, 2):
+				cells[Vector2i(pairs[i], pairs[i + 1])] = true
+			all[loc] = cells
+		_explored[character] = all
+	return _explored[character]
+
+
+## A character sees a chunk: true if it is new to it.
+func explore(character: String, location: String, cx: int, cy: int) -> bool:
+	var all := explored(character)
+	var cells: Dictionary = all.get_or_add(location, {})
+	var at := Vector2i(cx, cy)
+	if cells.has(at):
+		return false
+	cells[at] = true
+	_explored_dirty[character + "|" + location] = true
+	return true
+
+
+## Hands what characters saw since last time to the next batch (as meta).
+func _flush_explored() -> void:
+	for key: String in _explored_dirty:
+		var p := key.split("|")
+		var all: Dictionary = _explored.get(p[0], {})
+		var pairs := PackedInt32Array()
+		for at: Vector2i in all.get(p[1], {}):
+			pairs.append(at.x)
+			pairs.append(at.y)
+		note_fact("explored|%s|%s" % [p[0], p[1]], Marshalls.raw_to_base64(pairs.to_byte_array()))
+		note_fact("explored|" + p[0], ",".join(PackedStringArray(all.keys())))
+	_explored_dirty.clear()
+
+
+## A chunk as the map shows it, encoded once per revision. From memory if it
+## is there, else from the store without loading it into the world (no
+## creatures woken, nothing generated); empty if it was never made.
+func map_tile(location: String, cx: int, cy: int) -> PackedByteArray:
+	var key := chunk_key(location, cx, cy)
+	var rev: int = _chunk_rev.get(key, 0)
+	var cached: Array = _map_tiles.get(key, [])
+	if not cached.is_empty() and cached[0] == rev:
+		return cached[1]
+	var c: Chunk = _chunks.get(key)
+	if c == null:
+		var data := store.get_chunk(location, cx, cy)
+		if data.is_empty():
+			return PackedByteArray()
+		c = ChunkCodec.decode(data)
+		if c == null:
+			return PackedByteArray()
+	var bytes := MapTile.encode(MapTile.of(c))
+	if _map_tiles.size() > 4096:
+		_map_tiles.clear()  # a cache, not a store
+	_map_tiles[key] = [rev, bytes]
+	return bytes
 
 
 ## A present character's world state changed (health...): saved soon.
@@ -750,6 +826,8 @@ func _chunk_lights(location: String, cx: int, cy: int) -> Array:
 ## entities per call (-1: all), so the server can spread the work over ticks.
 ## The world time goes with it now and then, and always on a full flush.
 func flush_state(limit := -1) -> void:
+	if not _explored_dirty.is_empty() and (limit < 0 or tick % TIME_SAVE_TICKS == 0):
+		_flush_explored()
 	var with_time := _time_dirty and (limit < 0 or tick % TIME_SAVE_TICKS == 0)
 	if _dirty_entities.is_empty() and _dirty_world_characters.is_empty() and not with_time and _pending_meta.is_empty():
 		return

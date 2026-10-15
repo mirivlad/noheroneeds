@@ -21,7 +21,9 @@ class_name Protocol
 ##    nets as int32 in "removed".
 ## 8: SNAPSHOT "warm": int32 [net, health, max health, deaths] (ADR-0019);
 ##    REQUEST "attack".
-const VERSION := 8
+## 9: maps (ADR-0020): MAP_KNOWN (the chunks a character has seen in a
+##    location), MAP_REQUEST for their tiles, MAP_TILES.
+const VERSION := 9
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -39,6 +41,9 @@ const RESULT := "result"
 const SNAPSHOT := "snapshot"
 const CHUNK := "chunk"
 const LOCATION := "location"
+const MAP_KNOWN := "map_known"
+const MAP_REQUEST := "map_request"
+const MAP_TILES := "map_tiles"
 
 ## Field name -> Variant type, per message a client may send.
 const CLIENT_FIELDS := {
@@ -48,6 +53,8 @@ const CLIENT_FIELDS := {
 	# inputs: [[seq, dx, dy], ...] newest last; ack: newest snapshot id received
 	INPUT: {"inputs": TYPE_ARRAY, "ack": TYPE_INT},
 	REQUEST: {"request": TYPE_DICTIONARY},
+	# chunks: int32 [cx, cy, ...] of seen chunks whose map tiles it wants
+	MAP_REQUEST: {"location": TYPE_STRING, "chunks": TYPE_PACKED_BYTE_ARRAY},
 }
 
 ## Same for messages from the server.
@@ -66,6 +73,10 @@ const SERVER_FIELDS := {
 	CHUNK: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT, "data": TYPE_PACKED_BYTE_ARRAY},
 	# z: the level label (0 surface, +1 first floor...); identity is the id.
 	LOCATION: {"location": TYPE_STRING, "z": TYPE_INT},
+	# chunks: int32 [cx, cy, ...]; z: the location's level label
+	MAP_KNOWN: {"location": TYPE_STRING, "z": TYPE_INT, "chunks": TYPE_PACKED_BYTE_ARRAY},
+	# tiles: [[cx, cy, MapTile bytes], ...]
+	MAP_TILES: {"location": TYPE_STRING, "tiles": TYPE_ARRAY},
 }
 
 

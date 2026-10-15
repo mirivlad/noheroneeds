@@ -88,20 +88,25 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			var down := role == "shaft" and String(def.get("leads", "down")) == "down"
 			out.append({"id": "climb", "name": "Спуститься" if down else "Подняться", "quick": true,
 				"request": {"type": "climb", "location": loc, "x": cell.x, "y": cell.y, "dir": "down" if down else "up"}})
-		if layer == "structure" and int(def.get("durability", 0)) > 0:
+		# A ceiling or a roof is broken too, from the top down (the server
+		# refuses while something is over it).
+		if layer in ["structure", "ceiling", "roof"] and int(def.get("durability", 0)) > 0:
 			var with := String(content.get_def(held).get("name", "")) if w.get("kind") == "melee" else "рукой"
 			var blow := {"type": "strike_part", "location": loc, "x": cell.x, "y": cell.y, "item": held}
+			var mend := {"type": "repair", "location": loc, "x": cell.x, "y": cell.y}
+			if layer != "structure":
+				blow["layer"] = layer
+				mend["layer"] = layer
 			if w.get("kind") != "melee":
 				blow["unarmed"] = true
 			out.append({"id": "strike_part", "name": "Ударить (%s)" % with, "request": blow})
-			if float(props.get("damage", 0)) > 0.0:
-				out.append({"id": "repair", "name": "Ремонтировать",
-					"request": {"type": "repair", "location": loc, "x": cell.x, "y": cell.y}})
+			var worn: Dictionary = props if layer == "structure" else props.get(layer, {})
+			if float(worn.get("damage", 0)) > 0.0:
+				out.append({"id": "repair", "name": "Ремонтировать", "request": mend})
 		if owner != "":
 			var mine := owner == client.character_id
 			out.append({"id": "dismantle", "name": "Разобрать", "enabled": mine,
-				"why": "поставлено другим: разобрать нельзя, только сломать" if layer == "structure" \
-					else "поставлено другим: разобрать нельзя",
+				"why": "поставлено другим: разобрать нельзя, только сломать",
 				"request": {"type": "dismantle", "location": loc, "x": cell.x, "y": cell.y, "layer": layer}})
 	# A melee weapon swings at the air too: one need not aim exactly to defend.
 	if w.get("kind") == "melee" and not living:
@@ -153,7 +158,7 @@ static func describe(content: ContentRegistry, target: Dictionary) -> String:
 			var def := content.get_def(String(target.get("id", "")))
 			var name := String(def.get("name", target.get("id", "")))
 			var top := int(def.get("durability", 0))
-			if target.get("kind") == "part" and target.get("layer") == "structure" and top > 0 and target.has("damage"):
+			if target.get("kind") == "part" and top > 0 and target.has("damage"):
 				name += " (прочность %d/%d)" % [top - int(target["damage"]), top]
 			return name
 	return ""

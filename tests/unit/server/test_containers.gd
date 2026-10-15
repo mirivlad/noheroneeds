@@ -94,12 +94,13 @@ func test_parts_break_under_blows_and_are_mended() -> void:
 	eq(int(w.chunk("surface", 0, 0).get_props(4, 3).get("damage", 0)), 20)
 	var planks := w.inventory(a).count("base:plank")
 	check(_req(a, _at({"type": "repair"})).get("ok", false), "mended")
-	eq(planks - w.inventory(a).count("base:plank"), 2, "half worn: half of its three planks, rounded up")
+	eq(planks - w.inventory(a).count("base:plank"), 1, "a little worn: a plank, rounded up")
 	eq(int(w.chunk("surface", 0, 0).get_props(4, 3).get("damage", 0)), 0)
 	var b := _player("Боря")
 	w.break_others = false
 	eq(_req(b, _at({"type": "strike_part"})).get("reason"), "not_owner", "not someone else's where the world forbids it")
 	w.break_others = true  # the default (ADR-0016): anyone breaks anything
+	_wear(4, 3, "structure", 3)
 	for i in 40:
 		w.tick += 20
 		w.combat.step(w.tick)
@@ -145,6 +146,7 @@ func test_a_broken_wall_takes_nothing_else_and_wear_is_kept() -> void:
 	var level := w.levels.level(w._ceiling_building("surface", 4, 3), 1)
 	check(level != "", "a level over the walkway")
 	_req(a, {"type": "hold", "item": "base:axe"})
+	_wear(4, 3, "structure", 8)
 	var r := {}
 	for i in 20:
 		w.tick += 20
@@ -156,5 +158,19 @@ func test_a_broken_wall_takes_nothing_else_and_wear_is_kept() -> void:
 	eq(w.chunk("surface", 0, 0).get_cell("ceiling", 4, 3), "base:wood_ceiling", "the walkway stays")
 	eq(w._part_at(level, 4, 3, "ground"), "base:wood_floor", "and the floor over it")
 	eq(w.chunk("surface", 0, 0).get_cell("structure", 5, 3), "base:wood_wall", "the next wall untouched")
+	w.tick += 20
+	w.combat.step(w.tick)
 	eq(_req(a, _at({"type": "strike_part", "location": "surface", "x": 4, "y": 3})).get("reason"), "unbreakable",
-		"the walkway itself is not struck (nothing there now but the ceiling)")
+		"no wall there now: the walkway is struck by its layer")
+
+
+## Worn almost through: `left` of its durability is left (long breaks made short).
+func _wear(x: int, y: int, layer: String, left: int) -> void:
+	var c := w.chunk("surface", 0, 0)
+	var part := c.get_cell(layer, x, y)
+	var props := c.get_props(x, y).duplicate()
+	var worn: Dictionary = props if layer == "structure" else props.get(layer, {}).duplicate()
+	worn["damage"] = float(int(_content.get_def(part)["durability"]) - left)
+	if layer != "structure":
+		props[layer] = worn
+	c.set_props(x, y, props)

@@ -94,3 +94,13 @@ func test_locks_friends_and_mending() -> void:
 	client.own["friends"] = ["c2"]
 	a = Actions.of(content, client, view, "", her, Vector2i.ZERO)
 	eq(a.filter(func(x: Dictionary) -> bool: return x["id"] == "friend")[0]["name"], "Убрать из друзей")
+
+
+func test_a_ceiling_is_struck_by_its_layer() -> void:
+	var c: Chunk = client.chunks[ServerWorld.chunk_key("surface", 0, 0)]
+	c.set_cell("ceiling", 5, 5, "base:wood_ceiling")
+	c.set_props(5, 5, {"ceiling": {"owner": "someone", "damage": 10.0}})
+	var a := Actions.of(content, client, view, "base:axe", _part("base:wood_ceiling", Vector2i(5, 5), "ceiling"), Vector2i.ZERO)
+	var blow: Dictionary = a.filter(func(x: Dictionary) -> bool: return x["id"] == "strike_part")[0]
+	eq(blow["request"]["layer"], "ceiling")
+	eq(a.filter(func(x: Dictionary) -> bool: return x["id"] == "repair")[0]["request"]["layer"], "ceiling", "worn: mended")

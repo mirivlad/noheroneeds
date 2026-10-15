@@ -80,6 +80,8 @@ func test_anyone_breaks_and_stone_takes_long() -> void:
 	eq(_req(b, _at(4, {"type": "dismantle"})).get("reason"), "not_owner", "not taken apart whole by another")
 	_req(b, {"type": "hold", "item": "base:axe"})
 	eq(_req(b, _at(4, {"type": "strike_part"})).get("damage"), 4, "but broken: an axe on wood")
+	var wood := _content.get_def("base:wood_wall")
+	eq(ceili(int(wood["durability"]) / 4.0) * 0.7, 182.0, "a wooden wall: three minutes of an axe (0.7 s a blow)")
 	check(_req(b, _at(4, {"type": "repair"})).get("ok", false), "and mended by anyone")
 	w.move_character(b, Vector2i(4 * 256 + 128, 4 * 256 + 128))  # within an axe's reach of the stone
 	w.tick += 20
@@ -117,8 +119,8 @@ func test_a_chest_opens_for_friends_and_spills_when_broken() -> void:
 	eq(_req(b, _at(4, {"type": "look_in"})).get("reason"), "not_owner", "no more")
 	w.grant(b, "base:axe", 1)
 	_req(b, {"type": "hold", "item": "base:axe"})
-	var r := _break(b, 4, 40)
-	eq(r[0], 15, "a chest takes 15 axe blows")
+	var r := _break(b, 4, 400)
+	eq(r[0], 195, "a chest takes 195 axe blows (some two minutes)")
 	var lying := {}
 	for id: String in w.items:
 		lying[w.items[id]["item"]] = int(lying.get(w.items[id]["item"], 0)) + int(w.items[id]["count"])
@@ -165,7 +167,7 @@ func test_a_door_locks_with_a_code() -> void:
 	eq(_req(b, _at(4, {"type": "use", "pin": "1234"})).get("reason"), "wrong_pin", "the lock kept over a restart")
 	w.grant(b, "base:axe", 1)
 	_req(b, {"type": "hold", "item": "base:axe"})
-	eq(_break(b, 4, 20)[0], 8, "but a wooden door breaks")
+	eq(_break(b, 4, 400)[0], 195, "but a wooden door breaks, in some two minutes of an axe")
 	w.flush_state()
 	eq(w.store.read_meta(ServerWorld._lock_key("surface", 4, 3)), "", "and its lock goes with it")
 	_req(a, {"type": "unfriend", "character": c})
@@ -195,3 +197,54 @@ func test_what_the_dead_dropped_is_theirs_for_ten_minutes() -> void:
 	check(_req(a, {"type": "pickup", "entity": stones}).get("ok", false), "the one who died takes them")
 	w.tick += 600 * Movement.TICK_RATE
 	check(_req(b, {"type": "pickup", "entity": planks}).get("ok", false), "ten minutes on, anyone")
+
+
+## The author's rule of 15.10.2026: ceilings and roofs break too, but from the
+## top down — a ceiling only with nothing left on the level above it there,
+## so nothing is left hanging in the air.
+func test_ceilings_and_roofs_break_from_the_top_down() -> void:
+	var builder := "builder"  # not in the world: no reach (a server tool)
+	w.grant(builder, "base:plank", 40)
+	w.grant(builder, "base:log", 2)
+	for part: String in ["base:wood_wall", "base:wood_ceiling"]:
+		check(_req(builder, _at(4, {"type": "build", "part": part})).get("ok", false), part)
+	_req(builder, _at(5, {"type": "build", "part": "base:wood_wall"}))
+	check(_req(builder, _at(5, {"type": "build", "part": "base:thatch_roof"})).get("ok", false), "a roof")
+	var upper := w.levels.level(w._ceiling_building("surface", 4, 3), 1)
+	check(_req(builder, {"type": "build", "location": upper, "x": 4, "y": 3, "part": "base:wood_wall"}).get("ok", false),
+		"a wall on the level above")
+	var b := _player("Боря", Vector2i(4, 4))
+	w.grant(b, "base:axe", 1)
+	_req(b, {"type": "hold", "item": "base:axe"})
+	eq(_req(b, _at(4, {"type": "strike_part", "layer": "ceiling"})).get("reason"), "occupied_above",
+		"not while the level above stands on it")
+	_req(builder, {"type": "dismantle", "location": upper, "x": 4, "y": 3})
+	eq(_req(b, _at(4, {"type": "strike_part", "layer": "ceiling"})).get("damage"), 4, "nothing over it now: struck")
+	_wear_layer(4, "ceiling", 3)
+	var r := [0, {}]
+	for i in 5:
+		w.tick += 20
+		w.combat.step(w.tick)
+		r = [i, _req(b, _at(4, {"type": "strike_part", "layer": "ceiling"}))]
+		if r[1].has("broken"):
+			break
+	eq(r[1].get("broken"), "base:wood_ceiling")
+	eq(w.chunk("surface", 0, 0).get_cell("ceiling", 4, 3), "", "gone")
+	eq(w._part_at(upper, 4, 3, "ground"), "", "and the floor it made above")
+	eq(w.chunk("surface", 0, 0).get_cell("structure", 4, 3), "base:wood_wall", "the wall under it stays")
+	w.tick += 20
+	w.combat.step(w.tick)
+	eq(_req(b, _at(5, {"type": "strike_part", "layer": "roof"})).get("damage"), 4, "a roof: nothing is ever over it")
+	eq(_req(b, _at(5, {"type": "repair", "layer": "roof"})).get("reason"), "materials", "mending takes straw")
+	w.grant(b, "base:log", 1)
+	eq(_req(b, _at(5, {"type": "repair", "layer": "roof"})).get("spent"), {"base:log": 1}, "and mended")
+	eq(_req(b, _at(5, {"type": "strike_part", "layer": "floor"})).get("reason"), "bad_request")
+
+
+func _wear_layer(x: int, layer: String, left: int) -> void:
+	var c := w.chunk("surface", 0, 0)
+	var props := c.get_props(x, 3).duplicate()
+	var worn: Dictionary = (props.get(layer, {}) as Dictionary).duplicate()
+	worn["damage"] = float(int(_content.get_def(c.get_cell(layer, x, 3))["durability"]) - left)
+	props[layer] = worn
+	c.set_props(x, 3, props)

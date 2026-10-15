@@ -197,10 +197,10 @@ func test_seen_across_levels_from_walkways_and_windows() -> void:
 			"part": "base:wood_window" if x == 0 else "base:wood_wall", "facing": "s"})
 	world.sync()
 	var hare := world.creatures._spawn("base:hare", "surface", Vector2i(0, 3), {}, 1)
+	hare.next_think = 1 << 40  # it stays (else it runs from the one in the street)
 	world.world_time = 12 * Daylight.HOUR_MS
-	_run(8, [a, b])  # before it runs from the one in the street
+	_run(30, [a, b])
 	check(b.entities.has(hare.id), "at the window: the hare in the street")
-	_run(22, [a, b])
 	check(b.entities.has(a.character_id), "and the one in the street")
 	world.move_character(b.character_id, Vector2i(256 + 128, -5 * 256 + 128))
 	_run(30, [a, b])

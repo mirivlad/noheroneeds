@@ -70,10 +70,18 @@ func save() -> bool:
 ## Puts the screen and sound settings into effect.
 func apply() -> void:
 	if DisplayServer.get_name() != "headless":
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if values["fullscreen"]
-			else DisplayServer.WINDOW_MODE_WINDOWED)
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if values["vsync"]
-			else DisplayServer.VSYNC_DISABLED)
+		# Only what changed: setting the window mode again (windowed over
+		# windowed) makes the window take its first size, so any change in
+		# the settings used to resize a maximised or stretched window.
+		var mode := DisplayServer.window_get_mode()
+		var full := mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+		if values["fullscreen"] and not full:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		elif not values["fullscreen"] and full:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		var vsync := DisplayServer.VSYNC_ENABLED if values["vsync"] else DisplayServer.VSYNC_DISABLED
+		if DisplayServer.window_get_vsync_mode() != vsync:
+			DisplayServer.window_set_vsync_mode(vsync)
 	for key: String in BUSES:
 		var idx := AudioServer.get_bus_index(BUSES[key])
 		if idx < 0:

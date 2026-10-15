@@ -162,6 +162,9 @@ func _blow(delta: float) -> void:
 ## carries far, so a little of it is heard well.
 func _listen_around() -> void:
 	var me := Movement.cell_of(client.position)
+	# From a building's level the surface around is heard; underground only
+	# the depth one is in (ADR-0017): no wind, no birds, no lake above.
+	var where := client.location if client.z < 0 else Levels.SURFACE
 	var counts := {}
 	var defs := {}
 	var total := 0
@@ -170,7 +173,7 @@ func _listen_around() -> void:
 	var wind_defs := {}
 	for dy in range(-AMB_RADIUS, AMB_RADIUS + 1, 2):
 		for dx in range(-AMB_RADIUS, AMB_RADIUS + 1, 2):
-			var g := view.ground_at(Levels.SURFACE, me + Vector2i(dx, dy))
+			var g := view.ground_at(where, me + Vector2i(dx, dy))
 			if g == "":
 				continue
 			total += 1

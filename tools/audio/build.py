@@ -430,6 +430,36 @@ def amb_water():
     return norm(x, 0.44)  # peaks as loud as the water before
 
 
+def drip(seed):
+    """One drop falling into a puddle in a cave: a short soft plink, its
+    pitch falling a little, quickly gone (no ring)."""
+    sec = 0.12
+    t = t_axis(sec)
+    r = rng(seed)
+    f0 = r.uniform(900, 1500)
+    f = f0 * (1.0 - 0.35 * t / sec)
+    x = np.sin(2 * np.pi * np.cumsum(f) / SR) * decay(sec, 0.018, 0.001)
+    return tail_out(low(x, 2600, 2), 0.5)
+
+
+def amb_cave():
+    """Underground (ADR-0017): no wind, no birds - a low still air, hardly
+    heard, and now and then a drop, with long silences between."""
+    sec = 50.0
+    x = low(noise(sec, 401), 140, 2) * slow_env(sec, 0.08, 402, 0.5, 1.0) * 0.6
+    r = rng(403)
+    at = r.uniform(1.0, 4.0)
+    k = 0
+    while at < sec - 1.0:
+        place(x, drip(410 + k), at, r.uniform(0.25, 0.6))
+        if r.uniform() < 0.3:  # a second drop right after, from the same place
+            place(x, drip(450 + k), at + r.uniform(0.25, 0.6), r.uniform(0.15, 0.35))
+        at += r.uniform(3.0, 11.0)
+        k += 1
+    x = loopify(x, 1.0)
+    return norm(x, 0.3)
+
+
 # ------------------------------------------------------------ the pack
 
 def main():
@@ -472,6 +502,7 @@ def main():
     for ground in ("base:forest_floor", "base:moss"):
         sound("amb_" + ground.split(":")[1], ground, "ambience", [forest], -12.0, (1.0, 1.0), True)
     sound("amb_water", "base:water", "ambience", [water], -12.0, (1.0, 1.0), True)
+    sound("amb_cave", "base:cave_floor", "ambience", [write("amb_cave", amb_cave(), gain=1.0)], -14.0, (1.0, 1.0), True)
     meadow_gusts = [write("wind_meadow_%d" % (k + 1), gust("meadow", 500 + k * 11), gain=AMB_GAIN["amb_meadow"]) for k in range(4)]
     forest_gusts = [write("wind_forest_%d" % (k + 1), gust("forest", 600 + k * 11), gain=AMB_GAIN["amb_forest"]) for k in range(4)]
     for ground in ("base:grass", "base:grass_dry", "base:dirt", "base:sand", "base:water"):

@@ -14,7 +14,7 @@ const CELL := 16
 const UNITS_PER_PIXEL := Movement.UNIT / CELL
 ## Covers sit on top of the walls: this far above their cell.
 const COVER_LIFT := 16
-const UNDERGROUND_TINT := Color(0.2, 0.19, 0.22)
+const UNDERGROUND_TINT := Color(0.32, 0.3, 0.34)
 ## Largest room whose cover is hidden around the player.
 const MAX_ROOM := 2048
 

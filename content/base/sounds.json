@@ -420,6 +420,21 @@
    "loop": true
   },
   {
+   "id": "base:sound/amb_cave",
+   "kind": "sound",
+   "for": "base:cave_floor",
+   "event": "ambience",
+   "files": [
+    "audio/amb_cave.wav"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  },
+  {
    "id": "base:sound/wind_grass",
    "kind": "sound",
    "for": "base:grass",

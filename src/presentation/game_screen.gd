@@ -112,7 +112,9 @@ const REASONS := {
 	"occupied": "место занято", "blocked": "мешает вода, стена или дерево", "someone_there": "там кто-то стоит",
 	"materials": "не хватает материалов", "too_far": "слишком далеко", "no_floor": "здесь нет пола",
 	"too_high": "выше строить нельзя (настройка сервера)", "occupied_above": "сверху что-то стоит — сначала уберите",
-	"no_opening_above": "лестнице нужно перекрытие над ней или там, куда она ведёт", "stairs_below": "сначала уберите лестницу",
+	"no_landing": "наверху, куда смотрит лестница, нужен пол (перекрытие)", "roof_above": "над лестницей кровля",
+	"ceiling_not_yours": "перекрытие над лестницей поставил другой: его можно только сломать",
+	"landing_blocked": "наверху, куда выводит лестница, занято", "stairs_here": "здесь лестница: над ней проём", "stairs_below": "сначала уберите лестницу",
 	"not_owner": "это чужое", "locked": "заперто", "wrong_pin": "неверный код",
 	"pin_wait": "много неверных попыток — подождите", "bad_pin": "код — четыре цифры",
 	"kept_for_dead": "это вещи погибшего — пока только его", "empty": "здесь нечего разбирать", "no_stairs": "здесь нет лестницы",
@@ -376,6 +378,14 @@ func _process(delta: float) -> void:
 		game.world.move_character(client.character_id, Vector2i(128, 7 * 256 + 128))  # dev only: before the house
 	if _opts.get("demo") == "behind" and _frames == 40 and game:
 		game.world.move_character(client.character_id, Vector2i(128, -5 * 256 + 200))  # dev only: behind the back wall
+	if _opts.get("demo") in ["hole", "upstairs"] and game and _frames == 36:
+		game.world.move_character(client.character_id, Vector2i(1 * 256 + 128, 1 * 256 + 128))  # dev only: by the stairs
+	if _opts.get("demo") == "hole" and game:  # dev only: up, then the stairs gone: the opening stays
+		if _frames == 40:
+			client.request({"type": "climb", "location": client.location, "x": 1, "y": 0})
+		if _frames == 90:
+			game.world._take_down("surface", game.world.chunk("surface", 0, 0), ["surface", 0, 0, 1, 0], "structure",
+				"base:wood_stairs", "")
 	if _opts.get("demo") == "upstairs" and _frames == 40:
 		client.request({"type": "climb", "location": client.location, "x": 1, "y": 0})
 	if _opts.get("demo") == "upstairs" and _frames == 60 and client.z == 1:
@@ -547,6 +557,8 @@ func _do(a: Dictionary) -> void:
 			_sound_on_ok[rid] = "pickup"
 		"use":
 			_door_rids[rid] = Vector2i(int(a["request"]["x"]), int(a["request"]["y"]))
+		"jump", "climb":
+			_sound_on_ok[rid] = "climb"
 
 
 func _open_menu() -> void:
@@ -775,7 +787,8 @@ func _plan_cells() -> Array:
 		if not BuildRules.reaches(client.position, cell.x, cell.y):
 			why = "too_far"
 		else:
-			why = BuildRules.check(_build_view, content, _blueprint, client.location, cell.x, cell.y, facing)
+			why = BuildRules.check(_build_view, content, _blueprint, client.location, cell.x, cell.y, facing,
+				client.character_id)
 			if why == "unknown":
 				why = ""  # not known here: the server will say
 		if why == "":

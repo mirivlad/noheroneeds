@@ -104,3 +104,22 @@ func test_a_ceiling_is_struck_by_its_layer() -> void:
 	var blow: Dictionary = a.filter(func(x: Dictionary) -> bool: return x["id"] == "strike_part")[0]
 	eq(blow["request"]["layer"], "ceiling")
 	eq(a.filter(func(x: Dictionary) -> bool: return x["id"] == "repair")[0]["request"]["layer"], "ceiling", "worn: mended")
+
+
+## On a building level a cell without floor is jumped down into from beside
+## it; over stairs, gone down by them (E).
+func test_a_drop_is_jumped_into() -> void:
+	client.z = 1
+	client.position = Vector2i(5 * 256 + 128, 4 * 256 + 128)
+	var void_cell := {"kind": "ground", "id": "", "cell": Vector2i(5, 5), "location": "surface"}
+	var a := Actions.of(content, client, view, "", void_cell, Vector2i.ZERO)
+	eq(Actions.quick(a).get("request"), {"type": "jump", "dx": 0, "dy": 1}, "E jumps down into it")
+	var far := {"kind": "ground", "id": "", "cell": Vector2i(5, 8), "location": "surface"}
+	a = Actions.of(content, client, view, "", far, Vector2i.ZERO)
+	eq(a.filter(func(x: Dictionary) -> bool: return x["id"] == "jump")[0]["enabled"], false, "from beside it only")
+	var c: Chunk = client.chunks[ServerWorld.chunk_key("surface", 0, 0)]
+	c.set_props(5, 5, {"stairs_down": true})
+	a = Actions.of(content, client, view, "", void_cell, Vector2i.ZERO)
+	eq(Actions.quick(a).get("request", {}).get("dir"), "down", "stairs below: E goes down them")
+	check(_ids(a).has("jump"), "jumping is still there")
+	eq(Actions.describe(content, void_cell), "Пустота: проём или край — можно спрыгнуть")

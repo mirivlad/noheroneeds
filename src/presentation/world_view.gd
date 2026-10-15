@@ -441,6 +441,8 @@ func _paint(key: String, spread := true) -> void:
 				var mark := _stairs_down_sprite(cell)
 				if mark:
 					holder.add_child(mark)
+			if client.z > 0 and c.get_cell("ground", lx, ly) == "":
+				_drop_rims(holder, cell)
 	# Walls on the edge join walls of the next chunk: redraw those once.
 	if not _edges.is_empty():
 		# Edges here, and on the rim of the chunks around, which depend on this one.
@@ -598,6 +600,26 @@ func _edge_joins(c: Chunk, d: Vector2i) -> bool:
 		if id != "" and content.visual_of(id).has("autotile"):
 			return true
 	return false
+
+
+## On a building level a cell without floor is a drop — an opening, or the
+## level's edge: its sides along the floor are shaded, so an opening reads as
+## a hole one may jump down through (ADR-0007), not as more floor.
+const RIM := 4
+
+
+func _drop_rims(holder: Node2D, cell: Vector2i) -> void:
+	for d: Vector2i in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:
+		if ground_at(client.location, cell + d) == "":
+			continue
+		var r := ColorRect.new()
+		r.color = Color(0.05, 0.04, 0.06, 0.6)
+		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		r.size = Vector2(CELL if d.x == 0 else RIM, RIM if d.x == 0 else CELL)
+		r.position = Vector2(cell * CELL) + Vector2(CELL - RIM if d.x > 0 else 0, CELL - RIM if d.y > 0 else 0)
+		r.z_as_relative = false
+		r.z_index = -1
+		holder.add_child(r)
 
 
 ## On a building level, where the stairs from below come up: the way down.

@@ -25,10 +25,11 @@ func test_up_the_stairs_and_back() -> void:
 	cl.request({"type": "build", "location": "surface", "x": 2, "y": 2, "part": "base:wood_stairs"})
 	_steps(g, view, 10)
 	eq(g.world.levels.info.size(), 1, "the ceiling made a level")
-	# Stand on the stairs (as if walked there) and look at the room from inside.
-	g.world.move_character(cl.character_id, Vector2i(2 * 256 + 128, 2 * 256 + 128))
+	# Stand by the stairs (as if walked there) and look at the room from
+	# inside: its cover is hidden, all but the opening over the stairs.
+	g.world.move_character(cl.character_id, Vector2i(2 * 256 + 128, 3 * 256 + 128))
 	_steps(g, view, 10)
-	check(view.hidden_room().has(Vector2i(2, 2)) and view.hidden_room().size() == 9, "the cover over this room is hidden: %d" % view.hidden_room().size())
+	check(view.hidden_room().has(Vector2i(2, 3)) and view.hidden_room().size() == 8, "the cover over this room is hidden: %d" % view.hidden_room().size())
 	cl.request({"type": "climb", "location": "surface", "x": 2, "y": 2})
 	_steps(g, view, 15)
 	eq(cl.z, 1, "on the first floor")
@@ -44,9 +45,9 @@ func test_up_the_stairs_and_back() -> void:
 	cl.move = Vector2i(-1, 0)
 	_steps(g, view, 6)
 	cl.move = Vector2i.ZERO
-	g.world.move_character(cl.character_id, Vector2i(2 * 256 + 128, 2 * 256 + 128))
+	g.world.move_character(cl.character_id, Vector2i(2 * 256 + 128, 1 * 256 + 128))  # the landing
 	_steps(g, view, 5)
-	cl.request({"type": "climb", "location": cl.location, "x": 2, "y": 2})
+	cl.request({"type": "climb", "location": cl.location, "x": 2, "y": 2})  # down through the opening
 	_steps(g, view, 15)
 	eq(cl.z, 0, "back down")
 	eq(cl.location, "surface")

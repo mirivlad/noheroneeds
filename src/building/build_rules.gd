@@ -16,8 +16,9 @@ const NO_CELL := Vector2i(1 << 30, 1 << 30)
 
 ## "" if `part` may stand at (x, y) of `location` turned to `facing`, else
 ## the reason (the server's words); "unknown" where the view lacks the chunk.
+## `actor`: who builds ("" — not asked: whose ceiling stairs would open).
 static func check(view: Object, content: ContentRegistry, part: String, location: String, x: int, y: int,
-		facing: String) -> String:
+		facing: String, actor := "") -> String:
 	if content.kind_of(part) != "structure":
 		return "unknown_part"
 	var def := content.get_def(part)
@@ -45,13 +46,25 @@ static func check(view: Object, content: ContentRegistry, part: String, location
 		"ceiling", "roof":
 			if Terrain.is_covered(c, lx, ly):
 				return "occupied"
+			var under := c.get_cell("structure", lx, ly)
+			if under != "" and content.get_def(under).get("role") == "stairs":
+				return "stairs_here"  # stairs need the opening over them
 			if not on_level and bool(content.get_def(c.get_cell("ground", lx, ly)).get("solid", false)):
 				return "blocked"
 			if role == "ceiling" and int(view.build_z(location)) + 1 > int(view.build_max_levels()):
 				return "too_high"  # a server setting (ADR-0007)
 		"stairs":
+			# Stairs come up through an opening over themselves and lead onto
+			# the floor their top faces (ADR-0007, ADR-0013). A ceiling over
+			# them is taken away to make the opening — the builder's own only:
+			# someone else's is broken, not taken apart (ADR-0016).
 			if stairs_arrival(view, location, x, y, facing) == NO_CELL:
-				return "no_opening_above"
+				return "no_landing"
+			if c.get_cell("roof", lx, ly) != "":
+				return "roof_above"
+			if c.get_cell("ceiling", lx, ly) != "" and actor != "" \
+					and String((c.get_props(lx, ly).get("ceiling", {}) as Dictionary).get("owner", "")) != actor:
+				return "ceiling_not_yours"
 			if Terrain.is_solid(c, lx, ly, content, on_level):
 				return "blocked"
 		_:
@@ -84,14 +97,12 @@ static func facing_of(def: Dictionary, wanted: String) -> String:
 
 
 ## Where stairs at (x, y) facing `facing` would lead on the level above: the
-## cell itself if it is ceiled over (stairs inside a building), else the cell
-## their top faces if that one is (onto a wall, a gallery, the next room);
-## NO_CELL if neither.
+## cell their top faces, if a ceiling there makes it a floor above (a
+## landing); NO_CELL if not. Never their own cell: over the stairs is the
+## opening they come up through, not a floor to stand on.
 static func stairs_arrival(view: Object, location: String, x: int, y: int, facing: String) -> Vector2i:
-	if _ceiling_at(view, location, x, y):
-		return Vector2i(x, y)
 	var top: Vector2i = Vector2i(x, y) + (ContentRegistry.FACINGS.get(facing, Vector2i(0, -1)) as Vector2i)
-	if facing != "" and _ceiling_at(view, location, top.x, top.y):
+	if _ceiling_at(view, location, top.x, top.y):
 		return top
 	return NO_CELL
 

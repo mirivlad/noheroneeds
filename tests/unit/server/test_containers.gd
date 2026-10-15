@@ -74,3 +74,48 @@ func test_a_chest_holds_so_many_cells() -> void:
 	# Planks stack by 99: 16 cells hold 1584.
 	eq(_req(a, _at({"type": "store", "item": "base:plank", "count": 1584})).get("ok"), true)
 	eq(_req(a, _at({"type": "store", "item": "base:plank", "count": 1})).get("reason"), "full")
+
+
+## Parts wear and break under blows (one's own; another's where the world
+## allows), and are mended for materials; what one holds is seen.
+func test_parts_break_under_blows_and_are_mended() -> void:
+	var a := _player("Аня")
+	w.grant(a, "base:plank", 20)
+	w.grant(a, "base:axe", 1)
+	_req(a, _at({"type": "build", "part": "base:wood_wall"}))
+	var r := _req(a, _at({"type": "strike_part", "item": "base:axe"}))
+	eq(r.get("damage"), 4, "an axe takes 4 of 40")
+	eq(_req(a, _at({"type": "strike_part", "item": "base:axe"})).get("reason"), "not_ready", "not again at once")
+	for i in 4:
+		w.tick += 20
+		w.combat.step(w.tick)
+		_req(a, _at({"type": "strike_part", "item": "base:axe"}))
+	eq(int(w.chunk("surface", 0, 0).get_props(4, 3).get("damage", 0)), 20)
+	var planks := w.inventory(a).count("base:plank")
+	check(_req(a, _at({"type": "repair"})).get("ok", false), "mended")
+	eq(planks - w.inventory(a).count("base:plank"), 2, "half worn: half of its three planks, rounded up")
+	eq(int(w.chunk("surface", 0, 0).get_props(4, 3).get("damage", 0)), 0)
+	var b := _player("Боря")
+	eq(_req(b, _at({"type": "strike_part"})).get("reason"), "not_owner", "not someone else's, by default")
+	w.break_others = true
+	for i in 40:
+		w.tick += 20
+		w.combat.step(w.tick)
+		r = _req(b, _at({"type": "strike_part"}))
+		if r.has("broken"):
+			break
+	eq(r.get("broken"), "base:wood_wall", "fists break it at last, where the world allows")
+	eq(w.chunk("surface", 0, 0).get_cell("structure", 4, 3), "", "gone")
+	var left := 0
+	for id: String in w.items:
+		if w.items[id]["item"] == "base:plank":
+			left += int(w.items[id]["count"])
+	eq(left, 1, "half of what it cost lies there")
+
+
+func test_what_one_holds_is_seen() -> void:
+	var a := _player("Аня")
+	eq(_req(a, {"type": "hold", "item": "base:bow"}).get("reason"), "not_carried")
+	w.grant(a, "base:bow", 1)
+	check(_req(a, {"type": "hold", "item": "base:bow"}).get("ok", false), "held")
+	eq(w.present[a]["held"], "base:bow")

@@ -427,6 +427,10 @@ func _paint(key: String, spread := true) -> void:
 					s.set_meta("cell", cell)
 					s.set_meta("layer", layer)
 					s.set_meta("id", id)
+					var damage := int(c.get_props(lx, ly).get("damage", 0)) if layer == "structure" else 0
+					if damage > 0:  # worn: darker as it nears breaking (ADR-0021)
+						var ratio := clampf(float(damage) / maxf(1.0, float(content.get_def(id).get("durability", 1))), 0.0, 1.0)
+						s.self_modulate = Color.WHITE.lerp(Color(0.5, 0.45, 0.45), ratio)
 					holder.add_child(s)
 					var light: Dictionary = content.get_def(id).get("light", {})
 					if not light.is_empty():
@@ -677,6 +681,9 @@ func pick_target(point: Vector2) -> Dictionary:
 			if s and s.has_meta("layer") and s.position.y > best_y and _sprite_rect(s).has_point(point):
 				best = {"kind": "part", "layer": s.get_meta("layer"), "id": s.get_meta("id"), "cell": s.get_meta("cell"),
 					"location": client.location}
+				var damage := int(props_at(s.get_meta("cell")).get("damage", 0))
+				if damage > 0:
+					best["damage"] = damage
 				best_y = s.position.y
 	if not best.is_empty():
 		return best
@@ -726,6 +733,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		me.show_at(own_pixel_position(alpha), delta, true)
 		me.modulate = Color.WHITE
 		_health(client.character_id, me, client.own, delta)
+		me.hold(item_picture(own_held))
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
@@ -751,6 +759,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		# lies dimmed under the floor, as the surface there does.
 		var dz := int(e.get("z", client.z)) - client.z
 		var sprite := _character(id, looks)
+		sprite.hold(item_picture(String(e.get("held", ""))))
 		sprite.show_at(target - Vector2(0, COVER_LIFT * maxi(dz, 0)), delta, false)
 		_at_level(sprite, client.z + dz)
 		_health(id, sprite, e, delta)
@@ -774,6 +783,25 @@ func _update_characters(alpha: float, delta: float) -> void:
 
 var _items := {}
 var _projectiles := {}
+## What the own character holds (set by the game at once, before the server knows).
+var own_held := ""
+var _pictures := {}
+
+
+## An item's picture (its visual's first frame), cached; null for none.
+func item_picture(id: String) -> Texture2D:
+	if id == "":
+		return null
+	if _pictures.has(id):
+		return _pictures[id]
+	var v := content.visual_of(id)
+	var at: AtlasTexture = null
+	if not v.is_empty():
+		at = AtlasTexture.new()
+		at.atlas = texture(v["atlas_path"])
+		at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+	_pictures[id] = at
+	return at
 ## Health last drawn, and how much of a hurt flash is left (s), by id.
 var _hp_seen := {}
 var _flash := {}

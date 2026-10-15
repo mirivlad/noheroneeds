@@ -268,6 +268,15 @@ func _location(id: String) -> String:
 	return c.location if c else ""
 
 
+## Whether one may strike again (its last blow's cooldown is over); if so,
+## the next one waits `cooldown_ms`.
+func ready(actor: String, cooldown_ms: float) -> bool:
+	if _tick < int(_ready_at.get(actor, 0)):
+		return false
+	_ready_at[actor] = _tick + _ticks(cooldown_ms)
+	return true
+
+
 func _ticks(ms: float) -> int:
 	return maxi(1, ceili(ms / (1000.0 / Movement.TICK_RATE)))
 

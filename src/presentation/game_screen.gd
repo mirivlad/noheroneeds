@@ -60,6 +60,7 @@ var target := {}
 var actions: Array[Dictionary] = []
 var _cursor_aim := false
 var _hotbar_loaded := false
+var _held_sent := "~"
 var painter := MapPainter.new()
 var minimap := Minimap.new()
 var world_map := WorldMap.new()
@@ -110,7 +111,7 @@ const REASONS := {
 	"no_tool": "этим этого не сделать", "nothing_to_gather": "здесь нечего добыть", "natural": "это не разобрать — только выкопать", "not_buildable": "это не строится",
 	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят",
 	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
-	"not_a_container": "это не открыть", "too_deep": "глубже нельзя (настройка сервера)",
+	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 }
 
 
@@ -491,7 +492,7 @@ func _do(a: Dictionary) -> void:
 		_chest_rids[rid] = Vector2i(int(a["request"]["x"]), int(a["request"]["y"]))
 		return
 	match String(a["id"]):
-		"strike", "shoot", "swing":
+		"strike", "shoot", "swing", "strike_part":
 			_attacks[rid] = true
 			if a["id"] != "shoot":
 				audio.play("swing", String(a["request"].get("item", "")), null)
@@ -806,6 +807,10 @@ func _update_hud() -> void:
 	if not _hotbar_loaded and client.character_id != "" and client.own.has("inventory"):
 		_load_hotbar(inv)
 	var held := hotbar.held(inv)
+	view.own_held = held
+	if held != _held_sent and client.character_id != "":
+		_held_sent = held
+		_attacks[client.request({"type": "hold", "item": held})] = true  # for the others to see; quiet
 	var hands := "в руках: " + (String(content.get_def(held).get("name", held)) if held != "" else "ничего")
 	if held != "" and content.get_def(held).get("weapon", {}).get("kind") == "ranged":
 		hands += " (%d)" % int(inv.get(String(content.get_def(held)["weapon"]["ammo"]), 0))

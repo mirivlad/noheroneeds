@@ -72,6 +72,14 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 				"request": {"type": "climb", "location": loc, "x": cell.x, "y": cell.y, "dir": "down" if down else "up"}})
 		var props := view.props_at(cell)
 		var owner := String((props.get(layer, {}) as Dictionary).get("owner", "") if layer != "structure" else props.get("owner", ""))
+		if layer == "structure" and int(def.get("durability", 0)) > 0:
+			var with := String(content.get_def(held).get("name", "")) if w.get("kind") == "melee" else "рукой"
+			out.append({"id": "strike_part", "name": "Ударить (%s)" % with,
+				"request": {"type": "strike_part", "location": loc, "x": cell.x, "y": cell.y,
+					"item": held if w.get("kind") == "melee" else ""}})
+			if int(props.get("damage", 0)) > 0 and owner == client.character_id:
+				out.append({"id": "repair", "name": "Ремонтировать",
+					"request": {"type": "repair", "location": loc, "x": cell.x, "y": cell.y}})
 		if owner != "" and owner == client.character_id:
 			out.append({"id": "dismantle", "name": "Разобрать",
 				"request": {"type": "dismantle", "location": loc, "x": cell.x, "y": cell.y, "layer": layer}})
@@ -122,5 +130,10 @@ static func describe(content: ContentRegistry, target: Dictionary) -> String:
 				name += " (здоровье %d/%d)" % [int(e.get("health", 0)), int(e["max_health"])]
 			return name
 		"part", "ground":
-			return String(content.get_def(String(target.get("id", ""))).get("name", target.get("id", "")))
+			var def := content.get_def(String(target.get("id", "")))
+			var name := String(def.get("name", target.get("id", "")))
+			var top := int(def.get("durability", 0))
+			if target.get("kind") == "part" and target.get("layer") == "structure" and top > 0 and target.has("damage"):
+				name += " (прочность %d/%d)" % [top - int(target["damage"]), top]
+			return name
 	return ""

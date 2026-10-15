@@ -29,6 +29,12 @@ var _idle := 0.0
 var _placed := false
 var _last_walk_frame := -1
 var _order_dir := -1
+## What it holds (ADR-0021), drawn at the hand; null: nothing.
+var _held: Sprite2D = null
+## Where the hand is, by direction (s, se, e, ne, n), from the feet; and
+## whether the thing is behind the body (seen from behind).
+const HAND := [Vector2(6, -12), Vector2(6, -12), Vector2(4, -12), Vector2(3, -13), Vector2(-5, -13)]
+const HAND_BEHIND := [false, false, false, true, true]
 
 
 ## layers: [[slot, Texture2D], ...] drawn over the body.
@@ -95,6 +101,7 @@ func _face(v: Vector2) -> void:
 	_dir = table[octant][0]
 	_mirror = table[octant][1]
 	_order()
+	_place_held()
 
 
 ## Layers in the order the body plan's visual gives for this direction;
@@ -113,6 +120,32 @@ func _order() -> void:
 		return ia < ib)
 	for i in sorted.size():
 		move_child(sorted[i][1], i)
+
+
+## Something in the hand (its picture), or null for empty hands.
+func hold(picture: Texture2D) -> void:
+	if picture == null:
+		if _held:
+			_held.queue_free()
+			_held = null
+		return
+	if _held == null:
+		_held = Sprite2D.new()
+		_held.scale = Vector2(0.75, 0.75)
+		add_child(_held)
+	_held.texture = picture
+	_place_held()
+
+
+func _place_held() -> void:
+	if _held == null:
+		return
+	var at: Vector2 = HAND[_dir]
+	_held.position = Vector2(-at.x if _mirror else at.x, at.y)
+	_held.flip_h = _mirror
+	_held.show_behind_parent = false
+	_held.z_index = -1 if HAND_BEHIND[_dir] else 1
+	_held.z_as_relative = true
 
 
 func _frame(anim: Dictionary, i: int) -> void:

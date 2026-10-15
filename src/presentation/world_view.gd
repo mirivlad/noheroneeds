@@ -412,7 +412,8 @@ func _paint(key: String, spread := true) -> void:
 			var cell := Vector2i(ox + lx, oy + ly)
 			_set_flat(_ground, cell, c.get_cell("ground", lx, ly))
 			_cover.erase_cell(cell)
-			_set_cover(cell, c.get_cell("roof", lx, ly) if c.get_cell("roof", lx, ly) != "" else c.get_cell("ceiling", lx, ly))
+			_set_cover(cell, c.get_cell("roof", lx, ly) if c.get_cell("roof", lx, ly) != "" else c.get_cell("ceiling", lx, ly),
+				"roof" if c.get_cell("roof", lx, ly) != "" else "ceiling")
 			for layer in ["cover", "structure"]:
 				var id := c.get_cell(layer, lx, ly)
 				if id == "":
@@ -424,6 +425,8 @@ func _paint(key: String, spread := true) -> void:
 					var facing := String(c.get_props(lx, ly).get("facing", ""))
 					var s := _tall_sprite(v, cell, state, variant, facing)
 					s.set_meta("cell", cell)
+					s.set_meta("layer", layer)
+					s.set_meta("id", id)
 					holder.add_child(s)
 					var light: Dictionary = content.get_def(id).get("light", {})
 					if not light.is_empty():
@@ -453,7 +456,7 @@ func _paint_below(c: Chunk, ox: int, oy: int) -> void:
 			_set_flat(_below, cell, c.get_cell("ground", lx, ly))
 
 
-func _set_cover(cell: Vector2i, id: String) -> void:
+func _set_cover(cell: Vector2i, id: String, layer := "ceiling") -> void:
 	var old: Sprite2D = _cover_sprites.get(cell)
 	if old:
 		old.queue_free()
@@ -481,6 +484,8 @@ func _set_cover(cell: Vector2i, id: String) -> void:
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	s.add_child(shade)
 	s.visible = not _hidden_room.has(cell)
+	s.set_meta("layer", layer)
+	s.set_meta("id", id)
 	_covers.add_child(s)
 	_cover_sprites[cell] = s
 	_room_from = Vector2i(1 << 30, 0)  # covers changed: find the room again
@@ -637,6 +642,66 @@ func _sprite_rect(s: Sprite2D) -> Rect2:
 
 ## What the player points at: a visible cover, else a tall thing whose
 ## picture is under the point, else the cell under it. [cell, layer hint]
+## What is under a point of the screen (ADR-0021), nearest the eye first:
+##   {"kind": "entity", "id", "entity": its state} — a person, a creature, a thing;
+##   {"kind": "part", "layer", "id", "cell"} — a part, a plant, a roof or ceiling;
+##   {"kind": "ground", "id", "cell"} — the ground.
+## Always with "location" (the client's own).
+func pick_target(point: Vector2) -> Dictionary:
+	var best := {}
+	var best_y := -INF
+	for id: String in _characters:
+		var s: CharacterSprite = _characters[id]
+		if Rect2(s.position + Vector2(-9, -30), Vector2(18, 32)).has_point(point) and s.position.y > best_y \
+				and (id == client.character_id or client.entities.has(id)):
+			best = {"kind": "entity", "id": id, "entity": client.own if id == client.character_id else client.entities[id]}
+			best_y = s.position.y
+	for id: String in _items:
+		var it: Sprite2D = _items[id]
+		if Rect2(it.position - Vector2(8, 12), Vector2(16, 16)).has_point(point) and it.position.y > best_y \
+				and client.entities.has(id):
+			best = {"kind": "entity", "id": id, "entity": client.entities[id]}
+			best_y = it.position.y
+	if not best.is_empty() and best["id"] != client.character_id:
+		best["location"] = client.location
+		return best
+	for cell: Vector2i in _cover_sprites:
+		var cs: Sprite2D = _cover_sprites[cell]
+		if cs.visible and _sprite_rect(cs).has_point(point):
+			return {"kind": "part", "layer": cs.get_meta("layer"), "id": cs.get_meta("id"), "cell": cell,
+				"location": client.location}
+	best_y = -INF
+	for holder: Node2D in _chunk_nodes.values():
+		for n: Node in holder.get_children():
+			var s := n as Sprite2D
+			if s and s.has_meta("layer") and s.position.y > best_y and _sprite_rect(s).has_point(point):
+				best = {"kind": "part", "layer": s.get_meta("layer"), "id": s.get_meta("id"), "cell": s.get_meta("cell"),
+					"location": client.location}
+				best_y = s.position.y
+	if not best.is_empty():
+		return best
+	var cell := Vector2i(floori(point.x / CELL), floori(point.y / CELL))
+	var flat := _cell_layer(cell, "cover")
+	if flat != "":
+		return {"kind": "part", "layer": "cover", "id": flat, "cell": cell, "location": client.location}
+	return {"kind": "ground", "id": ground_at(client.location, cell), "cell": cell, "location": client.location}
+
+
+func _cell_layer(cell: Vector2i, layer: String) -> String:
+	var cx := floori(cell.x / float(Chunk.SIZE))
+	var cy := floori(cell.y / float(Chunk.SIZE))
+	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
+	return c.get_cell(layer, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else ""
+
+
+## The props of a cell of the client's location ({} if unknown).
+func props_at(cell: Vector2i) -> Dictionary:
+	var cx := floori(cell.x / float(Chunk.SIZE))
+	var cy := floori(cell.y / float(Chunk.SIZE))
+	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
+	return c.get_props(cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else {}
+
+
 func pick(point: Vector2) -> Vector2i:
 	for cell: Vector2i in _cover_sprites:
 		var cs: Sprite2D = _cover_sprites[cell]

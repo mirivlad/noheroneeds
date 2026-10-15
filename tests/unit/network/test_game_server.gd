@@ -136,13 +136,16 @@ func test_creatures_reach_clients_and_follow_them_on_a_bad_network() -> void:
 	_run(30, [a])
 	var me := Movement.cell_of(_server_pos(a))
 	var hare := world.creatures._spawn("base:hare", "surface", me + Vector2i(4, 2), {}, 1)
+	hare.next_think = 1 << 40  # it does only what the test tells it (else it may run from the player)
 	_run(40, [a])
 	var seen: Dictionary = a.entities.get(hare.id, {})
 	eq(seen.get("creature"), "base:hare", "the hare came")
 	# It walks off; the client follows it to where it stops.
 	hare.target = (me + Vector2i(10, 6)) * Movement.UNIT
 	world.creatures._movers[hare.id] = true
-	_run(120, [a])
+	for i in 120:
+		_run(1, [a])
+		hare.next_think = 1 << 40  # arrived, it would think again soon: not here
 	eq(hare.target, Creature.NO_TARGET, "it got there")
 	seen = a.entities.get(hare.id, {})
 	eq(Vector2i(seen.get("x", 0), seen.get("y", 0)), hare.pos, "the client has it where it stopped")

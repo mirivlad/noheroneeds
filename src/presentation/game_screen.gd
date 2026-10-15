@@ -14,32 +14,48 @@ extends Node2D
 ## stairs; the player starts inside); --screenshot=PATH --frames=N;
 ## --time=HOUR sets a local world's clock.
 ##
-## Controls (temporary): WASD/arrows walk, with Ctrl run; 1-3 choose a part,
-## R turns it (stairs: up north, east or west); left click
-## builds, right click takes down; E picks up what lies near or opens and
-## closes a door next to you; G drops one of the chosen material (Tab);
-## F goes up the stairs you stand on (or down, if there is no way up),
-## Shift+F goes down; Esc opens the menu.
+## Controls (ADR-0021): what is in the hands and what the cursor points at
+## decide what a click does (Actions): WASD/arrows walk, Ctrl runs; 1-9 or the
+## wheel choose the quick slot in the hands, Q snatches the weapon (and back),
+## I the things to put into the slots, G drops one of what is in the hands;
+## the left button does the main thing (strike, shoot, dig, fell, look), the
+## right one opens the list of all that can be done; E the quick one (open,
+## pick up, climb); B the building catalogue: a blueprint under the cursor,
+## the left button (drag for a row or an area) builds, R turns it, the right
+## button lets it go; F the stairs or a way between depths (Shift+F down);
+## J jumps off an edge; M the world map, - and = the minimap; Esc the menu.
 
 signal menu_requested
 ## The connection is gone or the server refused us (reason for people).
 signal failed(reason: String)
 signal screenshot_taken
 
-const PARTS := ["base:wood_wall", "base:stone_wall", "base:wood_door", "base:wood_ceiling",
-	"base:thatch_roof", "base:wood_stairs", "base:wood_column", "base:torch", "base:wood_window", "base:loophole",
-	"base:mine_shaft", "base:headframe"]
+## Shown in the HUD: the common building materials.
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
+## Most cells one drag of a blueprint builds at once.
+const DRAG_MAX := 64
 
 var content: ContentRegistry
-## The weapon chosen with Q (index into _weapons()), attack requests in flight,
-## deaths already told (-1: none seen yet).
-var _weapon := 0
-## Two ways of using the mouse (Tab): peace — the wheel picks a part, the
-## left button builds or uses, the right takes down or digs (a cursor of
-## corners); combat — the wheel picks a weapon, the left button strikes or
-## shoots where the cursor is (a crosshair).
-var combat := false
+## Attack requests in flight, deaths already told (-1: none seen yet).
+var hotbar := Hotbar.new()
+var catalog := BuildCatalog.new()
+var inventory_panel := InventoryPanel.new()
+## The context menu (right button) and the actions it lists.
+var _menu := PopupMenu.new()
+var _menu_actions: Array[Dictionary] = []
+## The blueprint under the cursor ("" none; BuildCatalog.DEMOLISH: taking apart),
+## where a drag began (NO_CELL: none).
+var _blueprint := ""
+var _drag_from := NO_CELL
+const NO_CELL := Vector2i(1 << 30, 1 << 30)
+## Q: the slot of the weapon last held, and the slot before it.
+var _weapon_slot := -1
+var _back_slot := 0
+## What the cursor points at, and what can be done there with what is held.
+var target := {}
+var actions: Array[Dictionary] = []
+var _cursor_aim := false
+var _hotbar_loaded := false
 var painter := MapPainter.new()
 var minimap := Minimap.new()
 var world_map := WorldMap.new()
@@ -66,17 +82,14 @@ var status := Label.new()
 ## The second HUD line: hosting address, frame rate, control hints.
 var _info := Label.new()
 var _accum := 0.0
-var _part := 0
-## The facing the chosen part will be built in (ADR-0013), turned with R.
+## The facing the blueprint will be built in (ADR-0013), turned with R.
 var _facing := 0
-var _material := 0
 var _note := ""
 var _opts := {}
 var _frames := 0
 var _demo_done := false
-## The chosen part under the mouse, as it would stand: green if in reach.
+## The blueprint under the mouse, as it would stand: green if in reach.
 var _ghost := Sprite2D.new()
-var _slots: Array[Panel] = []
 
 ## What the server's refusals mean, for people.
 const REASONS := {
@@ -90,7 +103,7 @@ const REASONS := {
 	"no_ammo": "нет стрел", "not_carried": "этого нет при себе", "not_a_weapon": "это не оружие",
 	"nothing_to_jump_from": "прыгать можно с этажа", "not_an_edge": "пол продолжается — идите",
 	"roof_below": "внизу крыша", "bad_request": "не получилось",
-	"no_tool": "нужна кирка", "natural": "это не разобрать — только выкопать", "not_buildable": "это не строится",
+	"no_tool": "этим этого не сделать", "nothing_to_gather": "здесь нечего добыть", "natural": "это не разобрать — только выкопать", "not_buildable": "это не строится",
 	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят",
 	"blocked_below": "внизу что-то построено", "too_deep": "глубже нельзя (настройка сервера)",
 }
@@ -150,7 +163,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	_ghost.z_index = 20
 	_ghost.visible = false
 	add_child(_ghost)
-	_build_hotbar(layer)
+	_build_tools(layer)
 	painter.setup(content, view, client)
 	minimap.setup(painter, client)
 	minimap.position = Vector2(480 - Minimap.SIZE - 4, 34)
@@ -165,8 +178,10 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	return ""
 
 
-## The cursor of the mode: corners of a square in peace, a crosshair in combat.
+## The cursor: a crosshair when a click would strike or shoot, else the
+## corners of a square.
 func _set_cursor() -> void:
+	var combat := _cursor_aim
 	var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
 	var ink := Color(0.1, 0.08, 0.07)
 	var light := Color(0.98, 0.94, 0.82) if not combat else Color(1.0, 0.45, 0.35)
@@ -198,7 +213,8 @@ func _exit_tree() -> void:
 func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [view, camera, hud, status, _info, _ghost, audio, minimap, world_map]:
+		for n: Node in [view, camera, hud, status, _info, _ghost, audio, minimap, world_map, hotbar, catalog,
+				inventory_panel, _menu]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -317,6 +333,12 @@ func _process(delta: float) -> void:
 			client.request({"type": "build", "location": client.location, "x": way.x + 1, "y": way.y + 1, "part": "base:torch"})
 	if _opts.has("open_map") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of the map
 		world_map.open()
+	if _opts.has("ui") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of a panel
+		match String(_opts["ui"]):
+			"catalog":
+				catalog.open(client.inventory())
+			"inventory":
+				inventory_panel.show_for(client.inventory(), hotbar.selected)
 	if _opts.get("demo") == "outside" and _frames == 40 and game:
 		game.world.move_character(client.character_id, Vector2i(128, 7 * 256 + 128))  # dev only: before the house
 	if _opts.get("demo") == "behind" and _frames == 40 and game:
@@ -331,6 +353,7 @@ func _process(delta: float) -> void:
 	view.update_view(_accum / tick, delta)
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
+	_update_target()
 	_update_hud()
 	_update_ghost()
 	_frames += 1
@@ -355,110 +378,240 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
+		if catalog.visible or inventory_panel.visible or _blueprint != "":
+			_close_tools()
+			return
 		menu_requested.emit()
 		return
-	if event is InputEventKey and event.pressed:
-		var k: int = (event as InputEventKey).keycode
-		var slot := 9 if k == KEY_0 else k - KEY_1  # keys 1..9, then 0
-		if slot >= 0 and slot < mini(PARTS.size(), 10) and (k == KEY_0 or (k >= KEY_1 and k <= KEY_9)):
-			_part = slot
-			_facing = 0
-		elif k == KEY_TAB and not (event as InputEventKey).echo:
-			combat = not combat
-			_set_cursor()
-		elif k == KEY_M:
-			world_map.open()
-		elif k == KEY_MINUS or k == KEY_KP_SUBTRACT:
-			minimap.zoom(1)  # farther out
-		elif k == KEY_EQUAL or k == KEY_KP_ADD:
-			minimap.zoom(-1)
-		elif k == KEY_R:
-			var turns := _turns()
-			if not turns.is_empty():
-				_facing = (_facing + 1) % turns.size()
-		elif k == KEY_J and client.state == "playing":
-			_sound_on_ok[client.request({"type": "jump", "dx": _last_dir.x, "dy": _last_dir.y})] = "climb"
-		elif k == KEY_Q:
-			_weapon = (_weapon + 1) % _weapons().size()
-		elif k == KEY_G and client.state == "playing":
-			_sound_on_ok[client.request({"type": "drop", "item": MATERIALS[_material], "count": 1})] = "drop"
-		elif k == KEY_E and client.state == "playing":
-			_use_nearest()
-		elif k == KEY_F and client.state == "playing":
-			_climb_nearest("down" if (event as InputEventKey).shift_pressed else "up")
-	elif event is InputEventMouseButton and event.pressed:
-		var b := event as InputEventMouseButton
-		if b.button_index == MOUSE_BUTTON_WHEEL_UP or b.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			var step := -1 if b.button_index == MOUSE_BUTTON_WHEEL_UP else 1
-			if combat:
-				_weapon = posmod(_weapon + step, _weapons().size())
-			elif b.shift_pressed:
-				_material = posmod(_material + step, MATERIALS.size())
-			else:
-				_part = posmod(_part + step, PARTS.size())
-				_facing = 0
-			return
-		if client.state != "playing":
-			return
-		if combat:
-			if b.button_index == MOUSE_BUTTON_LEFT:
-				_attack()
-			return
-		var op := {"location": client.location}
-		var cell: Vector2i
-		if b.button_index == MOUSE_BUTTON_LEFT:
-			cell = _build_cell()
-			op["type"] = "build"
-			op["part"] = PARTS[_part]
-			if not _turns().is_empty():
-				op["facing"] = _turns()[_facing % _turns().size()]
-		elif b.button_index == MOUSE_BUTTON_RIGHT:
-			cell = view.pick(get_global_mouse_position())  # what the mouse points at
-			op["type"] = "dismantle"
+	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo:
+		_key((event as InputEventKey).keycode, (event as InputEventKey).shift_pressed)
+	elif event is InputEventMouseButton:
+		_mouse(event as InputEventMouseButton)
+
+
+func _key(k: int, shift: bool) -> void:
+	var slot := k - KEY_1
+	if k >= KEY_1 and k <= KEY_9:
+		_choose_slot(slot)
+	elif k == KEY_Q:
+		_snatch_weapon()
+	elif k == KEY_I:
+		if inventory_panel.visible:
+			inventory_panel.visible = false
 		else:
-			return
-		op["x"] = cell.x
-		op["y"] = cell.y
-		client.request(op)
+			catalog.visible = false
+			inventory_panel.show_for(client.inventory(), hotbar.selected)
+	elif k == KEY_B:
+		if catalog.visible:
+			catalog.visible = false
+		else:
+			inventory_panel.visible = false
+			catalog.open(client.inventory())
+	elif k == KEY_M:
+		world_map.open()
+	elif k == KEY_MINUS or k == KEY_KP_SUBTRACT:
+		minimap.zoom(1)  # farther out
+	elif k == KEY_EQUAL or k == KEY_KP_ADD:
+		minimap.zoom(-1)
+	elif k == KEY_R and _blueprint != "":
+		var turns := _turns()
+		if not turns.is_empty():
+			_facing = (_facing + 1) % turns.size()
+	elif client.state != "playing":
+		return
+	elif k == KEY_J:
+		_sound_on_ok[client.request({"type": "jump", "dx": _last_dir.x, "dy": _last_dir.y})] = "climb"
+	elif k == KEY_G:
+		var held := hotbar.held(client.inventory())
+		if held != "":
+			_sound_on_ok[client.request({"type": "drop", "item": held, "count": 1})] = "drop"
+	elif k == KEY_E:
+		var q := Actions.quick(actions)
+		if not q.is_empty():
+			_do(q)
+		else:
+			_use_nearest()
+	elif k == KEY_F:
+		_climb_nearest("down" if shift else "up")
 
 
-## What one may fight with (ADR-0019): bare hands, then the weapons carried.
-func _weapons() -> Array:
-	var out := [""]
-	var carried: Array = client.inventory().keys()
-	carried.sort()
-	for id: String in carried:
-		if content.get_def(id).has("weapon"):
-			out.append(id)
-	return out
+func _mouse(b: InputEventMouseButton) -> void:
+	if b.button_index == MOUSE_BUTTON_WHEEL_UP or b.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		if b.pressed:
+			_choose_slot(posmod(hotbar.selected + (-1 if b.button_index == MOUSE_BUTTON_WHEEL_UP else 1), Hotbar.SLOTS))
+		return
+	if client.state != "playing":
+		return
+	if _blueprint != "":
+		if b.button_index == MOUSE_BUTTON_RIGHT and b.pressed:
+			_blueprint = ""  # the blueprint is let go
+			_drag_from = NO_CELL
+		elif b.button_index == MOUSE_BUTTON_LEFT and _blueprint == BuildCatalog.DEMOLISH and b.pressed:
+			var t := view.pick_target(get_global_mouse_position())
+			if t.get("kind") == "part":
+				var c: Vector2i = t["cell"]
+				client.request({"type": "dismantle", "location": client.location, "x": c.x, "y": c.y, "layer": t["layer"]})
+		elif b.button_index == MOUSE_BUTTON_LEFT and b.pressed:
+			_drag_from = _build_cell()
+		elif b.button_index == MOUSE_BUTTON_LEFT and not b.pressed and _drag_from != NO_CELL:
+			for cell in _drag_cells(_drag_from, _build_cell()):
+				var op := {"type": "build", "location": client.location, "x": cell.x, "y": cell.y, "part": _blueprint}
+				if not _turns().is_empty():
+					op["facing"] = _turns()[_facing % _turns().size()]
+				client.request(op)
+			_drag_from = NO_CELL
+		return
+	if not b.pressed:
+		return
+	if b.button_index == MOUSE_BUTTON_LEFT:
+		var p := Actions.primary(actions)
+		if not p.is_empty():
+			_do(p)
+	elif b.button_index == MOUSE_BUTTON_RIGHT:
+		_open_menu()
 
 
-## Space: a blow or a shot with the chosen weapon, toward the mouse.
-func _attack() -> void:
-	var weapons := _weapons()
-	var item: String = weapons[_weapon % weapons.size()]
-	var mouse := get_global_mouse_position()
-	var m := mouse * WorldView.UNITS_PER_PIXEL
-	var op := {"type": "attack", "item": item, "x": int(m.x), "y": int(m.y)}
-	# Aiming at one on another level (on a walkway, in the street below):
-	# the shot goes to that level (ADR-0019).
-	for id: String in client.entities:
-		var e: Dictionary = client.entities[id]
-		var dz := int(e.get("z", client.z)) - client.z
-		if dz == 0 or not e.get("kind") in ["character", "creature"]:
-			continue
-		var at := Vector2(int(e.get("x", 0)), int(e.get("y", 0))) / WorldView.UNITS_PER_PIXEL \
-			- Vector2(0, WorldView.COVER_LIFT * maxi(dz, 0) + 8)
-		if at.distance_to(mouse) < 10.0:
-			op["z"] = int(e["z"])
-			op["x"] = int(e["x"])
-			op["y"] = int(e["y"])
-			break
-	var rid := client.request(op)
-	_attacks[rid] = true
-	var ranged: bool = item != "" and content.get_def(item)["weapon"]["kind"] == "ranged"
-	if not ranged:
-		audio.play("swing", item, null)
+## Does an action: sends its request, or looks (inspect).
+func _do(a: Dictionary) -> void:
+	if not a.get("enabled", true):
+		_note = String(a.get("why", "нельзя"))
+		return
+	if a.get("local") == "inspect":
+		_note = Actions.describe(content, target)
+		return
+	var rid := client.request(a["request"])
+	match String(a["id"]):
+		"strike", "shoot", "swing":
+			_attacks[rid] = true
+			if a["id"] != "shoot":
+				audio.play("swing", String(a["request"].get("item", "")), null)
+			var item := String(a["request"].get("item", ""))
+			if item != "":
+				_weapon_slot = hotbar.items.find(item)
+		"pickup":
+			_sound_on_ok[rid] = "pickup"
+
+
+func _open_menu() -> void:
+	_menu.clear()
+	_menu_actions = actions.duplicate()
+	var title := Actions.describe(content, target)
+	if title != "":
+		_menu.add_separator(title)
+	for i in _menu_actions.size():
+		var a: Dictionary = _menu_actions[i]
+		var label := String(a["name"]) + ("  (E)" if a.get("quick", false) else "") + ("  (ЛКМ)" if a.get("primary", false) else "")
+		_menu.add_item(label, i)
+		if not a.get("enabled", true):
+			_menu.set_item_disabled(_menu.get_item_index(i), true)
+			_menu.set_item_tooltip(_menu.get_item_index(i), String(a.get("why", "")))
+	_menu.position = Vector2i(get_viewport().get_mouse_position() * get_viewport().get_screen_transform().get_scale())
+	_menu.reset_size()
+	_menu.popup()
+
+
+func _choose_slot(slot: int) -> void:
+	if slot != hotbar.selected:
+		_back_slot = hotbar.selected
+	hotbar.selected = slot
+	if inventory_panel.visible:
+		inventory_panel.show_for(client.inventory(), slot)
+
+
+## Q: the weapon into the hands at once (the last one used, else the first in
+## the slots); again, back to what was held before.
+func _snatch_weapon() -> void:
+	var held := hotbar.items[hotbar.selected]
+	if held != "" and content.get_def(held).has("weapon") and not content.get_def(held).has("tools"):
+		_choose_slot(_back_slot)
+		return
+	var slot := _weapon_slot
+	if slot < 0 or hotbar.items[slot] == "" or not content.get_def(hotbar.items[slot]).has("weapon"):
+		slot = -1
+		for i in Hotbar.SLOTS:
+			var id := hotbar.items[i]
+			if id != "" and content.get_def(id).has("weapon") and int(client.inventory().get(id, 0)) > 0:
+				slot = i
+				break
+	if slot >= 0:
+		_choose_slot(slot)
+		_weapon_slot = slot
+	else:
+		_note = "оружия в ячейках нет (I — положить)"
+
+
+## Cells a drag of the blueprint covers: an area for ceilings and roofs, a
+## straight row (along the longer side) for the rest.
+func _drag_cells(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var role := String(content.get_def(_blueprint).get("role", ""))
+	if role == "ceiling" or role == "roof":
+		for y in range(mini(a.y, b.y), maxi(a.y, b.y) + 1):
+			for x in range(mini(a.x, b.x), maxi(a.x, b.x) + 1):
+				out.append(Vector2i(x, y))
+	elif absi(b.x - a.x) >= absi(b.y - a.y):
+		for x in range(mini(a.x, b.x), maxi(a.x, b.x) + 1):
+			out.append(Vector2i(x, a.y))
+	else:
+		for y in range(mini(a.y, b.y), maxi(a.y, b.y) + 1):
+			out.append(Vector2i(a.x, y))
+	return out.slice(0, DRAG_MAX)
+
+
+func _close_tools() -> void:
+	catalog.visible = false
+	inventory_panel.visible = false
+	_blueprint = ""
+	_drag_from = NO_CELL
+
+
+## The quick slots, the catalogue, the things, the context menu.
+func _build_tools(layer: CanvasLayer) -> void:
+	hotbar.setup(content, view)
+	hotbar.position = Vector2(240 - Hotbar.SLOTS * 11, 228)
+	layer.add_child(hotbar)
+	catalog.setup(content, view)
+	catalog.position = Vector2(6, 40)
+	catalog.chosen.connect(func(part: String) -> void:
+		_blueprint = part
+		_facing = 0
+		catalog.visible = false)
+	layer.add_child(catalog)
+	inventory_panel.setup(content, view)
+	inventory_panel.position = Vector2(130, 50)
+	inventory_panel.chosen.connect(func(item: String) -> void:
+		hotbar.assign(item)
+		_save_hotbar()
+		inventory_panel.show_for(client.inventory(), hotbar.selected))
+	layer.add_child(inventory_panel)
+	_menu.theme = Art.theme()
+	_menu.id_pressed.connect(func(i: int) -> void:
+		if i >= 0 and i < _menu_actions.size():
+			_do(_menu_actions[i]))
+	add_child(_menu)
+
+
+## The character's quick slots as the player left them; for one seen first,
+## its weapons and tools.
+func _load_hotbar(inv: Dictionary) -> void:
+	_hotbar_loaded = true
+	var saved: Dictionary = settings.get_value("hotbars") if settings else {}
+	var mine: Array = saved.get(client.character_id, [])
+	if mine.is_empty():
+		hotbar.fill_from(inv)
+		_save_hotbar()
+		return
+	for i in mini(mine.size(), Hotbar.SLOTS):
+		hotbar.items[i] = String(mine[i])
+
+
+func _save_hotbar() -> void:
+	if settings == null or client.character_id == "":
+		return
+	var saved: Dictionary = (settings.get_value("hotbars") as Dictionary).duplicate()
+	saved[client.character_id] = Array(hotbar.items)
+	settings.set_value("hotbars", saved)
+	settings.save()
 
 
 ## E: the nearest thing on the ground within reach, else a door next to us.
@@ -525,7 +678,7 @@ func _ways_at(cell: Vector2i) -> Array:
 
 ## The facings the chosen part may be built in ([] if it does not turn).
 func _turns() -> Array:
-	return content.get_def(PARTS[_part]).get("rotations", [])
+	return content.get_def(_blueprint).get("rotations", []) if _blueprint != "" else []
 
 
 ## Where a click would build: the cell under the mouse, or for ceilings and
@@ -533,14 +686,14 @@ func _turns() -> Array:
 func _build_cell() -> Vector2i:
 	var m := get_global_mouse_position()
 	var cell := Vector2i(floori(m.x / WorldView.CELL), floori(m.y / WorldView.CELL))
-	if Terrain.layer_for_role(String(content.get_def(PARTS[_part]).get("role", ""))) != "structure":
+	if Terrain.layer_for_role(String(content.get_def(_blueprint).get("role", ""))) != "structure":
 		cell.y += 1
 	return cell
 
 
 func _update_ghost() -> void:
-	var v := content.visual_of(PARTS[_part])
-	if client.state != "playing" or v.is_empty() or _opts.has("screenshot") or combat or world_map.visible:
+	var v := content.visual_of(_blueprint) if _blueprint != "" and _blueprint != BuildCatalog.DEMOLISH else {}
+	if client.state != "playing" or v.is_empty() or _opts.has("screenshot") or world_map.visible:
 		_ghost.visible = false
 		return
 	var cell := _build_cell()
@@ -559,30 +712,6 @@ func _update_ghost() -> void:
 	var near := Vector2(client.position).distance_to(centre) <= ServerWorld.BUILD_REACH
 	_ghost.modulate = Color(0.6, 1.0, 0.6, 0.6) if near else Color(1.0, 0.45, 0.45, 0.5)
 	_ghost.visible = true
-
-
-func _build_hotbar(layer: CanvasLayer) -> void:
-	var bar := HBoxContainer.new()
-	bar.add_theme_constant_override("separation", 2)
-	for i in PARTS.size():
-		var slot := Panel.new()
-		slot.custom_minimum_size = Vector2(20, 20)
-		var icon := TextureRect.new()
-		var v := content.visual_of(PARTS[i])
-		if not v.is_empty():
-			var at := AtlasTexture.new()
-			at.atlas = view.texture(v["atlas_path"])
-			at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
-			icon.texture = at
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.position = Vector2(2, 2)
-		icon.size = Vector2(16, 16)
-		slot.add_child(icon)
-		bar.add_child(slot)
-		_slots.append(slot)
-	bar.position = Vector2(240 - PARTS.size() * 11, 228)
-	layer.add_child(bar)
 
 
 func _direction() -> Vector2i:
@@ -621,8 +750,7 @@ func _update_hud() -> void:
 	var inv := client.inventory()
 	var bag := PackedStringArray()
 	for id: String in MATERIALS:
-		var mark := ">" if id == MATERIALS[_material] else " "
-		bag.append("%s%s %d" % [mark, content.get_def(id).get("name", id), int(inv.get(id, 0))])
+		bag.append("%s %d" % [content.get_def(id).get("name", id), int(inv.get(id, 0))])
 	var level := "Поверхность  0" if client.z == 0 else ("Этаж  %+d" % client.z if client.z > 0 else "Глубина  −%d" % -client.z)
 	var clock := "День %d  %s     " % [Daylight.day_of(int(client.world_time)), Daylight.clock_text(client.world_time)] \
 		if client.has_time else ""
@@ -639,25 +767,55 @@ func _update_hud() -> void:
 	if settings.get_value("show_fps"):
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
-		info.append(("Tab — мирный режим, колесо — оружие, ЛКМ — удар/выстрел" if combat else
-			"Tab — бой, колесо — деталь, ЛКМ/ПКМ — строить/разобрать") + ", Ctrl — бег, J — прыжок, E — взять, F — лестница, M — карта, −/= — миникарта, Esc — меню")
+		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9/колесо — в руки, Q — оружие, I — вещи, B — стройка, M — карта, Esc — меню")
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:
 		note = "F — вверх, Shift+F — вниз   " + _note
-	var part_name := String(content.get_def(PARTS[_part]).get("name", ""))
-	if not _turns().is_empty():
-		part_name += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
-	var weapons := _weapons()
-	var weapon: String = weapons[_weapon % weapons.size()]
-	var arms := "руки" if weapon == "" else String(content.get_def(weapon).get("name", weapon))
-	if weapon != "" and content.get_def(weapon)["weapon"]["kind"] == "ranged":
-		arms += " (%d)" % int(inv.get(String(content.get_def(weapon)["weapon"]["ammo"]), 0))
-	if combat:
-		part_name = "БОЙ"
-	status.text = "%s  [%s] %s  (%d, %d)  [Q] %s  %s" % [state, str((_part + 1) % 10) if _part < 10 else "-", part_name, cell.x, cell.y, arms, note]
-	for i in _slots.size():
-		_slots[i].self_modulate = Color(1.6, 1.4, 0.8) if i == _part else Color(0.7, 0.7, 0.7)
+	if not _hotbar_loaded and client.character_id != "" and client.own.has("inventory"):
+		_load_hotbar(inv)
+	var held := hotbar.held(inv)
+	var hands := "в руках: " + (String(content.get_def(held).get("name", held)) if held != "" else "ничего")
+	if held != "" and content.get_def(held).get("weapon", {}).get("kind") == "ranged":
+		hands += " (%d)" % int(inv.get(String(content.get_def(held)["weapon"]["ammo"]), 0))
+	var doing := ""
+	if _blueprint == BuildCatalog.DEMOLISH:
+		doing = "РАЗБОРКА: ЛКМ — разобрать своё, ПКМ — отпустить"
+	elif _blueprint != "":
+		doing = "чертёж: " + String(content.get_def(_blueprint).get("name", _blueprint))
+		if not _turns().is_empty():
+			doing += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
+		var cost := content.structure_cost(_blueprint)
+		var n := _drag_cells(_drag_from, _build_cell()).size() if _drag_from != NO_CELL else 1
+		var parts := PackedStringArray()
+		for m: String in cost:
+			parts.append("%s %d/%d" % [String(content.get_def(m).get("name", m)).to_lower(), int(cost[m]) * n, int(inv.get(m, 0))])
+		doing += ("  ×%d" % n if n > 1 else "") + "  " + ", ".join(parts) + "  ПКМ — отпустить"
+	else:
+		var p := Actions.primary(actions)
+		var what := Actions.describe(content, target)
+		if not p.is_empty() and p["id"] != "inspect":
+			doing = "ЛКМ: %s%s" % [p["name"], " — " + what if what != "" else ""]
+		elif what != "":
+			doing = what
+	status.text = "%s  %s   %s   %s" % [state, hands, doing, note]
+	hotbar.refresh(inv)
+
+
+## What the cursor points at and what can be done there (each frame), and
+## the cursor that says so.
+func _update_target() -> void:
+	if client.state != "playing" or world_map.visible:
+		return
+	var mouse := get_global_mouse_position()
+	target = view.pick_target(mouse)
+	var aim := Vector2i(mouse * WorldView.UNITS_PER_PIXEL)
+	actions = Actions.of(content, client, view, hotbar.held(client.inventory()), target, aim)
+	var p := Actions.primary(actions)
+	var aiming := _blueprint == "" and String(p.get("id", "")) in ["strike", "shoot", "swing"]
+	if aiming != _cursor_aim:
+		_cursor_aim = aiming
+		_set_cursor()
 
 
 ## Where others on the local network reach this host (first private IPv4).

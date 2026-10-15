@@ -22,6 +22,8 @@ const DEFAULTS := {
 	"max_players": 8,
 	## The character played (file id in the character library).
 	"character": "",
+	## Quick slots of each character (ADR-0021): character id -> [item id, ...].
+	"hotbars": {},
 }
 
 ## Volume setting -> audio bus (default_bus_layout.tres).

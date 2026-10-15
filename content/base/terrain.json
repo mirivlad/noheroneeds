@@ -18,9 +18,9 @@
     {"id": "base:bush", "kind": "plant", "name": "Куст", "solid": true, "height": 0.7},
     {"id": "base:berry_bush", "kind": "plant", "name": "Ягодный куст", "solid": true, "height": 0.7},
     {"id": "base:reeds", "kind": "plant", "name": "Камыш"},
-    {"id": "base:oak", "kind": "plant", "name": "Дуб", "solid": true, "height": 2.0},
-    {"id": "base:birch", "kind": "plant", "name": "Берёза", "solid": true, "height": 2.0},
-    {"id": "base:spruce", "kind": "plant", "name": "Ель", "solid": true, "height": 2.0},
+    {"id": "base:oak", "kind": "plant", "name": "Дуб", "solid": true, "height": 2.0, "gather": {"tool": "chopping", "verb": "Рубить", "drops": {"base:log": 3}}},
+    {"id": "base:birch", "kind": "plant", "name": "Берёза", "solid": true, "height": 2.0, "gather": {"tool": "chopping", "verb": "Рубить", "drops": {"base:log": 2}}},
+    {"id": "base:spruce", "kind": "plant", "name": "Ель", "solid": true, "height": 2.0, "gather": {"tool": "chopping", "verb": "Рубить", "drops": {"base:log": 2}}},
 
     {
       "id": "base:surface", "kind": "generator", "name": "Поверхность",

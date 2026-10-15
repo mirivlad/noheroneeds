@@ -300,6 +300,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		_take_items(location, rows)
 		creatures.take_rows(location, rows)
 		creatures.on_chunk_ready(location, cx, cy, c)
+		_settle_stairs(location, cx, cy, c)
 		sync_loads += 1
 	return c
 
@@ -405,6 +406,7 @@ func poll_loaded() -> void:
 			_encoded[key] = [_chunk_rev.get(key, 0), r[6]]
 		if r[4]:
 			_dirty_chunks[key] = true
+		_settle_stairs(r[0], r[1], r[2], r[3])  # after its encoding is kept: a change makes it stale
 
 
 func inventory(owner: String) -> Inventory:
@@ -453,6 +455,15 @@ func enter(owner: String, c: PortableCharacter) -> String:
 		"name": data["name"], "appearance": shown_look(data)}
 	present[id]["health"] = int(place.get("health", combat.max_health_of(id)))
 	present[id]["deaths"] = int(place.get("deaths", 0))
+	# Its floor may have gone while it was away (the author, 16.10.2026: a
+	# floor is not kept for those away — a ceiling broken, stairs opened, old
+	# stairs brought to today's way): it is put on the floor below, down to
+	# the ground, unhurt.
+	var loc := String(place["location"])
+	var cell := Movement.cell_of(present[id]["pos"])
+	if levels.kind(loc) == Levels.BUILDING_LEVEL and _part_at(loc, cell.x, cell.y, "ground") == "":
+		present[id]["location"] = combat.location_under(cell, levels.z(loc) - 0.5)
+		present[id]["pos"] = cell * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
 	_dirty_world_characters[id] = true
 	return ""
 
@@ -1271,7 +1282,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
 	# The rules the client also shows its blueprints by (BuildRules).
-	var why := BuildRules.check(self, content, part, loc, x, y, _facing(def, r))
+	var why := BuildRules.check(self, content, part, loc, x, y, _facing(def, r), actor)
 	if why != "":
 		return {"ok": false, "reason": why}
 	var c := chunk(loc, at[1], at[2])
@@ -1289,6 +1300,20 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 		var below := _open_below(loc, Vector2i(x, y), part, true)
 		if below != "":
 			return {"ok": false, "reason": below}
+	# Stairs: the landing must be free to stand on, and a ceiling over them
+	# goes only as taking it apart would let it go (nothing over it, no
+	# stairs through it) — all asked before anything changes.
+	var opening := false
+	if role == "stairs":
+		var landing := _stairs_arrival(loc, x, y, _facing(def, r))
+		var up := _upper_of(loc, landing)
+		if up == "" or is_solid(up, landing.x, landing.y):
+			return {"ok": false, "reason": "landing_blocked"}
+		if c.get_cell("ceiling", at[3], at[4]) != "":
+			var above := _above(loc, c, at, "ceiling")
+			if above[0] != "":
+				return {"ok": false, "reason": above[0]}
+			opening = true
 	for id: String in costs:
 		inv.remove(id, int(costs[id]))
 	_touch_inventory(actor)
@@ -1299,9 +1324,16 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 		props["facing"] = _facing(def, r)
 	if role == "stairs":
 		# Where it leads is settled now, so the way down above, the climb and
-		# the ceiling it needs agree whatever is built around it later.
+		# the landing it needs agree whatever is built around it later.
 		var arrive := _stairs_arrival(loc, x, y, _facing(def, r))
 		props["arrive"] = [arrive.x, arrive.y]
+		if opening:
+			# The ceiling over it is taken apart by its builder (checked above):
+			# its cost comes back, the floor it made above goes — an opening.
+			var ceiling := c.get_cell("ceiling", at[3], at[4])
+			for id: String in content.structure_cost(ceiling):
+				inv.add(id, int(content.structure_cost(ceiling)[id]))
+			_take_down(loc, c, at, "ceiling", ceiling, _above(loc, c, at, "ceiling")[1])
 	var others: Array = []
 	if role == "ceiling" and not on_level:
 		# Ceilings joined side by side make one building; joining two merges them.
@@ -1341,7 +1373,18 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 		_changed(chunk_key(upper, at[1], at[2]))
 		for other: String in others:
 			_merge_buildings(building, other)
+	if opening:
+		return {"ok": true, "opened": true}
 	return {"ok": true, "level": upper} if upper != "" else {"ok": true}
+
+
+## The level above `loc` that a cell `cell` of it is a floor of (its ceiling's
+## building's next level); "" if none.
+func _upper_of(loc: String, cell: Vector2i) -> String:
+	if cell == NO_CELL:
+		return ""
+	var building := levels.building(loc) if loc != SURFACE else _ceiling_building(loc, cell.x, cell.y)
+	return levels.level(building, levels.z(loc) + 1) if building != "" else ""
 
 
 ## Props of a ceiling or roof are kept under the layer's name in the cell props,
@@ -1517,13 +1560,13 @@ func _occupied(location: String, x: int, y: int) -> bool:
 	for id: String in items_in_chunk(location, cx, cy):
 		if Movement.cell_of(Vector2i(items[id]["x"], items[id]["y"])) == Vector2i(x, y):
 			return true
-	return _someone_stands_on(location, x, y)
+	return _someone_stands_on(location, x, y)  # one away is let down when back (enter)
 
 
 ## Up or down a staircase next to the character (ADR-0007, ADR-0013): up
-## from a cell with stairs to where they lead on the level above (that cell
-## itself, or the one their top faces); down from where stairs below lead to,
-## onto those stairs.
+## from a cell with stairs onto their landing on the level above (stairs of
+## old not yet brought to today's way: their own cell); down from the
+## opening over stairs below, or from their landing, onto those stairs.
 ## Off the edge of a level (ADR-0019, GDD scenario 12): into the next cell,
 ## {"dx", "dy"} from where one stands, down to the first floor under it (the
 ## street from a walkway, a lower floor of a building), hurt by the height
@@ -1580,12 +1623,20 @@ func _climb(actor: String, r: Dictionary) -> Dictionary:
 	var dir := rs(r, "dir")
 	if dir != "down" and _is_stairs(_part_at(loc, x, y, "structure")):
 		var arrive := _arrival_of(loc, x, y)
-		var building := levels.building(loc) if loc != SURFACE else _ceiling_building(loc, arrive.x, arrive.y)
-		dest = levels.level(building, levels.z(loc) + 1)
+		dest = _upper_of(loc, arrive)
 		to = arrive
+		if dest != "" and is_solid(dest, to.x, to.y):
+			return {"ok": false, "reason": "landing_blocked"}  # something built on the landing since
 	if dest == "" and dir != "up" and loc != SURFACE:
+		# Down: the stairs under the opening asked for, or those leading up
+		# onto the landing asked for.
 		var below := levels.level(levels.building(loc), levels.z(loc) - 1)
-		var from := _stairs_leading_to(below, Vector2i(x, y)) if below != "" else NO_CELL
+		var from := NO_CELL
+		if below != "" and _is_stairs(_part_at(below, x, y, "structure")) \
+				and _upper_of(below, _arrival_of(below, x, y)) == loc:
+			from = Vector2i(x, y)
+		elif below != "":
+			from = _stairs_leading_to(below, Vector2i(x, y))
 		if from != NO_CELL:
 			dest = below
 			to = from
@@ -1668,9 +1719,7 @@ func _facing(def: Dictionary, r: Dictionary) -> String:
 
 
 ## Where stairs at (x, y) facing `facing` would lead on the level above: the
-## cell itself if it is ceiled over (stairs inside a building), else the cell
-## their top faces if that one is (onto a wall, a gallery, the next room);
-## NO_CELL if neither.
+## landing their top faces (BuildRules.stairs_arrival); NO_CELL if none.
 func _stairs_arrival(loc: String, x: int, y: int, facing: String) -> Vector2i:
 	return BuildRules.stairs_arrival(self, loc, x, y, facing)
 
@@ -1705,19 +1754,21 @@ func _props_at(loc: String, x: int, y: int) -> Dictionary:
 	return chunk(loc, cx, cy).get_props(x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
 
 
-## Marks (or unmarks) the way down on the level above, where the stairs at
-## (x, y) lead, so players upstairs can see where to go down.
+## Marks (or unmarks) the way down on the level above: the opening over the
+## stairs at (x, y), where they are seen coming up (for stairs of old, their
+## own cell, which is also where they lead).
 func _mark_stairs_down(location: String, x: int, y: int, on: bool) -> void:
-	var arrive := _arrival_of(location, x, y)
-	var building := levels.building(location) if location != SURFACE else _ceiling_building(location, arrive.x, arrive.y)
-	var upper := levels.level(building, levels.z(location) + 1)
+	_mark_way_down(_upper_of(location, _arrival_of(location, x, y)), Vector2i(x, y), on)
+
+
+func _mark_way_down(upper: String, cell: Vector2i, on: bool) -> void:
 	if upper == "":
 		return
-	var cx := floori(float(arrive.x) / Chunk.SIZE)
-	var cy := floori(float(arrive.y) / Chunk.SIZE)
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
 	var uc := chunk(upper, cx, cy)
-	var lx := arrive.x - cx * Chunk.SIZE
-	var ly := arrive.y - cy * Chunk.SIZE
+	var lx := cell.x - cx * Chunk.SIZE
+	var ly := cell.y - cy * Chunk.SIZE
 	var props := uc.get_props(lx, ly).duplicate()
 	if on:
 		props["stairs_down"] = true
@@ -1725,6 +1776,67 @@ func _mark_stairs_down(location: String, x: int, y: int, on: bool) -> void:
 		props.erase("stairs_down")
 	uc.set_props(lx, ly, props)
 	_changed(chunk_key(upper, cx, cy))
+
+
+## Stairs built before 16.10.2026 came up through a ceiling over themselves,
+## onto their own cell (or, ADR-0013, onto the next cell, marked there). As
+## their chunk comes into memory they are brought to today's way where that
+## is safe: the ceiling over them is taken away (its cost to its builder),
+## they lead onto the floor their top faces, the way down is marked over
+## them. Not safe — no floor there to land on, something or someone in the
+## world on the cell above, other stairs leading onto it — they stay as they
+## were and still work so (a compatibility kept until they are rebuilt);
+## tried again next time. One away who stood there is let down by enter().
+func _settle_stairs(location: String, cx: int, cy: int, c: Chunk) -> void:
+	if location != SURFACE and levels.kind(location) != Levels.BUILDING_LEVEL:
+		return
+	for i: int in c.props.keys():
+		var lx := i % Chunk.SIZE
+		var ly := i / Chunk.SIZE
+		if not _is_stairs(c.get_cell("structure", lx, ly)):
+			continue
+		var at := [location, cx, cy, lx, ly]
+		var own := Vector2i(cx * Chunk.SIZE + lx, cy * Chunk.SIZE + ly)
+		var arrive := _arrival_of(location, own.x, own.y)
+		var top := own + (ContentRegistry.FACINGS.get(String(c.get_props(lx, ly).get("facing", "n")), Vector2i(0, -1)) as Vector2i)
+		var covered := c.get_cell("ceiling", lx, ly) != ""
+		if arrive != own and not covered:
+			# Today's way, or ADR-0013's: the mark of the way down goes over them.
+			var landing := _upper_of(location, arrive)
+			if landing != "" and bool(_props_at(landing, arrive.x, arrive.y).get("stairs_down", false)) \
+					and _stairs_leading_to(location, arrive) == own:
+				_mark_way_down(landing, arrive, false)
+				_mark_way_down(landing, own, true)
+			continue
+		if not covered or arrive != own and arrive != top:
+			continue
+		var up := _upper_of(location, top)
+		if up == "" or is_solid(up, top.x, top.y) or _part_at(location, top.x, top.y, "ceiling") == "":
+			continue  # nowhere to land beside: as it was
+		if up != "" and _occupied(up, own.x, own.y):
+			continue  # something over it: not taken away under it
+		var others := false
+		for d: Vector2i in [Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]:
+			var o := own + d
+			if _is_stairs(_part_at(location, o.x, o.y, "structure")) and _arrival_of(location, o.x, o.y) == own:
+				others = true
+		if others:
+			continue
+		var ceiling := c.get_cell("ceiling", lx, ly)
+		var builder := String((c.get_props(lx, ly).get("ceiling", {}) as Dictionary).get("owner", ""))
+		_mark_way_down(_upper_of(location, own), own, false)
+		if arrive == top:
+			_mark_way_down(up, top, false)  # ADR-0013's mark on its landing
+		var props := c.get_props(lx, ly).duplicate()
+		props["arrive"] = [top.x, top.y]
+		c.set_props(lx, ly, props)
+		_take_down(location, c, at, "ceiling", ceiling, up)
+		if builder != "" and content.has(ceiling):
+			var cost := content.structure_cost(ceiling)
+			for id: String in cost:
+				inventory(builder).add(id, int(cost[id]))
+			_touch_inventory(builder)
+		_mark_way_down(up, own, true)
 
 
 func _is_stairs(part: String) -> bool:

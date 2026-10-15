@@ -53,6 +53,18 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 		var friend := client.friends().has(target["id"])
 		out.append({"id": "friend", "name": "Убрать из друзей" if friend else "Добавить в друзья",
 			"request": {"type": "unfriend" if friend else "befriend", "character": target["id"]}})
+	# On a building level a cell without floor is a drop (ADR-0007): an
+	# opening over stairs is gone down, any opening or edge next to one jumped
+	# down through — no tools, the fall hurts by its height.
+	if kind == "ground" and String(target.get("id", "")) == "" and client.z > 0:
+		var d := cell - Movement.cell_of(client.position)
+		var stairs := bool(view.props_at(cell).get("stairs_down", false))
+		if stairs:
+			out.append({"id": "climb", "name": "Спуститься", "quick": true,
+				"request": {"type": "climb", "location": loc, "x": cell.x, "y": cell.y, "dir": "down"}})
+		out.append({"id": "jump", "name": "Спрыгнуть вниз", "quick": not stairs,
+			"enabled": absi(d.x) <= 1 and absi(d.y) <= 1 and d != Vector2i.ZERO, "why": "подойдите к краю",
+			"request": {"type": "jump", "dx": d.x, "dy": d.y}})
 	if kind == "entity" and entity.get("kind") == "item":
 		out.append({"id": "pickup", "name": "Подобрать", "request": {"type": "pickup", "entity": target["id"]},
 			"quick": true})
@@ -155,6 +167,8 @@ static func describe(content: ContentRegistry, target: Dictionary) -> String:
 				name += " (здоровье %d/%d)" % [int(e.get("health", 0)), int(e["max_health"])]
 			return name
 		"part", "ground":
+			if target.get("kind") == "ground" and String(target.get("id", "")) == "":
+				return "Пустота: проём или край — можно спрыгнуть"
 			var def := content.get_def(String(target.get("id", "")))
 			var name := String(def.get("name", target.get("id", "")))
 			var top := int(def.get("durability", 0))

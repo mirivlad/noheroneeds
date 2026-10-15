@@ -174,5 +174,8 @@ static func describe(content: ContentRegistry, target: Dictionary) -> String:
 			var top := int(def.get("durability", 0))
 			if target.get("kind") == "part" and top > 0 and target.has("damage"):
 				name += " (прочность %d/%d)" % [top - int(target["damage"]), top]
+			var work := int(def.get("gather", {}).get("work", 1))
+			if target.get("kind") == "part" and work > 1 and int(target.get("work", 0)) > 0:
+				name += " (%s: %d из %d)" % [String(def["gather"]["verb"]).to_lower(), int(target["work"]), work]
 			return name
 	return ""

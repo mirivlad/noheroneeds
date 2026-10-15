@@ -35,10 +35,12 @@ var _held: Sprite2D = null
 ## whether the thing is behind the body (seen from behind).
 const HAND := [Vector2(6, -12), Vector2(6, -12), Vector2(4, -12), Vector2(3, -13), Vector2(-5, -13)]
 const HAND_BEHIND := [false, false, false, true, true]
-## A blow (ADR-0019, ADR-0021), drawn by moving what is held and the body,
-## not by frames of the sheets: "chop" (an axe, a pick, a club: raised and
-## brought down), "thrust" (a spear: pushed out), "draw" (a bow: pulled and
-## let go), "lunge" (empty hands, beasts: the body leans in).
+## A blow (ADR-0019, ADR-0021), drawn by moving what is held and the whole
+## body, with no frames of its own on the sheets: the body leans back and
+## rises as the blow is raised, then leans into it, crouching, its feet in a
+## stride (a walk frame), and comes back. "chop" (an axe, a pick, a club:
+## raised and brought down), "thrust" (a spear: pushed out, no wind-up),
+## "draw" (a bow: pulled back and let go), "lunge" (empty hands, beasts).
 const SWING_S := 0.3
 ## Where the grip is below the held thing's middle (pixels): it turns round it.
 const GRIP := Vector2(0, 5)
@@ -89,6 +91,9 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 	var a := _anim("walk" if _walk > 0.0 else "idle")
 	var t := _walk if _walk > 0.0 else _idle
 	var f := int(t * float(a["fps"])) % int(a["frames"])
+	if _swing_t >= 0.25 and _swing_t < 0.7 and _walk <= 0.0:
+		a = _anim("walk")  # the stride of the blow
+		f = mini(1, int(a["frames"]) - 1)
 	if _walk > 0.0 and f != _last_walk_frame and (f == 0 or f * 2 == int(a["frames"])):
 		stepped.emit()  # the two contact frames of a walk cycle
 	_last_walk_frame = f if _walk > 0.0 else -1
@@ -117,9 +122,12 @@ func _swing_step(delta: float) -> Vector2:
 	if _swing_t >= 1.0:
 		_swing_t = -1.0
 		_place_held()
+		skew = 0.0
+		scale = Vector2.ONE
 		return Vector2.ZERO
 	var t := _swing_t
 	var lean := sin(PI * t)
+	_lean_body(t)
 	if _held == null:
 		return _swing_dir * lean * (3.0 if _swing_kind == "lunge" or _swing_kind == "chop" else 1.0)
 	_place_held()
@@ -142,6 +150,28 @@ func _swing_step(delta: float) -> Vector2:
 			_held.position = rest - _swing_dir * 2.0 * (lean if t < 0.6 else 0.0)
 			return Vector2.ZERO
 	return _swing_dir * 3.0 * lean
+
+
+## The body's part of a blow: how far it leans (skew, round its feet:
+## toward the blow's side) and stretches or crouches (scale), by the moment
+## of the blow: raised (back, up), struck (forward, down), back to rest.
+const LEAN := 0.22
+func _lean_body(t: float) -> void:
+	var back := 0.0 if _swing_kind == "thrust" else (-0.6 if _swing_kind != "draw" else -0.4)
+	var into := 0.0 if _swing_kind == "draw" else 1.0
+	var k: float
+	if t < 0.25:
+		k = back * t / 0.25
+	elif t < 0.45:
+		k = lerpf(back, into, (t - 0.25) / 0.2)
+	else:
+		k = lerpf(into, 0.0, (t - 0.45) / 0.55)
+	skew = LEAN * k * _swing_dir.x
+	# Raised: a little taller; struck: lower and wider (into the blow); a
+	# blow straight up or down the screen shows mostly as this.
+	var up := -k if k < 0.0 else 0.0
+	var down := k if k > 0.0 else 0.0
+	scale = Vector2(1.0 + 0.05 * down, 1.0 + 0.06 * up - 0.08 * down)
 
 
 ## Turns to look along v without walking (menus, previews).

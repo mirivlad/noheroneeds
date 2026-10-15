@@ -414,6 +414,10 @@ func _check_gather(id: String, d: Dictionary) -> void:
 	g["tool"] = String(g.get("tool", ""))
 	g["verb"] = String(g.get("verb", "Добыть"))
 	_check_amounts(id, "gather drops", g.get("drops", {}), false)
+	# Blows of the tool it takes (a big tree more than a thin one); 1: at once.
+	g["work"] = int(g.get("work", 1))
+	if g["work"] < 1:
+		errors.append("%s: gather work is the blows it takes, at least 1" % id)
 
 
 ## The underground generator: its floor, rock, pool water, the parts at the

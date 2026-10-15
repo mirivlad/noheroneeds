@@ -41,6 +41,20 @@ var _tint := CanvasModulate.new()
 var _lights: Array[PointLight2D] = []
 static var _glow: GradientTexture2D
 var _chunk_nodes := {}
+## Chunk key -> {cell: [Sprite2D]}: the tall things of a drawn chunk by the
+## cell they stand on, so what is near a point is found without looking at
+## them all (fading, picking).
+var _cell_sprites := {}
+## Tops of rock deep in the mass (rock north, south and to both northern
+## corners): drawn as tiles, not as sprites — nothing ever goes in front of or
+## behind them, and a cave is mostly such rock (thousands of sprites).
+var _rock_tops := TileMapLayer.new()
+## visual id -> [source id, first atlas cell] of its tops.
+var _rock_top_tiles := {}
+## Chunks drawn are those within this many chunks of the player's (and one
+## more is kept before being let go): sprites far away cost every frame.
+const DRAW_RADIUS := 2
+var _drawn_around := Vector2i(1 << 30, 0)
 var _characters := {}
 ## visual id -> [source id, first atlas cell Vector2i, variants]
 var _tiles := {}
@@ -93,6 +107,18 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	ms.create_tile(Vector2i.ZERO)
 	_missing_source = ts.add_source(ms)
 	_setup_edges(ts)
+	for target: String in content.visuals:
+		var v: Dictionary = content.visuals[target]
+		if v["mode"] != "tall" or v.get("autotile") != "rock":
+			continue
+		var src := TileSetAtlasSource.new()
+		src.texture = texture(v["atlas_path"])
+		src.texture_region_size = Vector2i(CELL, CELL)
+		var first := Vector2i(int(v["rect"][0]) / CELL, int(v["rect"][1]) / CELL)
+		for i in int(v["variants"]):
+			src.create_tile(first + Vector2i(i, 0))
+		_rock_top_tiles[target] = [ts.add_source(src), first]
+	_rock_tops.tile_set = ts
 	_ground.tile_set = ts
 	_cover.tile_set = ts
 	_below.tile_set = ts
@@ -110,6 +136,8 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	for id: String in lapping:
 		add_child(_edges[id][5])  # higher grounds drawn later, over lower ones
 	add_child(_cover)
+	_rock_tops.z_index = -1
+	add_child(_rock_tops)
 	add_child(_sorted)
 	add_child(_covers)
 
@@ -275,6 +303,7 @@ func update_view(alpha: float, delta: float) -> void:
 		keys = client.chunks.keys()
 	for key: String in keys:
 		_pending[key] = true
+	_keep_near()
 	_paint_pending()
 	_update_light()
 	_update_characters(alpha, delta)
@@ -285,7 +314,7 @@ func update_view(alpha: float, delta: float) -> void:
 func _notification(what: int) -> void:
 	# Layers made up front but never added (setup() not called) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [_ground, _cover, _below, _covers, _sorted, _tint]:
+		for n: Node in [_ground, _cover, _below, _covers, _sorted, _tint, _rock_tops]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -338,8 +367,43 @@ const PAINT_BUDGET_USEC := 6000
 const SIGHT := Vector2(640, 360)
 
 
+## Nodes drawn for the chunks of the own location (dev measurements).
+func sprite_count() -> int:
+	var n := 0
+	for holder: Node in _chunk_nodes.values():
+		n += holder.get_child_count()
+	return n
+
+
 func pending_chunks() -> int:
 	return _pending.size()
+
+
+## The player's chunk changed: chunks come into the drawing radius (painted)
+## or leave it (their sprites let go; ground tiles stay, they cost little).
+func _keep_near() -> void:
+	if not client.has_position:
+		return
+	var at := Movement.cell_of(client.position)
+	var mine := Vector2i(floori(at.x / float(Chunk.SIZE)), floori(at.y / float(Chunk.SIZE)))
+	if mine == _drawn_around:
+		return
+	_drawn_around = mine
+	for key: String in _chunk_nodes.keys():
+		if not _near(key, DRAW_RADIUS + 1):
+			(_chunk_nodes[key] as Node).queue_free()
+			_chunk_nodes.erase(key)
+			_cell_sprites.erase(key)
+	for key: String in client.chunks:
+		if _near(key, DRAW_RADIUS) and not _chunk_nodes.has(key) and key.begins_with(client.location + "|"):
+			_pending[key] = true
+
+
+func _near(key: String, radius: int) -> bool:
+	if _drawn_around.x == 1 << 30:
+		return true
+	var p := key.split("|")
+	return absi(int(p[1]) - _drawn_around.x) <= radius and absi(int(p[2]) - _drawn_around.y) <= radius
 
 
 func _paint_pending() -> void:
@@ -376,6 +440,9 @@ func _clear() -> void:
 	for key: String in _chunk_nodes:
 		(_chunk_nodes[key] as Node).queue_free()
 	_chunk_nodes.clear()
+	_cell_sprites.clear()
+	_rock_tops.clear()
+	_drawn_around = Vector2i(1 << 30, 0)
 	for cell: Vector2i in _cover_sprites:
 		(_cover_sprites[cell] as Node).queue_free()
 	_cover_sprites.clear()
@@ -398,6 +465,13 @@ func _paint(key: String, spread := true) -> void:
 		if p[0] == Levels.SURFACE:
 			_paint_below(c, int(p[1]) * Chunk.SIZE, int(p[2]) * Chunk.SIZE)
 		return
+	if not _near(key, DRAW_RADIUS):
+		var old: Node = _chunk_nodes.get(key)
+		if old:
+			old.queue_free()
+			_chunk_nodes.erase(key)
+			_cell_sprites.erase(key)
+		return  # drawn when the player comes near (_keep_near)
 	var ox := int(p[1]) * Chunk.SIZE
 	var oy := int(p[2]) * Chunk.SIZE
 	var holder: Node2D = _chunk_nodes.get(key)
@@ -407,6 +481,8 @@ func _paint(key: String, spread := true) -> void:
 	holder.y_sort_enabled = true
 	_sorted.add_child(holder)
 	_chunk_nodes[key] = holder
+	var by_cell := {}
+	_cell_sprites[key] = by_cell
 	for ly in Chunk.SIZE:
 		for lx in Chunk.SIZE:
 			var cell := Vector2i(ox + lx, oy + ly)
@@ -414,6 +490,7 @@ func _paint(key: String, spread := true) -> void:
 			_cover.erase_cell(cell)
 			_set_cover(cell, c.get_cell("roof", lx, ly) if c.get_cell("roof", lx, ly) != "" else c.get_cell("ceiling", lx, ly),
 				"roof" if c.get_cell("roof", lx, ly) != "" else "ceiling")
+			_rock_tops.erase_cell(cell + Vector2i(0, -1))
 			for layer in ["cover", "structure"]:
 				var id := c.get_cell(layer, lx, ly)
 				if id == "":
@@ -422,6 +499,10 @@ func _paint(key: String, spread := true) -> void:
 				if v.get("mode") == "tall":
 					var state := "open" if c.get_props(lx, ly).get("open", false) else ""
 					var variant := _join_mask(p[0], cell, String(v.get("autotile", ""))) if v.has("autotile") else 0
+					if layer == "structure" and _rock_top_tiles.has(id) and _deep_in_rock(p[0], cell):
+						var t: Array = _rock_top_tiles[id]
+						_rock_tops.set_cell(cell + Vector2i(0, -1), t[0], (t[1] as Vector2i) + Vector2i(variant, 0))
+						continue
 					var facing := String(c.get_props(lx, ly).get("facing", ""))
 					var s := _tall_sprite(v, cell, state, variant, facing)
 					s.set_meta("cell", cell)
@@ -431,7 +512,12 @@ func _paint(key: String, spread := true) -> void:
 					if damage > 0:  # worn: darker as it nears breaking (ADR-0021)
 						var ratio := clampf(float(damage) / maxf(1.0, float(content.get_def(id).get("durability", 1))), 0.0, 1.0)
 						s.self_modulate = Color.WHITE.lerp(Color(0.5, 0.45, 0.45), ratio)
+					var work := int((c.get_props(lx, ly).get(layer, {}) as Dictionary).get("work", 0)) if layer != "structure" else 0
+					if work > 0:  # being felled: paler as it nears falling
+						var of := maxf(1.0, float(content.get_def(id).get("gather", {}).get("work", 1)))
+						s.self_modulate = Color.WHITE.lerp(Color(0.75, 0.62, 0.5), clampf(work / of, 0.0, 1.0))
 					holder.add_child(s)
+					(by_cell.get_or_add(cell, []) as Array).append(s)
 					var light: Dictionary = content.get_def(id).get("light", {})
 					if not light.is_empty():
 						holder.add_child(_light_for(light, cell))
@@ -573,6 +659,28 @@ func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0, faci
 	return s
 
 
+## Rock with rock north, south and at both northern corners: nobody can stand
+## where its top is drawn or just behind it, nor in front of its face.
+func _deep_in_rock(location: String, cell: Vector2i) -> bool:
+	for d: Vector2i in [Vector2i(0, -1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(0, 1)]:
+		var id := _cell_part(location, cell + d)
+		if id == "" or content.visual_of(id).get("autotile", "") != "rock":
+			return false
+	return true
+
+
+## Tall things standing on cells within `left`..`right` columns and `up`..
+## `down` rows of `around` (drawn chunks only).
+func _sprites_near(around: Vector2i, left: int, right: int, up: int, down: int) -> Array:
+	var out := []
+	for y in range(around.y - up, around.y + down + 1):
+		for x in range(around.x - left, around.x + right + 1):
+			var key := ServerWorld.chunk_key(client.location, floori(x / float(Chunk.SIZE)), floori(y / float(Chunk.SIZE)))
+			var by_cell: Dictionary = _cell_sprites.get(key, {})
+			out.append_array(by_cell.get(Vector2i(x, y), []))
+	return out
+
+
 ## Which neighbours (N=1, E=2, S=4, W=8) are drawn with the same join group.
 func _join_mask(location: String, cell: Vector2i, group: String) -> int:
 	var mask := 0
@@ -644,17 +752,12 @@ func _fade_occluders() -> void:
 		if is_instance_valid(s):
 			s.modulate.a = 1.0
 	_faded.clear()
-	var mc := Vector2i(floori(me.position.x / CELL / Chunk.SIZE), floori(me.position.y / CELL / Chunk.SIZE))
-	for dy in [-1, 0, 1]:
-		for dx in [-1, 0, 1]:
-			var holder: Node2D = _chunk_nodes.get(ServerWorld.chunk_key(client.location, mc.x + dx, mc.y + dy))
-			if holder == null:
-				continue
-			for n: Node in holder.get_children():
-				var s := n as Sprite2D  # lights stand among the sprites
-				if s and s.position.y > me.position.y and _sprite_rect(s).intersects(body):
-					s.modulate.a = FADED
-					_faded.append(s)
+	# What stands in front (south) of the player, up to a tall tree's size away.
+	var at := Vector2i(floori(me.position.x / CELL), floori((me.position.y - 1) / CELL))
+	for s: Sprite2D in _sprites_near(at, 4, 4, 0, 6):
+		if is_instance_valid(s) and s.position.y > me.position.y and _sprite_rect(s).intersects(body):
+			s.modulate.a = FADED
+			_faded.append(s)
 	for cell: Vector2i in _cover_sprites:
 		var cs: Sprite2D = _cover_sprites[cell]
 		if cs.visible and (cell.y + 1) * CELL > me.position.y and _sprite_rect(cs).intersects(body):
@@ -697,21 +800,26 @@ func pick_target(point: Vector2) -> Dictionary:
 			return {"kind": "part", "layer": cs.get_meta("layer"), "id": cs.get_meta("id"), "cell": cell,
 				"location": client.location}
 	best_y = -INF
-	for holder: Node2D in _chunk_nodes.values():
-		for n: Node in holder.get_children():
-			var s := n as Sprite2D
-			if s and s.has_meta("layer") and s.position.y > best_y and _sprite_rect(s).has_point(point):
-				best = {"kind": "part", "layer": s.get_meta("layer"), "id": s.get_meta("id"), "cell": s.get_meta("cell"),
-					"location": client.location}
-				var at_cell := props_at(s.get_meta("cell"))
-				var worn: Dictionary = at_cell if s.get_meta("layer") == "structure" else at_cell.get(s.get_meta("layer"), {})
-				var damage := int(worn.get("damage", 0))
-				if damage > 0:
-					best["damage"] = damage
-				best_y = s.position.y
+	var under := Vector2i(floori(point.x / CELL), floori(point.y / CELL))
+	for s: Sprite2D in _sprites_near(under, 4, 4, 0, 6):
+		if is_instance_valid(s) and s.has_meta("layer") and s.position.y > best_y and _sprite_rect(s).has_point(point):
+			best = {"kind": "part", "layer": s.get_meta("layer"), "id": s.get_meta("id"), "cell": s.get_meta("cell"),
+				"location": client.location}
+			var at_cell := props_at(s.get_meta("cell"))
+			var worn: Dictionary = at_cell if s.get_meta("layer") == "structure" else at_cell.get(s.get_meta("layer"), {})
+			var damage := int(worn.get("damage", 0))
+			if damage > 0:
+				best["damage"] = damage
+			if int(worn.get("work", 0)) > 0:
+				best["work"] = int(worn["work"])
+			best_y = s.position.y
 	if not best.is_empty():
 		return best
-	var cell := Vector2i(floori(point.x / CELL), floori(point.y / CELL))
+	var cell := under
+	if _rock_tops.get_cell_source_id(cell) != -1:  # the top of rock deep in the mass, drawn as a tile
+		var rock := cell + Vector2i(0, 1)
+		return {"kind": "part", "layer": "structure", "id": _cell_layer(rock, "structure"), "cell": rock,
+			"location": client.location}
 	var flat := _cell_layer(cell, "cover")
 	if flat != "":
 		return {"kind": "part", "layer": "cover", "id": flat, "cell": cell, "location": client.location}
@@ -740,12 +848,10 @@ func pick(point: Vector2) -> Vector2i:
 			return cell
 	var best := Vector2i(floori(point.x / CELL), floori(point.y / CELL))
 	var best_y := -INF
-	for holder: Node2D in _chunk_nodes.values():
-		for n: Node in holder.get_children():
-			var s := n as Sprite2D
-			if s and s.has_meta("cell") and s.position.y > best_y and _sprite_rect(s).has_point(point):
-				best = s.get_meta("cell")
-				best_y = s.position.y
+	for s: Sprite2D in _sprites_near(best, 4, 4, 0, 6):
+		if is_instance_valid(s) and s.has_meta("cell") and s.position.y > best_y and _sprite_rect(s).has_point(point):
+			best = s.get_meta("cell")
+			best_y = s.position.y
 	return best
 
 

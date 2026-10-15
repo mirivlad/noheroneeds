@@ -102,7 +102,9 @@ func test_actions_without_a_name_use_the_hands() -> void:
 	var a := _player()
 	w.grant(a, "base:axe", 1)
 	_req(a, {"type": "hold", "item": "base:axe"})
-	check(_fell(a).get("ok", false), "felled with what is held")
+	check(_fell(a).get("ok", false), "a blow at the tree with what is held")
+	w.tick += 40
+	w.combat.step(w.tick)
 	w.grant(a, "base:plank", 10)
 	_req(a, {"type": "build", "location": "surface", "x": 3, "y": 3, "part": "base:wood_wall"})
 	eq(_req(a, {"type": "strike_part", "location": "surface", "x": 3, "y": 3}).get("damage"), 4, "an axe blow")

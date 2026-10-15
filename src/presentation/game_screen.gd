@@ -76,6 +76,10 @@ var _last_dir := Vector2i(0, 1)
 var _attacks := {}
 ## When the own next blow may be shown (ms, Time): the weapon's pace.
 var _swing_ready_ms := 0
+## The left button is held: work and blows go on at their pace (a tree is
+## felled by holding it, not by a click a blow).
+var _lmb_held := false
+const REPEATED := ["gather", "strike_part", "strike", "swing"]
 var _deaths_seen := -1
 var game: LocalGame
 var hosted: HostedGame
@@ -276,7 +280,9 @@ func close() -> void:
 func _process(delta: float) -> void:
 	if client == null:
 		return
+	var t0 := Time.get_ticks_usec()
 	painter.refresh()
+	var t_map := Time.get_ticks_usec()
 	client.move = _direction() if not paused and not world_map.visible else Vector2i.ZERO
 	if client.move != Vector2i.ZERO:
 		_last_dir = client.move
@@ -297,6 +303,7 @@ func _process(delta: float) -> void:
 		steps += 1
 	if _accum > tick * 4:
 		_accum = 0.0
+	var t_sim := Time.get_ticks_usec()
 	if _opts.has("demo") and not _demo_done and client.state == "playing" and client.has_position:
 		_demo_done = true
 		if game:
@@ -393,13 +400,21 @@ func _process(delta: float) -> void:
 		for y in range(-3, 0):
 			for x in range(-2, 1):
 				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_ceiling"})
+	if _lmb_held and not paused and _blueprint == "" and Time.get_ticks_msec() >= _swing_ready_ms:
+		var held_on := Actions.primary(actions)
+		if String(held_on.get("id", "")) in REPEATED:
+			_do(held_on)
+	var t_view := Time.get_ticks_usec()
 	view.update_view(_accum / tick, delta)
+	var t_drawn := Time.get_ticks_usec()
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
 	_update_target()
 	_update_hud()
 	_update_ghost()
 	_frames += 1
+	if _opts.has("perf"):  # dev: where a frame's time goes, every 2 s
+		_perf(t_map - t0, t_sim - t_map, t_drawn - t_view, Time.get_ticks_usec() - t_drawn, delta)
 	if not _reported and client.state in ["disconnected", "rejected"]:
 		_reported = true
 		failed.emit("сервер отказал: " + client.reject_reason if client.state == "rejected" else "связь с сервером потеряна")
@@ -510,6 +525,8 @@ func _mouse(b: InputEventMouseButton) -> void:
 				client.request(op)
 			_drag_from = NO_CELL
 		return
+	if b.button_index == MOUSE_BUTTON_LEFT:
+		_lmb_held = b.pressed
 	if not b.pressed:
 		return
 	if b.button_index == MOUSE_BUTTON_LEFT:
@@ -537,7 +554,7 @@ func _do(a: Dictionary) -> void:
 		_chest_rids[rid] = Vector2i(int(a["request"]["x"]), int(a["request"]["y"]))
 		return
 	match String(a["id"]):
-		"strike", "shoot", "swing", "strike_part":
+		"strike", "shoot", "swing", "strike_part", "gather":
 			_attacks[rid] = true
 			# Shown at once, but only as often as the server lets one strike.
 			var item := String(a["request"].get("item", ""))
@@ -546,13 +563,12 @@ func _do(a: Dictionary) -> void:
 				w = {}
 			var now := Time.get_ticks_msec()
 			if now >= _swing_ready_ms:
-				_swing_ready_ms = now + int(w.get("cooldown_ms", 500))
+				_swing_ready_ms = now + int(w.get("cooldown_ms", 700 if a["id"] == "gather" else 500))
 				view.swing_own(_mouse_world() - view.own_pixel_position(1.0))
 				if a["id"] != "shoot":
 					audio.play("swing", item, null)
-			hotbar.used(item)
-		"gather":
-			view.swing_own(_mouse_world() - view.own_pixel_position(1.0))
+			if a["id"] != "gather":
+				hotbar.used(item)
 		"pickup":
 			_sound_on_ok[rid] = "pickup"
 		"use":
@@ -804,6 +820,24 @@ func _plan_cells() -> Array:
 
 ## Shows the plan: a picture on each cell, green where it can stand, red
 ## where not; the status line says how many, what it costs, why not.
+var _perf_sum := PackedInt64Array([0, 0, 0, 0, 0, 0])
+
+
+func _perf(map_us: int, sim_us: int, view_us: int, ui_us: int, delta: float) -> void:
+	for i in 4:
+		_perf_sum[i] += [map_us, sim_us, view_us, ui_us][i]
+	_perf_sum[4] += int(delta * 1e6)
+	_perf_sum[5] += 1
+	if _perf_sum[5] < 120:
+		return
+	var n := float(_perf_sum[5])
+	print("perf z=%d frame %.1f ms: map %.2f sim %.2f view %.2f ui %.2f; nodes %d, sprites in chunks %d, draw calls %d" % [
+		client.z, _perf_sum[4] / n / 1000.0, _perf_sum[0] / n / 1000.0, _perf_sum[1] / n / 1000.0,
+		_perf_sum[2] / n / 1000.0, _perf_sum[3] / n / 1000.0, Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+		view.sprite_count(), Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
+	_perf_sum.fill(0)
+
+
 func _update_ghost() -> void:
 	var v := content.visual_of(_blueprint) if _blueprint != "" and _blueprint != BuildCatalog.DEMOLISH else {}
 	_plan = [] if client.state != "playing" or v.is_empty() or world_map.visible else _plan_cells()
@@ -877,6 +911,10 @@ func _update_hud() -> void:
 			client.results.erase(rid)
 			if not r.get("ok") and r.get("reason") != "not_ready":
 				_note = String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+			elif r.has("work"):
+				_note = "%s: %d из %d" % [content.get_def(String(r.get("thing", ""))).get("name", ""), int(r["work"]), int(r["of"])]
+			elif r.has("drops"):
+				_note = "готово"
 			continue
 		_note = "готово" if r.get("ok") else "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?"))) \
 			+ (" (ещё %d мин)" % ceili(int(r["seconds"]) / 60.0) if r.has("seconds") else "")

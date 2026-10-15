@@ -10,7 +10,8 @@ extends RefCounted
 
 const ID := "base:surface"
 ## 2: ground lies in patches instead of per-cell noise.
-const VERSION := 2
+## 3: cave mouths where the underground has a way up (ADR-0017).
+const VERSION := 3
 var world_seed := 0
 ## From the generator's own definition (content "base:surface").
 var _water := ""
@@ -31,6 +32,8 @@ var _biome_noise := FastNoiseLite.new()
 var _water_noise := FastNoiseLite.new()
 ## One noise field per patch slot (the n-th lesser ground of any biome uses field n).
 var _patch_noise: Array[FastNoiseLite] = []
+## Where the ways into the underground are (null: none).
+var underground: UndergroundGenerator
 
 
 func _init(seed_value: int, content: ContentRegistry) -> void:
@@ -99,7 +102,25 @@ func generate(cx: int, cy: int) -> Chunk:
 				var plant := _pick(b["cover"], _hash(x, y, 3))
 				if plant != "" and not (clearing and _solid.has(plant)):
 					c.set_cell("cover", lx, ly, plant)
+	if underground and underground.way_down_surface != "":
+		var mouth := underground.entrance_at(-1, cx, cy)
+		if mouth != UndergroundGenerator.NONE:
+			place_mouth(c, mouth.x - cx * Chunk.SIZE, mouth.y - cy * Chunk.SIZE, underground.way_down_surface)
 	return c
+
+
+## A cave mouth at a cell of a chunk, on dry ground with nothing around it.
+func place_mouth(c: Chunk, lx: int, ly: int, part: String) -> void:
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var x := lx + dx
+			var y := ly + dy
+			if x < 0 or y < 0 or x >= Chunk.SIZE or y >= Chunk.SIZE:
+				continue
+			c.set_cell("cover", x, y, "")
+			if c.get_cell("ground", x, y) == _water or c.get_cell("ground", x, y) == "":
+				c.set_cell("ground", x, y, _shore)
+	c.set_cell("structure", lx, ly, part)
 
 
 ## The biome a cell lies in (who lives there, ADR-0018); "" on water.

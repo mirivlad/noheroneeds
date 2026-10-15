@@ -1,0 +1,169 @@
+class_name UndergroundGenerator
+extends RefCounted
+## Makes chunks of the underground (ADR-0017): one geology for the whole
+## world, a function of the world seed, the depth and the cell, so chunks
+## made in any order, from any way in, fit each other, and a deposit runs on
+## into the next chunk and the next depth. Made once, then stored whole: a new
+## VERSION shapes only what nobody has reached.
+##
+## Everything is content (the generator "base:underground" and "deposit"
+## definitions): the rock, the floor under it, how much of the rock is
+## caves, the deposits (which rock part, at what depths, veins or single
+## finds, how rare). The code only samples noise.
+##
+## Ways between depths are a function too (entrance_at): where the surface
+## has a cave mouth, the depth below has a hollow with a way up; where a
+## cave drops to the next depth, that depth has a hollow and a way up.
+
+const ID := "base:underground"
+const VERSION := 1
+## A chunk holds at most one natural way down to the next depth.
+const NONE := Vector2i(1 << 30, 1 << 30)
+
+var world_seed := 0
+var _floor := ""
+var _rock := ""
+var _water := ""
+var _cave_threshold := 0.3
+var _water_threshold := 0.6
+var _entrance_chance := 0.0
+var _hollow := 3
+## Parts that stand at the ends of natural ways: the way down (at the upper
+## depth or the surface) and the way up (at the lower one).
+var way_down_surface := ""
+var way_down := ""
+var way_up := ""
+## [{rock, top, bottom, single, threshold, noise}], in content id order.
+var _deposits: Array = []
+var _caves := FastNoiseLite.new()
+## Winding passages joining the chambers: a thin ridge of another noise.
+var _passages := FastNoiseLite.new()
+var _passage_width := 0.05
+var _pools := FastNoiseLite.new()
+## Cells that must be ways down besides the random ones (a world's entrance
+## near its spawn point): "z|x|y" -> true (z: the depth the way leads to).
+var extra_ways := {}
+
+
+func _init(seed_value: int, content: ContentRegistry) -> void:
+	world_seed = seed_value
+	var g := content.get_def(ID)
+	if g.get("kind") != "generator":
+		return
+	_floor = String(g["floor"])
+	_rock = String(g["rock"])
+	_water = String(g.get("water", ""))
+	_cave_threshold = float(g.get("cave_threshold", 0.3))
+	_water_threshold = float(g.get("water_threshold", 0.6))
+	_entrance_chance = float(g.get("entrance_chance", 0.0))
+	_hollow = int(g.get("hollow", 3))
+	way_down_surface = String(g.get("way_down_surface", ""))
+	way_down = String(g.get("way_down", ""))
+	way_up = String(g.get("way_up", ""))
+	_caves.seed = seed_value + 31337
+	_caves.frequency = float(g.get("cave_frequency", 0.06))
+	_caves.fractal_octaves = 2
+	_passages.seed = seed_value + 4241
+	_passages.frequency = float(g.get("passage_frequency", 0.025))
+	_passages.fractal_octaves = 1
+	_passage_width = float(g.get("passage_width", 0.05))
+	_pools.seed = seed_value + 271
+	_pools.frequency = 0.09
+	var ids: Array = []
+	for id: String in content.defs:
+		if content.kind_of(id) == "deposit":
+			ids.append(id)
+	ids.sort()
+	for i in ids.size():
+		var d := content.get_def(ids[i])
+		var n := FastNoiseLite.new()
+		n.seed = seed_value + 7907 * (i + 3)
+		n.frequency = float(d.get("frequency", 0.08))
+		n.fractal_octaves = 1
+		# Where a vein may run at all: wide areas of a slower noise.
+		var area := FastNoiseLite.new()
+		area.seed = seed_value + 6203 * (i + 5)
+		area.frequency = n.frequency / 4.0
+		_deposits.append({"rock": String(d["rock"]), "top": int(d["depths"][0]), "bottom": int(d["depths"][1]),
+			"single": String(d.get("shape", "vein")) == "single", "threshold": float(d["threshold"]), "noise": n,
+			"area": area, "presence": float(d.get("presence", 0.3))})
+
+
+func can_generate() -> bool:
+	return _floor != "" and _rock != ""
+
+
+## The natural way down in chunk (cx, cy) leading to depth `z` (from z + 1,
+## the surface when z is -1), as a world cell; NONE if there is none.
+func entrance_at(z: int, cx: int, cy: int) -> Vector2i:
+	for key: String in extra_ways:
+		var p := key.split("|")
+		if int(p[0]) == z and floori(float(p[1]) / Chunk.SIZE) == cx and floori(float(p[2]) / Chunk.SIZE) == cy:
+			return Vector2i(int(p[1]), int(p[2]))
+	if _hash3(cx, cy, z, 11) >= _entrance_chance:
+		return NONE
+	var lx := 4 + int(_hash3(cx, cy, z, 12) * (Chunk.SIZE - 8))
+	var ly := 4 + int(_hash3(cx, cy, z, 13) * (Chunk.SIZE - 8))
+	return Vector2i(cx * Chunk.SIZE + lx, cy * Chunk.SIZE + ly)
+
+
+func generate(z: int, cx: int, cy: int) -> Chunk:
+	var c := Chunk.new()
+	c.meta = {"gen": ID, "gen_version": VERSION, "z": z}
+	for ly in Chunk.SIZE:
+		for lx in Chunk.SIZE:
+			var x := cx * Chunk.SIZE + lx
+			var y := cy * Chunk.SIZE + ly
+			var cave := _caves.get_noise_3d(x, y, z * 9.0) > _cave_threshold \
+				or absf(_passages.get_noise_3d(x, y, z * 9.0)) < _passage_width
+			if cave and _water != "" and _pools.get_noise_3d(x, y, z * 9.0) > _water_threshold:
+				c.set_cell("ground", lx, ly, _water)  # an underground pool
+				continue
+			c.set_cell("ground", lx, ly, _floor)
+			if not cave:
+				c.set_cell("structure", lx, ly, _rock_at(x, y, z))
+	# Hollows round the ways: up from this depth (a way down from above ends
+	# here) and down from it (one starts here).
+	var up := entrance_at(z, cx, cy)
+	if up != NONE:
+		_hollow_at(c, cx, cy, up)
+		if way_up != "":
+			c.set_cell("structure", up.x - cx * Chunk.SIZE, up.y - cy * Chunk.SIZE, way_up)
+	var down := entrance_at(z - 1, cx, cy)
+	if down != NONE:
+		_hollow_at(c, cx, cy, down)
+		if way_down != "":
+			c.set_cell("structure", down.x - cx * Chunk.SIZE, down.y - cy * Chunk.SIZE, way_down)
+	return c
+
+
+## The rock of a cell: a deposit's, where its noise says so, else plain rock.
+func _rock_at(x: int, y: int, z: int) -> String:
+	for d: Dictionary in _deposits:
+		if z > int(d["top"]) or z < int(d["bottom"]):
+			continue
+		var n: FastNoiseLite = d["noise"]
+		if d["single"]:
+			if _hash3(x, y, z, 21 + _deposits.find(d)) < float(d["threshold"]):
+				return String(d["rock"])
+		elif absf(n.get_noise_3d(x, y, z * 6.0)) < float(d["threshold"]) \
+				and (d["area"] as FastNoiseLite).get_noise_3d(x, y, z * 6.0) > float(d["presence"]):
+			return String(d["rock"])  # a vein: a ridge of the noise, running on, where veins are
+	return _rock
+
+
+func _hollow_at(c: Chunk, cx: int, cy: int, at: Vector2i) -> void:
+	for dy in range(-_hollow, _hollow + 1):
+		for dx in range(-_hollow, _hollow + 1):
+			if dx * dx + dy * dy > _hollow * _hollow + 1:
+				continue
+			var lx := at.x + dx - cx * Chunk.SIZE
+			var ly := at.y + dy - cy * Chunk.SIZE
+			if lx < 0 or ly < 0 or lx >= Chunk.SIZE or ly >= Chunk.SIZE:
+				continue
+			c.set_cell("ground", lx, ly, _floor)
+			c.set_cell("structure", lx, ly, "")
+
+
+func _hash3(x: int, y: int, z: int, salt: int) -> float:
+	return float(absi(hash([world_seed, x, y, z, salt])) % 1000003) / 1000003.0

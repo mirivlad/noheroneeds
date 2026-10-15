@@ -25,8 +25,9 @@ static func from_source(intensity: float, radius: float, distance: float) -> flo
 
 ## The light of a cell: ambient (outdoors or in) and the sources around it,
 ## each [Vector2 cell, intensity, radius] - the brightest wins.
-static func level(time_ms: float, indoors: bool, cell: Vector2i, sources: Array) -> float:
-	var ambient := Daylight.outdoor_light(time_ms)
+## daylight: false underground (ADR-0017): only the sources light it.
+static func level(time_ms: float, indoors: bool, cell: Vector2i, sources: Array, daylight := true) -> float:
+	var ambient := Daylight.outdoor_light(time_ms) if daylight else 0.0
 	if indoors:
 		ambient *= Daylight.INDOOR_SHARE
 	var best := ambient

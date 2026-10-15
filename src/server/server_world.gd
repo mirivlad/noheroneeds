@@ -30,6 +30,10 @@ var relocated := {}
 var _removed_location_chunks := {}
 ## Makes surface chunks nobody has visited (null if the content has no biomes).
 var generator: SurfaceGenerator
+## The geology below (ADR-0017); null if the content has none.
+var underground: UndergroundGenerator
+## The deepest depth one may go (a server rule; 0: no limit).
+var max_depth := 0
 var loader := ChunkLoader.new()
 var world_seed := 0
 ## Chunks the simulation had to load or generate itself because the loader
@@ -142,12 +146,57 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.levels.load_rows(s.all_locations())
 	var g := SurfaceGenerator.new(world.world_seed, registry)
 	world.generator = g if g.can_generate() else null
+	var ug := UndergroundGenerator.new(world.world_seed, registry)
+	world.underground = ug if ug.can_generate() else null
+	var spawn_way := world._spawn_way()
 	var lg := SurfaceGenerator.new(world.world_seed, registry) if world.generator else null
-	if not world.loader.start(db_path, lg):
+	var lug := UndergroundGenerator.new(world.world_seed, registry) if world.underground else null
+	for gen: UndergroundGenerator in [world.underground, lug]:
+		if gen and spawn_way != NO_CELL:
+			gen.extra_ways["-1|%d|%d" % [spawn_way.x, spawn_way.y]] = true
+	if world.generator:
+		world.generator.underground = world.underground
+	if lg:
+		lg.underground = lug
+	if not world.loader.start(db_path, lg, lug):
 		w.stop()
 		s.close()
 		return null
+	world._open_spawn_way(spawn_way)
 	return world
+
+
+## Every world has a way into the underground near its spawn point (ADR-0017),
+## chosen once from the seed and remembered; worlds made before caves get it
+## too. NO_CELL without an underground.
+func _spawn_way() -> Vector2i:
+	if underground == null or generator == null:
+		return NO_CELL
+	var kept := store.read_meta("spawn_way")
+	if kept != "":
+		var p := kept.split(",")
+		return Vector2i(int(p[0]), int(p[1]))
+	var h := absi(hash([world_seed, "spawn_way"]))
+	var at := Vector2i((14 + h % 9) * (1 if h % 2 == 0 else -1), (12 + (h / 9) % 9) * (1 if (h / 2) % 2 == 0 else -1))
+	at += spawn_position / Movement.UNIT
+	# Away from its chunk's edges, so its hollow below stays in one chunk.
+	at.x = floori(float(at.x) / Chunk.SIZE) * Chunk.SIZE + clampi(posmod(at.x, Chunk.SIZE), 5, Chunk.SIZE - 6)
+	at.y = floori(float(at.y) / Chunk.SIZE) * Chunk.SIZE + clampi(posmod(at.y, Chunk.SIZE), 5, Chunk.SIZE - 6)
+	return at
+
+
+## The spawn way, if its surface chunk was made before caves were: the mouth
+## is put there now (once; remembered in the world's meta).
+func _open_spawn_way(at: Vector2i) -> void:
+	if at == NO_CELL or store.read_meta("spawn_way") != "":
+		return
+	var cx := floori(float(at.x) / Chunk.SIZE)
+	var cy := floori(float(at.y) / Chunk.SIZE)
+	if not store.get_chunk(SURFACE, cx, cy).is_empty():
+		var c := chunk(SURFACE, cx, cy)
+		generator.place_mouth(c, at.x - cx * Chunk.SIZE, at.y - cy * Chunk.SIZE, underground.way_down_surface)
+		_changed(chunk_key(SURFACE, cx, cy))
+	note_fact("spawn_way", "%d,%d" % [at.x, at.y])
 
 
 func _init(read_store: WorldStore, registry: ContentRegistry, store_writer: StoreWriter) -> void:
@@ -218,6 +267,9 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		elif location == SURFACE and generator:
 			c = generator.generate(cx, cy)
 			_dirty_chunks[key] = true  # generated once, then kept whole
+		elif Levels.is_depth(location) and underground:
+			c = underground.generate(levels.z(location), cx, cy)
+			_dirty_chunks[key] = true
 		else:
 			c = Chunk.new()
 		_chunks[key] = c
@@ -654,7 +706,8 @@ func light_at(location: String, cell: Vector2i) -> float:
 	var cx := floori(float(cell.x) / Chunk.SIZE)
 	var cy := floori(float(cell.y) / Chunk.SIZE)
 	var indoors := Terrain.is_covered(chunk(location, cx, cy), cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE)
-	return Lighting.level(world_time, indoors, cell, light_sources(location, cell, Lighting.MAX_RADIUS))
+	return Lighting.level(world_time, indoors, cell, light_sources(location, cell, Lighting.MAX_RADIUS),
+		has_daylight(location))
 
 
 ## Light sources within `radius` cells of a cell: [cell, intensity, radius].
@@ -900,8 +953,14 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	var loc: String = at[0]
 	var x := int(r.get("x", 0))
 	var y := int(r.get("y", 0))
-	if loc != SURFACE and levels.kind(loc) != Levels.BUILDING_LEVEL:
+	if loc != SURFACE and levels.kind(loc) != Levels.BUILDING_LEVEL and not Levels.is_depth(loc):
 		return {"ok": false, "reason": "no_such_place"}
+	if def.get("natural", false):
+		return {"ok": false, "reason": "not_buildable"}
+	if Levels.is_depth(loc) and role in ["ceiling", "roof", "stairs"]:
+		return {"ok": false, "reason": "underground"}  # up is the depth above (ADR-0017)
+	if def.get("surface_only", false) and loc != SURFACE or def.get("underground_only", false) and not Levels.is_depth(loc):
+		return {"ok": false, "reason": "wrong_place"}
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
 	var c := chunk(loc, at[1], at[2])
@@ -937,6 +996,10 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	var inv := inventory(actor)
 	if not inv.has_all(costs):
 		return {"ok": false, "reason": "materials"}
+	if role == "shaft":
+		var why := _open_below(loc, Vector2i(x, y), part, true)
+		if why != "":
+			return {"ok": false, "reason": why}
 	for id: String in costs:
 		inv.remove(id, int(costs[id]))
 	_touch_inventory(actor)
@@ -974,6 +1037,8 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	_changed(chunk_key(loc, at[1], at[2]))
 	if role == "stairs":
 		_mark_stairs_down(loc, x, y, true)
+	if role == "shaft":
+		_open_below(loc, Vector2i(x, y), part, false)
 	creatures.noise(loc, Vector2i(x, y))  # building is heard around
 	if role == "ceiling":
 		var zl := levels.z(loc) + 1
@@ -1032,6 +1097,10 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	if layer == "":
 		return {"ok": false, "reason": "empty"}
 	var part := c.get_cell(layer, at[3], at[4])
+	if layer == "structure" and content.get_def(part).has("dig"):
+		return _dig(actor, loc, at, x, y, part)
+	if layer == "structure" and content.get_def(part).get("natural", false):
+		return {"ok": false, "reason": "natural"}
 	if _layer_props(c, layer, at[3], at[4]).get("owner", "") != actor:
 		return {"ok": false, "reason": "not_owner"}
 	if not content.has(part):
@@ -1048,6 +1117,10 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	if layer == "structure" and _is_stairs(part):
 		_mark_stairs_down(loc, x, y, false)
 	c.set_cell(layer, at[3], at[4], "")
+	if layer == "structure" and content.get_def(part).get("role") == "shaft":
+		# The equipment goes, the hole stays (ADR-0017): the way and what is
+		# below are not lost, nobody is shut in.
+		c.set_cell(layer, at[3], at[4], "base:shaft_hole")
 	if layer == "structure":
 		var keep := c.get_props(at[3], at[4]).duplicate()
 		for k: String in keep.keys():
@@ -1067,6 +1140,35 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 		inv.add(id, int(costs[id]))
 	_touch_inventory(actor)
 	return {"ok": true, "part": part}
+
+
+## Digs out natural rock (ADR-0017): with the tool its "dig" asks for
+## carried; what it holds goes to the one digging; the cell is open floor.
+func _dig(actor: String, loc: String, at: Array, x: int, y: int, part: String) -> Dictionary:
+	var g: Dictionary = content.get_def(part)["dig"]
+	var tool := String(g["tool"])
+	if tool != "" and not _carries_tool(actor, tool):
+		return {"ok": false, "reason": "no_tool"}
+	var c := chunk(loc, at[1], at[2])
+	c.set_cell("structure", at[3], at[4], "")
+	_changed(chunk_key(loc, at[1], at[2]))
+	var inv := inventory(actor)
+	var drops: Dictionary = g.get("drops", {})
+	for id: String in drops:
+		inv.add(id, int(drops[id]))
+	_touch_inventory(actor)
+	creatures.noise(loc, Vector2i(x, y))
+	return {"ok": true, "part": part, "drops": drops}
+
+
+func _carries_tool(actor: String, tool: String) -> bool:
+	if not present.has(actor) and not _inventories.has(actor):
+		return true  # server tools
+	var inv := inventory(actor)
+	for id: String in inv.stacks:
+		if (content.get_def(id).get("tools", []) as Array).has(tool):
+			return true
+	return false
 
 
 ## Anything on a cell of a level: a part, a ceiling, a roof, a thing, a person.
@@ -1133,6 +1235,9 @@ func _climb(actor: String, r: Dictionary) -> Dictionary:
 	var y := int(r.get("y", 0))
 	if String(r.get("location", "")) != loc or not _reaches(actor, loc, x, y, USE_REACH):
 		return {"ok": false, "reason": "too_far"}
+	var shaft := _part_at(loc, x, y, "structure")
+	if shaft != "" and content.get_def(shaft).get("role") == "shaft":
+		return _through_shaft(actor, p, loc, Vector2i(x, y), shaft)
 	var dest := ""
 	var to := Vector2i(x, y)
 	# "dir": "up" or "down" where stairs stand over stairs and both ways lead
@@ -1159,6 +1264,66 @@ func _climb(actor: String, r: Dictionary) -> Dictionary:
 
 
 const NO_CELL := Vector2i(1 << 30, 1 << 30)
+
+
+## The depth a shaft at `loc` leads to (ADR-0017): down from the surface to
+## -1, from a depth to the next; up to the depth above, from -1 to the surface.
+## "" where it may not lead (beyond the server's deepest depth).
+func _shaft_leads(loc: String, part: String) -> String:
+	var down := String(content.get_def(part).get("leads", "down")) == "down"
+	var z := levels.z(loc) if Levels.is_depth(loc) else 0
+	if loc != SURFACE and not Levels.is_depth(loc):
+		return ""
+	var to := z - 1 if down else z + 1
+	if to >= 0:
+		return SURFACE
+	if max_depth > 0 and to < -max_depth:
+		return ""
+	return Levels.depth_id(to)
+
+
+func _through_shaft(actor: String, p: Dictionary, loc: String, at: Vector2i, part: String) -> Dictionary:
+	var dest := _shaft_leads(loc, part)
+	if dest == "":
+		return {"ok": false, "reason": "too_deep"}
+	if is_solid(dest, at.x, at.y):
+		return {"ok": false, "reason": "blocked"}
+	p["location"] = dest
+	p["pos"] = Vector2i(at.x * Movement.UNIT + Movement.UNIT / 2, at.y * Movement.UNIT + Movement.UNIT / 2)
+	_dirty_world_characters[actor] = true
+	relocated[actor] = true
+	return {"ok": true, "location": dest, "z": levels.z(dest)}
+
+
+## A shaft built down (a mine shaft, a headframe): the depth below gets a
+## working round the same cell, its rock cut away, and a ladder up in it.
+## Refused if something built stands there below.
+func _open_below(loc: String, at: Vector2i, part: String, check_only: bool) -> String:
+	var dest := _shaft_leads(loc, part)
+	if dest == "" or dest == SURFACE:
+		return "too_deep"
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var c := at + Vector2i(dx, dy)
+			var cx := floori(float(c.x) / Chunk.SIZE)
+			var cy := floori(float(c.y) / Chunk.SIZE)
+			var ch := chunk(dest, cx, cy)
+			var lx := c.x - cx * Chunk.SIZE
+			var ly := c.y - cy * Chunk.SIZE
+			var there := ch.get_cell("structure", lx, ly)
+			var natural := there == "" or bool(content.get_def(there).get("natural", false))
+			if dx == 0 and dy == 0 and (not natural or ch.get_cell("ground", lx, ly) == "base:water"):
+				if not (there != "" and content.get_def(there).get("role") == "shaft"):
+					return "blocked_below"
+			if check_only:
+				continue
+			var is_shaft: bool = there != "" and content.get_def(there).get("role") == "shaft"
+			if there != "" and content.get_def(there).get("role") == "rock":
+				ch.set_cell("structure", lx, ly, "")
+			if dx == 0 and dy == 0 and not is_shaft:
+				ch.set_cell("structure", lx, ly, "base:mine_ladder")
+			_changed(chunk_key(dest, cx, cy))
+	return ""
 
 
 ## The facing a part is built in: the one asked for if the part allows it,

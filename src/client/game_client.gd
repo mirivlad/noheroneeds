@@ -46,6 +46,13 @@ var previous_position := Vector2i.ZERO
 var changed_chunks: Array[String] = []
 ## Changes seen in the world since the view last took them (see _note_changes).
 var world_events: Array[Dictionary] = []
+## Maps (ADR-0020): location -> {"z": level label, "chunks": {Vector2i: true}}
+## the character has seen; "location|cx|cy" -> MapTile ({palette, cells}).
+var map_known := {}
+var map_tiles := {}
+## Tiles changed since the map last looked (keys as map_tiles).
+var map_changed: Array[String] = []
+var _map_asked := {}
 ## Times a prediction had to be corrected (for tests and diagnostics).
 var corrections := 0
 
@@ -107,6 +114,7 @@ func reconnect(net: Transport) -> void:
 	entities.clear()
 	own = {}
 	chunks.clear()
+	_map_asked.clear()
 	_uid_of.clear()
 	_latest_snapshot = 0
 	_unacked_inputs.clear()
@@ -156,6 +164,20 @@ func _on_message(m: Dictionary) -> void:
 					_note_changes(String(m["location"]), Vector2i(int(m["cx"]), int(m["cy"])) * Chunk.SIZE, old, c)
 				chunks[key] = c
 				changed_chunks.append(key)
+				_known_on_map(String(m["location"]), int(m["cx"]), int(m["cy"]), MapTile.of(c))
+		Protocol.MAP_KNOWN:
+			var known: Dictionary = map_known.get_or_add(String(m["location"]), {"z": int(m["z"]), "chunks": {}})
+			known["z"] = int(m["z"])
+			var pairs := (m["chunks"] as PackedByteArray).to_int32_array()
+			for i in range(0, pairs.size() - 1, 2):
+				known["chunks"][Vector2i(pairs[i], pairs[i + 1])] = true
+		Protocol.MAP_TILES:
+			for t: Variant in m["tiles"]:
+				if typeof(t) != TYPE_ARRAY or (t as Array).size() != 3 or typeof(t[2]) != TYPE_PACKED_BYTE_ARRAY:
+					continue
+				var tile := MapTile.decode(t[2])
+				if not tile.is_empty():
+					_known_on_map(String(m["location"]), int(t[0]), int(t[1]), tile)
 		Protocol.SNAPSHOT:
 			_on_snapshot(m)
 
@@ -190,6 +212,31 @@ func _note_changes(loc: String, origin: Vector2i, old: Chunk, new: Chunk) -> voi
 			var cell := origin + Vector2i(i % Chunk.SIZE, i / Chunk.SIZE)
 			var part := new.get_cell("structure", i % Chunk.SIZE, i / Chunk.SIZE)
 			world_events.append({"type": "open" if now_open else "close", "location": loc, "cell": cell, "part": part})
+
+
+func _known_on_map(location: String, cx: int, cy: int, tile: Dictionary) -> void:
+	var known: Dictionary = map_known.get_or_add(location, {"z": z if location == self.location else 0, "chunks": {}})
+	known["chunks"][Vector2i(cx, cy)] = true
+	var key := "%s|%d|%d" % [location, cx, cy]
+	map_tiles[key] = tile
+	map_changed.append(key)
+
+
+## Asks the server for the map tiles of seen chunks we do not have (once each).
+func request_map(location: String, wanted: Array) -> void:
+	var pairs := PackedInt32Array()
+	for at: Vector2i in wanted:
+		var key := "%s|%d|%d" % [location, at.x, at.y]
+		if map_tiles.has(key) or _map_asked.has(key):
+			continue
+		_map_asked[key] = true
+		pairs.append(at.x)
+		pairs.append(at.y)
+		if pairs.size() >= 512:
+			_send(Transport.Channel.RELIABLE, Protocol.MAP_REQUEST, {"location": location, "chunks": pairs.to_byte_array()})
+			pairs = PackedInt32Array()
+	if not pairs.is_empty() and state == "playing":
+		_send(Transport.Channel.RELIABLE, Protocol.MAP_REQUEST, {"location": location, "chunks": pairs.to_byte_array()})
 
 
 ## Snapshots (protocol 7) are differences from what this client last

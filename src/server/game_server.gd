@@ -160,6 +160,8 @@ class Session:
 	var next_snapshot := 1
 	## chunk key -> revision the client has
 	var chunks := {}
+	## Map tiles asked for and not sent yet: [[location, cx, cy], ...].
+	var map_queue: Array = []
 
 
 func _init(server_world: ServerWorld, net: Transport, server_identity: PlayerIdentity) -> void:
@@ -271,6 +273,7 @@ func _step() -> void:
 	for s: Session in _sessions.values():
 		if s.state == "playing":
 			_stream_chunks(s)
+			_send_map_tiles(s)
 	_lap("chunks")
 	_update_replica()
 	_update_creature_replicas()
@@ -328,6 +331,8 @@ func _on_message(s: Session, m: Dictionary) -> void:
 			match t:
 				Protocol.INPUT:
 					_take_input(s, m)
+				Protocol.MAP_REQUEST:
+					_queue_map_tiles(s, String(m["location"]), (m["chunks"] as PackedByteArray).to_int32_array())
 				Protocol.REQUEST:
 					_request_at[String((m["request"] as Dictionary).get("request_id", ""))] = Time.get_ticks_usec()
 					world.handle(s.character_id, m["request"])
@@ -352,6 +357,7 @@ func _join(s: Session, file: PackedByteArray) -> void:
 	s.state = "playing"
 	var p: Dictionary = world.present[id]
 	_send(s, Transport.Channel.RELIABLE, Protocol.WELCOME, {"character_id": id, "location": p["location"], "tick": tick})
+	_send_map_known(s)
 	_tell_location(s)
 
 
@@ -792,8 +798,49 @@ func _stream_chunks(s: Session) -> void:
 						return
 					budget -= 1
 					s.chunks[key] = rev
+					world.explore(s.character_id, shown, cx, cy)
 					_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": shown, "cx": cx, "cy": cy,
 						"data": world.encoded_chunk(shown, cx, cy)})
+
+
+## Map tiles a client may have (ADR-0020): only of chunks its character has
+## seen; queued, sent a few a tick.
+const MAP_TILES_PER_TICK := 12
+const MAP_QUEUE_MAX := 2048
+
+
+func _queue_map_tiles(s: Session, location: String, pairs: PackedInt32Array) -> void:
+	var seen: Dictionary = world.explored(s.character_id).get(location, {})
+	for i in range(0, pairs.size() - 1, 2):
+		if s.map_queue.size() >= MAP_QUEUE_MAX:
+			return
+		if seen.has(Vector2i(pairs[i], pairs[i + 1])):
+			s.map_queue.append([location, pairs[i], pairs[i + 1]])
+
+
+func _send_map_tiles(s: Session) -> void:
+	if s.map_queue.is_empty():
+		return
+	var by_location := {}
+	for i in mini(MAP_TILES_PER_TICK, s.map_queue.size()):
+		var q: Array = s.map_queue.pop_front()
+		var tile := world.map_tile(q[0], q[1], q[2])
+		if not tile.is_empty():
+			(by_location.get_or_add(q[0], []) as Array).append([q[1], q[2], tile])
+	for loc: String in by_location:
+		_send(s, Transport.Channel.BULK, Protocol.MAP_TILES, {"location": loc, "tiles": by_location[loc]})
+
+
+## What the character has seen, every location, as it comes into the world.
+func _send_map_known(s: Session) -> void:
+	var all := world.explored(s.character_id)
+	for loc: String in all:
+		var pairs := PackedInt32Array()
+		for at: Vector2i in all[loc]:
+			pairs.append(at.x)
+			pairs.append(at.y)
+		_send(s, Transport.Channel.BULK, Protocol.MAP_KNOWN, {"location": loc, "z": world.levels.z(loc),
+			"chunks": pairs.to_byte_array()})
 
 
 func _session_of(character_id: String) -> Session:

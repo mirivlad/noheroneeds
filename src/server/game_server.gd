@@ -471,6 +471,11 @@ func _update_replica() -> void:
 		r.set_health(int(p.get("health", 0)), world.combat.max_health_of(id), int(p.get("deaths", 0)))
 		if r.location != p["location"]:
 			r.relocate(p["location"], world.levels.z(p["location"]))
+		if String(r.cold.get("held", "")) != String(p.get("held", "")):
+			r.cold = r.cold.duplicate()
+			r.cold["held"] = String(p.get("held", ""))  # what is in its hands, for all to see
+			r.cold_size = Cbor.encode_fast(r.cold).size()
+			r.cv += 1
 		if r.x != pos.x or r.y != pos.y:
 			r.x = pos.x
 			r.y = pos.y

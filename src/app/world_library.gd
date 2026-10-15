@@ -19,6 +19,8 @@ const RULES := {
 	"pvp": "off",
 	## A character that dies leaves what it carried where it fell (ADR-0019).
 	"death_drops": true,
+	## Whether one may break someone else's building (ADR-0016, ADR-0021).
+	"break_others": false,
 }
 ## What "starter kit" and "starter outfit" give (world rules of the base game).
 const STARTER_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20, "base:axe": 1, "base:bow": 1, "base:arrow": 20, "base:pickaxe": 1}
@@ -123,6 +125,7 @@ static func apply_rules(info: Dictionary, world: ServerWorld) -> void:
 	world.set_day_minutes(float(info.get("day_minutes", RULES["day_minutes"])))
 	world.combat.pvp = "free" if String(info.get("pvp", RULES["pvp"])) == "free" else "off"
 	world.combat.death_drops = bool(info.get("death_drops", RULES["death_drops"]))
+	world.break_others = bool(info.get("break_others", RULES["break_others"]))
 
 
 func _write(id: String, info: Dictionary) -> void:

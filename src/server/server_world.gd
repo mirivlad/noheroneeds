@@ -913,6 +913,12 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _gather(actor, r)
 		"look_in":
 			return _look_in(actor, r)
+		"hold":
+			return _hold(actor, r)
+		"strike_part":
+			return _strike_part(actor, r)
+		"repair":
+			return _repair(actor, r)
 		"store":
 			return _move_items(actor, r, true)
 		"take":
@@ -1656,6 +1662,114 @@ func _move_items(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 	_touch_inventory(actor)
 	_touch_inventory(c[0])
 	return {"ok": true, "contents": box.stacks.duplicate(), "slots": int(c[1]["slots"])}
+
+
+# --- wear and repair of parts (ADR-0021) -------------------------------------------
+
+## Whether one may hurt someone else's building (ADR-0016: a world rule apart
+## from PvP; raids and sieges later).
+var break_others := false
+
+
+## A blow at a part standing on a cell ("structure"), with what one holds:
+## its damage grows; at its durability it breaks and half of what it cost
+## falls there. One's own always; another's where the world allows it.
+func _strike_part(actor: String, r: Dictionary) -> Dictionary:
+	var at := _cell(r)
+	var loc: String = at[0]
+	var x := int(r.get("x", 0))
+	var y := int(r.get("y", 0))
+	var item := String(r.get("item", ""))
+	var w: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
+	if item != "" and (w.get("kind") != "melee" or (present.has(actor) and inventory(actor).count(item) <= 0)):
+		return {"ok": false, "reason": "not_a_weapon"}
+	var reach := int((float(w.get("reach", 1.0)) + 0.8) * Movement.UNIT)
+	if not _reaches(actor, loc, x, y, reach):
+		return {"ok": false, "reason": "too_far"}
+	var c := chunk(loc, at[1], at[2])
+	var part := c.get_cell("structure", at[3], at[4])
+	var def := content.get_def(part) if part != "" else {}
+	var durability := int(def.get("durability", 0))
+	if part == "" or durability <= 0:
+		return {"ok": false, "reason": "unbreakable"}
+	var props := c.get_props(at[3], at[4]).duplicate()
+	if String(props.get("owner", "")) != actor and not break_others:
+		return {"ok": false, "reason": "not_owner"}
+	if String(props.get("store", "")) != "" and not inventory("store|" + String(props["store"])).stacks.is_empty():
+		return {"ok": false, "reason": "not_empty"}  # a chest's things are not lost
+	if not combat.ready(actor, float(w.get("cooldown_ms", 500))):
+		return {"ok": false, "reason": "not_ready"}
+	var damage := int(props.get("damage", 0)) + (int(w["damage"]) if not w.is_empty() else 1)
+	creatures.noise(loc, Vector2i(x, y))
+	if damage < durability:
+		props["damage"] = damage
+		c.set_props(at[3], at[4], props)
+		_changed(chunk_key(loc, at[1], at[2]))
+		return {"ok": true, "damage": damage, "durability": durability}
+	# Broken: gone, half of what it cost lies there.
+	if _is_stairs(part):
+		_mark_stairs_down(loc, x, y, false)
+	c.set_cell("structure", at[3], at[4], "")
+	var keep := props.duplicate()
+	for k: String in keep.keys():
+		if k != "ceiling" and k != "roof":
+			keep.erase(k)
+	c.set_props(at[3], at[4], keep)
+	_changed(chunk_key(loc, at[1], at[2]))
+	var cost := content.structure_cost(part)
+	for m: String in cost:
+		var half := int(cost[m]) / 2
+		if half > 0:
+			place_item(loc, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2), m, half)
+	return {"ok": true, "broken": part}
+
+
+## Mends a damaged part of one's own: it costs its materials in proportion
+## to the damage (at least one of the first).
+func _repair(actor: String, r: Dictionary) -> Dictionary:
+	var at := _cell(r)
+	var loc: String = at[0]
+	var x := int(r.get("x", 0))
+	var y := int(r.get("y", 0))
+	if not _reaches(actor, loc, x, y, BUILD_REACH):
+		return {"ok": false, "reason": "too_far"}
+	var c := chunk(loc, at[1], at[2])
+	var part := c.get_cell("structure", at[3], at[4])
+	var props := c.get_props(at[3], at[4]).duplicate()
+	var damage := int(props.get("damage", 0))
+	if part == "" or damage <= 0:
+		return {"ok": false, "reason": "not_damaged"}
+	if String(props.get("owner", "")) != actor:
+		return {"ok": false, "reason": "not_owner"}
+	var durability := maxi(1, int(content.get_def(part).get("durability", 1)))
+	var cost := content.structure_cost(part)
+	var need := {}
+	for m: String in cost:
+		need[m] = ceili(float(cost[m]) * damage / durability)
+	var inv := inventory(actor)
+	if not inv.has_all(need):
+		return {"ok": false, "reason": "materials"}
+	for m: String in need:
+		if int(need[m]) > 0:
+			inv.remove(m, int(need[m]))
+	_touch_inventory(actor)
+	props.erase("damage")
+	c.set_props(at[3], at[4], props)
+	_changed(chunk_key(loc, at[1], at[2]))
+	creatures.noise(loc, Vector2i(x, y))
+	return {"ok": true, "spent": need}
+
+
+## What a character holds, for others to see (ADR-0021): an item it carries,
+## or "" (empty hands). Actions name the item they use themselves.
+func _hold(actor: String, r: Dictionary) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var item := String(r.get("item", ""))
+	if item != "" and (content.kind_of(item) != "item" or inventory(actor).count(item) <= 0):
+		return {"ok": false, "reason": "not_carried"}
+	present[actor]["held"] = item
+	return {"ok": true}
 
 
 func _transfer(actor: String, r: Dictionary) -> Dictionary:

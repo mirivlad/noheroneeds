@@ -206,6 +206,10 @@ func _validate() -> void:
 					_check_opening(id, d)
 				if d.has("gather"):
 					_check_gather(id, d)
+				# How much it takes before it breaks (ADR-0021); natural rock is dug, not broken.
+				d["durability"] = int(d.get("durability", 0 if d["natural"] else 30))
+				if d["durability"] < 0:
+					errors.append("%s: durability must not be negative" % id)
 				if d.has("container"):
 					var box: Variant = d["container"]
 					if typeof(box) != TYPE_DICTIONARY or int(box.get("slots", 0)) < 1:

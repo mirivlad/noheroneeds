@@ -18,6 +18,7 @@ extends SceneTree
 ##   --pvp=off|free       whether characters may hurt characters (default off)
 ##   --death-drops=yes|no a character that dies leaves what it carried where it
 ##                        fell (default yes)
+##   --break-others=yes|no  whether one may break someone else's building (no)
 ##   --populate=N         (load tests) N more creatures around the spawn point
 ##   --stop-file=PATH     stop cleanly when this file appears (default: STOP
 ##                        next to the world database; it is removed on start)
@@ -72,6 +73,7 @@ func _initialize() -> void:
 		_world.set_day_minutes(float(o["day-minutes"]))
 	_world.combat.pvp = "free" if String(o.get("pvp", "off")) == "free" else "off"
 	_world.combat.death_drops = String(o.get("death-drops", "yes")) != "no"
+	_world.break_others = String(o.get("break-others", "no")) == "yes"
 	for pair in String(o.get("starter-outfit", "")).split(",", false):
 		var at := pair.find(":")
 		_world.starter_outfit[pair.left(at)] = pair.substr(at + 1)

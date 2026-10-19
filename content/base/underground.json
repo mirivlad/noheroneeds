@@ -39,13 +39,13 @@
       "surface_only": true, "cost": {"base:log": 40, "base:plank": 120, "base:stone": 60, "base:iron_ore": 10}},
 
     {
-      "id": "base:cave_rat", "kind": "creature", "name": "Пещерная крыса", "behavior": "prey",
+      "id": "base:cave_rat", "kind": "creature", "size": {"half": [0.12, 0.1], "height": 0.2}, "name": "Пещерная крыса", "behavior": "prey",
       "speed": 1.0, "run_speed": 2.2, "sight": 6, "dark_sight": 0.9, "hearing": 10,
       "flee_distance": 5, "home_radius": 8, "think_ticks": 8, "memory_s": 20,
       "health": 2, "drops": {"base:raw_meat": 1}
     },
     {
-      "id": "base:cave_spider", "kind": "creature", "name": "Пещерный паук", "behavior": "predator",
+      "id": "base:cave_spider", "kind": "creature", "size": {"half": [0.3, 0.25], "height": 0.35}, "name": "Пещерный паук", "behavior": "predator",
       "speed": 0.8, "run_speed": 1.9, "sight": 7, "dark_sight": 0.95, "hearing": 9,
       "flee_distance": 0, "home_radius": 8, "think_ticks": 6, "memory_s": 20,
       "health": 8, "territory": 5,

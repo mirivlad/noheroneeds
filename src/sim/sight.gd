@@ -36,11 +36,14 @@ static func _on_plan(world: ServerWorld, location: String) -> bool:
 
 ## Whether the eyes at cell `a` of location `la` see the cell `b` of `lb`
 ## (nothing in the way; how far and how light is Perception's business).
-static func clear(world: ServerWorld, la: String, a: Vector2i, lb: String, b: Vector2i) -> bool:
+## eye, body: heights over the floor (storeys) of the one looking and of
+## what is looked at (BodySize); a man's by default.
+static func clear(world: ServerWorld, la: String, a: Vector2i, lb: String, b: Vector2i,
+		eye := EYE, body := BODY) -> bool:
 	if la != lb and not same_space(world, la, lb):
 		return false
-	var ha := world.levels.z(la) + EYE
-	var hb := world.levels.z(lb) + BODY
+	var ha := world.levels.z(la) + eye
+	var hb := world.levels.z(lb) + body
 	var dx := absi(b.x - a.x)
 	var dy := -absi(b.y - a.y)
 	var n := maxi(dx, -dy)

@@ -258,3 +258,28 @@ func test_a_creature_sees_one_on_a_walkway_not_behind_walls_upstairs() -> void:
 	eq(w._part_at(level, 173, 170, "structure"), "base:wood_wall", "a wall upstairs")
 	_ticks(12, Vector2i(173, 177))
 	check(not deer.memory.has(pid), "not behind a wall upstairs")
+
+
+func test_bodies_have_their_own_size() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	eq(content.errors, PackedStringArray())
+	var hare := BodySize.of(content.get_def("base:hare"))
+	var deer := BodySize.of(content.get_def("base:deer"))
+	eq(BodySize.of(content.get_def("base:human_m")), BodySize.HUMAN, "a man without a size is a man")
+	check(hare["half"].x < BodySize.HUMAN["half"].x and deer["half"].x > BodySize.HUMAN["half"].x, "small and big boxes")
+	check(float(hare["eye"]) < Sight.EYE and float(deer["height"]) > float(BodySize.HUMAN["height"]), "heights by body")
+	# A body two cells wide stops a cell sooner at a wall than a man does.
+	var wall := func(x: int, _y: int) -> bool: return x == 5
+	var man := Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
+	var big := man
+	for i in 200:
+		man = Movement.step_at(man, 1, 0, wall, 51)
+		big = Movement.step_at(big, 1, 0, wall, 51, Vector2i(Movement.UNIT, Movement.UNIT / 2))
+	eq(man.x, 5 * Movement.UNIT - Movement.HALF_X)
+	eq(big.x, 4 * Movement.UNIT)
+	for bad: Variant in [[1, 2], {"half": [0, 1]}, {"half": [1]}, {"height": -1}, {"eye": "high"}, {"radius": 99}]:
+		var errors := PackedStringArray()
+		BodySize.parse("test:x", bad, errors)
+		check(not errors.is_empty(), "malformed size refused: %s" % str(bad))
+	eq(BodySize.cells(Vector2i(384, 384), Vector2i(256, 128)), [Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1)] as Array[Vector2i],
+		"the cells a body covers")

@@ -19,11 +19,12 @@ extends RefCounted
 ## the last hurt.
 const REGEN_EVERY := 20
 const REGEN_AFTER := 200
-## How near an arrow passes to hit (units), and how far it moves per check.
-const HIT_RADIUS := 110
+## How much nearer than a body's radius (BodySize) an arrow passes to hit
+## it (units), and how far it moves per check.
+const ARROW_MARGIN := 30
+## The widest body (cells of radius) looked for round a point.
+const MAX_BODY_CELLS := 4
 const PROJECTILE_STEP := 96
-## A body is about this far round its position (units): blows reach it.
-const BODY := 80
 
 var world: ServerWorld
 ## id -> Projectile
@@ -79,6 +80,14 @@ func max_health_of(id: String) -> int:
 
 func _body_plan(p: Dictionary) -> String:
 	return String((p["appearance"] as Dictionary).get("body_plan", "base:humanoid_adult"))
+
+
+## How big one is (BodySize): a character by its body plan, a creature by its kind.
+func size_of(id: String) -> Dictionary:
+	if world.present.has(id):
+		return BodySize.of(world.content.get_def(_body_plan(world.present[id])))
+	var c := world.creatures.get_creature(id)
+	return BodySize.of(world.content.get_def(c.kind)) if c else BodySize.HUMAN
 
 
 func health_of(id: String) -> int:
@@ -248,18 +257,22 @@ func _blow(attacker: String, location: String, from: Vector2i, aim: Vector2i, w:
 	if dir == Vector2.ZERO:
 		return ""
 	dir = dir.normalized()
-	var reach := float(w["reach"]) * Movement.UNIT + BODY
+	# Reach is from the striker's body to the other's: big bodies are hit
+	# farther from their middle, and a big striker reaches farther.
+	var reach := float(w["reach"]) * Movement.UNIT + float(size_of(attacker)["radius"]) - float(BodySize.HUMAN["radius"])
 	var cos_arc := cos(deg_to_rad(float(w["arc"]) / 2.0))
 	var best := ""
 	var best_d := INF
 	for id: String in _targets_near(attacker, location, from, reach):
 		var v := Vector2(_position(id) - from)
 		var d := v.length()
-		if d > reach or d >= best_d:
+		var body := float(size_of(id)["radius"])
+		if d > reach + body or d >= best_d:
 			continue
-		if d > BODY and v.dot(dir) / d < cos_arc:
+		if d > body and v.dot(dir) / d < cos_arc:
 			continue
-		if not Sight.clear(world, location, Movement.cell_of(from), location, Movement.cell_of(_position(id))):
+		if not Sight.clear(world, location, Movement.cell_of(from), location, Movement.cell_of(_position(id)),
+				float(size_of(attacker)["eye"]), float(size_of(id)["body"])):
 			continue
 		best = id
 		best_d = d
@@ -268,7 +281,8 @@ func _blow(attacker: String, location: String, from: Vector2i, aim: Vector2i, w:
 	return best
 
 
-## Who may be hit near `at`: creatures, and characters where the rules allow.
+## Who may be hit near `at`: creatures, and characters where the rules
+## allow, whose bodies (BodySize radius) come within `radius` of it.
 func _targets_near(attacker: String, location: String, at: Vector2i, radius: float) -> Array:
 	var out := []
 	var attacker_is_creature := world.creatures.has(attacker)
@@ -277,14 +291,14 @@ func _targets_near(attacker: String, location: String, at: Vector2i, radius: flo
 			continue
 		if not attacker_is_creature and pvp != "free":
 			continue  # PvE (ADR-0016): characters are not hit by characters
-		if Vector2(world.present[id]["pos"] - at).length() <= radius:
+		if Vector2(world.present[id]["pos"] - at).length() <= radius + float(size_of(id)["radius"]):
 			out.append(id)
 	var cell := Movement.cell_of(at)
-	var r := ceili(radius / Movement.UNIT) + 1
+	var r := ceili(radius / Movement.UNIT) + 1 + MAX_BODY_CELLS
 	for cy in range((cell.y - r) >> 5, ((cell.y + r) >> 5) + 1):
 		for cx in range((cell.x - r) >> 5, ((cell.x + r) >> 5) + 1):
 			for id: String in world.creatures.in_chunk(location, cx, cy):
-				if id != attacker and Vector2(world.creatures.get_creature(id).pos - at).length() <= radius:
+				if id != attacker and Vector2(world.creatures.get_creature(id).pos - at).length() <= radius + float(size_of(id)["radius"]):
 					out.append(id)
 	return out
 
@@ -397,12 +411,12 @@ func _stops(pr: Projectile, cell: Vector2i, lo: float, hi: float) -> bool:
 	return Sight._blocked(world, cell, lo, hi, pr.from_location, pr.start, pr.aim_location, pr.aim)
 
 
-## Who is hit: in the location it flies over, at the height of a body there.
+## Who is hit: in the location it flies over, below the top of a body there.
 func _hit_near(pr: Projectile) -> String:
-	if pr.h - world.levels.z(pr.location) > 1.0:
-		return ""  # over their heads
-	for id: String in _targets_near(pr.owner, pr.location, Vector2i(pr.pos), HIT_RADIUS):
-		return id
+	var above := pr.h - world.levels.z(pr.location)
+	for id: String in _targets_near(pr.owner, pr.location, Vector2i(pr.pos), ARROW_MARGIN):
+		if above <= maxf(1.0, float(size_of(id)["height"])):
+			return id  # one storey or the body's own height: not over its head
 	return ""
 
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwwg52ypfwiny"
-path="res://.godot/imported/poring.png-33a89c3ac1a0aa93a05ff28a5f2ca4d9.ctex"
+uid="uid://dc7p1e4hrvhfu"
+path="res://.godot/imported/deer_1.png-66b5344e2e619e1b1eade83f49facfa6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/creatures/poring.png"
-dest_files=["res://.godot/imported/poring.png-33a89c3ac1a0aa93a05ff28a5f2ca4d9.ctex"]
+source_file="res://content/base/art/lpc_animals/deer_1.png"
+dest_files=["res://.godot/imported/deer_1.png-66b5344e2e619e1b1eade83f49facfa6.ctex"]
 
 [params]
 

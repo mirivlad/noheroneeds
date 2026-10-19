@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bv464mggpcqv5"
-path="res://.godot/imported/poporing.png-747c0b922bf27e3762a787b29d2b020d.ctex"
+uid="uid://ckn03x2rmbqao"
+path="res://.godot/imported/cave_spider_1.png-a27300a7d394dd323c8ff5b074d2c18c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/creatures/poporing.png"
-dest_files=["res://.godot/imported/poporing.png-747c0b922bf27e3762a787b29d2b020d.ctex"]
+source_file="res://content/base/art/lpc_animals/cave_spider_1.png"
+dest_files=["res://.godot/imported/cave_spider_1.png-a27300a7d394dd323c8ff5b074d2c18c.ctex"]
 
 [params]
 

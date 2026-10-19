@@ -848,3 +848,45 @@ https://opengameart.org/content/opp2017-jungle-and-temple-set
 - Авторы: Blarumyrran, правка Gaurav
 - Лицензии: CC0
 - https://opengameart.org/content/modified-32x32-treasure-chest
+
+<!-- animals -->
+# Авторы графики зверей
+
+Звери и чудища — из наборов LPC на OpenGameArt, собраны в листы игры
+`tools/art/import_lpc_animals.py` (кадры переложены, рисунок не менялся; поринг — перекрашенный слизень).
+
+## [LPC] bears, deer, lions and more (олень)
+
+- Авторы: tapatilorenzo
+- Лицензии: CC-BY 4.0
+- https://opengameart.org/content/lpc-bears-deer-lions-and-more
+
+## Giant rat (пещерная крыса), из того же набора
+
+- Авторы: Sevarihk
+- Лицензии: CC-BY 4.0
+- https://opengameart.org/content/lpc-bears-deer-lions-and-more
+
+## [LPC] Wolf Animation (волк)
+
+- Авторы: Redshrike, заказ William.Thompsonj
+- Лицензии: CC-BY 3.0 / CC-BY 4.0 / GPL 2.0 / GPL 3.0 / OGA-BY 3.0
+- https://opengameart.org/content/lpc-wolf-animation
+
+## Reorganised LPC rabbit (заяц)
+
+- Авторы: Redshrike; перекладка Evert
+- Лицензии: CC-BY 3.0 / CC-BY-SA 3.0 / OGA-BY 3.0
+- https://opengameart.org/content/reorganised-lpc-rabbit
+
+## [LPC] Spider (пещерный паук)
+
+- Авторы: Redshrike, заказ William.Thompsonj
+- Лицензии: CC-BY 3.0 / CC-BY 4.0 / GPL 2.0 / GPL 3.0 / OGA-BY 3.0
+- https://opengameart.org/content/lpc-spider
+
+## [LPC] Monsters (слизни: поринг перекрашен, попоринг)
+
+- Авторы: Charles Sanchez (CharlesGabriel), bluecarrot16; заказ Pierre Vigier
+- Лицензии: CC-BY-SA 3.0 / GPL 3.0
+- https://opengameart.org/content/lpc-monsters

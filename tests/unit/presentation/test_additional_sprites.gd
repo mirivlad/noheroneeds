@@ -84,9 +84,11 @@ func test_new_bodies_can_be_chosen_saved_and_played() -> void:
 			await (Engine.get_main_loop() as SceneTree).process_frame
 
 
-func test_old_and_new_animal_variants_are_stable() -> void:
+func test_animals_are_lpc_sheets_and_keep_their_variant() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	for animal: String in ["hare", "deer", "wolf", "cave_rat", "cave_spider", "poring", "poporing"]:
+		var visual := content.visual_of("base:" + animal)
+		eq(visual.get("format"), "lpc", animal + " is drawn from LPC frames")
 		var seen := {}
 		for i in 16:
 			var view := WorldView.new()
@@ -94,16 +96,19 @@ func test_old_and_new_animal_variants_are_stable() -> void:
 			var id := "animal-%d" % i
 			var looks := {"body_plan": "base:" + animal}
 			var doll := view._character(id, looks)
-			var sprite: Sprite2D = doll._layers[0][1]
-			var path := String(sprite.texture.resource_name)
+			check(doll is LpcSprite, animal + " plays like the people")
+			var path := String((doll._layers[0][1] as Sprite2D).texture.resource_name)
 			seen[path] = true
 			check(view._character(id, looks) == doll, "unchanged appearance reuses its sprite")
 			var another := WorldView.new()
 			another.content = content
-			var copy := another._character(id, looks)
-			eq((copy._layers[0][1] as Sprite2D).texture.resource_name, path, "same entity on another client")
+			eq((another._character(id, looks)._layers[0][1] as Sprite2D).texture.resource_name, path,
+				"same entity on another client")
+			doll.show_at(Vector2.ZERO, 0.0, true)
+			doll.show_at(Vector2(4, 0), 0.1, true)
+			eq(doll._anim_name, "walk", animal + " walks")
+			doll.swing(Vector2.LEFT, "lunge")
+			check(doll.swinging(), animal + " strikes")
 			view.free()
 			another.free()
-		eq(seen.size(), 2, "both variants of " + animal + " remain in use")
-		check(seen.has("res://content/base/art/creatures/" + animal + ".png"), "old sheet remains in use")
-		check(seen.has("res://content/base/art/additional/" + animal + ".png"), "new sheet appears alongside it")
+		eq(seen.size(), 1 + (visual.get("alternates", []) as Array).size(), "every look of " + animal + " in use")

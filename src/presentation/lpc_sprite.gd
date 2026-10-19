@@ -11,8 +11,6 @@ extends CharacterSprite
 ## (The right hand: nearer the viewer facing east, farther facing west.)
 const HAND_AT := [Vector2(6, -7), Vector2(-4, -7), Vector2(-7, -7), Vector2(4, -7)]
 const HAND_BEHIND_AT := [true, true, false, false]
-## The feet in a 64 px frame; larger frames are centred on it.
-const FEET := 62
 
 ## Layers of what is in the hands: [slot, Sprite2D, sheet]; and which item.
 var _held_layers: Array = []
@@ -103,7 +101,9 @@ func _place_frame(s: Sprite2D, sheet: Dictionary, anim_name: String, column: int
 	s.visible = true
 	s.region_rect = Rect2(r[0] + column * size, r[1] + _dir * size, size, size)
 	s.flip_h = false
-	s.offset = -Vector2(size / 2.0, FEET + (size - 64) / 2.0)
+	# The visual's origin is the feet in its own frames; larger frames (a
+	# tool's swing) are centred on them.
+	s.offset = -Vector2(size / 2.0, float(_visual["origin"][1]) + (size - int(_visual["rect"][3])) / 2.0)
 
 
 func _frame_count(anim_name: String) -> int:

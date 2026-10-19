@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://wq0okd30dnum"
-path="res://.godot/imported/cave_rat.png-43286b722c30b761a8b24af199678e62.ctex"
+uid="uid://bsshkaggelcr3"
+path="res://.godot/imported/deer.png-a8afef0f439e965d7f165178fcbdba3d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/additional/cave_rat.png"
-dest_files=["res://.godot/imported/cave_rat.png-43286b722c30b761a8b24af199678e62.ctex"]
+source_file="res://content/base/art/lpc_animals/deer.png"
+dest_files=["res://.godot/imported/deer.png-a8afef0f439e965d7f165178fcbdba3d.ctex"]
 
 [params]
 

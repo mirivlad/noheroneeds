@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://mk7curelwyig"
-path="res://.godot/imported/deer.png-de30160aa0c23d7ecf7956e00a329a66.ctex"
+uid="uid://0gexhaleg0le"
+path="res://.godot/imported/cave_spider.png-1c87f9708ba2ab30b145aed5a2a99301.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/additional/deer.png"
-dest_files=["res://.godot/imported/deer.png-de30160aa0c23d7ecf7956e00a329a66.ctex"]
+source_file="res://content/base/art/lpc_animals/cave_spider.png"
+dest_files=["res://.godot/imported/cave_spider.png-1c87f9708ba2ab30b145aed5a2a99301.ctex"]
 
 [params]
 

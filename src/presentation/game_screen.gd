@@ -271,7 +271,7 @@ func apply_settings() -> void:
 func _layout_hud() -> void:
 	var viewport_size := get_viewport_rect().size
 	minimap.position = Vector2(viewport_size.x - Minimap.SIZE - 4, 34)
-	hotbar.position = Vector2(floorf((viewport_size.x - hotbar.get_combined_minimum_size().x) / 2.0), viewport_size.y - 42)
+	hotbar.position = Vector2(floorf((viewport_size.x - hotbar.get_combined_minimum_size().x) / 2.0), viewport_size.y - 60)  # above the status line
 	status.position = Vector2(6, viewport_size.y - 18)
 	# Legacy keeps its original typography. HD uses the same font pixels with
 	# twice the space: bounded lines cannot spill across the minimap or hotbar.

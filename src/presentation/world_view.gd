@@ -1184,6 +1184,7 @@ func _projectile(id: String, e: Dictionary, delta: float) -> void:
 			s.texture = texture(v["atlas_path"])
 			s.region_enabled = true
 			s.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+			s.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))
 		# The picture points up and right; turn it along the flight.
 		s.rotation = atan2(float(e.get("vy", 0)), float(e.get("vx", 1))) + PI / 4.0
 		s.position = target
@@ -1254,8 +1255,9 @@ func _item(id: String, e: Dictionary) -> Sprite2D:
 		s.texture = texture(v["atlas_path"])
 		s.region_enabled = true
 		s.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
+		s.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))
 	s.position = Vector2(int(e["x"]), int(e["y"])) / UNITS_PER_PIXEL
-	s.offset = Vector2(0, -4)
+	s.offset = Vector2(0, -4) / s.scale
 	_sorted.add_child(s)
 	_items[id] = s
 	return s

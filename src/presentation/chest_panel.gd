@@ -36,7 +36,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		l.custom_minimum_size = Vector2(170, 130)
 		l.add_theme_font_override("font", Art.font())
 		l.add_theme_font_size_override("font_size", 16)
-		l.fixed_icon_size = Vector2i(16, 16)
+		l.fixed_icon_size = Vector2i(32, 32)
 		row.add_child(l)
 	_mine.item_clicked.connect(func(i: int, _at: Vector2, _b: int) -> void: _pick(_mine_ids[i], _inventory, true))
 	_theirs.item_clicked.connect(func(i: int, _at: Vector2, _b: int) -> void: _pick(_their_ids[i], contents, false))

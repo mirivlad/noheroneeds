@@ -254,10 +254,11 @@ func hold(picture: Texture2D, grip := GRIP, _item := "") -> void:
 		return
 	if _held == null:
 		_held = Sprite2D.new()
-		_held.scale = Vector2(0.75, 0.75)
 		add_child(_held)
 	elif _held.texture == picture and _grip == grip:
 		return  # the same thing (asked every frame): a swing goes on undisturbed
+	# Twelve world pixels across, whatever the picture's own size.
+	_held.scale = Vector2.ONE * 12.0 / maxf(1.0, maxf(picture.get_width(), picture.get_height()))
 	_grip = grip
 	_held.texture = picture
 	_place_held()

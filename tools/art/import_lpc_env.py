@@ -144,6 +144,10 @@ def ceilings(color):
                 i = int(wt.get("tileid"))
                 x, y = (i % 64) * T, (i // 64) * T
                 out[mask] = sheet.crop((x, y, x + T, y + T))
+    # All four corners in the mass: LPC leaves a hole there (a room's middle
+    # in its own maps); a wall's top is the mass's colour all over.
+    colours = [c for c in out[3].getdata() if c[3] == 255]
+    out[15] = Image.new("RGBA", (T, T), max(set(colours), key=colours.count))
     return out
 
 
@@ -244,7 +248,137 @@ def build_buildings():
     return defs
 
 
+PLANTS_PNG = SRC / "lpc-plants" / "lpc-flowers-plants-fungi-wood" / "plants.png"
+TREES_DIR = SRC / "lpc-trees" / "lpc-trees"
+# Plants: id -> (sheet, [rects: the picture and its alternates]); a picture
+# is cut to what is drawn and stands with its base (trunk, stem) on the
+# middle of its cell.
+PLANTS = {
+    "base:tall_grass": ("plants", [(0, 320, 32, 32), (32, 320, 32, 32), (64, 320, 32, 32)]),
+    "base:clover": ("plants", [(320, 256, 32, 32), (352, 256, 32, 32)]),
+    "base:flower_red": ("plants", [(256, 96, 32, 32), (256, 160, 32, 32)]),
+    "base:flower_yellow": ("plants", [(288, 96, 32, 32), (288, 160, 32, 32)]),
+    "base:flower_blue": ("plants", [(224, 96, 32, 32), (224, 160, 32, 32)]),
+    "base:fern": ("plants", [(352, 288, 32, 32), (384, 288, 32, 32)]),
+    "base:reeds": ("plants", [(32, 416, 32, 32), (64, 416, 32, 32)]),
+    "base:bush": ("plants", [(192, 704, 64, 64), (256, 704, 64, 64), (320, 704, 64, 64)]),
+    "base:berry_bush": ("plants", [(160, 160, 32, 32), (160, 128, 32, 32)]),
+    "base:oak": ("trees", [(301, 512, 165, 200), (491, 512, 170, 200), (672, 512, 160, 200), (835, 512, 155, 200)]),
+    "base:birch": ("trees", [(164, 224, 89, 128), (264, 224, 107, 128)]),
+    "base:spruce": ("trees", [(64, 352, 63, 160), (0, 352, 62, 160)]),
+}
+
+
+def _base(img):
+    """Where a cut picture stands: the middle of its lowest solid row (a
+    trunk or stem; a shadow is half transparent and does not count)."""
+    px = img.load()
+    for y in range(img.height - 1, -1, -1):
+        xs = [x for x in range(img.width) if px[x, y][3] == 255]
+        if len(xs) >= 2:
+            return (min(xs) + max(xs)) // 2, y
+    return img.width // 2, img.height - 1
+
+
+def build_plants():
+    sheets = {"plants": Image.open(PLANTS_PNG).convert("RGBA"),
+              "trees": Image.open(TREES_DIR / "trees-green.png").convert("RGBA")}
+    pieces = []  # (id, [(img, origin)])
+    for part, (sheet, rects) in PLANTS.items():
+        pics = []
+        for (x, y, w, h) in rects:
+            img = sheets[sheet].crop((x, y, x + w, y + h))
+            img = img.crop(img.getbbox())
+            bx, by = _base(img)
+            # The base on the cell's middle, a little above its bottom edge.
+            pics.append((img, [bx - T // 2, by + 6]))
+        pieces.append((part, pics))
+    # Shelf packing: a row per plant.
+    width = max(sum(i.width for i, _ in pics) for _, pics in pieces)
+    height = sum(max(i.height for i, _ in pics) for _, pics in pieces)
+    atlas = Image.new("RGBA", (width, height))
+    defs = []
+    y = 0
+    for part, pics in pieces:
+        x = 0
+        rects = []
+        for img, origin in pics:
+            atlas.paste(img, (x, y))
+            rects.append(([x, y, img.width, img.height], origin))
+            x += img.width
+        y += max(i.height for i, _ in pics)
+        (r0, o0), alts = rects[0], rects[1:]
+        defs.append({"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
+                     "atlas": "art/lpc_env/plants.png", "rect": r0, "origin": o0, "pixel_scale": 0.5, "variants": 1,
+                     "alternates": [{"rect": r, "origin": o} for r, o in alts]})
+    atlas.save(OUT / "plants.png", optimize=True)
+    return defs
+
+
+# Things standing on a cell: id -> (file under art_src/lpc_env, rect, states).
+PROPS = {
+    "base:wood_stairs": ("wooden_stairs.png", (0, 320, 32, 64), {"down": (0, 320, 32, 64)}),
+    "base:torch": ("house_inside_1.png", (416, 192, 32, 96), {}),
+    "base:wood_column": ("lpc-windows-doors/lpc-windows-doors-v2/windows-doors.png", (960, 0, 32, 64), {}),
+    "base:chest": ("chest2.png", (0, 0, 32, 32), {"open": (32, 0, 32, 32)}),
+}
+
+
+def build_props():
+    """Props a cell wide, standing on its bottom edge (their own pixels, cut
+    to what is drawn but keeping the cell's width so they sit on it)."""
+    pics = []
+    for part, (path, rect, states) in PROPS.items():
+        src = Image.open(SRC / path).convert("RGBA")
+        cuts = {}
+        for name, (x, y, w, h) in [("", rect)] + list(states.items()):
+            img = src.crop((x, y, x + w, y + h))
+            box = img.getbbox()
+            cuts[name] = img.crop((0, box[1], w, box[3]))
+        pics.append((part, cuts))
+    width = max(sum(c.width for c in cuts.values()) for _, cuts in pics)
+    atlas = Image.new("RGBA", (width, sum(max(c.height for c in cuts.values()) for _, cuts in pics)))
+    defs = []
+    y = 0
+    for part, cuts in pics:
+        x = 0
+        rects = {}
+        for name, img in cuts.items():
+            atlas.paste(img, (x, y + max(c.height for c in cuts.values()) - img.height))
+            rects[name] = [x, y + max(c.height for c in cuts.values()) - img.height, img.width, img.height]
+            x += img.width
+        y += max(c.height for c in cuts.values())
+        d = {"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
+             "atlas": "art/lpc_env/props.png", "rect": rects[""], "origin": [0, rects[""][3] - 4],
+             "pixel_scale": 0.5, "variants": 1}
+        if len(rects) > 1:
+            d["states"] = {k: v for k, v in rects.items() if k}
+        defs.append(d)
+    atlas.save(OUT / "props.png", optimize=True)
+    return defs
+
+
 ENV_CREDITS_START = "<!-- environment -->"
+
+
+# Credits of the packs, as they give them, and of single pictures.
+PACK_CREDITS = [
+    ("[LPC] Terrains", "lpc-terrains/lpc-terrains/CREDITS-terrain.txt"),
+    ("[LPC] Walls", "lpc-walls/lpc-walls/CREDITS-walls.txt"),
+    ("[LPC] Windows & Doors", "lpc-windows-doors/lpc-windows-doors-v2/CREDITS-windows-doors.txt"),
+    ("[LPC] Floors", "lpc-floors/lpc-floors/CREDITS-floors.txt"),
+    ("[LPC] Trees", "lpc-trees/lpc-trees/CREDITS-trees.txt"),
+    ("[LPC] Flowers / Plants / Fungi / Wood", "lpc-plants/lpc-flowers-plants-fungi-wood/CREDITS-plants.txt"),
+]
+FILE_CREDITS = [
+    ("[LPC] Thatched-roof Cottage (крыша)", "bluecarrot16", "CC-BY-SA 3.0 / GPL 3.0",
+     "https://opengameart.org/content/lpc-thatched-roof-cottage"),
+    ("[LPC] Wooden Stairs (лестница)", "Nyom", "CC-BY-SA 4.0", "https://opengameart.org/content/lpc-wooden-stairs"),
+    ("[LPC] House Insides (факел)", "Lanea Zimmerman (Sharm), репак", "CC-BY-SA 3.0 / GPL 3.0",
+     "https://opengameart.org/content/lpc-house-insides"),
+    ("Modified 32x32 Treasure chest (сундук)", "Blarumyrran, правка Gaurav", "CC0",
+     "https://opengameart.org/content/modified-32x32-treasure-chest"),
+]
 
 
 def credits():
@@ -252,26 +386,26 @@ def credits():
     text = CREDITS.read_text(encoding="utf-8") if CREDITS.exists() else ""
     text = text.split(ENV_CREDITS_START)[0].rstrip() + "\n\n"
     lines = [ENV_CREDITS_START, "# Авторы графики окружения", "",
-             "Земля и вода — из набора [[LPC] Terrains](https://opengameart.org/content/lpc-terrains)",
-             "(bluecarrot16 и авторы ниже), собраны в атлас `tools/art/import_lpc_env.py`; рисунок не менялся.",
-             "Ниже — список авторов из самого набора (CREDITS-terrain.txt).", ""]
-    raw = (TERRAIN_DIR / "CREDITS-terrain.txt").read_text(encoding="utf-8", errors="replace")
-    for block in [b.strip() for b in raw.split("\n\n") if b.strip()]:
-        head, *rest = block.split("\n")
-        lines.append("## " + head.strip())
-        lines.append("")
-        lines += ["- " + r.strip() for r in rest if r.strip()]
-        lines.append("")
+             "Земля, вода, стены, двери, окна, полы, крыши, деревья, растения и вещи — из наборов LPC",
+             "на OpenGameArt; собраны в атласы `tools/art/import_lpc_env.py`, рисунок не менялся",
+             "(двери удлинены повтором досок посередине). Ниже — авторы каждого набора так, как он их",
+             "указывает, и отдельных рисунков. Где лицензий несколько, можно использовать любую.", ""]
+    for name, path in PACK_CREDITS:
+        lines += ["## " + name, "", "```"]
+        lines += (SRC / path).read_text(encoding="utf-8", errors="replace").strip().splitlines()
+        lines += ["```", ""]
+    for name, who, lic, url in FILE_CREDITS:
+        lines += ["## " + name, "", "- Авторы: " + who, "- Лицензии: " + lic, "- " + url, ""]
     CREDITS.write_text(text + "\n".join(lines), encoding="utf-8")
 
 
 def main():
-    if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF]):
+    if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF, PLANTS_PNG, TREES_DIR]):
         sys.exit("no LPC environment sources: run tools/art/fetch_lpc_env.sh")
-    defs = build_terrain() + build_buildings()
+    defs = build_terrain() + build_buildings() + build_plants() + build_props()
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     credits()
-    print("%d ground visuals" % len(defs))
+    print("%d environment visuals" % len(defs))
 
 
 if __name__ == "__main__":

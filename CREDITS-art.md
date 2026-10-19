@@ -232,81 +232,619 @@
 <!-- environment -->
 # Авторы графики окружения
 
-Земля и вода — из набора [[LPC] Terrains](https://opengameart.org/content/lpc-terrains)
-(bluecarrot16 и авторы ниже), собраны в атлас `tools/art/import_lpc_env.py`; рисунок не менялся.
-Ниже — список авторов из самого набора (CREDITS-terrain.txt).
+Земля, вода, стены, двери, окна, полы, крыши, деревья, растения и вещи — из наборов LPC
+на OpenGameArt; собраны в атласы `tools/art/import_lpc_env.py`, рисунок не менялся
+(двери удлинены повтором досок посередине). Ниже — авторы каждого набора так, как он их
+указывает, и отдельных рисунков. Где лицензий несколько, можно использовать любую.
 
-## "[LPC] Terrains" by bluecarrot16, Lanea Zimmerman (Sharm), Daniel Eddeland (Daneeklu), Richard Kettering (Jetrel), Zachariah Husiar (Zabin), Hyptosis, Casper Nilsson, Buko Studios, Nushio, ZaPaper, billknye, William Thompson, caeles, Redshrike, Bertram, and Rayane Félix (RayaneFLX)
+## [LPC] Terrains
+
+```
+"[LPC] Terrains" by bluecarrot16, Lanea Zimmerman (Sharm), Daniel Eddeland (Daneeklu), Richard Kettering (Jetrel), Zachariah Husiar (Zabin), Hyptosis, Casper Nilsson, Buko Studios, Nushio, ZaPaper, billknye, William Thompson, caeles, Redshrike, Bertram, and Rayane Félix (RayaneFLX)
+
+Liberated Pixel Cup (LPC) Base Assets (sprites & map tiles)
+Lanea Zimmerman (Sharm)
+CC-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+
+[LPC] Farming tilesets, magic animations and UI elements
+Daniel Eddeland (Daneeklu)
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-farming-tilesets-magic-animations-and-ui-elements
+
+ZRPG Tiles
+Richard Kettering (Jetrel), Zachariah Husiar (Zabin), Hyptosis, Lanea Zimmerman (Sharm), and Open Pixel Project.
+CC-BY-SA 3.0+
+https://opengameart.org/content/zrpg-tiles
+
+LPC C.Nilsson
+Casper Nilsson
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-cnilsson
+
+Frozen Lake [LPC]
+Buko Studios (http://www.buko-studios.com/) Commissioned by PlayCraft: (www.playcraftapp.com)
+CC-BY 3.0
+https://opengameart.org/content/frozen-lake-lpc
 
 
-## Liberated Pixel Cup (LPC) Base Assets (sprites & map tiles)
+LPC Animated Water and waterfalls
+ZaPaper
+CC-BY-SA 3.0
+https://opengameart.org/content/lpc-animated-water-and-waterfalls
 
-- Lanea Zimmerman (Sharm)
-- CC-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0
-- https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+LPC More Water Transitions
+billknye
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-more-water-transitions
 
-## [LPC] Farming tilesets, magic animations and UI elements
+[LPC] Sand+Rock Alt Colors
+William.Thompsonj, Daniel Eddeland
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-sandrock-alt-colors
 
-- Daniel Eddeland (Daneeklu)
-- CC-BY-SA 3.0 / GPL 3.0
-- https://opengameart.org/content/lpc-farming-tilesets-magic-animations-and-ui-elements
+[LPC] Colorful Sand + Deep Water!
+Nushio
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-colorful-sand-deep-water
 
-## ZRPG Tiles
+LPC terrain extension
+caeles
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-terrain-extension
 
-- Richard Kettering (Jetrel), Zachariah Husiar (Zabin), Hyptosis, Lanea Zimmerman (Sharm), and Open Pixel Project.
-- CC-BY-SA 3.0+
-- https://opengameart.org/content/zrpg-tiles
+RPG Tiles: Cobble stone paths & town objects
+Zachariah Husiar (Zabin), Daniel Eddeland (Daneeklu), Richard Kettering (Jetrel), Hyptosis, Redshrike, Bertram
+CC-BY-SA 3.0
+https://opengameart.org/content/rpg-tiles-cobble-stone-paths-town-objects
 
-## LPC C.Nilsson
+RPG Terrains
+Rayane Félix (RayaneFLX)
+CC-BY-SA 3.0
+https://opengameart.org/content/rpg-terrains
+```
 
-- Casper Nilsson
-- CC-BY-SA 3.0 / GPL 3.0
-- https://opengameart.org/content/lpc-cnilsson
+## [LPC] Walls
 
-## Frozen Lake [LPC]
+```
+"[LPC] Walls" by bluecarrot16, Lanea Zimmerman (Sharm), Daniel Armstrong (HughSpectrum), William Thompson (William.Thompsonj), Hyptosis, Zabin, Daniel Cook, Guido Bos, SpiderDave, Cougarmint, Stephen Challener (Redshrike), Matthew Nash, Wolthera van Hövell tot Westerflier (TheraHedwig), Reemax, bleutailfly, NaRNeRZz, Sir Spummington, Casper Nilsson, KnoblePersona. CC-BY-SA 3.0. 
 
-- Buko Studios (http://www.buko-studios.com/) Commissioned by PlayCraft: (www.playcraftapp.com)
-- CC-BY 3.0
-- https://opengameart.org/content/frozen-lake-lpc
+Based on:
 
-## LPC Animated Water and waterfalls
+Liberated Pixel Cup (LPC) Base Assets (sprites & map tiles)
+Lanea Zimmerman (Sharm)
+CC-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0
+http://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
 
-- ZaPaper
-- CC-BY-SA 3.0
-- https://opengameart.org/content/lpc-animated-water-and-waterfalls
+Liberated Pixel Cup (LPC) Base Assets (sprites & map tiles)
+Daniel Armstrong (HughSpectrum)
+CC-BY-SA 3.0 / GPL 3.0
+http://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles#tiles/castlewalls.png
+http://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles#tiles/castlefloors.png
 
-## LPC More Water Transitions
+[LPC] Arabic Elements
+Lanea Zimmerman (Sharm), commissioned by William Thompson (William.Thompsonj)
+CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / GPL 2.0 / OGA-BY 3.0
+https://opengameart.org/content/lpc-arabic-elements
 
-- billknye
-- CC-BY-SA 3.0 / GPL 3.0
-- https://opengameart.org/content/lpc-more-water-transitions
+[LPC] Dungeon Elements
+Lanea Zimmerman (Sharm), commissioned by William Thompson (William.Thompsonj)
+CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / GPL 2.0 / OGA-BY 3.0
+https://opengameart.org/content/lpc-dungeon-elements
 
-## [LPC] Sand+Rock Alt Colors
+[LPC] Adobe Building Set
+Lanea Zimmerman (Sharm), commissioned by William Thompson (William.Thompsonj)
+CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / GPL 2.0 / OGA-BY 3.0
+https://opengameart.org/content/lpc-adobe-building-set
 
-- William.Thompsonj, Daniel Eddeland
-- CC-BY-SA 3.0 / GPL 3.0
-- https://opengameart.org/content/lpc-sandrock-alt-colors
+Castle Tiles for RPG's
+Hyptosis, Zabin, Daniel Cook
+CC-BY 3.0
+http://opengameart.org/content/castle-tiles-for-rpgs
 
-## [LPC] Colorful Sand + Deep Water!
+LPC: Interior Castle Tiles
+Lanea Zimmerman (Sharm)
+CC-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0
+https://opengameart.org/content/lpc-interior-castle-tiles
 
-- Nushio
-- CC-BY-SA 3.0 / GPL 3.0
-- https://opengameart.org/content/lpc-colorful-sand-deep-water
+Lots of free 2d tiles and sprites by Hyptosis
+Hyptosis
+CC-BY 3.0
+https://opengameart.org/content/lots-of-free-2d-tiles-and-sprites-by-hyptosis
 
-## LPC terrain extension
+LPC Compatible Ancient Roman Architecture
+Wolthera van Hövell tot Westerflier (TheraHedwig), Lanea Zimmerman (Sharm) 
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-compatible-ancient-roman-architecture
 
-- caeles
-- CC-BY-SA 3.0 / GPL 3.0
-- https://opengameart.org/content/lpc-terrain-extension
+Flowers, buildings and boxes; Interior wooden tiles; some old castle stuff
+Guido Bos
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/flowers-buildings-and-boxes-interior-wooden-tiles-some-old-castle-stuff
 
-## RPG Tiles: Cobble stone paths & town objects
+Wallpaper pattern tiles
+SpiderDave
+CC0
+https://opengameart.org/content/wallpaper-pattern-tiles
 
-- Zachariah Husiar (Zabin), Daniel Eddeland (Daneeklu), Richard Kettering (Jetrel), Hyptosis, Redshrike, Bertram
-- CC-BY-SA 3.0
-- https://opengameart.org/content/rpg-tiles-cobble-stone-paths-town-objects
+Wallpaper pattern tiles
+SpiderDave
+CC0
+https://opengameart.org/content/wallpaper-pattern-tiles-0
 
-## RPG Terrains
+Patterns and Cursors
+Cougarmint
+CC0
+https://opengameart.org/content/patterns-and-cursors
 
-- Rayane Félix (RayaneFLX)
-- CC-BY-SA 3.0
-- https://opengameart.org/content/rpg-terrains
+Patterns and Cursors II
+Cougarmint
+CC0
+https://opengameart.org/content/patterns-and-cursors-ii
+
+RPG Indoor Tileset: Expansion 1
+Redshrike
+CC-BY 3.0 / GPL 3.0 / GPL 2.0 / OGA-BY 3.0
+https://opengameart.org/content/rpg-indoor-tileset-expansion-1
+
+"RPG Enemies; Bathroom Tiles" 
+Matthew Nash
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/public-toilet-tileset
+
+Pixel Texture Pack
+jestan
+CC-BY 4.0 / CC-BY 3.0 / CC-BY-SA 4.0 / CC-BY-SA 3.0
+https://opengameart.org/content/pixel-texture-pack
+
+[LPC] House interior and decorations
+Reemax
+CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0
+https://opengameart.org/content/lpc-house-interior-and-decorations
+
+walls and stuff
+bleutailfly
+CC-BY-SA 3.0
+https://opengameart.org/content/walls-and-stuff
+
+Tileset and Characters - Unfinished
+NaRNeRZz
+CC0
+https://opengameart.org/content/tileset-and-characters-unfinished
+
+Adventure Tileset (Unfinished)
+NaRNeRZz
+CC0
+https://opengameart.org/content/adventure-tileset-unfinished
+
+Interior Tiles
+Sir Spummington
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/interior-tiles
+
+LPC C.Nilsson
+Casper Nilsson
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-cnilsson
+
+Steampunk Level Tileset Mega Pack [Level Tileset] [16x16]
+KnoblePersona
+CC-BY 3.0
+https://opengameart.org/content/steampunk-level-tileset-mega-pack-level-tileset-16x16
+```
+
+## [LPC] Windows & Doors
+
+```
+"LPC Windows & Doors" by bluecarrot16, Lanea Zimmerman (Sharm) and Daniel Armstrong (HughSpectrum), Casper Nilsson, Anamaris, Krusmira, Keith Karnage, Guido Bos, and Talosaurus. 
+License: CC-BY-SA 3.0 / GPL 3.0+
+
+Based on:
+"LPC Base Assets" 
+Lanea Zimmerman (Sharm) and Daniel Armstrong (HughSpectrum). 
+CC-BY-SA 3.0 / GPL 3.0+. 
+http://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+
+"LPC art entry"
+Casper Nilsson. 
+CC-BY-SA 3.0 / GPL 3.0+. 
+http://opengameart.org/content/lpc-cnilsson
+
+"Steampun-a-fy (with concept art)" by Anamaris and Krusmira
+CC-BY-SA 3.0 / GPL 3.0+. 
+http://opengameart.org/content/steampun-a-fy-with-concept-art
+
+Medieval town
+CC-BY 3.0
+Keith Karnage
+https://opengameart.org/content/medieval-town-0
+
+Old Frogatto houses
+Guido Bos
+CC0
+https://opengameart.org/content/old-frogatto-houses
+
+Cute dungeon LPC edit
+Evert, Buch, Lanea Zimmerman (Sharm)
+CC-BY 3.0
+https://opengameart.org/content/cute-dungeon-lpc-edit
+
+Spooky Castle Tileset
+Buch
+CC0
+https://opengameart.org/content/spooky-castle-tileset
+
+Old Eastern Themed Building Tiles + Tree
+Talosaurus
+CC0
+https://opengameart.org/content/old-eastern-themed-building-tiles-tree
+```
+
+## [LPC] Floors
+
+```
+"[LPC] Floors" by bluecarrot16, Lanea Zimmerman (Sharm), William Thompson (William.Thompsonj), Hyptosis, SpiderDave, Cougarmint, Stephen Challener (Redshrike), Bonsaiheldin, Tyler Olsen (Roots), Jetrel, jestan, The Open Surge team (http://opensnc.sourceforge.net), Gaurav Munjal, Reemax, Silveira Neto, bleutailfly, Casper Nilsson, NaRNeRZz, Buch, keith karnage, Arthur Carvalho, Guilherme Vieira (n2liquid), Chris Hamons (maintainer). CC-BY-SA 4.0
+
+Based on:
+
+Liberated Pixel Cup (LPC) Base Assets (sprites & map tiles)
+Lanea Zimmerman (Sharm)
+CC-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0
+http://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+
+[LPC] Arabic Elements
+Lanea Zimmerman (Sharm), commissioned by William Thompson (William.Thompsonj)
+CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / GPL 2.0 / OGA-BY 3.0
+https://opengameart.org/content/lpc-arabic-elements
+
+LPC: Interior Castle Tiles
+Lanea Zimmerman (Sharm)
+CC-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0
+https://opengameart.org/content/lpc-interior-castle-tiles
+
+Lots of free 2d tiles and sprites by Hyptosis
+Hyptosis
+CC-BY 3.0
+https://opengameart.org/content/lots-of-free-2d-tiles-and-sprites-by-hyptosis
+
+Wallpaper pattern tiles
+SpiderDave
+CC0
+https://opengameart.org/content/wallpaper-pattern-tiles
+
+Wallpaper pattern tiles
+SpiderDave
+CC0
+https://opengameart.org/content/wallpaper-pattern-tiles-0
+
+Patterns and Cursors
+Cougarmint
+CC0
+https://opengameart.org/content/patterns-and-cursors
+
+Patterns and Cursors II
+Cougarmint
+CC0
+https://opengameart.org/content/patterns-and-cursors-ii
+
+RPG Indoor Tileset: Expansion 1
+Redshrike
+CC-BY 3.0 / GPL 3.0 / GPL 2.0 / OGA-BY 3.0
+https://opengameart.org/content/rpg-indoor-tileset-expansion-1
+
+Interior Tileset 16x16
+Bonsaiheldin
+CC-BY-SA 3.0
+https://opengameart.org/content/interior-tileset-16x16
+
+Stone Home Interior Tileset
+Tyler Olsen (Roots), Jetrel
+CC-BY-SA 3.0
+https://opengameart.org/content/stone-home-interior-tileset
+
+Pixel Texture Pack
+jestan
+CC-BY 4.0 / CC-BY 3.0 / CC-BY-SA 4.0 / CC-BY-SA 3.0
+https://opengameart.org/content/pixel-texture-pack
+
+32x32 (and 16x16) RPG Tiles--Forest and some Interior Tiles
+Stephen Challener (Redshrike) and the Open Surge team (http://opensnc.sourceforge.net) commissioned by Gaurav Munjal
+CC-BY 3.0
+https://opengameart.org/content/32x32-and-16x16-rpg-tiles-forest-and-some-interior-tiles
+
+[LPC] House interior and decorations
+Reemax
+CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0
+https://opengameart.org/content/lpc-house-interior-and-decorations
+
+OpenPixels:Characters & Tilesets -Silveira Neto
+Silveira Neto
+CC-BY-SA 3.0
+https://opengameart.org/content/openpixelscharacters-tilesets-silveira-neto
+
+walls and stuff
+bleutailfly
+CC-BY-SA 3.0
+https://opengameart.org/content/walls-and-stuff
+
+LPC C.Nilsson
+Casper Nilsson
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-cnilsson
+
+Adventure Tileset (Unfinished)
+NaRNeRZz
+CC0
+https://opengameart.org/content/adventure-tileset-unfinished
+
+Outdoor 32x32 tileset
+Buch
+CC0
+https://opengameart.org/content/outdoor-32x32-tileset
+
+Medieval town
+keith karnage
+CC-BY 3.0
+https://opengameart.org/content/medieval-town-0
+
+Exterior 32x32 Town tileset
+Arthur Carvalho, copyright Guilherme Vieira (n2liquid)
+CC-BY-SA 4.0
+https://opengameart.org/content/town-tileset-exterior-32x32
+
+Dungeon Crawl 32x32 tiles
+Chris Hamons (maintainer)
+CC0
+https://opengameart.org/content/dungeon-crawl-32x32-tiles
+```
+
+## [LPC] Trees
+
+```
+## Trees
+
+"[LPC] Trees Mega-Pack" by bluecarrot16, Jetrel, Zabin, Hyptosis, Surt, Buch, Johann Charlot, Stephen Challener and the Open Surge team (http://opensnc.sourceforge.net), Gaurav Munjal, Ivan Voirol (Silver IV)
+Guido Bos, Yar, Paulina Riva (PauR), William.Thompsonj, Casper Nilsson, Hyptosis, ansimuz, qubodup, Bart K., Blarumyrran, Lanea Zimmerman (Sharm), Leonard Pabin, Chris Phillips, Barbara Rivera, and Talosaurus. 
+CC-BY-SA 3.0
+
+
+Lots of trees and plants from OGA (DB32) tilesets pack 1
+Jetrel, Zabin, Hyptosis, Surt
+CC0
+https://opengameart.org/content/lots-of-trees-and-plants-from-oga-db32-tilesets-pack-1
+
+The Field of the Floating Islands
+Buch <https://opengameart.org/users/buch>
+CC0
+https://opengameart.org/content/the-field-of-the-floating-islands
+
+Outdoor tiles, again
+Buch <https://opengameart.org/users/buch>
+CC-BY 2.0
+https://opengameart.org/content/outdoor-tiles-again
+
+Shoot'em up graphic kit
+Johann Charlot
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/shootem-up-graphic-kit
+
+32x32 (and 16x16) RPG Tiles--Forest and some Interior Tiles
+Stephen Challener and the Open Surge team (http://opensnc.sourceforge.net)commissioned by Gaurav Munjal
+CC-BY 3.0
+https://opengameart.org/content/32x32-and-16x16-rpg-tiles-forest-and-some-interior-tiles
+
+Orthographic outdoor tiles
+Buch
+CC0
+https://opengameart.org/content/orthographic-outdoor-tiles
+
+Basic map 32x32 by Silver IV
+Ivan Voirol (Silver IV)
+CC-BY 3.0 / GPL 3.0 / GPL 2.0
+https://opengameart.org/content/basic-map-32x32-by-silver-iv
+
+old frogatto tile art
+Guido Bos
+CC0
+https://opengameart.org/content/old-frogatto-tile-art
+
+Generic Platformer Tiles
+surt
+CC0
+http://opengameart.org/content/generic-platformer-tiles
+
+Isometric 64x64 Outside Tileset
+Yar
+CC-BY 3.0
+https://opengameart.org/content/isometric-64x64-outside-tileset
+
+Nature tileset
+Paulina Riva (PauR)
+CC-BY 3.0
+https://opengameart.org/content/nature-tileset
+
+[LPC] Tree Recolors
+William.Thompsonj
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-tree-recolors
+
+LPC C.Nilsson
+Casper Nilsson
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-cnilsson
+
+Lots of Hyptosis' tiles organized!
+Hyptosis
+CC-BY 3.0
+https://opengameart.org/content/lots-of-hyptosis-tiles-organized
+
+Trees & Bushes
+ansimuz
+CC0
+http://opengameart.org/content/trees-bushes
+
+OGA Community Tileset: Nature
+qubodup, Bart K., Blarumyrran
+GPL 2.0 / GPL 3.0 / CC-BY-SA 3.0
+https://opengameart.org/content/oga-community-tileset-nature
+
+Liberated Pixel Cup (LPC) Base Assets 
+Lanea Zimmerman (Sharm)
+CC-BY-SA 3.0 / CC-BY 3.0 / GPL 3.0
+https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+
+Whispers of Avalon: Grassland Tileset
+Leonard Pabin
+CC-BY 3.0 / GPL 3.0 / GPL 2.0
+https://opengameart.org/content/whispers-of-avalon-grassland-tileset
+
+Team River Fox
+Chris Phillips, Barbara Rivera
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/team-river-fox
+
+Concept Art for LPC Entry
+Barbara Rivera
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/concept-art-for-lpc-entry
+
+Old Eastern Themed Building Tiles + Tree
+Talosaurus
+CC0
+https://opengameart.org/content/old-eastern-themed-building-tiles-tree
+```
+
+## [LPC] Flowers / Plants / Fungi / Wood
+
+```
+## Flowers / Plants / Fungi / Wood
+
+"[LPC] Flowers / Plants / Fungi / Wood," by bluecarrot16, Guido Bos, Ivan Voirol (Silver IV), SpiderDave, William.Thompsonj, Yar, Stephen Challener and the Open Surge team (http://opensnc.sourceforge.net), Gaurav Munjal, Johann Charlot, Casper Nilsson, Jetrel, Zabin, Hyptosis, Surt, Lanea Zimmerman, George Bailey, ansimuz, Buch, and the Open Pixel Project contributors (OpenPixelProject.com). 
+CC-BY-SA 3.0. 
+
+Based on: 
+
+[LPC] Guido Bos entries cut up
+Guido Bos
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-guido-bos-entries-cut-up
+
+Basic map 32x32 by Silver IV
+Ivan Voirol (Silver IV)
+CC-BY 3.0 / GPL 3.0 / GPL 2.0
+https://opengameart.org/content/basic-map-32x32-by-silver-iv
+
+Flowers
+SpiderDave
+CC0
+https://opengameart.org/content/flowers
+
+[LPC] Leaf Recolor
+William.Thompsonj
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-leaf-recolor
+
+Isometric 64x64 Outside Tileset
+Yar
+CC-BY 3.0
+https://opengameart.org/content/isometric-64x64-outside-tileset
+
+32x32 (and 16x16) RPG Tiles--Forest and some Interior Tiles
+Stephen Challener and the Open Surge team (http://opensnc.sourceforge.net)commissioned by Gaurav Munjal
+CC-BY 3.0
+https://opengameart.org/content/32x32-and-16x16-rpg-tiles-forest-and-some-interior-tiles
+
+Lots of Hyptosis' tiles organized!
+Hyptosis
+CC-BY 3.0
+https://opengameart.org/content/lots-of-hyptosis-tiles-organized
+
+Generic Platformer Tiles
+surt
+CC0
+http://opengameart.org/content/generic-platformer-tiles
+
+old frogatto tile art
+Guido Bos
+CC0
+https://opengameart.org/content/old-frogatto-tile-art
+
+LPC: Interior Castle Tiles
+Lanea Zimmerman
+CC-BY-3.0 / GPL 3.0
+http://opengameart.org/content/lpc-interior-castle-tiles
+
+RPG item set
+Jetrel
+CC0
+https://opengameart.org/content/rpg-item-set
+
+Shoot'em up graphic kit
+Johann Charlot
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/shootem-up-graphic-kit
+
+LPC C.Nilsson
+Casper Nilsson
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-cnilsson
+
+Lots of trees and plants from OGA (DB32) tilesets pack 1
+Jetrel, Zabin, Hyptosis, Surt
+CC0
+https://opengameart.org/content/lots-of-trees-and-plants-from-oga-db32-tilesets-pack-1
+
+Trees & Bushes
+ansimuz
+CC0
+https://opengameart.org/content/trees-bushes
+
+Outdoor tiles, again
+Buch <https://opengameart.org/users/buch>
+CC-BY 2.0
+https://opengameart.org/content/outdoor-tiles-again
+
+16x16 Game Assets
+George Bailey
+CC-BY 4.0
+https://opengameart.org/content/16x16-game-assets
+
+Tuxemon tileset
+Buch
+CC-BY-SA 3.0
+https://opengameart.org/content/tuxemon-tileset
+
+Orthographic outdoor tiles
+Buch
+CC0
+https://opengameart.org/content/orthographic-outdoor-tiles
+
+OPP2017 - Jungle and temple set
+OpenPixelProject.com
+CC0
+https://opengameart.org/content/opp2017-jungle-and-temple-set
+```
+
+## [LPC] Thatched-roof Cottage (крыша)
+
+- Авторы: bluecarrot16
+- Лицензии: CC-BY-SA 3.0 / GPL 3.0
+- https://opengameart.org/content/lpc-thatched-roof-cottage
+
+## [LPC] Wooden Stairs (лестница)
+
+- Авторы: Nyom
+- Лицензии: CC-BY-SA 4.0
+- https://opengameart.org/content/lpc-wooden-stairs
+
+## [LPC] House Insides (факел)
+
+- Авторы: Lanea Zimmerman (Sharm), репак
+- Лицензии: CC-BY-SA 3.0 / GPL 3.0
+- https://opengameart.org/content/lpc-house-insides
+
+## Modified 32x32 Treasure chest (сундук)
+
+- Авторы: Blarumyrran, правка Gaurav
+- Лицензии: CC0
+- https://opengameart.org/content/modified-32x32-treasure-chest

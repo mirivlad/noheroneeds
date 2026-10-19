@@ -825,6 +825,27 @@ CC0
 https://opengameart.org/content/opp2017-jungle-and-temple-set
 ```
 
+## [LPC] Mine (копёр, верёвка)
+
+```
+"[LPC] Mine" by bluecarrot16, Lanea Zimmerman (Sharm), and Ivan Voirol. License: CC-BY-4.0
+
+"Liberated Pixel Cup (LPC) Base Assets (sprites & map tiles)"
+Lanea Zimmerman (Sharm)
+CC-BY 3.0+ <https://opengameart.org/comment/18611#comment-18611>
+https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+
+"LPC Weapons"
+Reemax
+CC-BY 4.0 / CC-BY-SA 4.0 / CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0 / OGA-BY 3.0
+https://opengameart.org/content/lpc-weapons
+
+"Slates [32x32px orthogonal tileset by Ivan Voirol]"
+Ivan Voirol
+CC-BY 4.0
+https://opengameart.org/content/slates-32x32px-orthogonal-tileset-by-ivan-voirol
+```
+
 ## [LPC] Thatched-roof Cottage (крыша)
 
 - Авторы: bluecarrot16
@@ -848,6 +869,12 @@ https://opengameart.org/content/opp2017-jungle-and-temple-set
 - Авторы: Blarumyrran, правка Gaurav
 - Лицензии: CC0
 - https://opengameart.org/content/modified-32x32-treasure-chest
+
+## [LPC] Ore and Forge (руда в камне)
+
+- Авторы: bluecarrot16
+- Лицензии: CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0
+- https://opengameart.org/content/lpc-ore-and-forge
 
 <!-- animals -->
 # Авторы графики зверей

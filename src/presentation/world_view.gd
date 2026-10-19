@@ -15,6 +15,8 @@ const UNITS_PER_PIXEL := Movement.UNIT / CELL
 ## A storey (ADR-0024: 64 px on screen): covers sit this far above their
 ## cell, on top of the walls, and one standing a level up is lifted by it.
 const COVER_LIFT := 32
+## A storey in cells (a wall's top is drawn this many cells above its foot).
+const STOREY_CELLS := COVER_LIFT / CELL
 const UNDERGROUND_TINT := Color(0.32, 0.3, 0.34)
 ## Largest room whose cover is hidden around the player.
 const MAX_ROOM := 2048
@@ -127,14 +129,16 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 		var v: Dictionary = content.visuals[target]
 		if v["mode"] != "tall" or v.get("autotile") != "rock":
 			continue
+		# The top of each variant: the picture's first tile (LPC: 32 px).
 		var src := TileSetAtlasSource.new()
 		src.texture = texture(v["atlas_path"])
-		src.texture_region_size = Vector2i(CELL, CELL)
-		var first := Vector2i(int(v["rect"][0]) / CELL, int(v["rect"][1]) / CELL)
+		src.texture_region_size = Vector2i(TERRAIN_TILE, TERRAIN_TILE)
+		var first := Vector2i(int(v["rect"][0]) / TERRAIN_TILE, int(v["rect"][1]) / TERRAIN_TILE)
 		for i in int(v["variants"]):
 			src.create_tile(first + Vector2i(i, 0))
-		_rock_top_tiles[target] = [ts.add_source(src), first]
-	_rock_tops.tile_set = ts
+		_rock_top_tiles[target] = [_ts32.add_source(src), first]
+	_rock_tops.tile_set = _ts32
+	_rock_tops.scale = Vector2.ONE * float(CELL) / TERRAIN_TILE
 	_ground.tile_set = ts
 	_cover.tile_set = ts
 	_below.tile_set = ts
@@ -685,7 +689,7 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 	var ceiling := ctx.at(ctx.ceiling, i)
 	if roof != "" or ceiling != "" or _cover_sprites.has(cell):
 		_set_cover(cell, roof if roof != "" else ceiling, "roof" if roof != "" else "ceiling")
-	_rock_tops.erase_cell(cell + Vector2i(0, -1))
+	_rock_tops.erase_cell(cell + Vector2i(0, -STOREY_CELLS))
 	var c := ctx.chunk
 	for layer in ["cover", "structure"]:
 		var id := ctx.at(ctx.cover, i) if layer == "cover" else ctx.at(ctx.structure, i)
@@ -701,11 +705,12 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 				variant = (1 if north == own else 0) | (2 if ctx.group(lx + 1, ly) == own else 0) \
 					| (4 if ctx.group(lx, ly + 1) == own else 0) | (8 if ctx.group(lx - 1, ly) == own else 0)
 			if layer == "structure" and own != 0 and own == _group_codes.get("rock", -1) and _rock_top_tiles.has(id) \
-					and variant & 5 == 5 and ctx.group(lx - 1, ly - 1) == own and ctx.group(lx + 1, ly - 1) == own:
+					and variant & 5 == 5 and ctx.group(lx - 1, ly - 1) == own and ctx.group(lx + 1, ly - 1) == own \
+					and ctx.group(lx, ly - STOREY_CELLS) == own:
 				# Rock deep in the mass: nobody can stand where its top is drawn or
 				# just behind it, nor in front of its face — a tile, not a sprite.
 				var t: Array = _rock_top_tiles[id]
-				_rock_tops.set_cell(cell + Vector2i(0, -1), t[0], (t[1] as Vector2i) + Vector2i(variant, 0))
+				_rock_tops.set_cell(cell + Vector2i(0, -STOREY_CELLS), t[0], (t[1] as Vector2i) + Vector2i(variant, 0))
 				continue
 			var props := c.get_props(lx, ly)
 			var state := "open" if props.get("open", false) else ""
@@ -1004,7 +1009,7 @@ func pick_target(point: Vector2) -> Dictionary:
 		return best
 	var cell := under
 	if _rock_tops.get_cell_source_id(cell) != -1:  # the top of rock deep in the mass, drawn as a tile
-		var rock := cell + Vector2i(0, 1)
+		var rock := cell + Vector2i(0, STOREY_CELLS)
 		return {"kind": "part", "layer": "structure", "id": _cell_layer(rock, "structure"), "cell": rock,
 			"location": client.location}
 	var flat := _cell_layer(cell, "cover")

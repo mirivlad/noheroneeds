@@ -37,6 +37,7 @@ GROUNDS = {
     "base:moss": ("Grass_Dark", 4),
     "base:grass": ("Grass", 5),
     "base:water": ("Water", 6),
+    "base:cave_floor": ("Dirt_Dark", -1),
 }
 # Fills that are other things (animated water, a cracked variant) are left out.
 SKIP_FILLS = {"Water": {566, 569, 572}}
@@ -117,7 +118,14 @@ WALLS = {
     "base:wood_door": {"cap": 1, "face": (512, 2176), "door": (192, 833, 48), "open": (512, 640, 52)},
     "base:wood_window": {"cap": 1, "face": (512, 2176), "window": (384, 64, 32, 32, 12)},
     "base:loophole": {"cap": 8, "face": (256, 928), "window": (608, 320, 32, 32, 18)},
+    # Rock of the underground: rough stone on top, a rock face (a terrain fill).
+    "base:rock": {"cap": 16, "fill": "Rock_Gray"},
+    "base:iron_ore_rock": {"cap": 16, "fill": "Rock_Gray", "ore": (64, 64)},
+    "base:copper_ore_rock": {"cap": 16, "fill": "Rock_Gray", "ore": (96, 32)},
+    "base:gem_rock": {"cap": 16, "fill": "Rock_Gray", "ore": (128, 256)},
 }
+ORE = SRC / "ore_0.png"
+MINE = SRC / "lpc-mine" / "lpc-mine" / "mine.png"
 # Flat things: x, y and grid of a seamless block (floors, ceilings, roofs).
 FLAT = {
     "base:wood_floor": ("floors", 192, 1152, 2, 2, "flat"),
@@ -198,8 +206,22 @@ def taller(img, rows):
     return out
 
 
+def terrain_fill(name):
+    """The first fill tile of an LPC terrain."""
+    sheet = Image.open(TERRAIN_DIR / "terrain-v7.png").convert("RGBA")
+    i = terrain_tiles()[name][15][0]
+    x, y = (i % (sheet.width // T)) * T, (i // (sheet.width // T)) * T
+    return sheet.crop((x, y, x + T, y + T))
+
+
+def spec_of(part):
+    return WALLS[part]
+
+
 def build_buildings():
     walls = Image.open(WALLS_DIR / "walls.png").convert("RGBA")
+    ore = Image.open(ORE).convert("RGBA")
+    fills = {n: terrain_fill(n) for n in {spec["fill"] for spec in WALLS.values() if "fill" in spec}}
     doors = Image.open(DOORS_DIR / "windows-doors.png").convert("RGBA")
     rows = []  # (visual id parts, [16 images])
     defs = []
@@ -211,7 +233,16 @@ def build_buildings():
                 img = Image.new("RGBA", (T, T + STOREY))
                 img.alpha_composite(wall_top(tiles, nesw), (0, 0))
                 if not nesw & 4:  # the face shows where nothing stands south
-                    img.alpha_composite(wall_face(walls, spec["face"][0], spec["face"][1], nesw), (0, T))
+                    if "fill" in spec:
+                        face = Image.new("RGBA", (T, STOREY))
+                        face.paste(fills[spec["fill"]], (0, 0))
+                        face.paste(fills[spec["fill"]].transpose(Image.FLIP_LEFT_RIGHT), (0, T))
+                        img.alpha_composite(face, (0, T))
+                    else:
+                        img.alpha_composite(wall_face(walls, spec["face"][0], spec["face"][1], nesw), (0, T))
+                    if "ore" in spec:
+                        x, y = spec["ore"]
+                        img.alpha_composite(ore.crop((x, y, x + T, y + T)), (0, T + STOREY - T - 4))
                     if "door" in spec or "open" in spec:
                         x, y, h = spec["open" if state else "door"]
                         door = taller(doors.crop((x, y, x + T, y + h)), DOOR - h)
@@ -231,7 +262,7 @@ def build_buildings():
     for part in WALLS:
         d = {"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
              "atlas": "art/lpc_env/walls.png", "rect": at[(part, "")], "origin": [0, T + STOREY],
-             "pixel_scale": 0.5, "variants": 16, "autotile": "wall"}
+             "pixel_scale": 0.5, "variants": 16, "autotile": "rock" if "fill" in spec_of(part) else "wall"}
         if (part, "open") in at:
             d["states"] = {"open": at[(part, "open")]}
         defs.append(d)
@@ -321,6 +352,16 @@ PROPS = {
     "base:torch": ("house_inside_1.png", (416, 192, 32, 96), {}),
     "base:wood_column": ("lpc-windows-doors/lpc-windows-doors-v2/windows-doors.png", (960, 0, 32, 64), {}),
     "base:chest": ("chest2.png", (0, 0, 32, 32), {"open": (32, 0, 32, 32)}),
+    "base:mine_ladder": ("lpc-mine/lpc-mine/mine.png", (0, 288, 32, 96), {}),
+    "base:cave_climb": ("lpc-mine/lpc-mine/mine.png", (0, 288, 32, 96), {}),
+    "base:headframe": ("lpc-mine/lpc-mine/mine.png", (0, 0, 128, 224), {}),
+}
+# Openings in the ground, a cell each: an LPC terrain's lone piece (a pit).
+HOLES = {
+    "base:cave_mouth": "Hole_Black",
+    "base:cave_drop": "Hole_Black",
+    "base:shaft_hole": "Hole_Brown",
+    "base:mine_shaft": "Hole_Brown",
 }
 
 
@@ -328,6 +369,14 @@ def build_props():
     """Props a cell wide, standing on its bottom edge (their own pixels, cut
     to what is drawn but keeping the cell's width so they sit on it)."""
     pics = []
+    sheet = Image.open(TERRAIN_DIR / "terrain-v7.png").convert("RGBA")
+    columns = sheet.width // T
+    tiles = terrain_tiles()
+    for part, name in HOLES.items():
+        corners = {m: sheet.crop(((ids[0] % columns) * T, (ids[0] // columns) * T,
+                                  (ids[0] % columns) * T + T, (ids[0] // columns) * T + T))
+                   for m, ids in tiles[name].items()}
+        pics.append((part, {"": wall_top(corners, 0)}))
     for part, (path, rect, states) in PROPS.items():
         src = Image.open(SRC / path).convert("RGBA")
         cuts = {}
@@ -348,9 +397,10 @@ def build_props():
             rects[name] = [x, y + max(c.height for c in cuts.values()) - img.height, img.width, img.height]
             x += img.width
         y += max(c.height for c in cuts.values())
+        # A prop wider than its cell stands with its middle on the cell's.
         d = {"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
-             "atlas": "art/lpc_env/props.png", "rect": rects[""], "origin": [0, rects[""][3] - 4],
-             "pixel_scale": 0.5, "variants": 1}
+             "atlas": "art/lpc_env/props.png", "rect": rects[""],
+             "origin": [(rects[""][2] - T) // 2, rects[""][3] - 4], "pixel_scale": 0.5, "variants": 1}
         if len(rects) > 1:
             d["states"] = {k: v for k, v in rects.items() if k}
         defs.append(d)
@@ -369,6 +419,7 @@ PACK_CREDITS = [
     ("[LPC] Floors", "lpc-floors/lpc-floors/CREDITS-floors.txt"),
     ("[LPC] Trees", "lpc-trees/lpc-trees/CREDITS-trees.txt"),
     ("[LPC] Flowers / Plants / Fungi / Wood", "lpc-plants/lpc-flowers-plants-fungi-wood/CREDITS-plants.txt"),
+    ("[LPC] Mine (копёр, верёвка)", "lpc-mine/lpc-mine/CREDITS-mine.txt"),
 ]
 FILE_CREDITS = [
     ("[LPC] Thatched-roof Cottage (крыша)", "bluecarrot16", "CC-BY-SA 3.0 / GPL 3.0",
@@ -378,6 +429,8 @@ FILE_CREDITS = [
      "https://opengameart.org/content/lpc-house-insides"),
     ("Modified 32x32 Treasure chest (сундук)", "Blarumyrran, правка Gaurav", "CC0",
      "https://opengameart.org/content/modified-32x32-treasure-chest"),
+    ("[LPC] Ore and Forge (руда в камне)", "bluecarrot16", "CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0",
+     "https://opengameart.org/content/lpc-ore-and-forge"),
 ]
 
 
@@ -403,7 +456,7 @@ def credits():
 
 
 def main():
-    if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF, PLANTS_PNG, TREES_DIR]):
+    if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF, PLANTS_PNG, TREES_DIR, ORE, MINE]):
         sys.exit("no LPC environment sources: run tools/art/fetch_lpc_env.sh")
     defs = build_terrain() + build_buildings() + build_plants() + build_props()
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

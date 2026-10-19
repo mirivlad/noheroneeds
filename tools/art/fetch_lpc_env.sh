@@ -17,6 +17,7 @@ PACKS=(
   "lpc-windows-doors $F/lpc-windows-doors-v2.zip 5a1c01aacc54fae857451fcd01871e2a8919ff9d84ca0eaccba9210148eef2be"
   "lpc-trees $F/lpc-trees.zip 47803bf90669759f3c6ca8a74ac1d1a05895dfba1b990851a56bcf164aec42a5"
   "lpc-plants $F/lpc-flowers-plants-fungi-wood.zip ec3e039bd872757b8424a0d11c1818eca0286fd1dc0322d276462a46b0f0948f"
+  "lpc-mine $F/lpc-mine.zip 069b39efefeff64dbcebb6a95c6ff36289541e505fabdc17a807a950eae0d6d0"
 )
 # Single pictures.
 FILES=(
@@ -24,6 +25,7 @@ FILES=(
   "wooden_stairs.png $F/wooden_stairs.png 1a43a5f75f7e73caf2b0fc86994daf0fce935e6c767c16da94b0c8e1ee39e55e"
   "house_inside_1.png $F/house_inside_1.png d703c86057bf32420bc52db28061e7d990a024d5090ed88195eed97dd97a48d2"
   "chest2.png $F/chest2.png b2e0c5bb594fcf9ff8fe427922fe22aaf4b4ac85928a84be1d032040beb31ca1"
+  "ore_0.png $F/ore_0.png a0d0940be01d92f6b04fdfcb8070cebd2233de3dad4e40e5559eca4464280272"
 )
 get() {  # file url sha256
   if [[ ! -f "$1" ]] || ! echo "$3  $1" | sha256sum -c --quiet - 2>/dev/null; then

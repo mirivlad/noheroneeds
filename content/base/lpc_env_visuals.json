@@ -2,6 +2,28 @@
  "format": 1,
  "defs": [
   {
+   "id": "base:visual/cave_floor",
+   "kind": "visual",
+   "for": "base:cave_floor",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": -1,
+    "fills": 4
+   }
+  },
+  {
    "id": "base:visual/dirt",
    "kind": "visual",
    "for": "base:dirt",
@@ -9,7 +31,7 @@
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
     480,
-    0,
+    32,
     32,
     32
    ],
@@ -31,7 +53,7 @@
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
     480,
-    32,
+    64,
     32,
     32
    ],
@@ -53,7 +75,7 @@
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
     480,
-    64,
+    96,
     32,
     32
    ],
@@ -75,7 +97,7 @@
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
     480,
-    96,
+    128,
     32,
     32
    ],
@@ -97,7 +119,7 @@
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
     480,
-    128,
+    160,
     32,
     32
    ],
@@ -119,7 +141,7 @@
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
     480,
-    160,
+    192,
     32,
     32
    ],
@@ -141,7 +163,7 @@
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
     480,
-    192,
+    224,
     32,
     32
    ],
@@ -262,6 +284,86 @@
    "pixel_scale": 0.5,
    "variants": 16,
    "autotile": "wall"
+  },
+  {
+   "id": "base:visual/rock",
+   "kind": "visual",
+   "for": "base:rock",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    576,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "rock"
+  },
+  {
+   "id": "base:visual/iron_ore_rock",
+   "kind": "visual",
+   "for": "base:iron_ore_rock",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    672,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "rock"
+  },
+  {
+   "id": "base:visual/copper_ore_rock",
+   "kind": "visual",
+   "for": "base:copper_ore_rock",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    768,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "rock"
+  },
+  {
+   "id": "base:visual/gem_rock",
+   "kind": "visual",
+   "for": "base:gem_rock",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    864,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "rock"
   },
   {
    "id": "base:visual/wood_floor",
@@ -777,6 +879,82 @@
    ]
   },
   {
+   "id": "base:visual/cave_mouth",
+   "kind": "visual",
+   "for": "base:cave_mouth",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    28
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/cave_drop",
+   "kind": "visual",
+   "for": "base:cave_drop",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    32,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    28
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/shaft_hole",
+   "kind": "visual",
+   "for": "base:shaft_hole",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    64,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    28
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/mine_shaft",
+   "kind": "visual",
+   "for": "base:mine_shaft",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    96,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    28
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/wood_stairs",
    "kind": "visual",
    "for": "base:wood_stairs",
@@ -784,7 +962,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    0,
+    128,
     32,
     60
    ],
@@ -797,7 +975,7 @@
    "states": {
     "down": [
      32,
-     0,
+     128,
      32,
      60
     ]
@@ -811,7 +989,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    60,
+    188,
     32,
     74
    ],
@@ -830,7 +1008,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    134,
+    262,
     32,
     51
    ],
@@ -849,7 +1027,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    185,
+    313,
     32,
     32
    ],
@@ -862,11 +1040,68 @@
    "states": {
     "open": [
      32,
-     185,
+     313,
      32,
      32
     ]
    }
+  },
+  {
+   "id": "base:visual/mine_ladder",
+   "kind": "visual",
+   "for": "base:mine_ladder",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    345,
+    32,
+    77
+   ],
+   "origin": [
+    0,
+    73
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/cave_climb",
+   "kind": "visual",
+   "for": "base:cave_climb",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    422,
+    32,
+    77
+   ],
+   "origin": [
+    0,
+    73
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/headframe",
+   "kind": "visual",
+   "for": "base:headframe",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    499,
+    128,
+    224
+   ],
+   "origin": [
+    48,
+    220
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
   }
  ]
 }

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cdlk0ak75pnj5"
-path="res://.godot/imported/cave_spider.png-ae299d6f5e5b761ce179e0abaa89c3cc.ctex"
+uid="uid://qan6pbcsmxgq"
+path="res://.godot/imported/hare.png-902f43f011ff13875a4c58bd1e643d56.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/creatures/cave_spider.png"
-dest_files=["res://.godot/imported/cave_spider.png-ae299d6f5e5b761ce179e0abaa89c3cc.ctex"]
+source_file="res://content/base/art/lpc_animals/hare.png"
+dest_files=["res://.godot/imported/hare.png-902f43f011ff13875a4c58bd1e643d56.ctex"]
 
 [params]
 

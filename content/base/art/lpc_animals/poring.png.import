@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkcxpw0mualam"
-path="res://.godot/imported/cave_rat.png-0c22b83b6cf682322eb93fd2639f019e.ctex"
+uid="uid://c53117gm0c4cj"
+path="res://.godot/imported/poring.png-4f8bc38076fb3b0b3c77b42ec8667018.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/creatures/cave_rat.png"
-dest_files=["res://.godot/imported/cave_rat.png-0c22b83b6cf682322eb93fd2639f019e.ctex"]
+source_file="res://content/base/art/lpc_animals/poring.png"
+dest_files=["res://.godot/imported/poring.png-4f8bc38076fb3b0b3c77b42ec8667018.ctex"]
 
 [params]
 

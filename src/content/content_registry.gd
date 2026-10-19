@@ -664,9 +664,10 @@ func _check_visual(id: String, d: Dictionary) -> void:
 ## of its sheets and the animation of each kind of swing.
 func _check_lpc(id: String, d: Dictionary, dir: String) -> void:
 	_check_sheet(id, d, dir)
-	d["palettes_path"] = dir.path_join(String(d.get("palettes", ""))) if dir != "" else ""
-	if dir != "" and not FileAccess.file_exists(d["palettes_path"]):
-		errors.append("%s: palettes %s not found" % [id, d["palettes_path"]])
+	if d.has("palettes"):  # what it recolours by (people; animals keep their colours)
+		d["palettes_path"] = dir.path_join(String(d["palettes"])) if dir != "" else ""
+		if dir != "" and not FileAccess.file_exists(d["palettes_path"]):
+			errors.append("%s: palettes %s not found" % [id, d["palettes_path"]])
 	if d.get("rows") != ["n", "w", "s", "e"]:
 		errors.append("%s: rows must be n, w, s, e" % id)
 	var animations: Variant = d.get("animations")

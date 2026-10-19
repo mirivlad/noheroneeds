@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dlj40mmt2nlfw"
-path="res://.godot/imported/hare.png-3f54ccc4707f9b83b65ce7a9cd075415.ctex"
+uid="uid://b7gjdeil82wr"
+path="res://.godot/imported/wolf.png-2de4dec7d79f1385f69e83e56c4c7a19.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/creatures/hare.png"
-dest_files=["res://.godot/imported/hare.png-3f54ccc4707f9b83b65ce7a9cd075415.ctex"]
+source_file="res://content/base/art/lpc_animals/wolf.png"
+dest_files=["res://.godot/imported/wolf.png-2de4dec7d79f1385f69e83e56c4c7a19.ctex"]
 
 [params]
 

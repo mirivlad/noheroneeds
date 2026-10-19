@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dbkovejpigeoc"
-path="res://.godot/imported/wolf.png-f827fe37ceaa3373493dfc46b4d03bbd.ctex"
+uid="uid://c33exxv7mdq3m"
+path="res://.godot/imported/cave_spider_2.png-485d98dd0f5032da0aa141026ba7e327.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/additional/wolf.png"
-dest_files=["res://.godot/imported/wolf.png-f827fe37ceaa3373493dfc46b4d03bbd.ctex"]
+source_file="res://content/base/art/lpc_animals/cave_spider_2.png"
+dest_files=["res://.godot/imported/cave_spider_2.png-485d98dd0f5032da0aa141026ba7e327.ctex"]
 
 [params]
 

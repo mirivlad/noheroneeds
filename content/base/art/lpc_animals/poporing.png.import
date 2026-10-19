@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2u66803uub04"
-path="res://.godot/imported/poring.png-ab9aff11ed127df0c46a5d4912fe8873.ctex"
+uid="uid://bryqdhcsip0of"
+path="res://.godot/imported/poporing.png-03c7b63a882aaac916ba097c0dc6f7d1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/additional/poring.png"
-dest_files=["res://.godot/imported/poring.png-ab9aff11ed127df0c46a5d4912fe8873.ctex"]
+source_file="res://content/base/art/lpc_animals/poporing.png"
+dest_files=["res://.godot/imported/poporing.png-03c7b63a882aaac916ba097c0dc6f7d1.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://4eq57cypw6l4"
-path="res://.godot/imported/hare.png-9ba2ffc5de90a2d076eff4edadc4f1a3.ctex"
+uid="uid://de3rxyq6w7p6r"
+path="res://.godot/imported/deer_2.png-13b1d96c84f98062a6d0f25fcdf7619f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/additional/hare.png"
-dest_files=["res://.godot/imported/hare.png-9ba2ffc5de90a2d076eff4edadc4f1a3.ctex"]
+source_file="res://content/base/art/lpc_animals/deer_2.png"
+dest_files=["res://.godot/imported/deer_2.png-13b1d96c84f98062a6d0f25fcdf7619f.ctex"]
 
 [params]
 

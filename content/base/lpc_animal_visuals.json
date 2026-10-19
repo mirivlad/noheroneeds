@@ -1,0 +1,619 @@
+{
+ "format": 1,
+ "defs": [
+  {
+   "id": "base:visual/deer",
+   "kind": "visual",
+   "for": "base:deer",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/deer.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     96,
+     1
+    ],
+    "walk": [
+     96,
+     0,
+     96,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    96,
+    96
+   ],
+   "origin": [
+    48,
+    95
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 8
+    }
+   },
+   "swings": {
+    "lunge": "walk"
+   },
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/lpc_animals/deer_1.png",
+     "rect": [
+      0,
+      0,
+      96,
+      96
+     ],
+     "origin": [
+      48,
+      95
+     ]
+    },
+    {
+     "atlas": "art/lpc_animals/deer_2.png",
+     "rect": [
+      0,
+      0,
+      96,
+      96
+     ],
+     "origin": [
+      48,
+      95
+     ]
+    },
+    {
+     "atlas": "art/lpc_animals/deer_3.png",
+     "rect": [
+      0,
+      0,
+      96,
+      96
+     ],
+     "origin": [
+      48,
+      95
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/hare",
+   "kind": "visual",
+   "for": "base:hare",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/hare.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     72,
+     4
+    ],
+    "walk": [
+     288,
+     0,
+     72,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    72,
+    72
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 10
+    }
+   },
+   "swings": {
+    "lunge": "walk"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/wolf",
+   "kind": "visual",
+   "for": "base:wolf",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/wolf.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     1
+    ],
+    "walk": [
+     64,
+     0,
+     64,
+     5
+    ],
+    "run": [
+     384,
+     0,
+     64,
+     5
+    ],
+    "attack": [
+     704,
+     0,
+     64,
+     5
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    63
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "fps": 9
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "fps": 12
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "fps": 13
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/cave_rat",
+   "kind": "visual",
+   "for": "base:cave_rat",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/cave_rat.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     80,
+     1
+    ],
+    "walk": [
+     80,
+     0,
+     80,
+     8
+    ],
+    "attack": [
+     720,
+     0,
+     80,
+     3
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    80,
+    80
+   ],
+   "origin": [
+    40,
+    75
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 10
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2
+     ],
+     "fps": 14
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/cave_spider",
+   "kind": "visual",
+   "for": "base:cave_spider",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/cave_spider.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     1
+    ],
+    "walk": [
+     64,
+     0,
+     64,
+     6
+    ],
+    "attack": [
+     448,
+     0,
+     64,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    55
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 10
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 14
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/lpc_animals/cave_spider_1.png",
+     "rect": [
+      0,
+      0,
+      64,
+      64
+     ],
+     "origin": [
+      32,
+      55
+     ]
+    },
+    {
+     "atlas": "art/lpc_animals/cave_spider_2.png",
+     "rect": [
+      0,
+      0,
+      64,
+      64
+     ],
+     "origin": [
+      32,
+      55
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/poporing",
+   "kind": "visual",
+   "for": "base:poporing",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/poporing.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     1
+    ],
+    "walk": [
+     64,
+     0,
+     64,
+     6
+    ],
+    "attack": [
+     448,
+     0,
+     64,
+     8
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    46
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 12
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/poring",
+   "kind": "visual",
+   "for": "base:poring",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/poring.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     1
+    ],
+    "walk": [
+     64,
+     0,
+     64,
+     6
+    ],
+    "attack": [
+     448,
+     0,
+     64,
+     8
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    46
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 12
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": []
+  }
+ ]
+}

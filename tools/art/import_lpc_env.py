@@ -396,7 +396,10 @@ def credits():
         lines += ["```", ""]
     for name, who, lic, url in FILE_CREDITS:
         lines += ["## " + name, "", "- Авторы: " + who, "- Лицензии: " + lic, "- " + url, ""]
-    CREDITS.write_text(text + "\n".join(lines), encoding="utf-8")
+    # The animals' part (tools/art/import_lpc_animals.py) stays after ours.
+    old = CREDITS.read_text(encoding="utf-8") if CREDITS.exists() else ""
+    animals = "\n<!-- animals -->" + old.split("<!-- animals -->", 1)[1] if "<!-- animals -->" in old else ""
+    CREDITS.write_text(text + "\n".join(lines) + animals, encoding="utf-8")
 
 
 def main():

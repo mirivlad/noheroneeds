@@ -41,4 +41,15 @@ for line in "${FILES[@]}"; do
   read -r name url sum <<<"$line"
   get "$DEST/$name" "$url" "$sum"
 done
-echo "LPC environment packs in $DEST"
+# Animals (tools/art/import_lpc_animals.py), in their own folder.
+ANIMALS="$ROOT/art_src/lpc_animals"
+mkdir -p "$ANIMALS"
+get "$ANIMALS/lpc_animals_2022_v1.1.zip" "$F/lpc_animals_2022_v1.1.zip" a4ea2c5b33061858e02a60dda34adb30bc8c4a334030bdcc7fafef32c810c002
+get "$ANIMALS/LPC_Spiders.zip" "$F/LPC_Spiders.zip" fce56f13629d2aa8be48f1ef904f4cdec184f3d81793a80f202db2b2f47e95b2
+get "$ANIMALS/lpc-monsters.zip" "$F/lpc-monsters.zip" 2c591d0e0c89dd579f84fb10ac9b24b97836941d6881abb5db85dc257892878f
+get "$ANIMALS/wolfsheet1_0.png" "$F/wolfsheet1_0.png" 35037f84c065844cb974d7d692875115b4c6ebf34e242921991351f370e1fa4f
+get "$ANIMALS/rabbit_3.png" "$F/rabbit_3.png" 89da7327cb5662ac1f8ef14ec7c00d38218827582bc0f273e1cea873ce570ae1
+[[ -d "$ANIMALS/animals2022" ]] || unzip -q -o "$ANIMALS/lpc_animals_2022_v1.1.zip" -d "$ANIMALS/animals2022"
+[[ -d "$ANIMALS/spiders" ]] || unzip -q -o "$ANIMALS/LPC_Spiders.zip" -d "$ANIMALS/spiders"
+[[ -d "$ANIMALS/monsters" ]] || unzip -q -o "$ANIMALS/lpc-monsters.zip" -d "$ANIMALS/monsters"
+echo "LPC environment packs in $DEST, animals in $ANIMALS"

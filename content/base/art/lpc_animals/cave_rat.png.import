@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dayfk06a2vr1c"
-path="res://.godot/imported/wolf.png-69318315b32d1a52a2434bfcfa4ae827.ctex"
+uid="uid://cjhmff86a8uwy"
+path="res://.godot/imported/cave_rat.png-d41eb03c7fa57b9e0f94cc60eb24bd30.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/creatures/wolf.png"
-dest_files=["res://.godot/imported/wolf.png-69318315b32d1a52a2434bfcfa4ae827.ctex"]
+source_file="res://content/base/art/lpc_animals/cave_rat.png"
+dest_files=["res://.godot/imported/cave_rat.png-d41eb03c7fa57b9e0f94cc60eb24bd30.ctex"]
 
 [params]
 

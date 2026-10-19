@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Temporary art for the base pack: a tile atlas, a people sheet and the
+"""Temporary art for the base pack: a tile atlas, animal sheets and the
 visual definitions that tie content ids to them (content/base/visuals.json).
 
 Placeholders in the manner chosen by the author (ART_STANDARD v2, probe B4):
@@ -540,49 +540,6 @@ def building_tiles():
             b4.soft_edge(stairs_e, P["wood"][0]))
 
 
-def people_sheet():
-    """A1 people (ART_STANDARD v2). Rows: S, SE, E, NE, N (the west side is
-    mirrored at run time); columns: idle, step A, step B. Frames 48x48,
-    feet at (24, 45)."""
-    F = 48
-    sheet = Image.new("RGBA", (3 * F, 5 * F), (0, 0, 0, 0))
-    for row, view in enumerate(["s", "se", "e", "ne", "n"]):
-        for col in range(3):
-            spr = person_view("villager", view, col)
-            sheet.alpha_composite(spr, (col * F + F // 2 - spr.width // 2, row * F + 46 - spr.height + (1 if col else 0)))
-    return b3.tone(sheet, MIDDLE, people=True)
-
-
-def person_view(look_name, view, frame):
-    """The A1 figure turned: from behind the head is hair, from the side the
-    face shifts toward the way it looks; steps move the legs."""
-    f = b4.PEOPLE["A1b"]
-    look = b4.LOOKS[look_name]
-    spr = b3.figure(look, f, None)
-    px = spr.load()
-    h = f["h"]
-    head_bottom = int(h * f["head"]) + 2
-    skin = [c[:3] for c in look["skin"]]
-    if view in ("n", "ne"):
-        for y in range(head_bottom):
-            for x in range(spr.width):
-                c = px[x, y]
-                if c[3] and (c[:3] in skin or c[:3] != look["hair"][1][:3] and y > 2 and c[:3] not in [k[:3] for k in look["hair"]]):
-                    px[x, y] = look["hair"][1] if x < spr.width * 0.6 else look["hair"][0]
-    elif view in ("e", "se"):
-        shift = 2 if view == "e" else 1
-        top = int(h * f["head"] * 0.35)
-        face = spr.crop((0, top, spr.width, head_bottom))
-        spr.paste(Image.new("RGBA", face.size, (0, 0, 0, 0)), (0, top))
-        spr.alpha_composite(face, (shift, top))
-    if frame:
-        legs_y = int(h * f["legs"]) + 3
-        legs = spr.crop((0, legs_y, spr.width, spr.height))
-        spr.paste(Image.new("RGBA", legs.size, (0, 0, 0, 0)), (0, legs_y))
-        spr.alpha_composite(legs, (1 if frame == 1 else -1, legs_y))
-    return strong(spr)
-
-
 # --- animals (ADR-0018), placeholders: the people's frame grid -------------------
 ANIMAL_ROWS = ["s", "se", "e", "ne", "n"]
 ANIMALS = {
@@ -901,33 +858,6 @@ def ground_edges(by_id):
     img.save(OUT / "art" / "ground_edges.png")
 
 
-def production_people(visuals):
-    """Paper-doll sheets (tools/art/import_people.py, ADR-0001): the body of
-    base:humanoid_adult with its animations and layer order, a layer for
-    each style, a worn picture for each wearable item."""
-    path = ROOT / "tools" / "art" / "imports" / "003.json"
-    if not path.exists():
-        return
-    m = json.loads(path.read_text())
-    out = Path(m["out"]).relative_to("content/base")
-    if not (OUT / out / "body.png").exists():
-        return
-    frame = {"rect": [0, 0, 48, 48], "origin": [24, 45]}
-    by_id = {v["for"]: v for v in visuals}
-    dirs = ["s", "se", "e", "ne", "n"]
-    by_id["base:humanoid_adult"].update(dict(frame, atlas=str(out / "body.png"), directions=dirs,
-        animations={"idle": {"from": 0, "frames": 4, "fps": 6}, "walk": {"from": 4, "frames": 6, "fps": 10}},
-        layer_order={d: m["layer_order"] for d in dirs}))
-    by_id["base:humanoid_adult"].pop("frames", None)
-    for name, spec in m["layers"].items():
-        sheet = str(out / f"{name}.png")
-        if spec["for"] in by_id and by_id[spec["for"]]["mode"] == "item":
-            by_id[spec["for"]]["worn"] = {"atlas": sheet, "layer": spec["layer"]}
-        else:
-            visuals.append(dict(frame, id="base:visual/" + spec["for"].split(":")[1], kind="visual",
-                                **{"for": spec["for"]}, atlas=sheet, mode="layer", layer=spec["layer"], variants=1))
-
-
 def _art_origin(img):
     """Where an imported sprite stands: the middle of its base (a trunk, the
     root of a tuft) goes to the middle of the cell, its bottom row on the
@@ -1062,16 +992,9 @@ def main():
         rows = (15 * T, 39 * T)
         toned.paste(a.img.crop((0, rows[0], a.img.width, rows[1])), (0, rows[0]))
     toned.save(OUT / "art" / "tiles.png")
-    people_sheet().save(OUT / "art" / "chibi_placeholder.png")
-    a.visuals.append({
-        "id": "base:visual/humanoid_adult", "kind": "visual", "for": "base:humanoid_adult",
-        "atlas": "art/people/villager.png" if (OUT / "art" / "people" / "villager.png").exists() else "art/chibi_placeholder.png",
-        "rect": [0, 0, 48, 48], "origin": [24, 45], "mode": "character",
-        "variants": 1, "directions": ["s", "se", "e", "ne", "n"], "frames": 3,
-    })
+    # People are LPC layers: tools/art/import_lpc.py writes lpc_visuals.json.
     production_art(a.visuals)
     production_materials(a.visuals)
-    production_people(a.visuals)
     production_animals(a.visuals)
     with open(OUT / "visuals.json", "w") as f:
         json.dump({"format": 1, "defs": a.visuals}, f, ensure_ascii=False, indent=1)

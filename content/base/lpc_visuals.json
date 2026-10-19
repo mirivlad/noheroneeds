@@ -1,0 +1,12514 @@
+{
+ "format": 1,
+ "defs": [
+  {
+   "id": "base:visual/human_m",
+   "kind": "visual",
+   "for": "base:human_m",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc/body_bodies_male.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     2
+    ],
+    "walk": [
+     128,
+     0,
+     64,
+     9
+    ],
+    "run": [
+     704,
+     0,
+     64,
+     8
+    ],
+    "slash": [
+     1216,
+     0,
+     64,
+     6
+    ],
+    "thrust": [
+     1600,
+     0,
+     64,
+     8
+    ],
+    "shoot": [
+     2112,
+     0,
+     64,
+     13
+    ],
+    "chop": [
+     1216,
+     0,
+     64,
+     6
+    ]
+   },
+   "z": 10,
+   "recolor": {
+    "body": "@skin"
+   },
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    62
+   ],
+   "pixel_scale": 0.5,
+   "palettes": "art/lpc/palettes.json",
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0,
+      0,
+      1,
+      1
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "fps": 11
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 13
+    },
+    "slash": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 16
+    },
+    "thrust": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 18
+    },
+    "shoot": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+     ],
+     "fps": 22
+    },
+    "chop": {
+     "frames": [
+      5,
+      5,
+      4,
+      4,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0
+     ],
+     "fps": 22
+    }
+   },
+   "swings": {
+    "chop": "chop",
+    "thrust": "thrust",
+    "draw": "shoot",
+    "lunge": "slash"
+   },
+   "fallback": {
+    "idle": [
+     "walk",
+     0
+    ],
+    "run": [
+     "walk",
+     -1
+    ],
+    "slash": [
+     "chop",
+     -1
+    ]
+   },
+   "style_overrides": {
+    "base:human_face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:human_face_square": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_plump.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_big_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thick_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_face_angular": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_gaunt.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:face_sharp": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_gaunt.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_plain": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_plain_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_ponytail": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_bald": {
+     "layer": "hair",
+     "sheets": []
+    },
+    "base:hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    }
+   },
+   "worn_overrides": {
+    "base:linen_shirt": {
+     "layer": "torso",
+     "sheets": [
+      {
+       "atlas": "art/lpc/torso_clothes_longsleeve_longsleeve_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 35,
+       "recolor": {
+        "cloth": "white"
+       }
+      }
+     ]
+    },
+    "base:work_trousers": {
+     "layer": "legs",
+     "sheets": [
+      {
+       "atlas": "art/lpc/legs_pants_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 20,
+       "recolor": {
+        "cloth": "walnut"
+       }
+      }
+     ]
+    },
+    "base:boots": {
+     "layer": "feet",
+     "sheets": [
+      {
+       "atlas": "art/lpc/feet_boots_basic_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         9
+        ],
+        "shoot": [
+         2176,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 25,
+       "recolor": {
+        "cloth": "leather"
+       }
+      }
+     ]
+    },
+    "base:felt_hat": {
+     "layer": "headwear",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hat_formal_bowler_adult_brown.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 130
+      }
+     ]
+    }
+   },
+   "held_overrides": {
+    "base:axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:spear": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_foreground_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_background_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      }
+     ]
+    },
+    "base:bow": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_background_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_foreground_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_background_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_foreground_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 141
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "base:visual/human_m_broad",
+   "kind": "visual",
+   "for": "base:human_m_broad",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc/body_bodies_male.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     2
+    ],
+    "walk": [
+     128,
+     0,
+     64,
+     9
+    ],
+    "run": [
+     704,
+     0,
+     64,
+     8
+    ],
+    "slash": [
+     1216,
+     0,
+     64,
+     6
+    ],
+    "thrust": [
+     1600,
+     0,
+     64,
+     8
+    ],
+    "shoot": [
+     2112,
+     0,
+     64,
+     13
+    ],
+    "chop": [
+     1216,
+     0,
+     64,
+     6
+    ]
+   },
+   "z": 10,
+   "recolor": {
+    "body": "@skin"
+   },
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    62
+   ],
+   "pixel_scale": 0.5,
+   "palettes": "art/lpc/palettes.json",
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0,
+      0,
+      1,
+      1
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "fps": 11
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 13
+    },
+    "slash": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 16
+    },
+    "thrust": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 18
+    },
+    "shoot": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+     ],
+     "fps": 22
+    },
+    "chop": {
+     "frames": [
+      5,
+      5,
+      4,
+      4,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0
+     ],
+     "fps": 22
+    }
+   },
+   "swings": {
+    "chop": "chop",
+    "thrust": "thrust",
+    "draw": "shoot",
+    "lunge": "slash"
+   },
+   "fallback": {
+    "idle": [
+     "walk",
+     0
+    ],
+    "run": [
+     "walk",
+     -1
+    ],
+    "slash": [
+     "chop",
+     -1
+    ]
+   },
+   "style_overrides": {
+    "base:human_face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:human_face_square": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_plump.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_big_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thick_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_face_angular": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_gaunt.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:face_sharp": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_gaunt.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_plain": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_plain_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_ponytail": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_bald": {
+     "layer": "hair",
+     "sheets": []
+    },
+    "base:hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    }
+   },
+   "worn_overrides": {
+    "base:linen_shirt": {
+     "layer": "torso",
+     "sheets": [
+      {
+       "atlas": "art/lpc/torso_clothes_longsleeve_longsleeve_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 35,
+       "recolor": {
+        "cloth": "white"
+       }
+      }
+     ]
+    },
+    "base:work_trousers": {
+     "layer": "legs",
+     "sheets": [
+      {
+       "atlas": "art/lpc/legs_pants_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 20,
+       "recolor": {
+        "cloth": "walnut"
+       }
+      }
+     ]
+    },
+    "base:boots": {
+     "layer": "feet",
+     "sheets": [
+      {
+       "atlas": "art/lpc/feet_boots_basic_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         9
+        ],
+        "shoot": [
+         2176,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 25,
+       "recolor": {
+        "cloth": "leather"
+       }
+      }
+     ]
+    },
+    "base:felt_hat": {
+     "layer": "headwear",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hat_formal_bowler_adult_brown.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 130
+      }
+     ]
+    }
+   },
+   "held_overrides": {
+    "base:axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:spear": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_foreground_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_background_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      }
+     ]
+    },
+    "base:bow": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_background_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_foreground_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_background_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_foreground_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 141
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "base:visual/human_f",
+   "kind": "visual",
+   "for": "base:human_f",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc/body_bodies_female.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     2
+    ],
+    "walk": [
+     128,
+     0,
+     64,
+     9
+    ],
+    "run": [
+     704,
+     0,
+     64,
+     8
+    ],
+    "slash": [
+     1216,
+     0,
+     64,
+     6
+    ],
+    "thrust": [
+     1600,
+     0,
+     64,
+     8
+    ],
+    "shoot": [
+     2112,
+     0,
+     64,
+     13
+    ],
+    "chop": [
+     1216,
+     0,
+     64,
+     6
+    ]
+   },
+   "z": 10,
+   "recolor": {
+    "body": "@skin"
+   },
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    62
+   ],
+   "pixel_scale": 0.5,
+   "palettes": "art/lpc/palettes.json",
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0,
+      0,
+      1,
+      1
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "fps": 11
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 13
+    },
+    "slash": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 16
+    },
+    "thrust": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 18
+    },
+    "shoot": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+     ],
+     "fps": 22
+    },
+    "chop": {
+     "frames": [
+      5,
+      5,
+      4,
+      4,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0
+     ],
+     "fps": 22
+    }
+   },
+   "swings": {
+    "chop": "chop",
+    "thrust": "thrust",
+    "draw": "shoot",
+    "lunge": "slash"
+   },
+   "fallback": {
+    "idle": [
+     "walk",
+     0
+    ],
+    "run": [
+     "walk",
+     -1
+    ],
+    "slash": [
+     "chop",
+     -1
+    ]
+   },
+   "style_overrides": {
+    "base:human_face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:human_face_square": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_big_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thick_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_face_angular": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:face_sharp": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_plain": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_plain_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_ponytail": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_bald": {
+     "layer": "hair",
+     "sheets": []
+    },
+    "base:hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    }
+   },
+   "worn_overrides": {
+    "base:linen_shirt": {
+     "layer": "torso",
+     "sheets": [
+      {
+       "atlas": "art/lpc/torso_clothes_longsleeve_longsleeve_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 35,
+       "recolor": {
+        "cloth": "white"
+       }
+      }
+     ]
+    },
+    "base:work_trousers": {
+     "layer": "legs",
+     "sheets": [
+      {
+       "atlas": "art/lpc/legs_pants_thin.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 20,
+       "recolor": {
+        "cloth": "walnut"
+       }
+      }
+     ]
+    },
+    "base:boots": {
+     "layer": "feet",
+     "sheets": [
+      {
+       "atlas": "art/lpc/feet_boots_basic_thin.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 25,
+       "recolor": {
+        "cloth": "leather"
+       }
+      }
+     ]
+    },
+    "base:felt_hat": {
+     "layer": "headwear",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hat_formal_bowler_adult_brown.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 130
+      }
+     ]
+    }
+   },
+   "held_overrides": {
+    "base:axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_thin.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_thin.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:spear": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_foreground_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_background_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      }
+     ]
+    },
+    "base:bow": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_background_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_foreground_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_background_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_foreground_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 141
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "base:visual/human_f_broad",
+   "kind": "visual",
+   "for": "base:human_f_broad",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc/body_bodies_female.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     2
+    ],
+    "walk": [
+     128,
+     0,
+     64,
+     9
+    ],
+    "run": [
+     704,
+     0,
+     64,
+     8
+    ],
+    "slash": [
+     1216,
+     0,
+     64,
+     6
+    ],
+    "thrust": [
+     1600,
+     0,
+     64,
+     8
+    ],
+    "shoot": [
+     2112,
+     0,
+     64,
+     13
+    ],
+    "chop": [
+     1216,
+     0,
+     64,
+     6
+    ]
+   },
+   "z": 10,
+   "recolor": {
+    "body": "@skin"
+   },
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    62
+   ],
+   "pixel_scale": 0.5,
+   "palettes": "art/lpc/palettes.json",
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0,
+      0,
+      1,
+      1
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "fps": 11
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 13
+    },
+    "slash": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 16
+    },
+    "thrust": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 18
+    },
+    "shoot": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+     ],
+     "fps": 22
+    },
+    "chop": {
+     "frames": [
+      5,
+      5,
+      4,
+      4,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0
+     ],
+     "fps": 22
+    }
+   },
+   "swings": {
+    "chop": "chop",
+    "thrust": "thrust",
+    "draw": "shoot",
+    "lunge": "slash"
+   },
+   "fallback": {
+    "idle": [
+     "walk",
+     0
+    ],
+    "run": [
+     "walk",
+     -1
+    ],
+    "slash": [
+     "chop",
+     -1
+    ]
+   },
+   "style_overrides": {
+    "base:human_face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:human_face_square": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_big_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thick_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_face_angular": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:face_sharp": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_plain": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_plain_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_ponytail": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_bald": {
+     "layer": "hair",
+     "sheets": []
+    },
+    "base:hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    }
+   },
+   "worn_overrides": {
+    "base:linen_shirt": {
+     "layer": "torso",
+     "sheets": [
+      {
+       "atlas": "art/lpc/torso_clothes_longsleeve_longsleeve_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 35,
+       "recolor": {
+        "cloth": "white"
+       }
+      }
+     ]
+    },
+    "base:work_trousers": {
+     "layer": "legs",
+     "sheets": [
+      {
+       "atlas": "art/lpc/legs_pants_thin.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 20,
+       "recolor": {
+        "cloth": "walnut"
+       }
+      }
+     ]
+    },
+    "base:boots": {
+     "layer": "feet",
+     "sheets": [
+      {
+       "atlas": "art/lpc/feet_boots_basic_thin.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 25,
+       "recolor": {
+        "cloth": "leather"
+       }
+      }
+     ]
+    },
+    "base:felt_hat": {
+     "layer": "headwear",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hat_formal_bowler_adult_brown.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 130
+      }
+     ]
+    }
+   },
+   "held_overrides": {
+    "base:axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_thin.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_thin.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:spear": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_foreground_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_background_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      }
+     ]
+    },
+    "base:bow": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_background_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_foreground_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_background_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_foreground_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 141
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "base:visual/humanoid_adult",
+   "kind": "visual",
+   "for": "base:humanoid_adult",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc/body_bodies_male.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     2
+    ],
+    "walk": [
+     128,
+     0,
+     64,
+     9
+    ],
+    "run": [
+     704,
+     0,
+     64,
+     8
+    ],
+    "slash": [
+     1216,
+     0,
+     64,
+     6
+    ],
+    "thrust": [
+     1600,
+     0,
+     64,
+     8
+    ],
+    "shoot": [
+     2112,
+     0,
+     64,
+     13
+    ],
+    "chop": [
+     1216,
+     0,
+     64,
+     6
+    ]
+   },
+   "z": 10,
+   "recolor": {
+    "body": "@skin"
+   },
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    62
+   ],
+   "pixel_scale": 0.5,
+   "palettes": "art/lpc/palettes.json",
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0,
+      0,
+      1,
+      1
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "fps": 11
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 13
+    },
+    "slash": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 16
+    },
+    "thrust": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 18
+    },
+    "shoot": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+     ],
+     "fps": 22
+    },
+    "chop": {
+     "frames": [
+      5,
+      5,
+      4,
+      4,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0
+     ],
+     "fps": 22
+    }
+   },
+   "swings": {
+    "chop": "chop",
+    "thrust": "thrust",
+    "draw": "shoot",
+    "lunge": "slash"
+   },
+   "fallback": {
+    "idle": [
+     "walk",
+     0
+    ],
+    "run": [
+     "walk",
+     -1
+    ],
+    "slash": [
+     "chop",
+     -1
+    ]
+   },
+   "style_overrides": {
+    "base:human_face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:human_face_square": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_plump.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_big_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thick_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_face_angular": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_gaunt.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:face_sharp": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_gaunt.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_plain": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_plain_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_ponytail": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_bald": {
+     "layer": "hair",
+     "sheets": []
+    },
+    "base:hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    }
+   },
+   "worn_overrides": {
+    "base:linen_shirt": {
+     "layer": "torso",
+     "sheets": [
+      {
+       "atlas": "art/lpc/torso_clothes_longsleeve_longsleeve_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 35,
+       "recolor": {
+        "cloth": "white"
+       }
+      }
+     ]
+    },
+    "base:work_trousers": {
+     "layer": "legs",
+     "sheets": [
+      {
+       "atlas": "art/lpc/legs_pants_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 20,
+       "recolor": {
+        "cloth": "walnut"
+       }
+      }
+     ]
+    },
+    "base:boots": {
+     "layer": "feet",
+     "sheets": [
+      {
+       "atlas": "art/lpc/feet_boots_basic_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         9
+        ],
+        "shoot": [
+         2176,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 25,
+       "recolor": {
+        "cloth": "leather"
+       }
+      }
+     ]
+    },
+    "base:felt_hat": {
+     "layer": "headwear",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hat_formal_bowler_adult_brown.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 130
+      }
+     ]
+    }
+   },
+   "held_overrides": {
+    "base:axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:spear": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_foreground_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_background_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      }
+     ]
+    },
+    "base:bow": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_background_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_foreground_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_background_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_foreground_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 141
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "base:visual/traveler",
+   "kind": "visual",
+   "for": "base:traveler",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc/body_bodies_male.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     2
+    ],
+    "walk": [
+     128,
+     0,
+     64,
+     9
+    ],
+    "run": [
+     704,
+     0,
+     64,
+     8
+    ],
+    "slash": [
+     1216,
+     0,
+     64,
+     6
+    ],
+    "thrust": [
+     1600,
+     0,
+     64,
+     8
+    ],
+    "shoot": [
+     2112,
+     0,
+     64,
+     13
+    ],
+    "chop": [
+     1216,
+     0,
+     64,
+     6
+    ]
+   },
+   "z": 10,
+   "recolor": {
+    "body": "@skin"
+   },
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    62
+   ],
+   "pixel_scale": 0.5,
+   "palettes": "art/lpc/palettes.json",
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0,
+      0,
+      1,
+      1
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "fps": 11
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 13
+    },
+    "slash": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 16
+    },
+    "thrust": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 18
+    },
+    "shoot": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+     ],
+     "fps": 22
+    },
+    "chop": {
+     "frames": [
+      5,
+      5,
+      4,
+      4,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0
+     ],
+     "fps": 22
+    }
+   },
+   "swings": {
+    "chop": "chop",
+    "thrust": "thrust",
+    "draw": "shoot",
+    "lunge": "slash"
+   },
+   "fallback": {
+    "idle": [
+     "walk",
+     0
+    ],
+    "run": [
+     "walk",
+     -1
+    ],
+    "slash": [
+     "chop",
+     -1
+    ]
+   },
+   "style_overrides": {
+    "base:human_face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:human_face_square": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_plump.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_big_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thick_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_face_angular": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_gaunt.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:face_sharp": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_male_gaunt.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_plain": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_plain_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_ponytail": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_bald": {
+     "layer": "hair",
+     "sheets": []
+    },
+    "base:hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    }
+   },
+   "worn_overrides": {
+    "base:linen_shirt": {
+     "layer": "torso",
+     "sheets": [
+      {
+       "atlas": "art/lpc/torso_clothes_longsleeve_longsleeve_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 35,
+       "recolor": {
+        "cloth": "white"
+       }
+      }
+     ]
+    },
+    "base:work_trousers": {
+     "layer": "legs",
+     "sheets": [
+      {
+       "atlas": "art/lpc/legs_pants_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 20,
+       "recolor": {
+        "cloth": "walnut"
+       }
+      }
+     ]
+    },
+    "base:boots": {
+     "layer": "feet",
+     "sheets": [
+      {
+       "atlas": "art/lpc/feet_boots_basic_male.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         9
+        ],
+        "shoot": [
+         2176,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 25,
+       "recolor": {
+        "cloth": "leather"
+       }
+      }
+     ]
+    },
+    "base:felt_hat": {
+     "layer": "headwear",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hat_formal_bowler_adult_brown.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 130
+      }
+     ]
+    }
+   },
+   "held_overrides": {
+    "base:axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:spear": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_foreground_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_background_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      }
+     ]
+    },
+    "base:bow": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_background_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_foreground_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_background_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_foreground_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 141
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "base:visual/wayfarer",
+   "kind": "visual",
+   "for": "base:wayfarer",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc/body_bodies_female.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     2
+    ],
+    "walk": [
+     128,
+     0,
+     64,
+     9
+    ],
+    "run": [
+     704,
+     0,
+     64,
+     8
+    ],
+    "slash": [
+     1216,
+     0,
+     64,
+     6
+    ],
+    "thrust": [
+     1600,
+     0,
+     64,
+     8
+    ],
+    "shoot": [
+     2112,
+     0,
+     64,
+     13
+    ],
+    "chop": [
+     1216,
+     0,
+     64,
+     6
+    ]
+   },
+   "z": 10,
+   "recolor": {
+    "body": "@skin"
+   },
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    62
+   ],
+   "pixel_scale": 0.5,
+   "palettes": "art/lpc/palettes.json",
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0,
+      0,
+      1,
+      1
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "fps": 11
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 13
+    },
+    "slash": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "fps": 16
+    },
+    "thrust": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "fps": 18
+    },
+    "shoot": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+     ],
+     "fps": 22
+    },
+    "chop": {
+     "frames": [
+      5,
+      5,
+      4,
+      4,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0
+     ],
+     "fps": 22
+    }
+   },
+   "swings": {
+    "chop": "chop",
+    "thrust": "thrust",
+    "draw": "shoot",
+    "lunge": "slash"
+   },
+   "fallback": {
+    "idle": [
+     "walk",
+     0
+    ],
+    "run": [
+     "walk",
+     -1
+    ],
+    "slash": [
+     "chop",
+     -1
+    ]
+   },
+   "style_overrides": {
+    "base:human_face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:human_face_square": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_big_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thick_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_face_angular": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:face_soft": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      }
+     ]
+    },
+    "base:face_sharp": {
+     "layer": "face",
+     "sheets": [
+      {
+       "atlas": "art/lpc/head_heads_human_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 100,
+       "recolor": {
+        "body": "@skin",
+        "eye": "@eyes"
+       }
+      },
+      {
+       "atlas": "art/lpc/head_nose_straight_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 105,
+       "recolor": {
+        "body": "@skin"
+       }
+      },
+      {
+       "atlas": "art/lpc/eyes_eyebrows_thin_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 106,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_plain": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_plain_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_ponytail": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_ponytail_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:human_hair_bald": {
+     "layer": "hair",
+     "sheets": []
+    },
+    "base:hair_short": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_messy1_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_long": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_long_adult.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    },
+    "base:hair_braid": {
+     "layer": "hair",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hair_braid_adult_fg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 120,
+       "recolor": {
+        "hair": "@hair"
+       }
+      },
+      {
+       "atlas": "art/lpc/hair_braid_adult_bg.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 9,
+       "recolor": {
+        "hair": "@hair"
+       }
+      }
+     ]
+    }
+   },
+   "worn_overrides": {
+    "base:linen_shirt": {
+     "layer": "torso",
+     "sheets": [
+      {
+       "atlas": "art/lpc/torso_clothes_longsleeve_longsleeve_female.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 35,
+       "recolor": {
+        "cloth": "white"
+       }
+      }
+     ]
+    },
+    "base:work_trousers": {
+     "layer": "legs",
+     "sheets": [
+      {
+       "atlas": "art/lpc/legs_pants_thin.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 20,
+       "recolor": {
+        "cloth": "walnut"
+       }
+      }
+     ]
+    },
+    "base:boots": {
+     "layer": "feet",
+     "sheets": [
+      {
+       "atlas": "art/lpc/feet_boots_basic_thin.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 25,
+       "recolor": {
+        "cloth": "leather"
+       }
+      }
+     ]
+    },
+    "base:felt_hat": {
+     "layer": "headwear",
+     "sheets": [
+      {
+       "atlas": "art/lpc/hat_formal_bowler_adult_brown.png",
+       "anims": {
+        "idle": [
+         0,
+         0,
+         64,
+         2
+        ],
+        "walk": [
+         128,
+         0,
+         64,
+         9
+        ],
+        "run": [
+         704,
+         0,
+         64,
+         8
+        ],
+        "slash": [
+         1216,
+         0,
+         64,
+         6
+        ],
+        "thrust": [
+         1600,
+         0,
+         64,
+         8
+        ],
+        "shoot": [
+         2112,
+         0,
+         64,
+         13
+        ],
+        "chop": [
+         1216,
+         0,
+         64,
+         6
+        ]
+       },
+       "z": 130
+      }
+     ]
+    }
+   },
+   "held_overrides": {
+    "base:axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_thin.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_thin.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:spear": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_foreground_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_polearm_spear_background_medium.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      }
+     ]
+    },
+    "base:bow": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_background_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_universal_foreground_medium.png",
+       "anims": {
+        "shoot": [
+         0,
+         0,
+         64,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_background_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": -1
+      },
+      {
+       "atlas": "art/lpc/weapon_ranged_bow_normal_walk_foreground_medium_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 141
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

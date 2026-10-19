@@ -185,9 +185,26 @@ func _populate(location: String, cx: int, cy: int, had := 0) -> void:
 				break
 
 
+## How villagers may look: a body, a face, hair and colours (the editor's).
+const VILLAGER_BODIES := ["base:human_m", "base:human_f"]
+const VILLAGER_FACES := ["base:human_face_soft", "base:human_face_square", "base:human_face_angular"]
+const VILLAGER_HAIR := ["base:human_hair_short", "base:human_hair_plain", "base:human_hair_long",
+	"base:human_hair_ponytail", "base:human_hair_braid", "base:human_hair_bald"]
+const VILLAGER_SKIN := ["#e4a47c", "#ea9f54", "#ae6b3f", "#7f4c31", "#76513a", "#442725"]
+const VILLAGER_HAIR_COLORS := ["#1c2222", "#421603", "#7d4513", "#cc6901", "#bf9d5a", "#c0ab81", "#777777"]
+
+
+## Looks of a villager, the same for the same random state.
+static func villager_looks(r: RandomNumberGenerator) -> Dictionary:
+	var pick := func(list: Array) -> String: return String(list[r.randi() % list.size()])
+	return {"body_plan": pick.call(VILLAGER_BODIES),
+		"styles": {"face": pick.call(VILLAGER_FACES), "hair": pick.call(VILLAGER_HAIR)},
+		"colors": {"skin": pick.call(VILLAGER_SKIN), "hair": pick.call(VILLAGER_HAIR_COLORS)},
+		"worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
+
+
 ## A few villagers near the spawn point, each with its own looks and home.
 func _villagers() -> void:
-	var hairs := ["base:hair_short", "base:hair_long", "base:hair_braid"]
 	for i in VILLAGERS:
 		var r := RandomNumberGenerator.new()
 		r.seed = hash([world.world_seed, "villager", i])
@@ -195,10 +212,7 @@ func _villagers() -> void:
 			var cell := Vector2i(r.randi_range(-12, 12), r.randi_range(-12, 12))
 			if cell.length() < 5 or not _walkable(Levels.SURFACE, cell):
 				continue
-			var looks := {"body_plan": "base:humanoid_adult",
-				"styles": {"hair": hairs[r.randi() % hairs.size()], "face": "base:face_soft", "eyes": "base:eyes_round"},
-				"worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
-			_spawn("base:villager", Levels.SURFACE, cell, looks, hash([world.world_seed, "villager", i]))
+			_spawn("base:villager", Levels.SURFACE, cell, villager_looks(r), hash([world.world_seed, "villager", i]))
 			break
 
 
@@ -215,8 +229,7 @@ func spawn_crowd(n: int, radius: int) -> void:
 		if not _walkable(Levels.SURFACE, cell):
 			continue
 		var kind := "base:villager" if made % 10 == 9 else ("base:hare" if made % 2 == 0 else "base:deer")
-		var looks := {"body_plan": "base:humanoid_adult", "styles": CharacterLibrary.STYLE_DEFAULTS.duplicate(),
-			"worn": WorldLibrary.STARTER_OUTFIT.duplicate()} if kind == "base:villager" else {}
+		var looks := villager_looks(r) if kind == "base:villager" else {}
 		_spawn(kind, Levels.SURFACE, cell, looks, r.randi())
 		made += 1
 

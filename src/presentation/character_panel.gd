@@ -99,9 +99,9 @@ func show_for(own: Dictionary, held: String) -> void:
 	_title.text = "Персонаж · " + String(own.get("name", ""))
 	var look: Dictionary = own.get("appearance", {"body_plan": "base:humanoid_adult"})
 	preview.show_look(content, look)
-	preview.doll.scale = Vector2(2, 2)
+	preview.doll.scale = Vector2.ONE * 1.0 / float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0))
 	preview.doll.position = Vector2(102, 64)
-	preview.doll.hold(_view.item_picture(held), _view.item_grip(held))
+	preview.doll.hold(_view.item_picture(held), _view.item_grip(held), held)
 	var worn: Dictionary = look.get("worn", {})
 	for slot: String in _slots:
 		var b: EquipmentSlot = _slots[slot]

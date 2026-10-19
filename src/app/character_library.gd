@@ -6,7 +6,8 @@ extends RefCounted
 
 const EXT := ".nhnchar"
 const STYLE_DEFAULTS := {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
-const COLOR_DEFAULTS := {"skin": "#eab295", "hair": "#8a3a20", "eyes": "#2f7a52"}
+## The editor's first choices (middle steps of LPC ramps: light skin, brown hair and eyes).
+const COLOR_DEFAULTS := {"skin": "#e4a47c", "hair": "#7d4513", "eyes": "#544c2e"}
 
 var root := ""
 var content: ContentRegistry

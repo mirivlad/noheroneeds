@@ -57,21 +57,22 @@ var _swing_dir := Vector2.RIGHT
 func _init(body: Texture2D, visual: Dictionary, layers: Array = [], looks: Dictionary = {}) -> void:
 	_visual = visual
 	look = looks
-	_add_layer("body", body)
+	_add_layer("body", body, visual)
 	for l: Array in layers:
-		_add_layer(String(l[0]), l[1])
+		_add_layer(String(l[0]), l[1], l[2] if l.size() > 2 else {})
 	_order()
 	_frame(_anim("idle"), 0)
 
 
-func _add_layer(slot: String, tex: Texture2D) -> void:
+## sheet: where an LPC layer's frames are (LpcSprite); unused here.
+func _add_layer(slot: String, tex: Texture2D, sheet := {}) -> void:
 	var s := Sprite2D.new()
 	s.texture = tex
 	s.region_enabled = true
 	s.centered = false
 	s.scale = Vector2.ONE * float(_visual.get("pixel_scale", 1.0))
 	add_child(s)
-	_layers.append([slot, s])
+	_layers.append([slot, s, sheet])
 
 
 ## Changing clothes never replaces the moving/attacking character node.
@@ -82,9 +83,9 @@ func dress(body: Texture2D, visual: Dictionary, layers: Array, looks: Dictionary
 	_layers.clear()
 	_visual = visual
 	look = looks.duplicate(true)
-	_add_layer("body", body)
+	_add_layer("body", body, visual)
 	for layer: Array in layers:
-		_add_layer(String(layer[0]), layer[1])
+		_add_layer(String(layer[0]), layer[1], layer[2] if layer.size() > 2 else {})
 	_order_dir = -1
 	_order()
 	var bob := _hand_bob
@@ -243,8 +244,9 @@ func _order() -> void:
 		move_child(sorted[i][1], i)
 
 
-## Something in the hand (its picture), or null for empty hands.
-func hold(picture: Texture2D, grip := GRIP) -> void:
+## Something in the hand (its picture), or null for empty hands; item: what
+## it is (bodies that draw some things with frames of their own, LpcSprite).
+func hold(picture: Texture2D, grip := GRIP, _item := "") -> void:
 	if picture == null:
 		if _held:
 			_held.queue_free()

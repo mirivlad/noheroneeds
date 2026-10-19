@@ -1102,6 +1102,329 @@
    ],
    "pixel_scale": 0.5,
    "variants": 1
+  },
+  {
+   "id": "base:visual/plank",
+   "kind": "visual",
+   "for": "base:plank",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    0,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/log",
+   "kind": "visual",
+   "for": "base:log",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    32,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/raw_meat",
+   "kind": "visual",
+   "for": "base:raw_meat",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    64,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/hide",
+   "kind": "visual",
+   "for": "base:hide",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    96,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/arrow",
+   "kind": "visual",
+   "for": "base:arrow",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    128,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/pickaxe",
+   "kind": "visual",
+   "for": "base:pickaxe",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    160,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/iron_ore",
+   "kind": "visual",
+   "for": "base:iron_ore",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    192,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/copper_ore",
+   "kind": "visual",
+   "for": "base:copper_ore",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    224,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/axe",
+   "kind": "visual",
+   "for": "base:axe",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    256,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/spear",
+   "kind": "visual",
+   "for": "base:spear",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    288,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/bow",
+   "kind": "visual",
+   "for": "base:bow",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    320,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/raw_gem",
+   "kind": "visual",
+   "for": "base:raw_gem",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    352,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/stone",
+   "kind": "visual",
+   "for": "base:stone",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    384,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/linen_shirt",
+   "kind": "visual",
+   "for": "base:linen_shirt",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    416,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/work_trousers",
+   "kind": "visual",
+   "for": "base:work_trousers",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    448,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/boots",
+   "kind": "visual",
+   "for": "base:boots",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    480,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/felt_hat",
+   "kind": "visual",
+   "for": "base:felt_hat",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    512,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
   }
  ]
 }

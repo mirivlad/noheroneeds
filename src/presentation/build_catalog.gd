@@ -36,7 +36,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	_list.custom_minimum_size = Vector2(230, 110)
 	_list.add_theme_font_override("font", Art.font())
 	_list.add_theme_font_size_override("font_size", 16)
-	_list.fixed_icon_size = Vector2i(16, 16)
+	_list.fixed_icon_size = Vector2i(32, 32)
 	_list.item_clicked.connect(func(i: int, _at: Vector2, _button: int) -> void: chosen.emit(_ids[i]))
 	box.add_child(_list)
 	var demolish := Button.new()

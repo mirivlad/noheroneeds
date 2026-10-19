@@ -408,6 +408,70 @@ def build_props():
     return defs
 
 
+ITEMS_DIR = ROOT / "art_src" / "lpc_items"
+CHARS = ROOT / "content" / "base" / "art" / "lpc"
+# Item pictures (inventory, hands, the ground), 32 px: id -> (file, x, y) of
+# a 32 px cell; clothes are a frame of the LPC layer they are worn as.
+ITEMS = {
+    "base:plank": ("idyl/board.png", 0, 0),
+    "base:log": ("idyl/log.png", 0, 0),
+    "base:raw_meat": ("idyl/steak.png", 0, 0),
+    "base:hide": ("idyl/rawhide.png", 0, 0),
+    "base:arrow": ("idyl/arrow.png", 0, 0),
+    "base:pickaxe": ("idyl/iron_pickaxe.png", 0, 0),
+    "base:iron_ore": ("idyl/iron_ore.png", 0, 0),
+    "base:copper_ore": ("idyl/copper_ore.png", 0, 0),
+    "base:axe": ("items1_0.png", 224, 224),
+    "base:spear": ("items1_0.png", 160, 64),
+    "base:bow": ("items1_0.png", 128, 32),
+    "base:raw_gem": ("items1_0.png", 384, 96),
+    "base:stone": (str(ORE), 192, 32),
+}
+WORN_ICONS = {
+    "base:linen_shirt": "torso_clothes_longsleeve_longsleeve_male.png",
+    "base:work_trousers": "legs_pants_male.png",
+    "base:boots": "feet_boots_basic_male.png",
+    "base:felt_hat": "hat_formal_bowler_adult_brown.png",
+}
+# Worn things are dyed in the game (lpc_visuals.json); the icon shows that.
+WORN_DYE = {"base:work_trousers": "walnut", "base:boots": "leather"}
+
+
+def build_items():
+    pal = json.loads((CHARS / "palettes.json").read_text())["cloth"]
+    icons = []
+    for item, (path, x, y) in ITEMS.items():
+        src = Image.open(path if path.startswith("/") else ITEMS_DIR / path).convert("RGBA")
+        icons.append((item, src.crop((x, y, x + T, y + T))))
+    for item, sheet in WORN_ICONS.items():
+        # The south-facing standing frame (idle, row s), cut to what is drawn.
+        frame = Image.open(CHARS / sheet).convert("RGBA").crop((0, 2 * 64, 64, 3 * 64))
+        frame = frame.crop(frame.getbbox())
+        if item in WORN_DYE:
+            ramp = dict(zip([c.lower() for c in pal["ramps"][pal["base"]]], pal["ramps"][WORN_DYE[item]]))
+            px = frame.load()
+            for yy in range(frame.height):
+                for xx in range(frame.width):
+                    c = px[xx, yy]
+                    hx = "#%02x%02x%02x" % c[:3]
+                    if c[3] and hx in ramp:
+                        v = ramp[hx]
+                        px[xx, yy] = (int(v[1:3], 16), int(v[3:5], 16), int(v[5:7], 16), c[3])
+        cell = Image.new("RGBA", (T, T))
+        cell.alpha_composite(frame.crop((0, 0, min(T, frame.width), min(T, frame.height))),
+                             ((T - min(T, frame.width)) // 2, (T - min(T, frame.height)) // 2))
+        icons.append((item, cell))
+    atlas = Image.new("RGBA", (len(icons) * T, T))
+    defs = []
+    for i, (item, img) in enumerate(icons):
+        atlas.paste(img, (i * T, 0))
+        defs.append({"id": "base:visual/" + item.split(":")[1], "kind": "visual", "for": item, "mode": "item",
+                     "atlas": "art/lpc_env/items.png", "rect": [i * T, 0, T, T], "origin": [0, T],
+                     "pixel_scale": 0.5, "variants": 1})
+    atlas.save(OUT / "items.png", optimize=True)
+    return defs
+
+
 ENV_CREDITS_START = "<!-- environment -->"
 
 
@@ -429,8 +493,12 @@ FILE_CREDITS = [
      "https://opengameart.org/content/lpc-house-insides"),
     ("Modified 32x32 Treasure chest (сундук)", "Blarumyrran, правка Gaurav", "CC0",
      "https://opengameart.org/content/modified-32x32-treasure-chest"),
-    ("[LPC] Ore and Forge (руда в камне)", "bluecarrot16", "CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0",
+    ("[LPC] Ore and Forge (руда в камне, камень)", "bluecarrot16", "CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0",
      "https://opengameart.org/content/lpc-ore-and-forge"),
+    ("Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда)", "Idylwild", "CC0",
+     "https://opengameart.org/content/idylwilds-inventory"),
+    ("[LPC] Items and game effects (топор, копьё, лук, самоцвет)", "Lanea Zimmerman (Sharm) и др. (LPC)",
+     "CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0", "https://opengameart.org/content/lpc-items-and-game-effects"),
 ]
 
 
@@ -458,7 +526,7 @@ def credits():
 def main():
     if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF, PLANTS_PNG, TREES_DIR, ORE, MINE]):
         sys.exit("no LPC environment sources: run tools/art/fetch_lpc_env.sh")
-    defs = build_terrain() + build_buildings() + build_plants() + build_props()
+    defs = build_terrain() + build_buildings() + build_plants() + build_props() + build_items()
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     credits()
     print("%d environment visuals" % len(defs))

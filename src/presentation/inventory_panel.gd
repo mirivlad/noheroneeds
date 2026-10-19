@@ -37,7 +37,7 @@ class DragList:
 			return null
 		var preview := TextureRect.new()
 		preview.texture = get_item_icon(i)
-		preview.size = Vector2(16, 16)
+		preview.size = Vector2(32, 32)
 		if get_viewport() and get_viewport().gui_is_dragging():
 			set_drag_preview(preview)
 		else:
@@ -79,7 +79,7 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 	_list.custom_minimum_size = Vector2(220 if compact else 290, 112 if compact else 130)
 	_list.add_theme_font_override("font", Art.font())
 	_list.add_theme_font_size_override("font_size", 16)
-	_list.fixed_icon_size = Vector2i(16, 16)
+	_list.fixed_icon_size = Vector2i(32, 32)
 	_list.allow_rmb_select = true
 	_list.item_clicked.connect(func(i: int, _at: Vector2, button: int) -> void:
 		if button == MOUSE_BUTTON_RIGHT:

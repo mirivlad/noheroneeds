@@ -870,11 +870,23 @@ https://opengameart.org/content/slates-32x32px-orthogonal-tileset-by-ivan-voirol
 - Лицензии: CC0
 - https://opengameart.org/content/modified-32x32-treasure-chest
 
-## [LPC] Ore and Forge (руда в камне)
+## [LPC] Ore and Forge (руда в камне, камень)
 
 - Авторы: bluecarrot16
 - Лицензии: CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0
 - https://opengameart.org/content/lpc-ore-and-forge
+
+## Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда)
+
+- Авторы: Idylwild
+- Лицензии: CC0
+- https://opengameart.org/content/idylwilds-inventory
+
+## [LPC] Items and game effects (топор, копьё, лук, самоцвет)
+
+- Авторы: Lanea Zimmerman (Sharm) и др. (LPC)
+- Лицензии: CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0
+- https://opengameart.org/content/lpc-items-and-game-effects
 
 <!-- animals -->
 # Авторы графики зверей

@@ -330,23 +330,6 @@
       "name": "Фетровая шляпа",
       "stack": 1,
       "equip_slot": "headwear"
-    },
-    {
-      "id": "base:visual/felt_hat",
-      "kind": "visual",
-      "for": "base:felt_hat",
-      "mode": "item",
-      "atlas": "art/felt_hat_icon.png",
-      "rect": [
-        0,
-        0,
-        18,
-        12
-      ],
-      "origin": [
-        9,
-        6
-      ]
     }
   ]
 }

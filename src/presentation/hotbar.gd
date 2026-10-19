@@ -23,7 +23,7 @@ class Slot:
 			return null
 		var preview := TextureRect.new()
 		preview.texture = (get_child(0) as TextureRect).texture
-		preview.size = Vector2(16, 16)
+		preview.size = Vector2(32, 32)
 		if get_viewport() and get_viewport().gui_is_dragging():
 			set_drag_preview(preview)
 		else:
@@ -72,12 +72,12 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		var slot := Slot.new()
 		slot.bar = self
 		slot.index = i
-		slot.custom_minimum_size = Vector2(20, 20)
+		slot.custom_minimum_size = Vector2(36, 36)  # a 32 px picture a pixel a texel
 		var icon := TextureRect.new()
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.position = Vector2(2, 2)
-		icon.size = Vector2(16, 16)
+		icon.size = Vector2(32, 32)
 		slot.add_child(icon)
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var count := Label.new()
@@ -87,7 +87,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		count.add_theme_color_override("font_color", Art.TEXT)
 		count.add_theme_color_override("font_outline_color", Art.INK)
 		count.add_theme_constant_override("outline_size", 2)
-		count.position = Vector2(1, 6)
+		count.position = Vector2(2, 20)
 		slot.add_child(count)
 		var key := Label.new()
 		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -97,7 +97,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		key.add_theme_color_override("font_outline_color", Art.INK)
 		key.add_theme_constant_override("outline_size", 2)
 		key.text = str(i + 1)
-		key.position = Vector2(14, -9)
+		key.position = Vector2(29, -8)
 		slot.add_child(key)
 		add_child(slot)
 		_slots.append(slot)

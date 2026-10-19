@@ -15,14 +15,14 @@ func test_edit_keeps_identity_progress_and_signed_file() -> void:
 	library._write(file, CharacterFile.export_signed(before, me, content))
 	var styles := {"face": "base:human_face_angular", "hair": "base:human_hair_long"}
 	var colors := {"skin": "#503327", "hair": "#c9a363"}
-	check(library.edit(file, "Аня", "base:human_f_broad", styles, colors), library.last_error)
+	check(library.edit(file, "Аня", "base:human_f", styles, colors), library.last_error)
 	var after := library.load_character(file)
 	eq(after.character_id, before.character_id)
 	eq(after.attributes, before.attributes)
 	eq(after.skills, before.skills)
 	eq(after.equipment, before.equipment)
 	eq(after.inventory.to_data(), before.inventory.to_data())
-	eq(after.body_plan, "base:human_f_broad")
+	eq(after.body_plan, "base:human_f")
 	eq(after.styles, styles)
 	eq(after.colors, colors)
 	check(CharacterFile.read(library.file_bytes(file), content).ok, "edited file has a valid owner signature")

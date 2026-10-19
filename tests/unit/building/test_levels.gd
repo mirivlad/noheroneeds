@@ -134,7 +134,7 @@ func test_stairs_go_up_and_down_and_survive_restart() -> void:
 	var bad := _build("surface", 6, 6, "base:wood_stairs")
 	eq(bad.get("reason", str(bad)), "no_landing")
 	eq(_build("surface", 5, 5, "base:wood_stairs").get("opened"), true, "the ceiling over them made an opening")
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	var c := PortableCharacter.create("Аня", "base:human_m")
 	w.enter("k", c)
 	var a := c.character_id
 	w.move_character(a, Vector2i(5 * 256 + 128, 6 * 256 + 128))
@@ -165,7 +165,7 @@ func test_stairs_over_stairs_lead_both_ways() -> void:
 	for y in [3, 4, 5]:
 		_build("surface", 5, y, "base:wood_ceiling")
 	eq(_build("surface", 5, 5, "base:wood_stairs").get("ok"), true)
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	var c := PortableCharacter.create("Аня", "base:human_m")
 	w.enter("k", c)
 	var a := c.character_id
 	w.move_character(a, Vector2i(5 * 256 + 128, 6 * 256 + 128))
@@ -195,7 +195,7 @@ func test_turned_stairs_lead_onto_a_wall_beside_them() -> void:
 		"no_landing", "turned away from the wall")
 	eq(_req({"type": "build", "location": "surface", "x": 6, "y": 5, "part": "base:wood_stairs", "facing": "e"}).get("ok"), true)
 	eq(_props("surface", 6, 5).get("facing"), "e", "the facing is kept")
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	var c := PortableCharacter.create("Аня", "base:human_m")
 	w.enter("k", c)
 	var a := c.character_id
 	w.move_character(a, Vector2i(6 * 256 + 128, 6 * 256 + 128))

@@ -72,7 +72,7 @@ func test_characters_create_list_and_choose() -> void:
 	var lib := CharacterLibrary.new(root.path_join("characters"), _content, me)
 	var first := lib.current("")
 	check(first != "", "a default character when there is none")
-	var second := lib.create("Мара", {"hair": "base:hair_braid"})
+	var second := lib.create("Мара", {"hair": "base:human_hair_braid"})
 	check(second != "", "created")
 	eq(lib.create("X", {"hair": "base:no_such_hair"}), "", "an unknown style is refused")
 	var names := []
@@ -81,7 +81,7 @@ func test_characters_create_list_and_choose() -> void:
 	eq(names, ["Мара", "Путник"])
 	eq(lib.current(second), second, "the chosen one")
 	eq(lib.current("gone"), lib.list()[0]["file"], "a missing choice falls back")
-	eq(lib.load_character(second).styles["hair"], "base:hair_braid")
+	eq(lib.load_character(second).styles["hair"], "base:human_hair_braid")
 	check(CharacterFile.read(lib.file_bytes(second), _content).ok, "a signed file")
 
 
@@ -92,9 +92,9 @@ func test_hosted_game_takes_the_host_and_a_guest() -> void:
 	var keys := root.path_join("keys")
 	var host_id := PlayerIdentity.load_or_create(keys.path_join("host"))
 	var guest_id := PlayerIdentity.load_or_create(keys.path_join("guest"))
-	var host_c := PortableCharacter.create("Хозяин", "base:humanoid_adult")
+	var host_c := PortableCharacter.create("Хозяин", "base:human_m")
 	host_c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
-	var guest_c := PortableCharacter.create("Гость", "base:humanoid_adult")
+	var guest_c := PortableCharacter.create("Гость", "base:human_m")
 	guest_c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	var port := 24900 + randi() % 500
 	var g := HostedGame.start(root.path_join("world.db"), _content, host_id, PlayerIdentity.load_or_create(keys.path_join("server")),

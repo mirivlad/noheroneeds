@@ -2,41 +2,121 @@
   "format": 1,
   "defs": [
     {
-      "id": "base:humanoid_adult", "kind": "body_plan", "name": "Взрослый гуманоид",
-      "body_size": [20, 32], "frame": [48, 48], "directions": 8,
-      "slots": ["back_item", "body", "legs", "feet", "torso", "belt", "hair_back", "head", "face", "eyes", "hair_front", "headwear", "main_hand", "off_hand"],
-      "appearance_slots": ["hair", "face", "eyes"],
-      "colors": ["skin", "hair", "eyes", "cloth_main", "cloth_accent"],
-      "health": 20, "unarmed": {"kind": "melee", "damage": 1, "reach": 0.8, "arc": 90, "cooldown_ms": 500},
-      "fall_damage": [0, 2, 6, 12, 20]
+      "id": "base:strength",
+      "kind": "attribute",
+      "name": "Сила",
+      "min": 1,
+      "max": 20
     },
-    {"id": "base:hair_short", "kind": "style", "slot": "hair", "body_plans": ["base:humanoid_adult"]},
-    {"id": "base:hair_long", "kind": "style", "slot": "hair", "body_plans": ["base:humanoid_adult"]},
-    {"id": "base:hair_braid", "kind": "style", "slot": "hair", "body_plans": ["base:humanoid_adult"]},
-    {"id": "base:face_soft", "kind": "style", "slot": "face", "body_plans": ["base:humanoid_adult"]},
-    {"id": "base:face_sharp", "kind": "style", "slot": "face", "body_plans": ["base:humanoid_adult"]},
-    {"id": "base:eyes_round", "kind": "style", "slot": "eyes", "body_plans": ["base:humanoid_adult"]},
-    {"id": "base:eyes_narrow", "kind": "style", "slot": "eyes", "body_plans": ["base:humanoid_adult"]},
-
-    {"id": "base:strength", "kind": "attribute", "name": "Сила", "min": 1, "max": 20},
-    {"id": "base:agility", "kind": "attribute", "name": "Ловкость", "min": 1, "max": 20},
-    {"id": "base:wits", "kind": "attribute", "name": "Смекалка", "min": 1, "max": 20},
-
-    {"id": "base:carpentry", "kind": "skill", "name": "Плотничество", "max_level": 100},
-    {"id": "base:farming", "kind": "skill", "name": "Земледелие", "max_level": 100},
-    {"id": "base:archery", "kind": "skill", "name": "Стрельба из лука", "max_level": 100},
-
-    {"id": "base:first_house", "kind": "achievement", "name": "Первый дом"},
-
-    {"id": "base:linen_shirt", "kind": "item", "name": "Льняная рубаха", "stack": 1, "equip_slot": "torso"},
-    {"id": "base:work_trousers", "kind": "item", "name": "Рабочие штаны", "stack": 1, "equip_slot": "legs"},
-    {"id": "base:boots", "kind": "item", "name": "Сапоги", "stack": 1, "equip_slot": "feet"},
-    {"id": "base:axe", "kind": "item", "name": "Топор", "stack": 1, "equip_slot": "main_hand", "tools": ["chopping"],
-      "weapon": {"kind": "melee", "damage": 4, "reach": 1.0, "arc": 100, "cooldown_ms": 700}},
-    {"id": "base:spear", "kind": "item", "name": "Копьё", "stack": 1, "equip_slot": "main_hand",
-      "weapon": {"kind": "melee", "damage": 5, "reach": 1.8, "arc": 40, "cooldown_ms": 900}},
-    {"id": "base:bow", "kind": "item", "name": "Лук", "stack": 1, "equip_slot": "main_hand",
-      "weapon": {"kind": "ranged", "damage": 5, "range": 16, "speed": 18, "ammo": "base:arrow", "cooldown_ms": 900}},
-    {"id": "base:arrow", "kind": "item", "name": "Стрела", "stack": 50}
+    {
+      "id": "base:agility",
+      "kind": "attribute",
+      "name": "Ловкость",
+      "min": 1,
+      "max": 20
+    },
+    {
+      "id": "base:wits",
+      "kind": "attribute",
+      "name": "Смекалка",
+      "min": 1,
+      "max": 20
+    },
+    {
+      "id": "base:carpentry",
+      "kind": "skill",
+      "name": "Плотничество",
+      "max_level": 100
+    },
+    {
+      "id": "base:farming",
+      "kind": "skill",
+      "name": "Земледелие",
+      "max_level": 100
+    },
+    {
+      "id": "base:archery",
+      "kind": "skill",
+      "name": "Стрельба из лука",
+      "max_level": 100
+    },
+    {
+      "id": "base:first_house",
+      "kind": "achievement",
+      "name": "Первый дом"
+    },
+    {
+      "id": "base:linen_shirt",
+      "kind": "item",
+      "name": "Льняная рубаха",
+      "stack": 1,
+      "equip_slot": "torso"
+    },
+    {
+      "id": "base:work_trousers",
+      "kind": "item",
+      "name": "Рабочие штаны",
+      "stack": 1,
+      "equip_slot": "legs"
+    },
+    {
+      "id": "base:boots",
+      "kind": "item",
+      "name": "Сапоги",
+      "stack": 1,
+      "equip_slot": "feet"
+    },
+    {
+      "id": "base:axe",
+      "kind": "item",
+      "name": "Топор",
+      "stack": 1,
+      "equip_slot": "main_hand",
+      "tools": [
+        "chopping"
+      ],
+      "weapon": {
+        "kind": "melee",
+        "damage": 4,
+        "reach": 1.0,
+        "arc": 100,
+        "cooldown_ms": 700
+      }
+    },
+    {
+      "id": "base:spear",
+      "kind": "item",
+      "name": "Копьё",
+      "stack": 1,
+      "equip_slot": "main_hand",
+      "weapon": {
+        "kind": "melee",
+        "damage": 5,
+        "reach": 1.8,
+        "arc": 40,
+        "cooldown_ms": 900
+      }
+    },
+    {
+      "id": "base:bow",
+      "kind": "item",
+      "name": "Лук",
+      "stack": 1,
+      "equip_slot": "main_hand",
+      "weapon": {
+        "kind": "ranged",
+        "damage": 5,
+        "range": 16,
+        "speed": 18,
+        "ammo": "base:arrow",
+        "cooldown_ms": 900
+      }
+    },
+    {
+      "id": "base:arrow",
+      "kind": "item",
+      "name": "Стрела",
+      "stack": 50
+    }
   ]
 }

@@ -31,10 +31,7 @@ ANIMS = {"idle": "idle", "walk": "walk", "run": "run", "slash": "slash", "thrust
 CUSTOM = {"tool_axe": ("chop", 128), "walk_128": ("walk", 128)}
 # How each body plan is built: the LPC body type its layers are fitted to.
 PLANS = {
-    # LPC's muscular body has neither the shirts nor a bow shot: broad is the usual body for now.
-    "base:human_m": "male", "base:human_m_broad": "male", "base:human_f": "female",
-    "base:human_f_broad": "female", "base:humanoid_adult": "male",
-    "base:traveler": "male", "base:wayfarer": "female",
+    "base:human_m": "male", "base:human_f": "female",
 }
 # Where colours come from: "@key" takes the character's colour (nearest LPC
 # palette); a plain name is a fixed palette of that material.
@@ -62,8 +59,6 @@ STYLES = {
         "base:human_face_soft": face("male"),
         "base:human_face_square": face("plump", (NOSE_BIG, None, SKIN), (BROWS_THICK, None, HAIR)),
         "base:human_face_angular": face("gaunt", (NOSE_STRAIGHT, None, SKIN), (BROWS_THIN, None, HAIR)),
-        "base:face_soft": face("male"),
-        "base:face_sharp": face("gaunt", (NOSE_STRAIGHT, None, SKIN), (BROWS_THIN, None, HAIR)),
     },
     "hair": {
         "base:human_hair_short": D + "hair/short/hair_messy1.json",
@@ -72,9 +67,6 @@ STYLES = {
         "base:human_hair_braid": D + "hair/braids/hair_braid.json",
         "base:human_hair_ponytail": D + "hair/braids/hair_ponytail.json",
         "base:human_hair_bald": None,
-        "base:hair_short": D + "hair/short/hair_messy1.json",
-        "base:hair_long": D + "hair/long/hair_long.json",
-        "base:hair_braid": D + "hair/braids/hair_braid.json",
     },
 }
 # Worn things: item -> (slot, sheet definition, variant, recolour).

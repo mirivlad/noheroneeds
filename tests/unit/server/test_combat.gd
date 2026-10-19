@@ -36,7 +36,7 @@ func _at(cell: Vector2i) -> Vector2i:
 
 
 func _player(name: String, cell: Vector2i) -> String:
-	var c := PortableCharacter.create(name, "base:humanoid_adult")
+	var c := PortableCharacter.create(name, "base:human_m")
 	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	w.enter("k-" + c.character_id, c)
 	w.move_character(c.character_id, _at(cell))

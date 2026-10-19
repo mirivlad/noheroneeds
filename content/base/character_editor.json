@@ -58,121 +58,9 @@
       ]
     },
     {
-      "id": "base:human_m_broad",
-      "kind": "body_plan",
-      "name": "Мужской · Крепкое",
-      "body_size": [
-        20,
-        32
-      ],
-      "frame": [
-        48,
-        48
-      ],
-      "directions": 8,
-      "slots": [
-        "back_item",
-        "body",
-        "legs",
-        "feet",
-        "torso",
-        "belt",
-        "hair_back",
-        "head",
-        "face",
-        "eyes",
-        "hair_front",
-        "headwear",
-        "main_hand",
-        "off_hand"
-      ],
-      "appearance_slots": [
-        "face",
-        "hair"
-      ],
-      "colors": [
-        "skin",
-        "hair",
-        "eyes",
-        "cloth_main",
-        "cloth_accent"
-      ],
-      "health": 20,
-      "unarmed": {
-        "kind": "melee",
-        "damage": 1,
-        "reach": 0.8,
-        "arc": 90,
-        "cooldown_ms": 500
-      },
-      "fall_damage": [
-        0,
-        2,
-        6,
-        12,
-        20
-      ]
-    },
-    {
       "id": "base:human_f",
       "kind": "body_plan",
       "name": "Женский · Обычное",
-      "body_size": [
-        20,
-        32
-      ],
-      "frame": [
-        48,
-        48
-      ],
-      "directions": 8,
-      "slots": [
-        "back_item",
-        "body",
-        "legs",
-        "feet",
-        "torso",
-        "belt",
-        "hair_back",
-        "head",
-        "face",
-        "eyes",
-        "hair_front",
-        "headwear",
-        "main_hand",
-        "off_hand"
-      ],
-      "appearance_slots": [
-        "face",
-        "hair"
-      ],
-      "colors": [
-        "skin",
-        "hair",
-        "eyes",
-        "cloth_main",
-        "cloth_accent"
-      ],
-      "health": 20,
-      "unarmed": {
-        "kind": "melee",
-        "damage": 1,
-        "reach": 0.8,
-        "arc": 90,
-        "cooldown_ms": 500
-      },
-      "fall_damage": [
-        0,
-        2,
-        6,
-        12,
-        20
-      ]
-    },
-    {
-      "id": "base:human_f_broad",
-      "kind": "body_plan",
-      "name": "Женский · Крепкое",
       "body_size": [
         20,
         32
@@ -231,9 +119,7 @@
       "slot": "face",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {
@@ -242,9 +128,7 @@
       "slot": "face",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {
@@ -253,9 +137,7 @@
       "slot": "face",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {
@@ -264,9 +146,7 @@
       "slot": "hair",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {
@@ -275,9 +155,7 @@
       "slot": "hair",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {
@@ -286,9 +164,7 @@
       "slot": "hair",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {
@@ -297,9 +173,7 @@
       "slot": "hair",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {
@@ -308,9 +182,7 @@
       "slot": "hair",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {
@@ -319,9 +191,7 @@
       "slot": "hair",
       "body_plans": [
         "base:human_m",
-        "base:human_m_broad",
-        "base:human_f",
-        "base:human_f_broad"
+        "base:human_f"
       ]
     },
     {

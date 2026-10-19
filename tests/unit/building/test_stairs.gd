@@ -59,7 +59,7 @@ func _level(z: int, x := 5, y := 4) -> String:
 
 
 func _person(name: String, loc: String, cell: Vector2i) -> String:
-	var c := PortableCharacter.create(name, "base:humanoid_adult")
+	var c := PortableCharacter.create(name, "base:human_m")
 	w.enter("k-" + name, c)
 	w.present[c.character_id]["location"] = loc
 	w.move_character(c.character_id, cell * Movement.UNIT + Vector2i(128, 128))

@@ -3,8 +3,7 @@ extends TestCase
 ## the sprite faces four ways, walks, runs, swings with real frames, holds
 ## tools as layers of their own and is recoloured by palette ramps.
 
-const PLANS := ["base:human_m", "base:human_m_broad", "base:human_f", "base:human_f_broad",
-	"base:humanoid_adult", "base:traveler", "base:wayfarer"]
+const PLANS := ["base:human_m", "base:human_f"]
 
 
 func _content() -> ContentRegistry:

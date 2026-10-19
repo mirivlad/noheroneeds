@@ -31,7 +31,7 @@ func _req(actor: String, r: Dictionary) -> Dictionary:
 
 
 func _player(cell: Vector2i, location := "surface") -> String:
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	var c := PortableCharacter.create("Аня", "base:human_m")
 	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	w.enter("k-" + c.character_id, c)
 	w.present[c.character_id]["location"] = location

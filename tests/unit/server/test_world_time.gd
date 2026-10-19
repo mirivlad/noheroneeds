@@ -52,7 +52,7 @@ func test_clients_get_the_time() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	var keys := tmp_dir().path_join("keys")
 	var me := PlayerIdentity.load_or_create(keys.path_join("p"))
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	var c := PortableCharacter.create("Аня", "base:human_m")
 	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	var g := LocalGame.start(_db, content, me, PlayerIdentity.load_or_create(keys.path_join("s")),
 		CharacterFile.export_signed(c, me, content))

@@ -16,8 +16,8 @@ func test_join_move_and_build_over_enet() -> void:
 		return
 	var keys := ProjectSettings.globalize_path("user://test_keys/")
 	var server := GameServer.new(world, st, PlayerIdentity.load_or_create(keys + "server"))
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
-	c.styles = {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
+	var c := PortableCharacter.create("Аня", "base:human_m")
+	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	c.inventory.add("base:plank", 3)
 	var owner := PlayerIdentity.load_or_create(keys + "owner")
 	var ct := ENetTransport.new()

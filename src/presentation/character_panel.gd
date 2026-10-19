@@ -97,7 +97,7 @@ func show_for(own: Dictionary, held: String) -> void:
 		return
 	_seen = state
 	_title.text = "Персонаж · " + String(own.get("name", ""))
-	var look: Dictionary = own.get("appearance", {"body_plan": "base:humanoid_adult"})
+	var look: Dictionary = own.get("appearance", {"body_plan": "base:human_m"})
 	preview.show_look(content, look)
 	preview.doll.scale = Vector2.ONE * 1.0 / float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0))
 	preview.doll.position = Vector2(102, 64)

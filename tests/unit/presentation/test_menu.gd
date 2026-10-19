@@ -86,7 +86,7 @@ func test_create_and_switch_characters() -> void:
 	_press("Сменить персонажа")
 	var others := app.characters.list().filter(func(c: Dictionary) -> bool: return c["name"] != "Мара")
 	check(others.size() == 1, "the default one is there too")
-	_press("%s — %s" % [others[0]["name"], MainMenu.HAIR[others[0]["hair"]]])
+	_press("%s — %s" % [others[0]["name"], MainMenu._look_name(others[0]["body_plan"], others[0]["hair"])])
 	eq(app.settings.get_value("character"), others[0]["file"], "switched")
 	eq(GameSettings.load_from(app.settings.path).get_value("character"), others[0]["file"], "and kept")
 

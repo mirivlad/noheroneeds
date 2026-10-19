@@ -1275,7 +1275,7 @@ func _character(id: String, looks: Dictionary) -> CharacterSprite:
 		return old
 	var v := content.visual_of(String(looks.get("body_plan", "")))
 	if v.is_empty():
-		v = content.visual_of("base:humanoid_adult")
+		v = content.visual_of("base:human_m")
 	# A creature keeps the same variant across frames, reloads and clients.
 	var alternates: Array = v.get("alternates", [])
 	var variant := posmod(id.hash(), alternates.size() + 1)

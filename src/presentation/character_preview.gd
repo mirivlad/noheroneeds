@@ -15,7 +15,7 @@ func _init() -> void:
 
 
 func show_look(content: ContentRegistry, looks: Dictionary) -> void:
-	_visual = content.visual_of(String(looks.get("body_plan", "base:humanoid_adult")))
+	_visual = content.visual_of(String(looks.get("body_plan", "base:human_m")))
 	if doll and Art.same_kind(doll, _visual):
 		Art.dress(doll, content, _visual, looks)
 	else:

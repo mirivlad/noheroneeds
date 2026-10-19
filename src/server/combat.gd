@@ -79,7 +79,7 @@ func max_health_of(id: String) -> int:
 
 
 func _body_plan(p: Dictionary) -> String:
-	return String((p["appearance"] as Dictionary).get("body_plan", "base:humanoid_adult"))
+	return String((p["appearance"] as Dictionary).get("body_plan", "base:human_m"))
 
 
 ## How big one is (BodySize): a character by its body plan, a creature by its kind.

@@ -15,7 +15,7 @@
     },
     {
       "id": "base:villager", "kind": "creature", "name": "Житель", "behavior": "villager",
-      "body_plan": "base:humanoid_adult",
+      "body_plan": "base:human_m",
       "speed": 0.8, "run_speed": 1.3, "sight": 10, "dark_sight": 0.3, "hearing": 8,
       "flee_distance": 0, "home_radius": 8, "think_ticks": 20, "memory_s": 60,
       "health": 15

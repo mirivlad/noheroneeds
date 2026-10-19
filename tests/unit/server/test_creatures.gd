@@ -41,7 +41,7 @@ func _spawn(kind: String, cell: Vector2i) -> Creature:
 
 
 func _player(cell: Vector2i) -> String:
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	var c := PortableCharacter.create("Аня", "base:human_m")
 	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	w.enter("k-" + c.character_id, c)
 	w.move_character(c.character_id, _at(cell))
@@ -176,7 +176,7 @@ func test_noise_is_heard_as_a_place() -> void:
 
 func test_villagers_go_home_at_night() -> void:
 	_field()
-	var v := w.creatures._spawn("base:villager", "surface", Vector2i(170, 170), {"body_plan": "base:humanoid_adult"}, 3)
+	var v := w.creatures._spawn("base:villager", "surface", Vector2i(170, 170), {"body_plan": "base:human_m"}, 3)
 	v.pos = _at(Vector2i(175, 172))
 	w.world_time = 22 * Daylight.HOUR_MS
 	v.last_time = w.world_time
@@ -207,7 +207,7 @@ func test_thinking_has_a_budget_and_nobody_thinks_far_from_players() -> void:
 func test_a_creature_away_catches_up() -> void:
 	_field()
 	w.world_time = 12 * Daylight.HOUR_MS
-	var v := w.creatures._spawn("base:villager", "surface", Vector2i(170, 170), {"body_plan": "base:humanoid_adult"}, 3)
+	var v := w.creatures._spawn("base:villager", "surface", Vector2i(170, 170), {"body_plan": "base:human_m"}, 3)
 	v.pos = _at(Vector2i(178, 175))
 	v.last_time = w.world_time
 	w.world_time = Daylight.DAY_MS + 23 * Daylight.HOUR_MS  # long away; night now

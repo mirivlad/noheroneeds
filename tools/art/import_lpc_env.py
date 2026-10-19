@@ -103,6 +103,147 @@ def build_terrain():
     return defs
 
 
+WALLS_DIR = SRC / "lpc-walls" / "lpc-walls"
+DOORS_DIR = SRC / "lpc-windows-doors" / "lpc-windows-doors-v2"
+FLOORS_DIR = SRC / "lpc-floors" / "lpc-floors"
+ROOF = SRC / "thatched-roof.png"
+STOREY = 64  # a wall's face (ADR-0024)
+DOOR = 56
+# Walls: the top (an LPC "Ceilings" colour, drawn on cell corners) and the
+# face (x, y of a 96 px face block: three seamless tiles; rows top and bottom).
+WALLS = {
+    "base:wood_wall": {"cap": 1, "face": (512, 2176)},
+    "base:stone_wall": {"cap": 8, "face": (256, 928)},
+    "base:wood_door": {"cap": 1, "face": (512, 2176), "door": (192, 833, 48), "open": (512, 640, 52)},
+    "base:wood_window": {"cap": 1, "face": (512, 2176), "window": (384, 64, 32, 32, 12)},
+    "base:loophole": {"cap": 8, "face": (256, 928), "window": (608, 320, 32, 32, 18)},
+}
+# Flat things: x, y and grid of a seamless block (floors, ceilings, roofs).
+FLAT = {
+    "base:wood_floor": ("floors", 192, 1152, 2, 2, "flat"),
+    "base:wood_ceiling": ("floors", 192, 1216, 2, 2, "cover"),
+    "base:thatch_roof": ("roof", 192, 352, 3, 3, "cover"),
+}
+
+
+def ceilings(color):
+    """mask -> 32 px tile of a wall top colour (corners: TL 1, TR 2, BL 4, BR 8)."""
+    sheet = Image.open(WALLS_DIR / "walls.png").convert("RGBA")
+    root = ET.parse(WALLS_DIR / "walls.tsx").getroot()
+    out = {}
+    for ws in root.find("wangsets"):
+        if ws.get("name") != "Ceilings":
+            continue
+        for wt in ws.findall("wangtile"):
+            w = [int(x) for x in wt.get("wangid").split(",")]
+            corners = [w[7], w[1], w[5], w[3]]  # TL TR BL BR
+            if any(c not in (0, color) for c in corners):
+                continue
+            mask = sum(1 << i for i, c in enumerate(corners) if c == color)
+            if mask and mask not in out:
+                i = int(wt.get("tileid"))
+                x, y = (i % 64) * T, (i // 64) * T
+                out[mask] = sheet.crop((x, y, x + T, y + T))
+    return out
+
+
+def wall_top(tiles, nesw):
+    """The top of a wall cell whose neighbours N E S W (bits 1 2 4 8) are
+    walls: the four quarters of the corner tiles round it (a diagonal counts
+    when both its sides are walls)."""
+    n, e, s_, w = (nesw >> 0) & 1, (nesw >> 1) & 1, (nesw >> 2) & 1, (nesw >> 3) & 1
+    ne, se, sw, nw = n & e, s_ & e, s_ & w, n & w
+    h = T // 2
+    img = Image.new("RGBA", (T, T))
+    # corner tile masks (TL 1, TR 2, BL 4, BR 8) and the quarter of it this cell sees
+    for (m, q, at) in [
+        (nw * 1 | n * 2 | w * 4 | 8, (h, h), (0, 0)),     # the corner at the cell's top-left
+        (n * 1 | ne * 2 | 4 | e * 8, (0, h), (h, 0)),     # top-right
+        (w * 1 | 2 | sw * 4 | s_ * 8, (h, 0), (0, h)),    # bottom-left
+        (1 | e * 2 | s_ * 4 | se * 8, (0, 0), (h, h)),    # bottom-right
+    ]:
+        img.alpha_composite(tiles[m].crop((q[0], q[1], q[0] + h, q[1] + h)), at)
+    return img
+
+
+def wall_face(walls, fx, fy, nesw):
+    """A face 64 px tall: the block's top and bottom rows; its end tiles at
+    the wall's ends."""
+    e, w = (nesw >> 1) & 1, (nesw >> 3) & 1
+    def column(c):
+        top = walls.crop((fx + c * T, fy, fx + c * T + T, fy + T))
+        bottom = walls.crop((fx + c * T, fy + 2 * T, fx + c * T + T, fy + 3 * T))
+        col = Image.new("RGBA", (T, STOREY))
+        col.paste(top, (0, 0))
+        col.paste(bottom, (0, T))
+        return col
+    if not w and not e:
+        face = column(0)
+        face.paste(column(2).crop((T // 2, 0, T, STOREY)), (T // 2, 0))
+        return face
+    return column(0 if not w else (2 if not e else 1))
+
+
+def taller(img, rows):
+    """A door made taller by repeating rows of its middle (planks go on), not scaled."""
+    mid = img.height // 2
+    out = Image.new("RGBA", (img.width, img.height + rows))
+    out.paste(img.crop((0, 0, img.width, mid)), (0, 0))
+    out.paste(img.crop((0, mid - rows, img.width, mid)), (0, mid))
+    out.paste(img.crop((0, mid, img.width, img.height)), (0, mid + rows))
+    return out
+
+
+def build_buildings():
+    walls = Image.open(WALLS_DIR / "walls.png").convert("RGBA")
+    doors = Image.open(DOORS_DIR / "windows-doors.png").convert("RGBA")
+    rows = []  # (visual id parts, [16 images])
+    defs = []
+    for part, spec in WALLS.items():
+        tiles = ceilings(spec["cap"])
+        for state in ["", "open"] if "open" in spec else [""]:
+            variants = []
+            for nesw in range(16):
+                img = Image.new("RGBA", (T, T + STOREY))
+                img.alpha_composite(wall_top(tiles, nesw), (0, 0))
+                if not nesw & 4:  # the face shows where nothing stands south
+                    img.alpha_composite(wall_face(walls, spec["face"][0], spec["face"][1], nesw), (0, T))
+                    if "door" in spec or "open" in spec:
+                        x, y, h = spec["open" if state else "door"]
+                        door = taller(doors.crop((x, y, x + T, y + h)), DOOR - h)
+                        img.alpha_composite(door, (0, T + STOREY - DOOR))
+                    if "window" in spec:
+                        x, y, ww, wh, dy = spec["window"]
+                        img.alpha_composite(doors.crop((x, y, x + ww, y + wh)), (0, T + dy))
+                variants.append(img)
+            rows.append(((part, state), variants))
+    atlas = Image.new("RGBA", (16 * T, len(rows) * (T + STOREY)))
+    at = {}
+    for r, ((part, state), variants) in enumerate(rows):
+        for i, img in enumerate(variants):
+            atlas.paste(img, (i * T, r * (T + STOREY)))
+        at[(part, state)] = [0, r * (T + STOREY), T, T + STOREY]
+    atlas.save(OUT / "walls.png", optimize=True)
+    for part in WALLS:
+        d = {"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
+             "atlas": "art/lpc_env/walls.png", "rect": at[(part, "")], "origin": [0, T + STOREY],
+             "pixel_scale": 0.5, "variants": 16, "autotile": "wall"}
+        if (part, "open") in at:
+            d["states"] = {"open": at[(part, "open")]}
+        defs.append(d)
+    # Floors, ceilings and roofs: seamless blocks, a tile a cell by its place.
+    sources = {"floors": Image.open(FLOORS_DIR / "floors.png").convert("RGBA"),
+               "roof": Image.open(ROOF).convert("RGBA")}
+    flat = Image.new("RGBA", (3 * T, len(FLAT) * 3 * T))
+    for r, (part, (src, x, y, gw, gh, mode)) in enumerate(FLAT.items()):
+        flat.paste(sources[src].crop((x, y, x + gw * T, y + gh * T)), (0, r * 3 * T))
+        defs.append({"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": mode,
+                     "atlas": "art/lpc_env/flat.png", "rect": [0, r * 3 * T, T, T], "origin": [0, T],
+                     "pixel_scale": 0.5, "variants": 1, "grid": [gw, gh]})
+    flat.save(OUT / "flat.png", optimize=True)
+    return defs
+
+
 ENV_CREDITS_START = "<!-- environment -->"
 
 
@@ -125,9 +266,9 @@ def credits():
 
 
 def main():
-    if not TERRAIN_DIR.is_dir():
+    if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF]):
         sys.exit("no LPC environment sources: run tools/art/fetch_lpc_env.sh")
-    defs = build_terrain()
+    defs = build_terrain() + build_buildings()
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     credits()
     print("%d ground visuals" % len(defs))

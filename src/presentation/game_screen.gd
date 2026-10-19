@@ -833,13 +833,12 @@ func _turns() -> Array:
 
 
 ## Where a click would build: the cell under the mouse, or for ceilings and
-## roofs the cell whose cover would be drawn there (covers sit a cell higher).
+## roofs the cell whose cover would be drawn there (covers sit a storey higher).
 func _build_cell() -> Vector2i:
 	var m := _mouse_world()
-	var cell := Vector2i(floori(m.x / WorldView.CELL), floori(m.y / WorldView.CELL))
 	if Terrain.layer_for_role(String(content.get_def(_blueprint).get("role", ""))) != "structure":
-		cell.y += 1
-	return cell
+		m.y += WorldView.COVER_LIFT
+	return Vector2i(floori(m.x / WorldView.CELL), floori(m.y / WorldView.CELL))
 
 
 ## The blueprint's cells as they would be built (ADR-0021): the dragged row
@@ -931,10 +930,11 @@ func _update_ghost() -> void:
 		var r: Array = v.get("rotations", {}).get(turned, v["rect"])
 		g.region_rect = Rect2(r[0], r[1], r[2], r[3])
 		g.flip_h = v.get("mirror", {}).has(facing)
+		g.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))
 		if v["mode"] == "cover":
 			g.position = Vector2(cell.x * WorldView.CELL, cell.y * WorldView.CELL - WorldView.COVER_LIFT)
 		else:
-			g.position = Vector2(cell.x * WorldView.CELL, (cell.y + 1) * WorldView.CELL) - Vector2(v["origin"][0], v["origin"][1])
+			g.position = Vector2(cell.x * WorldView.CELL, (cell.y + 1) * WorldView.CELL) - Vector2(v["origin"][0], v["origin"][1]) * g.scale
 		g.modulate = Color(0.6, 1.0, 0.6, 0.6) if _plan[i][1] == "" else Color(1.0, 0.4, 0.4, 0.5)
 
 

@@ -104,7 +104,9 @@ func _show(group: String, inventory: Dictionary) -> void:
 		if not v.is_empty():
 			var at := AtlasTexture.new()
 			at.atlas = view.texture(v["atlas_path"])
-			at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], mini(int(v["rect"][3]), 32))
+			# The top of a tall picture, a cell wide (LPC sheets are twice as fine).
+			var px := 1.0 / float(v.get("pixel_scale", 1.0))
+			at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], mini(int(v["rect"][3]), int(32 * px)))
 			icon = at
 		var i := _list.add_item("%s — %s" % [d.get("name", id), ", ".join(parts)], icon)
 		if not enough:

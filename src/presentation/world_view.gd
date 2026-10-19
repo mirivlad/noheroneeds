@@ -12,8 +12,9 @@ extends Node2D
 const CELL := 16
 ## Simulation units per screen pixel (Movement.UNIT / CELL).
 const UNITS_PER_PIXEL := Movement.UNIT / CELL
-## Covers sit on top of the walls: this far above their cell.
-const COVER_LIFT := 16
+## A storey (ADR-0024: 64 px on screen): covers sit this far above their
+## cell, on top of the walls, and one standing a level up is lifted by it.
+const COVER_LIFT := 32
 const UNDERGROUND_TINT := Color(0.32, 0.3, 0.34)
 ## Largest room whose cover is hidden around the player.
 const MAX_ROOM := 2048
@@ -73,6 +74,11 @@ var _terrain_set := {}
 var _below_terrain := TileMapLayer.new()
 ## Terrain tiles are 32 px, drawn at half (16 world pixels a cell).
 const TERRAIN_TILE := 32
+## The tiles of LPC pictures (terrain, floors), and the layers of flat LPC
+## things a tile a cell: floors over the ground, flat things over floors.
+var _ts32 := TileSet.new()
+var _floor32 := TileMapLayer.new()
+var _cover32 := TileMapLayer.new()
 ## Drawn where the content has no picture (a texture pack may lack one): a
 ## loud magenta checker, so a gap is noticed rather than hidden.
 var _missing_source := -1
@@ -83,26 +89,30 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	client = game_client
 	var ts := TileSet.new()
 	ts.tile_size = Vector2i(CELL, CELL)
+	_ts32.tile_size = Vector2i(TERRAIN_TILE, TERRAIN_TILE)
 	var sources := {}
 	for target: String in content.visuals:
 		var v: Dictionary = content.visuals[target]
 		if v["mode"] != "flat" or v.has("terrain"):
 			continue
+		# LPC pictures (half a world pixel a texel) are 32 px tiles on their own layers.
+		var big := float(v.get("pixel_scale", 1.0)) < 1.0
+		var size := TERRAIN_TILE if big else CELL
 		var path: String = v["atlas_path"]
 		if not sources.has(path):
 			var src := TileSetAtlasSource.new()
 			src.texture = texture(path)
-			src.texture_region_size = Vector2i(CELL, CELL)
-			sources[path] = [ts.add_source(src), src]
+			src.texture_region_size = Vector2i(size, size)
+			sources[path] = [(_ts32 if big else ts).add_source(src), src]
 		var src: TileSetAtlasSource = sources[path][1]
-		var first := Vector2i(v["rect"][0] / CELL, v["rect"][1] / CELL)
+		var first := Vector2i(v["rect"][0] / size, v["rect"][1] / size)
 		var grid: Vector2i = v.get("grid_size", Vector2i(int(v["variants"]), 1))
 		for j in grid.y:
 			for i in grid.x:
 				var at := first + Vector2i(i, j)
 				if not src.has_tile(at):
 					src.create_tile(at)
-		_tiles[target] = [sources[path][0], first, int(v["variants"]), v.has("grid_size"), grid]
+		_tiles[target] = [sources[path][0], first, int(v["variants"]), v.has("grid_size"), grid, big]
 	var miss := Image.create(CELL, CELL, false, Image.FORMAT_RGBA8)
 	for y in CELL:
 		for x in CELL:
@@ -140,7 +150,9 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	for layer: TileMapLayer in _terrain_layers:
 		add_child(layer)  # higher grounds drawn later, over lower ones
 	add_child(_ground)  # floors over the ground
+	add_child(_floor32)
 	add_child(_cover)
+	add_child(_cover32)
 	_rock_tops.z_index = -1
 	add_child(_rock_tops)
 	add_child(_sorted)
@@ -148,8 +160,7 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 
 
 func _setup_terrain() -> void:
-	var ts := TileSet.new()
-	ts.tile_size = Vector2i(TERRAIN_TILE, TERRAIN_TILE)
+	var ts := _ts32
 	var sources := {}
 	var ids: Array[String] = []
 	for id: String in content.visuals:
@@ -184,6 +195,12 @@ func _setup_terrain() -> void:
 		_terrain_layers.append(layer)
 	_below_terrain.tile_set = ts
 	_below_terrain.scale = Vector2.ONE * float(CELL) / TERRAIN_TILE
+	_floor32.tile_set = ts
+	_floor32.scale = _below_terrain.scale
+	_floor32.z_index = -2
+	_cover32.tile_set = ts
+	_cover32.scale = _below_terrain.scale
+	_cover32.z_index = -1
 	_below_terrain.z_index = -3
 	_below_terrain.modulate = Color(0.42, 0.42, 0.52)
 
@@ -430,6 +447,8 @@ func _paint_pending() -> void:
 ## Forgets everything drawn (the client moved to another location).
 func _clear() -> void:
 	_ground.clear()
+	_floor32.clear()
+	_cover32.clear()
 	_pending.clear()
 	for layer: TileMapLayer in _terrain_layers:
 		layer.clear()
@@ -751,15 +770,16 @@ func _set_cover(cell: Vector2i, id: String, layer := "ceiling") -> void:
 	else:
 		s.texture = texture(v["atlas_path"])
 		s.region_enabled = true
-		var piece := _grid_piece(cell, v["grid_size"]) * CELL if v.has("grid_size") else Vector2i.ZERO
+		s.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))
+		var piece := _grid_piece(cell, v["grid_size"]) * int(v["rect"][2]) if v.has("grid_size") else Vector2i.ZERO
 		s.region_rect = Rect2(v["rect"][0] + piece.x, v["rect"][1] + piece.y, v["rect"][2], v["rect"][3])
 	s.position = Vector2(cell.x * CELL, cell.y * CELL - COVER_LIFT)
 	# Its shadow on the floor along its south edge, under the covers (the
 	# next cover south hides it), so an overhang reads as one.
 	var shade := ColorRect.new()
 	shade.color = Color(0.08, 0.05, 0.04, 0.38)
-	shade.size = Vector2(CELL, 4)
-	shade.position = Vector2(0, COVER_LIFT)
+	shade.size = Vector2(CELL, 4) / s.scale
+	shade.position = Vector2(0, COVER_LIFT) / s.scale
 	shade.z_index = -1
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	s.add_child(shade)
@@ -800,6 +820,13 @@ func _update_room() -> void:
 
 
 func _set_flat(layer: TileMapLayer, cell: Vector2i, id: String) -> void:
+	# The same layer's twin for LPC tiles (32 px): what is drawn is on one of the two.
+	var twin: TileMapLayer = {_ground: _floor32, _cover: _cover32, _below: _below_terrain}.get(layer)
+	if twin and id != "" and _tiles.has(id) and _tiles[id][5]:
+		layer.erase_cell(cell)
+		layer = twin
+	elif twin and twin != _below_terrain:
+		twin.erase_cell(cell)
 	if id == "":
 		layer.erase_cell(cell)
 		return
@@ -841,6 +868,7 @@ func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0, faci
 	s.region_rect = Rect2(r[0] + variant * r[2], r[1], r[2], r[3])
 	s.flip_h = flip
 	s.centered = false
+	s.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))  # LPC sheets: a texel is half a world pixel
 	# The sprite's origin pixel sits on the cell's bottom-left corner; that corner sorts it.
 	s.position = Vector2(cell.x * CELL, (cell.y + 1) * CELL)
 	s.offset = -Vector2(v["origin"][0], v["origin"][1])
@@ -925,7 +953,7 @@ func _fade_occluders() -> void:
 
 
 func _sprite_rect(s: Sprite2D) -> Rect2:
-	return Rect2(s.position + s.offset, s.region_rect.size)
+	return Rect2(s.position + s.offset * s.scale, s.region_rect.size * s.scale)
 
 
 ## What the player points at: a visible cover, else a tall thing whose

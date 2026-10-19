@@ -154,6 +154,183 @@
     "priority": 6,
     "fills": 4
    }
+  },
+  {
+   "id": "base:visual/wood_wall",
+   "kind": "visual",
+   "for": "base:wood_wall",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    0,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "wall"
+  },
+  {
+   "id": "base:visual/stone_wall",
+   "kind": "visual",
+   "for": "base:stone_wall",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    96,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "wall"
+  },
+  {
+   "id": "base:visual/wood_door",
+   "kind": "visual",
+   "for": "base:wood_door",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    192,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "wall",
+   "states": {
+    "open": [
+     0,
+     288,
+     32,
+     96
+    ]
+   }
+  },
+  {
+   "id": "base:visual/wood_window",
+   "kind": "visual",
+   "for": "base:wood_window",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    384,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "wall"
+  },
+  {
+   "id": "base:visual/loophole",
+   "kind": "visual",
+   "for": "base:loophole",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    480,
+    32,
+    96
+   ],
+   "origin": [
+    0,
+    96
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "wall"
+  },
+  {
+   "id": "base:visual/wood_floor",
+   "kind": "visual",
+   "for": "base:wood_floor",
+   "mode": "flat",
+   "atlas": "art/lpc_env/flat.png",
+   "rect": [
+    0,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "grid": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "base:visual/wood_ceiling",
+   "kind": "visual",
+   "for": "base:wood_ceiling",
+   "mode": "cover",
+   "atlas": "art/lpc_env/flat.png",
+   "rect": [
+    0,
+    96,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "grid": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "base:visual/thatch_roof",
+   "kind": "visual",
+   "for": "base:thatch_roof",
+   "mode": "cover",
+   "atlas": "art/lpc_env/flat.png",
+   "rect": [
+    0,
+    192,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "grid": [
+    3,
+    3
+   ]
   }
  ]
 }

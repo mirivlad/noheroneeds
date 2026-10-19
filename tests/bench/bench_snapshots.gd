@@ -31,7 +31,7 @@ func _run(n: int, crowd: int) -> void:
 		world.creatures.spawn_crowd(crowd, 40)
 	var clients: Array[GameClient] = []
 	for i in n:
-		var c := PortableCharacter.create("Бот %d" % i, "base:humanoid_adult")
+		var c := PortableCharacter.create("Бот %d" % i, "base:human_m")
 		c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 		var file := CharacterFile.export_signed(c, _key("bot%d" % i), content)
 		clients.append(GameClient.new(net.client(), _key("bot%d" % i), file, content))

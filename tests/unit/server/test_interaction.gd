@@ -22,7 +22,7 @@ func _world() -> ServerWorld:
 
 
 func _arrive(w: ServerWorld, name: String, cell: Vector2i) -> String:
-	var c := PortableCharacter.create(name, "base:humanoid_adult")
+	var c := PortableCharacter.create(name, "base:human_m")
 	eq(w.enter("key-" + name, c), "")
 	w.move_character(c.character_id, cell * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
 	return c.character_id
@@ -119,8 +119,8 @@ func test_clients_see_things_and_their_own_inventory() -> void:
 	var clients: Array = []
 	for who: String in ["owner", "other"]:
 		var key := PlayerIdentity.load_or_create(keys + who)
-		var c := PortableCharacter.create(who, "base:humanoid_adult")
-		c.styles = {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
+		var c := PortableCharacter.create(who, "base:human_m")
+		c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 		clients.append(GameClient.new(net.client(), key, CharacterFile.export_signed(c, key, content), content))
 	for i in 30:
 		server.step()
@@ -195,7 +195,7 @@ func test_starter_outfit() -> void:
 	eq(w.present[a]["appearance"]["worn"], {}, "no outfit set: nothing worn")
 	w.leave(a)
 	w.starter_outfit = {"torso": "base:linen_shirt", "feet": "base:boots"}
-	var c := PortableCharacter.create("b", "base:humanoid_adult")
+	var c := PortableCharacter.create("b", "base:human_m")
 	c.character_id = a
 	eq(w.enter("key-a", c), "")
 	eq(w.present[a]["appearance"]["worn"], {"torso": "base:linen_shirt", "feet": "base:boots"}, "dressed on its return")

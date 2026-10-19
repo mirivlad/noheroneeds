@@ -30,8 +30,8 @@ func _initialize() -> void:
 	_rng.seed = int(o.get("seed", "1"))
 	for i in int(o.get("bots", "10")):
 		var key := PlayerIdentity.load_or_create(ProjectSettings.globalize_path("user://bot_keys/%d" % i))
-		var c := PortableCharacter.create("Бот %d" % i, "base:humanoid_adult")
-		c.styles = {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
+		var c := PortableCharacter.create("Бот %d" % i, "base:human_m")
+		c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 		var t := ENetTransport.new()
 		t.start_client(hp[0], int(hp[1]))
 		var b := Bot.new()

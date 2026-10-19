@@ -17,8 +17,8 @@ func _key(who: String) -> PlayerIdentity:
 
 
 func _sample() -> PortableCharacter:
-	var c := PortableCharacter.create("Мирослава", "base:humanoid_adult")
-	c.styles = {"hair": "base:hair_braid", "face": "base:face_soft", "eyes": "base:eyes_round"}
+	var c := PortableCharacter.create("Мирослава", "base:human_f")
+	c.styles = {"hair": "base:human_hair_braid", "face": "base:human_face_soft"}
 	c.colors = {"skin": "#eab295", "hair": "#8a3a20", "eyes": "#2f7a52"}
 	c.attributes = {"base:strength": 6, "base:agility": 9, "base:wits": 11}
 	c.skills = {"base:carpentry": {"level": 12, "xp": 340}, "base:archery": {"level": 3, "xp": 20}}
@@ -104,7 +104,7 @@ func test_wrong_slot_and_body_plan_are_refused() -> void:
 	c.equipment = {"torso": "base:boots"}
 	check(not c.check_content(reg).is_empty(), "boots on the torso")
 	var d := _sample()
-	d.styles.erase("eyes")
+	d.styles.erase("face")
 	check(not d.check_content(reg).is_empty(), "appearance slot left empty")
 
 

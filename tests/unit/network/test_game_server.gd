@@ -41,8 +41,8 @@ func _key(who: String) -> PlayerIdentity:
 
 
 func _character(name: String, planks := 0) -> PortableCharacter:
-	var c := PortableCharacter.create(name, "base:humanoid_adult")
-	c.styles = {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
+	var c := PortableCharacter.create(name, "base:human_m")
+	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	if planks > 0:
 		c.inventory.add("base:plank", planks)
 	return c
@@ -240,7 +240,7 @@ func test_health_and_arrows_reach_clients() -> void:
 	world.grant(a.character_id, "base:arrow", 3)
 	var me := Movement.cell_of(_server_pos(a))
 	# A villager stands to look at one who comes close (a deer would run).
-	var deer := world.creatures._spawn("base:villager", "surface", me + Vector2i(1, 0), {"body_plan": "base:humanoid_adult"}, 3)
+	var deer := world.creatures._spawn("base:villager", "surface", me + Vector2i(1, 0), {"body_plan": "base:human_m"}, 3)
 	_run(10, [a])
 	eq(a.entities.get(deer.id, {}).get("health"), 15, "a creature's health")
 	eq(a.own.get("health"), 20, "and one's own")

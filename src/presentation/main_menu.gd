@@ -16,8 +16,6 @@ signal to_start_screen
 signal quit_game
 signal settings_changed
 
-const HAIR := {"base:hair_short": "Короткая стрижка", "base:hair_long": "Длинные волосы", "base:hair_braid": "Коса"}
-const BODIES := {"base:humanoid_adult": "Сохранённый облик", "base:traveler": "Сохранённый мужской облик", "base:wayfarer": "Сохранённый женский облик"}
 
 var worlds: WorldLibrary
 var characters: CharacterLibrary
@@ -205,7 +203,7 @@ func show_characters() -> void:
 	var c := characters.load_character(current)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_child(_doll(c.body_plan if c else "base:humanoid_adult", String(c.styles.get("hair", "")) if c else "", c.styles if c else {}, c.colors if c else {}))
+	row.add_child(_doll(c.body_plan if c else "base:human_m", String(c.styles.get("hair", "")) if c else "", c.styles if c else {}, c.colors if c else {}))
 	var about := VBoxContainer.new()
 	about.alignment = BoxContainer.ALIGNMENT_CENTER
 	var nm := Label.new()
@@ -463,10 +461,11 @@ func _check(text: String, on: bool) -> CheckBox:
 	return c
 
 
+## A character's looks in a few words: the body and the hairstyle.
 static func _look_name(body: String, hair: String) -> String:
-	if body.begins_with("base:human_"):
-		return "Женский облик" if body.begins_with("base:human_f") else "Мужской облик"
-	return HAIR.get(hair, "") if body == "base:humanoid_adult" else BODIES.get(body, body)
+	var sex := "женщина" if body.begins_with("base:human_f") else "мужчина"
+	var style := String(CharacterEditor.HAIRS.get(hair, "")).to_lower()
+	return sex + (", причёска: " + style if style != "" else "")
 
 
 ## A turning paper doll with a hairstyle and the starter outfit.

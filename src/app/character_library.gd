@@ -5,7 +5,7 @@ extends RefCounted
 ## main.nhnchar, is one of them like any other.
 
 const EXT := ".nhnchar"
-const STYLE_DEFAULTS := {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
+const STYLE_DEFAULTS := {"hair": "base:human_hair_short", "face": "base:human_face_soft"}
 ## The editor's first choices (middle steps of LPC ramps: light skin, brown hair and eyes).
 const COLOR_DEFAULTS := {"skin": "#e4a47c", "hair": "#7d4513", "eyes": "#544c2e"}
 
@@ -51,7 +51,7 @@ func file_bytes(file_id: String) -> PackedByteArray:
 
 ## A new character with the player's choices; returns its file id ("" if
 ## it could not be written).
-func create(char_name: String, styles: Dictionary, colors: Dictionary = {}, body_plan := "base:humanoid_adult") -> String:
+func create(char_name: String, styles: Dictionary, colors: Dictionary = {}, body_plan := "base:human_m") -> String:
 	var clean := char_name.strip_edges().left(PortableCharacter.NAME_MAX)
 	var c := PortableCharacter.create(clean if clean != "" else "Путник", body_plan)
 	for slot: String in STYLE_DEFAULTS:

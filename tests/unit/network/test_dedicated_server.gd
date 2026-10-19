@@ -13,8 +13,8 @@ func test_dedicated_server_process() -> void:
 		return
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	var owner := PlayerIdentity.load_or_create(ProjectSettings.globalize_path("user://test_keys/owner"))
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
-	c.styles = {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
+	var c := PortableCharacter.create("Аня", "base:human_m")
+	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	var ct := ENetTransport.new()
 	ct.start_client("127.0.0.1", port)
 	var client := GameClient.new(ct, owner, CharacterFile.export_signed(c, owner, content), content)
@@ -52,8 +52,8 @@ func test_single_player_goes_through_the_server() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	var keys := ProjectSettings.globalize_path("user://test_keys/")
 	var owner := PlayerIdentity.load_or_create(keys + "owner")
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
-	c.styles = {"hair": "base:hair_short", "face": "base:face_soft", "eyes": "base:eyes_round"}
+	var c := PortableCharacter.create("Аня", "base:human_m")
+	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	c.inventory.add("base:plank", 3)
 	var g := LocalGame.start(tmp_dir().path_join("world.db"), content, owner,
 		PlayerIdentity.load_or_create(keys + "server"), CharacterFile.export_signed(c, owner, content))

@@ -23,7 +23,7 @@ func after_each() -> void:
 
 
 func _player() -> String:
-	var c := PortableCharacter.create("Аня", "base:humanoid_adult")
+	var c := PortableCharacter.create("Аня", "base:human_m")
 	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	w.enter("k-" + c.character_id, c)
 	w.move_character(c.character_id, Vector2i(4 * 256 + 128, 3 * 256 + 128))

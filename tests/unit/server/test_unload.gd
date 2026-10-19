@@ -19,7 +19,7 @@ func _req(actor: String, r: Dictionary) -> void:
 
 
 func _arrive(name: String, cell: Vector2i) -> String:
-	var c := PortableCharacter.create(name, "base:humanoid_adult")
+	var c := PortableCharacter.create(name, "base:human_m")
 	w.enter("key-" + name, c)
 	w.move_character(c.character_id, cell * Movement.UNIT + Vector2i(128, 128))
 	return c.character_id

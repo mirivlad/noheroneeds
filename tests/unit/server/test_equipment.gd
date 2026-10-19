@@ -80,7 +80,7 @@ func test_offline_edit_updates_known_world_without_importing_possessions() -> vo
 	var id := c.character_id
 	w.grant(id, "base:stone", 7)
 	_req({"type": "unequip", "slot": "torso"})
-	c.body_plan = "base:human_m_broad"
+	c.body_plan = "base:human_f"
 	c.styles["face"] = "base:human_face_square"
 	c.inventory.add("base:stone", 1000)
 	c.equipment = {"headwear": "base:felt_hat"}
@@ -89,7 +89,7 @@ func test_offline_edit_updates_known_world_without_importing_possessions() -> vo
 	w.leave(id)
 	eq(w.enter("intruder", c), "not_owner")
 	eq(w.enter("owner", c), "")
-	eq(w.present[id]["appearance"]["body_plan"], "base:human_m_broad")
+	eq(w.present[id]["appearance"]["body_plan"], "base:human_f")
 	eq(w.inventory(id).count("base:stone"), 7, "incoming progress cannot replace the world's")
 	check(not w.present[id]["appearance"]["worn"].has("torso"), "the editor cannot restore removed equipment")
 	check(not w.present[id]["appearance"]["worn"].has("headwear"), "or import free equipment")

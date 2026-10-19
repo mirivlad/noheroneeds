@@ -59,7 +59,7 @@ func setup(registry: ContentRegistry, character: PortableCharacter = null) -> vo
 	color_pick = _choice("Волосы", "HairColorChoice", HAIR_COLORS.values())
 	eye_pick = _choice("Глаза", "EyeColorChoice", EYE_COLORS.values())
 	if character:
-		sex_pick.selected = 1 if character.body_plan.begins_with("base:human_f") or character.body_plan == "base:wayfarer" else 0
+		sex_pick.selected = 1 if character.body_plan.begins_with("base:human_f") else 0
 		face_pick.selected = maxi(0, FACES.keys().find(character.styles.get("face", "")))
 		hair_pick.selected = maxi(0, HAIRS.keys().find(character.styles.get("hair", "")))
 		skin_pick.selected = maxi(0, SKIN.keys().find(character.colors.get("skin", "")))

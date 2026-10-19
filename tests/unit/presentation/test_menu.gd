@@ -91,6 +91,56 @@ func test_create_and_switch_characters() -> void:
 	eq(GameSettings.load_from(app.settings.path).get_value("character"), others[0]["file"], "and kept")
 
 
+func test_editor_choices_save_and_equipment_window_uses_inventory() -> void:
+	_press("Персонажи")
+	_press("Создать нового")
+	var editor: CharacterEditor = app.menu.find_children("*", "VBoxContainer", true, false).filter(
+		func(n: Node) -> bool: return n is CharacterEditor)[0]
+	editor.name_edit.text = "Ева"
+	editor.sex_pick.select(1)
+	editor.body_pick.select(1)
+	editor.face_pick.select(2)
+	editor.hair_pick.select(2)
+	editor.skin_pick.select(4)
+	editor.color_pick.select(3)
+	_press("Создать")
+	var file := String(app.settings.get_value("character"))
+	var c := app.characters.load_character(file)
+	eq(c.body_plan, "base:human_f_broad")
+	eq(c.styles["face"], "base:human_face_angular")
+	eq(c.styles["hair"], "base:human_hair_braid")
+	eq(c.colors["skin"], "#503327")
+	_press("Редактировать внешность")
+	_press("Сохранить")
+	eq(app.characters.load_character(file).character_id, c.character_id)
+	app.start_game({"mode":"local", "world":"equipment", "world_path":app.worlds.db_path("equipment"), "rules":{"seed":"1"}})
+	_play(100)
+	app.game._key(KEY_C, false)
+	check(app.game.character_panel.visible, "C opens the equipment window")
+	var slot: CharacterPanel.EquipmentSlot = app.game.character_panel._slots["headwear"]
+	check(slot._can_drop_data(Vector2.ZERO, {"item":"base:felt_hat"}), "hat accepted on the head")
+	check(not slot._can_drop_data(Vector2.ZERO, {"item":"base:boots"}), "boots refused on the head")
+	slot._drop_data(Vector2.ZERO, {"item":"base:felt_hat"})
+	for i in 20:
+		app.game._process(0.05)
+	eq(app.game.client.own["appearance"]["worn"].get("headwear"), "base:felt_hat", "drag equips through the server")
+	slot.pressed.emit()
+	for i in 20:
+		app.game._process(0.05)
+	check(not app.game.client.own["appearance"]["worn"].has("headwear"), "click returns it to inventory")
+	eq(app.game.client.inventory().get("base:felt_hat"), 1)
+	app.game.menu_requested.emit()
+	app.menu.show_characters()
+	check(not _has_button("Редактировать внешность"), "appearance editing is absent while in a world")
+
+
+func _has_button(text: String) -> bool:
+	for b: Button in app.menu.find_children("*", "Button", true, false):
+		if not b.is_queued_for_deletion() and b.text == text:
+			return true
+	return false
+
+
 func test_a_refused_start_is_told_on_the_start_screen() -> void:
 	var blocker := ENetTransport.new()
 	var port := 25900 + randi() % 50

@@ -75,6 +75,26 @@ func test_two_players_join_and_see_each_other() -> void:
 	check(a.chunks.size() >= 9, "ground around arrived: %d chunks" % a.chunks.size())
 
 
+func test_equipment_reaches_owner_and_observer_under_packet_loss() -> void:
+	net.state_loss = 0.3
+	net.state_duplicate = 0.2
+	var a := _client("owner", _character("Аня"))
+	var b := _client("other", _character("Боря"))
+	_run(35, [a, b])
+	world.grant(a.character_id, "base:felt_hat", 1)
+	_run(20, [a, b])
+	var rid := a.request({"type": "equip", "item": "base:felt_hat"})
+	_run(40, [a, b])
+	check(a.results.get(rid, {}).get("ok", false), "durable result reached the owner")
+	eq(a.inventory().get("base:felt_hat", 0), 0, "hat removed from the bag")
+	eq(a.own["appearance"]["worn"]["headwear"], "base:felt_hat")
+	eq(b.entities[a.character_id]["appearance"]["worn"]["headwear"], "base:felt_hat", "others see the new layer")
+	a.request({"type": "unequip", "slot": "headwear"})
+	_run(40, [a, b])
+	eq(a.inventory().get("base:felt_hat", 0), 1)
+	check(not b.entities[a.character_id]["appearance"]["worn"].has("headwear"), "removal also converges")
+
+
 func test_prediction_matches_the_server() -> void:
 	net.delay_steps = 3
 	var a := _client("owner", _character("Аня"))

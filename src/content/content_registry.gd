@@ -246,7 +246,7 @@ func _validate() -> void:
 				if d.has("unarmed"):
 					_check_weapon(id, "unarmed", d["unarmed"], false)
 				_check_strings(id, "slots", d.get("slots", []))
-				_check_strings(id, "appearance_slots", d.get("appearance_slots", []))
+				_check_strings(id, "appearance_slots", d.get("appearance_slots", []), true)
 				_check_strings(id, "colors", d.get("colors", []))
 				var dirs := int(d.get("directions", 0))
 				d["directions"] = dirs
@@ -488,6 +488,10 @@ func _check_amounts(id: String, field: String, amounts: Variant, required: bool)
 
 
 func _check_visual(id: String, d: Dictionary) -> void:
+	if d.has("pixel_scale"):
+		var value: Variant = d["pixel_scale"]
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) <= 0.0:
+			errors.append("%s: pixel_scale must be a finite positive number" % id)
 	var target := String(d.get("for", ""))
 	if not defs.has(target) or kind_of(target) == "visual":
 		errors.append("%s: draws '%s', which is not defined" % [id, target])
@@ -527,6 +531,13 @@ func _check_visual(id: String, d: Dictionary) -> void:
 			return
 		d[f] = (v as Array).map(func(n: Variant) -> int: return int(n))
 	d["variants"] = maxi(1, int(d.get("variants", 1)))
+	if d.has("grip"):
+		var grip: Variant = d["grip"]
+		if typeof(grip) != TYPE_ARRAY or (grip as Array).size() != 2 or (grip as Array).any(
+				func(n: Variant) -> bool: return typeof(n) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(n))):
+			errors.append("%s: grip needs finite x and y" % id)
+		elif grip[0] < 0 or grip[0] >= d["rect"][2] or grip[1] < 0 or grip[1] >= d["rect"][3]:
+			errors.append("%s: grip outside the frame" % id)
 	# A seamless texture laid over grid[0] x grid[1] tiles (ground, roofs).
 	if d.has("grid"):
 		var g: Variant = d["grid"]
@@ -542,6 +553,29 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	# A style is one ("mode": "layer"); a wearable item has one as "worn".
 	if d.get("mode") == "layer" and String(d.get("layer", "")) == "":
 		errors.append("%s: a layer needs the slot it is drawn in ('layer')" % id)
+	# Optional per-frame wrists: [cell x, cell y, tool rotation in degrees].
+	var hands: Variant = d.get("hands", {})
+	if typeof(hands) != TYPE_DICTIONARY:
+		errors.append("%s: hands must map directions to frame anchors" % id)
+	else:
+		for direction: Variant in hands:
+			var row: Variant = hands[direction]
+			if not ["s", "se", "e", "ne", "n"].has(direction) or typeof(row) != TYPE_ARRAY:
+				errors.append("%s: bad hand direction or frame list" % id)
+				continue
+			for hand: Variant in row:
+				if typeof(hand) != TYPE_ARRAY or (hand as Array).size() != 3 or (hand as Array).any(
+						func(n: Variant) -> bool: return typeof(n) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(n))):
+					errors.append("%s: a hand needs finite x, y and rotation" % id)
+				elif hand[0] < 0 or hand[0] >= d["rect"][2] or hand[1] < 0 or hand[1] >= d["rect"][3]:
+					errors.append("%s: hand outside the frame" % id)
+	var hand_behind: Variant = d.get("hand_behind", {})
+	if typeof(hand_behind) != TYPE_DICTIONARY:
+		errors.append("%s: hand_behind must map directions to booleans" % id)
+	else:
+		for direction: Variant in hand_behind:
+			if not ["s", "se", "e", "ne", "n"].has(direction) or typeof(hand_behind[direction]) != TYPE_BOOL:
+				errors.append("%s: bad hand depth direction or boolean" % id)
 	# Ground lapping over lower grounds: its edge shapes and its priority.
 	var edges: Variant = d.get("edges")
 	if edges != null:
@@ -555,8 +589,25 @@ func _check_visual(id: String, d: Dictionary) -> void:
 			edges["atlas_path"] = dir.path_join(String(edges.get("atlas", ""))) if dir != "" else ""
 			if dir != "" and not FileAccess.file_exists(edges["atlas_path"]) and not ResourceLoader.exists(edges["atlas_path"]):
 				errors.append("%s: atlas %s not found" % [id, edges["atlas_path"]])
-	var worn: Variant = d.get("worn")
-	if worn != null:
+	var overrides: Variant = d.get("worn_overrides", {})
+	if typeof(overrides) != TYPE_DICTIONARY:
+		errors.append("%s: worn_overrides must map items to fitted layers" % id)
+		overrides = {}
+	for item: Variant in overrides:
+		if kind_of(String(item)) != "item":
+			errors.append("%s: fitted layer for unknown item '%s'" % [id, item])
+	var worn_layers: Array = overrides.values()
+	var styles: Variant = d.get("style_overrides", {})
+	if typeof(styles) != TYPE_DICTIONARY:
+		errors.append("%s: style_overrides must map styles to fitted layers" % id)
+		styles = {}
+	for style: String in styles:
+		if kind_of(style) != "style":
+			errors.append("%s: fitted layer for unknown style '%s'" % [id, style])
+	worn_layers.append_array(styles.values())
+	if d.has("worn"):
+		worn_layers.append(d["worn"])
+	for worn: Variant in worn_layers:
 		if typeof(worn) != TYPE_DICTIONARY or String(worn.get("atlas", "")) == "" or String(worn.get("layer", "")) == "":
 			errors.append("%s: worn needs atlas and layer" % id)
 		else:
@@ -640,9 +691,9 @@ func _check_weights(id: String, field: String, weights: Variant, kinds: Array, r
 			errors.append("%s: '%s' weight of '%s' must be positive" % [id, field, ref])
 
 
-func _check_strings(id: String, field: String, list: Variant) -> void:
-	if typeof(list) != TYPE_ARRAY or (list as Array).is_empty():
-		errors.append("%s: '%s' must be a non-empty list" % [id, field])
+func _check_strings(id: String, field: String, list: Variant, allow_empty := false) -> void:
+	if typeof(list) != TYPE_ARRAY or (not allow_empty and (list as Array).is_empty()):
+		errors.append("%s: '%s' must be a %slist" % [id, field, "" if allow_empty else "non-empty "])
 		return
 	for v: Variant in list:
 		if typeof(v) != TYPE_STRING or String(v) == "":

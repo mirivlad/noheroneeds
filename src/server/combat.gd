@@ -153,6 +153,7 @@ func _character_dies(id: String) -> void:
 			world.place_item(String(p["location"]), p["pos"], item, int(inv.stacks[item]), id, until)
 			inv.remove(item, int(inv.stacks[item]))
 		world.touch_inventory(id)
+		world.drop_equipment(id, until)
 	p["location"] = world.spawn_location
 	p["pos"] = world.spawn_position
 	p["health"] = max_health_of(id)

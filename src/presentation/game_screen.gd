@@ -40,6 +40,7 @@ var content: ContentRegistry
 var hotbar := Hotbar.new()
 var catalog := BuildCatalog.new()
 var inventory_panel := InventoryPanel.new()
+var character_panel := CharacterPanel.new()
 var chest_panel := ChestPanel.new()
 var pin_panel := PinPanel.new()
 ## Request id -> the door's cell, for a locked one to ask the code.
@@ -181,20 +182,22 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 		l.add_theme_constant_override("outline_size", 4)
 		layer.add_child(l)
 	hud.position = Vector2(6, 2)
-	status.position = Vector2(6, 252)
 	_info.position = Vector2(6, 16)
 	_info.add_theme_color_override("font_color", Art.TEXT_DIM)
 	_build_tools(layer)
 	_build_view = ClientBuildView.new(client)
 	painter.setup(content, view, client)
 	minimap.setup(painter, client)
-	minimap.position = Vector2(480 - Minimap.SIZE - 4, 34)
 	layer.add_child(minimap)
+	# Equipment covers the minimap in drawing and mouse picking alike.
+	layer.move_child(character_panel, layer.get_child_count() - 1)
 	var map_layer := CanvasLayer.new()
 	map_layer.layer = 5
 	add_child(map_layer)
 	world_map.setup(painter, client)
 	map_layer.add_child(world_map)
+	get_viewport().size_changed.connect(_layout_hud)
+	_layout_hud()
 	_set_cursor()
 	apply_settings()
 	return ""
@@ -236,7 +239,7 @@ func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
 		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog,
-				inventory_panel, chest_panel, pin_panel, _menu]:
+				inventory_panel, character_panel, chest_panel, pin_panel, _menu]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -261,7 +264,27 @@ func music_mood() -> String:
 ## The view and HUD parts of the player's settings.
 func apply_settings() -> void:
 	var z := float(settings.get_value("view_zoom"))
-	camera.zoom = Vector2(z, z)
+	camera.zoom = Vector2.ONE * z * PixelDisplay.world_scale(String(_opts.get("display", PixelDisplay.DEFAULT_MODE)))
+
+
+## HUD coordinates are viewport pixels, independent of the world's camera.
+func _layout_hud() -> void:
+	var viewport_size := get_viewport_rect().size
+	minimap.position = Vector2(viewport_size.x - Minimap.SIZE - 4, 34)
+	hotbar.position = Vector2(floorf((viewport_size.x - hotbar.get_combined_minimum_size().x) / 2.0), viewport_size.y - 42)
+	status.position = Vector2(6, viewport_size.y - 18)
+	# Legacy keeps its original typography. HD uses the same font pixels with
+	# twice the space: bounded lines cannot spill across the minimap or hotbar.
+	if _opts.get("display", PixelDisplay.DEFAULT_MODE) != "legacy":
+		hud.position.y = 4
+		_info.position.y = 24
+		minimap.position.y = 48
+		for label: Label in [hud, _info, status]:
+			label.clip_text = true
+			label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			label.custom_minimum_size.x = 0
+			label.size = Vector2(viewport_size.x - 12, 18)
+			label.add_theme_constant_override("outline_size", 2)
 
 
 ## Ends the game: the world is saved and closed, connections dropped.
@@ -439,7 +462,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
-		if catalog.visible or inventory_panel.visible or chest_panel.visible or pin_panel.visible or _blueprint != "":
+		if catalog.visible or inventory_panel.visible or character_panel.visible or chest_panel.visible or pin_panel.visible or _blueprint != "":
 			_close_tools()
 			return
 		menu_requested.emit()
@@ -461,12 +484,20 @@ func _key(k: int, shift: bool) -> void:
 			inventory_panel.visible = false
 		else:
 			catalog.visible = false
+			character_panel.hide()
 			inventory_panel.show_for(client.inventory(), hotbar.selected)
+	elif k == KEY_C:
+		if character_panel.visible:
+			character_panel.hide()
+		else:
+			_close_tools()
+			character_panel.show_for(client.own, hotbar.held(client.inventory()))
 	elif k == KEY_B:
 		if catalog.visible:
 			catalog.visible = false
 		else:
 			inventory_panel.visible = false
+			character_panel.hide()
 			catalog.open(client.inventory())
 	elif k == KEY_M:
 		world_map.open()
@@ -636,6 +667,7 @@ func _drag_cells(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 func _close_tools() -> void:
 	catalog.visible = false
 	inventory_panel.visible = false
+	character_panel.hide()
 	chest_panel.visible = false
 	pin_panel.visible = false
 	_blueprint = ""
@@ -645,7 +677,6 @@ func _close_tools() -> void:
 ## The quick slots, the catalogue, the things, the context menu.
 func _build_tools(layer: CanvasLayer) -> void:
 	hotbar.setup(content, view)
-	hotbar.position = Vector2(240 - Hotbar.SLOTS * 11, 228)
 	layer.add_child(hotbar)
 	catalog.setup(content, view)
 	catalog.position = Vector2(6, 40)
@@ -661,6 +692,19 @@ func _build_tools(layer: CanvasLayer) -> void:
 	layer.add_child(inventory_panel)
 	inventory_panel.drop.connect(func(item: String, n: int) -> void:
 		_sound_on_ok[client.request({"type": "drop", "item": item, "count": n})] = "drop")
+	inventory_panel.wear.connect(_wear_item)
+	character_panel.setup(content, view)
+	character_panel.position = Vector2(10, 16)
+	character_panel.wear.connect(_wear_item)
+	character_panel.take_off.connect(func(slot: String) -> void:
+		if slot == "main_hand":
+			hotbar.put(hotbar.selected, "", -1)
+		else:
+			client.request({"type": "unequip", "slot": slot}))
+	character_panel.unslot.connect(func(slot: int) -> void: hotbar.put(slot, "", -1))
+	character_panel.drop.connect(func(item: String, n: int) -> void:
+		_sound_on_ok[client.request({"type": "drop", "item": item, "count": n})] = "drop")
+	layer.add_child(character_panel)
 	hotbar.select_slot.connect(func(i: int) -> void: _choose_slot(i))
 	hotbar.changed.connect(_save_hotbar)
 	chest_panel.setup(content, view)
@@ -683,6 +727,19 @@ func _build_tools(layer: CanvasLayer) -> void:
 		if i >= 0 and i < _menu_actions.size():
 			_do(_menu_actions[i]))
 	add_child(_menu)
+
+
+func _wear_item(item: String) -> void:
+	var d := content.get_def(item)
+	var slot := String(d.get("equip_slot", ""))
+	if slot in ["", "main_hand"]:
+		var at := hotbar.items.find(item)
+		if at < 0:
+			at = hotbar.selected
+			hotbar.put(at, item, -1)
+		_choose_slot(at)
+	else:
+		client.request({"type": "equip", "item": item})
 
 
 ## The character's quick slots as the player left them; for one seen first,
@@ -957,7 +1014,7 @@ func _update_hud() -> void:
 	if settings.get_value("show_fps"):
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
-		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9/колесо — в руки, Q — оружие, I — вещи, B — стройка, M — карта, Esc — меню")
+		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9/колесо — в руки, Q — оружие, I — вещи, C — персонаж, B — стройка, M — карта, Esc — меню")
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:
@@ -997,6 +1054,8 @@ func _update_hud() -> void:
 			doing = what
 	status.text = "%s  %s   %s   %s" % [state, hands, doing, note]
 	hotbar.refresh(inv)
+	if character_panel.visible:
+		character_panel.show_for(client.own, held)
 	if inv.hash() != _inv_seen:  # the open panels follow what one carries
 		_inv_seen = inv.hash()
 		if chest_panel.visible:

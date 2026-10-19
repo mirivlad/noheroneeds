@@ -33,7 +33,7 @@ func list() -> Array:
 		var c := load_character(f.trim_suffix(EXT))
 		if c:
 			out.append({"file": f.trim_suffix(EXT), "name": c.name, "character_id": c.character_id,
-				"hair": String(c.styles.get("hair", ""))})
+				"hair": String(c.styles.get("hair", "")), "body_plan": c.body_plan})
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return String(a["name"]) < String(b["name"]))
 	return out
 
@@ -50,10 +50,12 @@ func file_bytes(file_id: String) -> PackedByteArray:
 
 ## A new character with the player's choices; returns its file id ("" if
 ## it could not be written).
-func create(char_name: String, styles: Dictionary, colors: Dictionary = {}) -> String:
+func create(char_name: String, styles: Dictionary, colors: Dictionary = {}, body_plan := "base:humanoid_adult") -> String:
 	var clean := char_name.strip_edges().left(PortableCharacter.NAME_MAX)
-	var c := PortableCharacter.create(clean if clean != "" else "Путник", "base:humanoid_adult")
-	c.styles = STYLE_DEFAULTS.duplicate()
+	var c := PortableCharacter.create(clean if clean != "" else "Путник", body_plan)
+	for slot: String in STYLE_DEFAULTS:
+		if (content.get_def(STYLE_DEFAULTS[slot]).get("body_plans", []) as Array).has(body_plan):
+			c.styles[slot] = STYLE_DEFAULTS[slot]
 	c.styles.merge(styles, true)
 	c.colors = COLOR_DEFAULTS.duplicate()
 	c.colors.merge(colors, true)
@@ -63,6 +65,27 @@ func create(char_name: String, styles: Dictionary, colors: Dictionary = {}) -> S
 		return ""
 	var file_id := c.character_id
 	return file_id if _write(file_id, CharacterFile.export_signed(c, player, content)) else ""
+
+
+## Offline editing preserves identity, progress and possessions, and signs anew.
+func edit(file_id: String, char_name: String, body_plan: String, styles: Dictionary, colors: Dictionary) -> bool:
+	var c := load_character(file_id)
+	if c == null:
+		last_error = "персонаж не найден"
+		return false
+	c.name = char_name.strip_edges().left(PortableCharacter.NAME_MAX)
+	if c.name == "":
+		last_error = "укажите имя"
+		return false
+	c.body_plan = body_plan
+	c.styles = styles.duplicate()
+	c.colors = colors.duplicate()
+	var errors := PortableCharacter.check_structure(c.to_data())
+	errors.append_array(c.check_content(content))
+	if not errors.is_empty():
+		last_error = "; ".join(errors)
+		return false
+	return _write(file_id, CharacterFile.export_signed(c, player, content))
 
 
 ## The character to play: the chosen one if it is still there, else the
@@ -78,9 +101,15 @@ func current(chosen: String) -> String:
 
 func _write(file_id: String, bytes: PackedByteArray) -> bool:
 	DirAccess.make_dir_recursive_absolute(root)
-	var f := FileAccess.open(root.path_join(file_id + EXT), FileAccess.WRITE)
+	var path := root.path_join(file_id + EXT)
+	var f := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	if f == null:
+		last_error = "не удалось записать файл"
 		return false
 	f.store_buffer(bytes)
+	var error := f.get_error()
 	f.close()
+	if error != OK or DirAccess.rename_absolute(path + ".tmp", path) != OK:
+		last_error = "не удалось сохранить файл"
+		return false
 	return true

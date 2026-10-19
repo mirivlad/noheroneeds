@@ -473,6 +473,12 @@ func _update_replica() -> void:
 			_replica[id] = r
 			_others[id] = true
 		r.set_health(int(p.get("health", 0)), world.combat.max_health_of(id), int(p.get("deaths", 0)), int(p.get("swing", 0)))
+		if r.cold.get("appearance", {}) != p["appearance"] or r.cold.get("name", "") != p["name"]:
+			r.cold = r.cold.duplicate()
+			r.cold["appearance"] = (p["appearance"] as Dictionary).duplicate(true)
+			r.cold["name"] = p["name"]
+			r.cold_size = Cbor.encode_fast(r.cold).size()
+			r.cv += 1
 		if r.location != p["location"]:
 			r.relocate(p["location"], world.levels.z(p["location"]))
 		if String(r.cold.get("held", "")) != String(p.get("held", "")):

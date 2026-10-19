@@ -1420,7 +1420,11 @@
     16
    ],
    "mode": "item",
-   "variants": 1
+   "variants": 1,
+   "grip": [
+    3,
+    13.5
+   ]
   },
   {
    "id": "base:visual/spear",
@@ -1438,7 +1442,11 @@
     16
    ],
    "mode": "item",
-   "variants": 1
+   "variants": 1,
+   "grip": [
+    3.5,
+    13.5
+   ]
   },
   {
    "id": "base:visual/bow",
@@ -1456,7 +1464,11 @@
     16
    ],
    "mode": "item",
-   "variants": 1
+   "variants": 1,
+   "grip": [
+    5,
+    5
+   ]
   },
   {
    "id": "base:visual/arrow",
@@ -1528,7 +1540,11 @@
     16
    ],
    "mode": "item",
-   "variants": 1
+   "variants": 1,
+   "grip": [
+    5.5,
+    13.5
+   ]
   },
   {
    "id": "base:visual/iron_ore",
@@ -1937,7 +1953,22 @@
      "frames": 6,
      "fps": 10
     }
-   }
+   },
+   "alternates": [
+    {
+     "atlas": "art/additional/hare.png",
+     "rect": [
+      0,
+      0,
+      48,
+      48
+     ],
+     "origin": [
+      24,
+      45
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/deer",
@@ -1974,7 +2005,22 @@
      "frames": 6,
      "fps": 10
     }
-   }
+   },
+   "alternates": [
+    {
+     "atlas": "art/additional/deer.png",
+     "rect": [
+      0,
+      0,
+      48,
+      48
+     ],
+     "origin": [
+      24,
+      45
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/wolf",
@@ -2011,7 +2057,22 @@
      "frames": 6,
      "fps": 10
     }
-   }
+   },
+   "alternates": [
+    {
+     "atlas": "art/additional/wolf.png",
+     "rect": [
+      0,
+      0,
+      48,
+      48
+     ],
+     "origin": [
+      24,
+      45
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/cave_rat",
@@ -2048,7 +2109,22 @@
      "frames": 6,
      "fps": 10
     }
-   }
+   },
+   "alternates": [
+    {
+     "atlas": "art/additional/cave_rat.png",
+     "rect": [
+      0,
+      0,
+      48,
+      48
+     ],
+     "origin": [
+      24,
+      45
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/cave_spider",
@@ -2085,7 +2161,22 @@
      "frames": 6,
      "fps": 10
     }
-   }
+   },
+   "alternates": [
+    {
+     "atlas": "art/additional/cave_spider.png",
+     "rect": [
+      0,
+      0,
+      48,
+      48
+     ],
+     "origin": [
+      24,
+      45
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/poring",
@@ -2122,7 +2213,22 @@
      "frames": 6,
      "fps": 10
     }
-   }
+   },
+   "alternates": [
+    {
+     "atlas": "art/additional/poring.png",
+     "rect": [
+      0,
+      0,
+      48,
+      48
+     ],
+     "origin": [
+      24,
+      45
+     ]
+    }
+   ]
   },
   {
    "id": "base:visual/poporing",
@@ -2159,7 +2265,22 @@
      "frames": 6,
      "fps": 10
     }
-   }
+   },
+   "alternates": [
+    {
+     "atlas": "art/additional/poporing.png",
+     "rect": [
+      0,
+      0,
+      48,
+      48
+     ],
+     "origin": [
+      24,
+      45
+     ]
+    }
+   ]
   }
  ]
 }

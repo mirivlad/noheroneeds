@@ -80,6 +80,59 @@ static func clear() -> void:
 	_theme = null
 
 
+## Clothes fitted to a particular body, falling back to the item's usual sheet.
+static func worn_visual(content: ContentRegistry, body: Dictionary, item: String) -> Dictionary:
+	return body.get("worn_overrides", {}).get(item, content.visual_of(item).get("worn", {}))
+
+
+## The same fitted layers in the editor, equipment window and world.
+static func character_layers(content: ContentRegistry, body: Dictionary, looks: Dictionary) -> Array:
+	var layers := []
+	var colors: Dictionary = looks.get("colors", {})
+	var hatted := String(looks.get("worn", {}).get("headwear", "")) != ""
+	for style: Variant in (looks.get("styles", {}) as Dictionary).values():
+		var sv: Dictionary = body.get("style_overrides", {}).get(String(style), content.visual_of(String(style)))
+		if sv.has("layer") and sv.has("atlas_path"):
+			layers.append([String(sv["layer"]), character_texture(sv, colors, hatted and sv["layer"] == "hair_front")])
+	for item: Variant in (looks.get("worn", {}) as Dictionary).values():
+		var worn := worn_visual(content, body, String(item))
+		if not worn.is_empty():
+			layers.append([String(worn["layer"]), character_texture(worn, colors)])
+	return layers
+
+
+## Palette keys affect skin/hair only; clothes keep their own material colours.
+static func character_texture(visual: Dictionary, colors: Dictionary, under_hat := false) -> Texture2D:
+	var path := String(visual["atlas_path"])
+	if not visual.get("recolor", false):
+		return texture(path)
+	var key := path + str(colors) + str(under_hat)
+	if _textures.has(key):
+		return _textures[key]
+	var img := texture(path).get_image().duplicate() as Image
+	var skin := Color(String(colors.get("skin", "#dca47c")))
+	var hair := Color(String(colors.get("hair", "#6e3c24")))
+	var keys := [Color8(128, 0, 32), Color8(192, 0, 48), Color8(255, 96, 128),
+		Color8(128, 0, 128), Color8(176, 0, 176), Color8(255, 96, 255), Color8(64, 0, 64)]
+	var frame_height := int(visual.get("rect", [0, 0, 48, 48])[3])
+	for y in img.get_height():
+		for x in img.get_width():
+			var pixel := img.get_pixel(x, y)
+			if pixel.a == 0:
+				continue
+			if under_hat and y % frame_height < roundi(frame_height * 19.0 / 48.0):
+				img.set_pixel(x, y, Color.TRANSPARENT)
+				continue
+			var i := keys.find(pixel)
+			if i >= 0:
+				var base := skin if i < 3 else hair
+				var shade: float = [0.72, 1.0, 1.2, 0.72, 1.0, 1.2, 0.55][i]
+				img.set_pixel(x, y, Color(minf(base.r * shade, 1), minf(base.g * shade, 1), minf(base.b * shade, 1), 1))
+	var tex := ImageTexture.create_from_image(img)
+	_textures[key] = tex
+	return tex
+
+
 static func _from_source(path: String) -> bool:
 	return OS.has_feature("editor") and FileAccess.file_exists(path) and path.get_extension().to_lower() == "png"
 

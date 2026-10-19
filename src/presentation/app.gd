@@ -11,6 +11,7 @@ extends Node
 ##   --server [options]   (with --headless) runs a dedicated server instead
 ##                        of the game (DedicatedServer lists the options);
 ##   --world=ID       plays a saved world (or makes it) at once;
+##   --display=legacy 480x270 compatibility; default HD is 960x540;
 ## dev runs: --demo[=outside|upstairs|behind], --walk=DX,DY,
 ## --screenshot=PATH --frames=N (saves a frame and quits) start a local game
 ## at once in the world "local"; --menu=SCREEN (start, new_game, load,
@@ -27,6 +28,7 @@ var music := MusicDirector.new()
 var _opts := {}
 var _menu_layer := CanvasLayer.new()
 var _backdrop: Control
+var display: PixelDisplay
 
 
 ## Options given before the app enters the tree (tests); else the command line.
@@ -58,6 +60,9 @@ func _ready() -> void:
 			printerr(err)
 			get_tree().quit(1)
 		return
+	display = PixelDisplay.new()
+	add_child(display)
+	display.setup(get_window(), String(_opts.get("display", PixelDisplay.DEFAULT_MODE)))
 	content = ContentRegistry.load_packs(["res://content/base"])
 	if not content.errors.is_empty():
 		push_error("content: " + "; ".join(content.errors))

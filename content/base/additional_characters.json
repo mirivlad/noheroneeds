@@ -1,0 +1,879 @@
+{
+  "format": 1,
+  "defs": [
+    {
+      "id": "base:traveler",
+      "kind": "body_plan",
+      "name": "Путник",
+      "body_size": [
+        20,
+        32
+      ],
+      "frame": [
+        48,
+        48
+      ],
+      "directions": 8,
+      "slots": [
+        "back_item",
+        "body",
+        "legs",
+        "feet",
+        "torso",
+        "belt",
+        "hair_back",
+        "head",
+        "face",
+        "eyes",
+        "hair_front",
+        "headwear",
+        "main_hand",
+        "off_hand"
+      ],
+      "appearance_slots": [],
+      "colors": [
+        "skin",
+        "hair",
+        "eyes",
+        "cloth_main",
+        "cloth_accent"
+      ],
+      "health": 20,
+      "unarmed": {
+        "kind": "melee",
+        "damage": 1,
+        "reach": 0.8,
+        "arc": 90,
+        "cooldown_ms": 500
+      },
+      "fall_damage": [
+        0,
+        2,
+        6,
+        12,
+        20
+      ]
+    },
+    {
+      "id": "base:visual/traveler",
+      "kind": "visual",
+      "for": "base:traveler",
+      "atlas": "art/additional/traveler_body.png",
+      "rect": [
+        0,
+        0,
+        48,
+        48
+      ],
+      "origin": [
+        24,
+        45
+      ],
+      "mode": "character",
+      "variants": 1,
+      "directions": [
+        "s",
+        "se",
+        "e",
+        "ne",
+        "n"
+      ],
+      "animations": {
+        "idle": {
+          "from": 0,
+          "frames": 4,
+          "fps": 6
+        },
+        "walk": {
+          "from": 4,
+          "frames": 6,
+          "fps": 10
+        }
+      },
+      "layer_order": {
+        "s": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ],
+        "se": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ],
+        "e": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ],
+        "ne": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ],
+        "n": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ]
+      },
+      "worn_overrides": {
+        "base:linen_shirt": {
+          "atlas": "art/additional/traveler_shirt.png",
+          "layer": "torso"
+        },
+        "base:work_trousers": {
+          "atlas": "art/additional/traveler_trousers.png",
+          "layer": "legs"
+        },
+        "base:boots": {
+          "atlas": "art/additional/traveler_boots.png",
+          "layer": "feet"
+        }
+      },
+      "hands": {
+        "s": [
+          [
+            18,
+            34,
+            0
+          ],
+          [
+            18,
+            35,
+            0
+          ],
+          [
+            18,
+            35,
+            0
+          ],
+          [
+            18,
+            35,
+            0
+          ],
+          [
+            18,
+            34,
+            0
+          ],
+          [
+            18,
+            34,
+            0
+          ],
+          [
+            18,
+            33,
+            0
+          ],
+          [
+            18,
+            34,
+            0
+          ],
+          [
+            18,
+            34,
+            0
+          ],
+          [
+            18,
+            33,
+            0
+          ]
+        ],
+        "se": [
+          [
+            20,
+            35,
+            0
+          ],
+          [
+            19,
+            35,
+            0
+          ],
+          [
+            20,
+            35,
+            0
+          ],
+          [
+            19,
+            35,
+            0
+          ],
+          [
+            16,
+            33,
+            17
+          ],
+          [
+            18,
+            33,
+            7
+          ],
+          [
+            19,
+            34,
+            2
+          ],
+          [
+            16,
+            33,
+            17
+          ],
+          [
+            18,
+            33,
+            7
+          ],
+          [
+            22,
+            34,
+            -12
+          ]
+        ],
+        "e": [
+          [
+            25,
+            35,
+            0
+          ],
+          [
+            25,
+            35,
+            0
+          ],
+          [
+            25,
+            35,
+            0
+          ],
+          [
+            25,
+            35,
+            0
+          ],
+          [
+            18,
+            34,
+            25
+          ],
+          [
+            27,
+            34,
+            -10
+          ],
+          [
+            26,
+            35,
+            -5
+          ],
+          [
+            18,
+            35,
+            25
+          ],
+          [
+            28,
+            34,
+            -15
+          ],
+          [
+            27,
+            35,
+            -10
+          ]
+        ],
+        "ne": [
+          [
+            28,
+            34,
+            0
+          ],
+          [
+            28,
+            34,
+            0
+          ],
+          [
+            28,
+            34,
+            0
+          ],
+          [
+            28,
+            34,
+            0
+          ],
+          [
+            31,
+            34,
+            -15
+          ],
+          [
+            30,
+            34,
+            -10
+          ],
+          [
+            28,
+            34,
+            0
+          ],
+          [
+            31,
+            33,
+            -15
+          ],
+          [
+            30,
+            33,
+            -10
+          ],
+          [
+            28,
+            33,
+            0
+          ]
+        ],
+        "n": [
+          [
+            30,
+            34,
+            0
+          ],
+          [
+            30,
+            35,
+            0
+          ],
+          [
+            30,
+            34,
+            0
+          ],
+          [
+            30,
+            35,
+            0
+          ],
+          [
+            30,
+            34,
+            0
+          ],
+          [
+            30,
+            34,
+            0
+          ],
+          [
+            30,
+            34,
+            0
+          ],
+          [
+            30,
+            34,
+            0
+          ],
+          [
+            30,
+            35,
+            0
+          ],
+          [
+            30,
+            33,
+            0
+          ]
+        ]
+      },
+      "hand_behind": {
+        "ne": false,
+        "n": false
+      }
+    },
+    {
+      "id": "base:wayfarer",
+      "kind": "body_plan",
+      "name": "Путница",
+      "body_size": [
+        20,
+        32
+      ],
+      "frame": [
+        48,
+        48
+      ],
+      "directions": 8,
+      "slots": [
+        "back_item",
+        "body",
+        "legs",
+        "feet",
+        "torso",
+        "belt",
+        "hair_back",
+        "head",
+        "face",
+        "eyes",
+        "hair_front",
+        "headwear",
+        "main_hand",
+        "off_hand"
+      ],
+      "appearance_slots": [],
+      "colors": [
+        "skin",
+        "hair",
+        "eyes",
+        "cloth_main",
+        "cloth_accent"
+      ],
+      "health": 20,
+      "unarmed": {
+        "kind": "melee",
+        "damage": 1,
+        "reach": 0.8,
+        "arc": 90,
+        "cooldown_ms": 500
+      },
+      "fall_damage": [
+        0,
+        2,
+        6,
+        12,
+        20
+      ]
+    },
+    {
+      "id": "base:visual/wayfarer",
+      "kind": "visual",
+      "for": "base:wayfarer",
+      "atlas": "art/additional/wayfarer_body.png",
+      "rect": [
+        0,
+        0,
+        48,
+        48
+      ],
+      "origin": [
+        24,
+        45
+      ],
+      "mode": "character",
+      "variants": 1,
+      "directions": [
+        "s",
+        "se",
+        "e",
+        "ne",
+        "n"
+      ],
+      "animations": {
+        "idle": {
+          "from": 0,
+          "frames": 4,
+          "fps": 6
+        },
+        "walk": {
+          "from": 4,
+          "frames": 6,
+          "fps": 10
+        }
+      },
+      "layer_order": {
+        "s": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ],
+        "se": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ],
+        "e": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ],
+        "ne": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ],
+        "n": [
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "hair_back",
+          "head",
+          "face",
+          "eyes",
+          "hair_front",
+          "headwear"
+        ]
+      },
+      "worn_overrides": {
+        "base:linen_shirt": {
+          "atlas": "art/additional/wayfarer_shirt.png",
+          "layer": "torso"
+        },
+        "base:work_trousers": {
+          "atlas": "art/additional/wayfarer_trousers.png",
+          "layer": "legs"
+        },
+        "base:boots": {
+          "atlas": "art/additional/wayfarer_boots.png",
+          "layer": "feet"
+        }
+      },
+      "hands": {
+        "s": [
+          [
+            18,
+            33,
+            0
+          ],
+          [
+            18,
+            33,
+            0
+          ],
+          [
+            18,
+            33,
+            0
+          ],
+          [
+            19,
+            32,
+            0
+          ],
+          [
+            18,
+            33,
+            0
+          ],
+          [
+            19,
+            33,
+            -5
+          ],
+          [
+            18,
+            33,
+            0
+          ],
+          [
+            18,
+            33,
+            0
+          ],
+          [
+            18,
+            33,
+            0
+          ],
+          [
+            19,
+            33,
+            -5
+          ]
+        ],
+        "se": [
+          [
+            20,
+            34,
+            0
+          ],
+          [
+            20,
+            34,
+            0
+          ],
+          [
+            20,
+            34,
+            0
+          ],
+          [
+            20,
+            34,
+            0
+          ],
+          [
+            17,
+            33,
+            15
+          ],
+          [
+            18,
+            34,
+            10
+          ],
+          [
+            18,
+            33,
+            10
+          ],
+          [
+            18,
+            33,
+            10
+          ],
+          [
+            18,
+            33,
+            10
+          ],
+          [
+            19,
+            33,
+            5
+          ]
+        ],
+        "e": [
+          [
+            24,
+            34,
+            0
+          ],
+          [
+            24,
+            34,
+            0
+          ],
+          [
+            24,
+            34,
+            0
+          ],
+          [
+            24,
+            34,
+            0
+          ],
+          [
+            28,
+            33,
+            -20
+          ],
+          [
+            22,
+            34,
+            10
+          ],
+          [
+            24,
+            34,
+            0
+          ],
+          [
+            29,
+            33,
+            -25
+          ],
+          [
+            21,
+            34,
+            15
+          ],
+          [
+            24,
+            34,
+            0
+          ]
+        ],
+        "ne": [
+          [
+            28,
+            34,
+            0
+          ],
+          [
+            28,
+            33,
+            0
+          ],
+          [
+            28,
+            34,
+            0
+          ],
+          [
+            28,
+            34,
+            0
+          ],
+          [
+            30,
+            31,
+            -10
+          ],
+          [
+            30,
+            32,
+            -10
+          ],
+          [
+            29,
+            32,
+            -5
+          ],
+          [
+            31,
+            31,
+            -15
+          ],
+          [
+            30,
+            32,
+            -10
+          ],
+          [
+            29,
+            32,
+            -5
+          ]
+        ],
+        "n": [
+          [
+            28,
+            33,
+            0
+          ],
+          [
+            28,
+            33,
+            0
+          ],
+          [
+            29,
+            33,
+            0
+          ],
+          [
+            29,
+            33,
+            0
+          ],
+          [
+            30,
+            33,
+            -7
+          ],
+          [
+            30,
+            33,
+            -7
+          ],
+          [
+            29,
+            33,
+            -2
+          ],
+          [
+            29,
+            33,
+            -2
+          ],
+          [
+            28,
+            33,
+            2
+          ],
+          [
+            28,
+            33,
+            2
+          ]
+        ]
+      },
+      "hand_behind": {
+        "ne": false,
+        "n": false
+      }
+    }
+  ]
+}

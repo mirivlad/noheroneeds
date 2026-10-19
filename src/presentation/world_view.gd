@@ -1020,7 +1020,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		me.show_at(own_pixel_position(alpha), delta, true)
 		me.modulate = Color.WHITE
 		_health(client.character_id, me, client.own, delta)
-		me.hold(item_picture(own_held))
+		me.hold(item_picture(own_held), item_grip(own_held))
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
@@ -1046,7 +1046,8 @@ func _update_characters(alpha: float, delta: float) -> void:
 		# lies dimmed under the floor, as the surface there does.
 		var dz := int(e.get("z", client.z)) - client.z
 		var sprite := _character(id, looks)
-		sprite.hold(item_picture(String(e.get("held", ""))))
+		var held := String(e.get("held", ""))
+		sprite.hold(item_picture(held), item_grip(held))
 		var blows := int(e.get("swing", 0))
 		if _swing_seen.has(id) and int(_swing_seen[id]) != blows:
 			sprite.swing(Vector2.RIGHT.rotated((blows & 7) * PI / 4), swing_kind(String(e.get("held", ""))))
@@ -1117,6 +1118,18 @@ func item_picture(id: String) -> Texture2D:
 		at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
 	_pictures[id] = at
 	return at
+
+
+## The drawn grip in pixels from the item's centre; old visuals use GRIP.
+func item_grip(id: String) -> Vector2:
+	var visual := content.visual_of(id)
+	var grip: Array = visual.get("grip", [])
+	if grip.is_empty():
+		return CharacterSprite.GRIP
+	return Vector2(float(grip[0]) - float(visual["rect"][2]) / 2.0,
+		float(grip[1]) - float(visual["rect"][3]) / 2.0)
+
+
 ## Health last drawn, and how much of a hurt flash is left (s), by id.
 var _hp_seen := {}
 var _flash := {}
@@ -1226,22 +1239,20 @@ func _character(id: String, looks: Dictionary) -> CharacterSprite:
 	var v := content.visual_of(String(looks.get("body_plan", "")))
 	if v.is_empty():
 		v = content.visual_of("base:humanoid_adult")
-	var layers := []
-	for style: Variant in (looks.get("styles", {}) as Dictionary).values():
-		var sv := content.visual_of(String(style))
-		if sv.get("mode") == "layer":
-			layers.append([String(sv.get("layer", "")), texture(sv["atlas_path"])])
-	for item: Variant in (looks.get("worn", {}) as Dictionary).values():
-		var worn: Dictionary = content.visual_of(String(item)).get("worn", {})
-		if not worn.is_empty():
-			layers.append([String(worn.get("layer", "")), texture(worn["atlas_path"])])
-	var cs := CharacterSprite.new(texture(v["atlas_path"]), v, layers, looks.duplicate(true))
+	# A creature keeps the same variant across frames, reloads and clients.
+	var alternates: Array = v.get("alternates", [])
+	var variant := posmod(id.hash(), alternates.size() + 1)
+	if variant > 0:
+		v = v.merged(alternates[variant - 1], true)
+	var layers := Art.character_layers(content, v, looks)
+	var body := Art.character_texture(v, looks.get("colors", {}))
+	if old:
+		old.dress(body, v, layers, looks)
+		return old
+	var cs := CharacterSprite.new(body, v, layers, looks.duplicate(true))
 	cs.stepped.connect(func() -> void:
 		if on_step.is_valid():
 			on_step.call(cs.position))
-	if old:
-		cs.position = old.position
-		old.queue_free()
 	_sorted.add_child(cs)
 	_characters[id] = cs
 	return cs

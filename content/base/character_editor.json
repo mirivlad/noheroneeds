@@ -1,0 +1,2746 @@
+{
+  "format": 1,
+  "defs": [
+    {
+      "id": "base:human_m",
+      "kind": "body_plan",
+      "name": "Мужской · Обычное",
+      "body_size": [
+        20,
+        32
+      ],
+      "frame": [
+        48,
+        48
+      ],
+      "directions": 8,
+      "slots": [
+        "back_item",
+        "body",
+        "legs",
+        "feet",
+        "torso",
+        "belt",
+        "hair_back",
+        "head",
+        "face",
+        "eyes",
+        "hair_front",
+        "headwear",
+        "main_hand",
+        "off_hand"
+      ],
+      "appearance_slots": [
+        "face",
+        "hair"
+      ],
+      "colors": [
+        "skin",
+        "hair",
+        "eyes",
+        "cloth_main",
+        "cloth_accent"
+      ],
+      "health": 20,
+      "unarmed": {
+        "kind": "melee",
+        "damage": 1,
+        "reach": 0.8,
+        "arc": 90,
+        "cooldown_ms": 500
+      },
+      "fall_damage": [
+        0,
+        2,
+        6,
+        12,
+        20
+      ]
+    },
+    {
+      "id": "base:visual/human_m",
+      "kind": "visual",
+      "for": "base:human_m",
+      "atlas": "art/editor/human_m_body.png",
+      "rect": [
+        0,
+        0,
+        96,
+        96
+      ],
+      "origin": [
+        48,
+        90
+      ],
+      "mode": "character",
+      "variants": 1,
+      "directions": [
+        "s",
+        "se",
+        "e",
+        "ne",
+        "n"
+      ],
+      "animations": {
+        "idle": {
+          "from": 0,
+          "frames": 4,
+          "fps": 6
+        },
+        "walk": {
+          "from": 4,
+          "frames": 6,
+          "fps": 10
+        },
+        "run": {
+          "from": 10,
+          "frames": 4,
+          "fps": 12
+        }
+      },
+      "layer_order": {
+        "s": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "se": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "e": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "ne": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "n": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ]
+      },
+      "worn_overrides": {
+        "base:linen_shirt": {
+          "atlas": "art/editor/human_m_linen_shirt.png",
+          "layer": "torso",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:work_trousers": {
+          "atlas": "art/editor/human_m_work_trousers.png",
+          "layer": "legs",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:boots": {
+          "atlas": "art/editor/human_m_boots.png",
+          "layer": "feet",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:felt_hat": {
+          "atlas": "art/editor/human_m_hat.png",
+          "layer": "headwear",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        }
+      },
+      "hands": {
+        "s": [
+          [
+            58,
+            66,
+            0
+          ],
+          [
+            58,
+            66,
+            0
+          ],
+          [
+            58,
+            65,
+            0
+          ],
+          [
+            58,
+            66,
+            0
+          ],
+          [
+            58,
+            68,
+            0
+          ],
+          [
+            58,
+            65,
+            0
+          ],
+          [
+            58,
+            65,
+            0
+          ],
+          [
+            58,
+            63,
+            0
+          ],
+          [
+            58,
+            63,
+            0
+          ],
+          [
+            58,
+            67,
+            0
+          ],
+          [
+            60,
+            68,
+            0
+          ],
+          [
+            60,
+            65,
+            0
+          ],
+          [
+            61,
+            63,
+            0
+          ],
+          [
+            61,
+            63,
+            0
+          ]
+        ],
+        "se": [
+          [
+            56,
+            66,
+            0
+          ],
+          [
+            56,
+            66,
+            0
+          ],
+          [
+            56,
+            65,
+            0
+          ],
+          [
+            56,
+            66,
+            0
+          ],
+          [
+            53,
+            68,
+            0
+          ],
+          [
+            55,
+            65,
+            0
+          ],
+          [
+            57,
+            65,
+            0
+          ],
+          [
+            59,
+            63,
+            0
+          ],
+          [
+            57,
+            63,
+            0
+          ],
+          [
+            55,
+            67,
+            0
+          ],
+          [
+            56,
+            68,
+            0
+          ],
+          [
+            57,
+            65,
+            0
+          ],
+          [
+            61,
+            63,
+            0
+          ],
+          [
+            60,
+            63,
+            0
+          ]
+        ],
+        "e": [
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            44,
+            65,
+            0
+          ],
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            47,
+            63,
+            0
+          ],
+          [
+            46,
+            63,
+            0
+          ],
+          [
+            41,
+            67,
+            0
+          ],
+          [
+            39,
+            68,
+            0
+          ],
+          [
+            41,
+            65,
+            0
+          ],
+          [
+            46,
+            65,
+            0
+          ],
+          [
+            50,
+            64,
+            0
+          ],
+          [
+            50,
+            62,
+            0
+          ],
+          [
+            41,
+            68,
+            0
+          ],
+          [
+            44,
+            65,
+            0
+          ]
+        ],
+        "ne": [
+          [
+            39,
+            65,
+            0
+          ],
+          [
+            39,
+            65,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ],
+          [
+            39,
+            65,
+            0
+          ],
+          [
+            41,
+            63,
+            0
+          ],
+          [
+            40,
+            62,
+            0
+          ],
+          [
+            38,
+            66,
+            0
+          ],
+          [
+            36,
+            67,
+            0
+          ],
+          [
+            38,
+            64,
+            0
+          ],
+          [
+            40,
+            64,
+            0
+          ],
+          [
+            45,
+            64,
+            0
+          ],
+          [
+            43,
+            62,
+            0
+          ],
+          [
+            39,
+            67,
+            0
+          ],
+          [
+            40,
+            64,
+            0
+          ]
+        ],
+        "n": [
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            38,
+            64,
+            0
+          ],
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            38,
+            63,
+            0
+          ],
+          [
+            38,
+            62,
+            0
+          ],
+          [
+            38,
+            66,
+            0
+          ],
+          [
+            38,
+            67,
+            0
+          ],
+          [
+            38,
+            64,
+            0
+          ],
+          [
+            38,
+            64,
+            0
+          ],
+          [
+            41,
+            63,
+            0
+          ],
+          [
+            41,
+            62,
+            0
+          ],
+          [
+            40,
+            67,
+            0
+          ],
+          [
+            40,
+            64,
+            0
+          ]
+        ]
+      },
+      "hand_behind": {
+        "ne": false,
+        "n": false
+      },
+      "recolor": true,
+      "style_overrides": {
+        "base:human_face_soft": {
+          "atlas": "art/editor/human_m_face_soft.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_face_square": {
+          "atlas": "art/editor/human_m_face_square.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_face_angular": {
+          "atlas": "art/editor/human_m_face_angular.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_bald": {
+          "atlas": "art/editor/human_m_hair_bald.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_short": {
+          "atlas": "art/editor/human_m_hair_short.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_long": {
+          "atlas": "art/editor/human_m_hair_long.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_braid": {
+          "atlas": "art/editor/human_m_hair_braid.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        }
+      },
+      "pixel_scale": 0.5
+    },
+    {
+      "id": "base:human_m_broad",
+      "kind": "body_plan",
+      "name": "Мужской · Крепкое",
+      "body_size": [
+        20,
+        32
+      ],
+      "frame": [
+        48,
+        48
+      ],
+      "directions": 8,
+      "slots": [
+        "back_item",
+        "body",
+        "legs",
+        "feet",
+        "torso",
+        "belt",
+        "hair_back",
+        "head",
+        "face",
+        "eyes",
+        "hair_front",
+        "headwear",
+        "main_hand",
+        "off_hand"
+      ],
+      "appearance_slots": [
+        "face",
+        "hair"
+      ],
+      "colors": [
+        "skin",
+        "hair",
+        "eyes",
+        "cloth_main",
+        "cloth_accent"
+      ],
+      "health": 20,
+      "unarmed": {
+        "kind": "melee",
+        "damage": 1,
+        "reach": 0.8,
+        "arc": 90,
+        "cooldown_ms": 500
+      },
+      "fall_damage": [
+        0,
+        2,
+        6,
+        12,
+        20
+      ]
+    },
+    {
+      "id": "base:visual/human_m_broad",
+      "kind": "visual",
+      "for": "base:human_m_broad",
+      "atlas": "art/editor/human_m_broad_body.png",
+      "rect": [
+        0,
+        0,
+        96,
+        96
+      ],
+      "origin": [
+        48,
+        90
+      ],
+      "mode": "character",
+      "variants": 1,
+      "directions": [
+        "s",
+        "se",
+        "e",
+        "ne",
+        "n"
+      ],
+      "animations": {
+        "idle": {
+          "from": 0,
+          "frames": 4,
+          "fps": 6
+        },
+        "walk": {
+          "from": 4,
+          "frames": 6,
+          "fps": 10
+        },
+        "run": {
+          "from": 10,
+          "frames": 4,
+          "fps": 12
+        }
+      },
+      "layer_order": {
+        "s": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "se": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "e": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "ne": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "n": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ]
+      },
+      "worn_overrides": {
+        "base:linen_shirt": {
+          "atlas": "art/editor/human_m_broad_linen_shirt.png",
+          "layer": "torso",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:work_trousers": {
+          "atlas": "art/editor/human_m_broad_work_trousers.png",
+          "layer": "legs",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:boots": {
+          "atlas": "art/editor/human_m_broad_boots.png",
+          "layer": "feet",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:felt_hat": {
+          "atlas": "art/editor/human_m_hat.png",
+          "layer": "headwear",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        }
+      },
+      "hands": {
+        "s": [
+          [
+            59,
+            66,
+            0
+          ],
+          [
+            59,
+            66,
+            0
+          ],
+          [
+            59,
+            65,
+            0
+          ],
+          [
+            59,
+            66,
+            0
+          ],
+          [
+            59,
+            68,
+            0
+          ],
+          [
+            59,
+            65,
+            0
+          ],
+          [
+            59,
+            65,
+            0
+          ],
+          [
+            60,
+            63,
+            0
+          ],
+          [
+            59,
+            63,
+            0
+          ],
+          [
+            59,
+            67,
+            0
+          ],
+          [
+            62,
+            68,
+            0
+          ],
+          [
+            62,
+            65,
+            0
+          ],
+          [
+            62,
+            63,
+            0
+          ],
+          [
+            62,
+            63,
+            0
+          ]
+        ],
+        "se": [
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            57,
+            65,
+            0
+          ],
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            54,
+            68,
+            0
+          ],
+          [
+            55,
+            65,
+            0
+          ],
+          [
+            59,
+            65,
+            0
+          ],
+          [
+            60,
+            63,
+            0
+          ],
+          [
+            59,
+            63,
+            0
+          ],
+          [
+            55,
+            67,
+            0
+          ],
+          [
+            57,
+            68,
+            0
+          ],
+          [
+            58,
+            65,
+            0
+          ],
+          [
+            63,
+            63,
+            0
+          ],
+          [
+            61,
+            63,
+            0
+          ]
+        ],
+        "e": [
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            44,
+            65,
+            0
+          ],
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            47,
+            63,
+            0
+          ],
+          [
+            46,
+            63,
+            0
+          ],
+          [
+            41,
+            67,
+            0
+          ],
+          [
+            38,
+            68,
+            0
+          ],
+          [
+            41,
+            65,
+            0
+          ],
+          [
+            46,
+            65,
+            0
+          ],
+          [
+            50,
+            64,
+            0
+          ],
+          [
+            50,
+            62,
+            0
+          ],
+          [
+            41,
+            68,
+            0
+          ],
+          [
+            43,
+            65,
+            0
+          ]
+        ],
+        "ne": [
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            38,
+            64,
+            0
+          ],
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            41,
+            63,
+            0
+          ],
+          [
+            39,
+            62,
+            0
+          ],
+          [
+            36,
+            66,
+            0
+          ],
+          [
+            35,
+            67,
+            0
+          ],
+          [
+            36,
+            64,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ],
+          [
+            43,
+            63,
+            0
+          ],
+          [
+            42,
+            62,
+            0
+          ],
+          [
+            38,
+            67,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ]
+        ],
+        "n": [
+          [
+            37,
+            65,
+            0
+          ],
+          [
+            37,
+            65,
+            0
+          ],
+          [
+            37,
+            64,
+            0
+          ],
+          [
+            37,
+            65,
+            0
+          ],
+          [
+            37,
+            63,
+            0
+          ],
+          [
+            37,
+            62,
+            0
+          ],
+          [
+            37,
+            66,
+            0
+          ],
+          [
+            36,
+            67,
+            0
+          ],
+          [
+            37,
+            64,
+            0
+          ],
+          [
+            37,
+            64,
+            0
+          ],
+          [
+            40,
+            63,
+            0
+          ],
+          [
+            40,
+            62,
+            0
+          ],
+          [
+            39,
+            67,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ]
+        ]
+      },
+      "hand_behind": {
+        "ne": false,
+        "n": false
+      },
+      "recolor": true,
+      "style_overrides": {
+        "base:human_face_soft": {
+          "atlas": "art/editor/human_m_face_soft.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_face_square": {
+          "atlas": "art/editor/human_m_face_square.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_face_angular": {
+          "atlas": "art/editor/human_m_face_angular.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_bald": {
+          "atlas": "art/editor/human_m_hair_bald.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_short": {
+          "atlas": "art/editor/human_m_hair_short.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_long": {
+          "atlas": "art/editor/human_m_hair_long.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_braid": {
+          "atlas": "art/editor/human_m_hair_braid.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        }
+      },
+      "pixel_scale": 0.5
+    },
+    {
+      "id": "base:human_f",
+      "kind": "body_plan",
+      "name": "Женский · Обычное",
+      "body_size": [
+        20,
+        32
+      ],
+      "frame": [
+        48,
+        48
+      ],
+      "directions": 8,
+      "slots": [
+        "back_item",
+        "body",
+        "legs",
+        "feet",
+        "torso",
+        "belt",
+        "hair_back",
+        "head",
+        "face",
+        "eyes",
+        "hair_front",
+        "headwear",
+        "main_hand",
+        "off_hand"
+      ],
+      "appearance_slots": [
+        "face",
+        "hair"
+      ],
+      "colors": [
+        "skin",
+        "hair",
+        "eyes",
+        "cloth_main",
+        "cloth_accent"
+      ],
+      "health": 20,
+      "unarmed": {
+        "kind": "melee",
+        "damage": 1,
+        "reach": 0.8,
+        "arc": 90,
+        "cooldown_ms": 500
+      },
+      "fall_damage": [
+        0,
+        2,
+        6,
+        12,
+        20
+      ]
+    },
+    {
+      "id": "base:visual/human_f",
+      "kind": "visual",
+      "for": "base:human_f",
+      "atlas": "art/editor/human_f_body.png",
+      "rect": [
+        0,
+        0,
+        96,
+        96
+      ],
+      "origin": [
+        48,
+        90
+      ],
+      "mode": "character",
+      "variants": 1,
+      "directions": [
+        "s",
+        "se",
+        "e",
+        "ne",
+        "n"
+      ],
+      "animations": {
+        "idle": {
+          "from": 0,
+          "frames": 4,
+          "fps": 6
+        },
+        "walk": {
+          "from": 4,
+          "frames": 6,
+          "fps": 10
+        },
+        "run": {
+          "from": 10,
+          "frames": 4,
+          "fps": 12
+        }
+      },
+      "layer_order": {
+        "s": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "se": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "e": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "ne": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "n": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ]
+      },
+      "worn_overrides": {
+        "base:linen_shirt": {
+          "atlas": "art/editor/human_f_linen_shirt.png",
+          "layer": "torso",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:work_trousers": {
+          "atlas": "art/editor/human_f_work_trousers.png",
+          "layer": "legs",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:boots": {
+          "atlas": "art/editor/human_f_boots.png",
+          "layer": "feet",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:felt_hat": {
+          "atlas": "art/editor/human_f_hat.png",
+          "layer": "headwear",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        }
+      },
+      "hands": {
+        "s": [
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            57,
+            65,
+            0
+          ],
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            57,
+            68,
+            0
+          ],
+          [
+            57,
+            65,
+            0
+          ],
+          [
+            58,
+            65,
+            0
+          ],
+          [
+            58,
+            63,
+            0
+          ],
+          [
+            58,
+            63,
+            0
+          ],
+          [
+            57,
+            67,
+            0
+          ],
+          [
+            59,
+            68,
+            0
+          ],
+          [
+            60,
+            65,
+            0
+          ],
+          [
+            60,
+            63,
+            0
+          ],
+          [
+            60,
+            63,
+            0
+          ]
+        ],
+        "se": [
+          [
+            56,
+            66,
+            0
+          ],
+          [
+            56,
+            66,
+            0
+          ],
+          [
+            56,
+            65,
+            0
+          ],
+          [
+            56,
+            66,
+            0
+          ],
+          [
+            53,
+            68,
+            0
+          ],
+          [
+            54,
+            65,
+            0
+          ],
+          [
+            57,
+            65,
+            0
+          ],
+          [
+            58,
+            63,
+            0
+          ],
+          [
+            57,
+            63,
+            0
+          ],
+          [
+            54,
+            67,
+            0
+          ],
+          [
+            55,
+            68,
+            0
+          ],
+          [
+            56,
+            65,
+            0
+          ],
+          [
+            60,
+            63,
+            0
+          ],
+          [
+            59,
+            63,
+            0
+          ]
+        ],
+        "e": [
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            44,
+            65,
+            0
+          ],
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            47,
+            63,
+            0
+          ],
+          [
+            47,
+            63,
+            0
+          ],
+          [
+            42,
+            67,
+            0
+          ],
+          [
+            40,
+            68,
+            0
+          ],
+          [
+            42,
+            65,
+            0
+          ],
+          [
+            47,
+            65,
+            0
+          ],
+          [
+            50,
+            64,
+            0
+          ],
+          [
+            50,
+            63,
+            0
+          ],
+          [
+            42,
+            68,
+            0
+          ],
+          [
+            44,
+            65,
+            0
+          ]
+        ],
+        "ne": [
+          [
+            40,
+            65,
+            0
+          ],
+          [
+            40,
+            65,
+            0
+          ],
+          [
+            40,
+            64,
+            0
+          ],
+          [
+            40,
+            65,
+            0
+          ],
+          [
+            41,
+            63,
+            0
+          ],
+          [
+            41,
+            62,
+            0
+          ],
+          [
+            38,
+            66,
+            0
+          ],
+          [
+            37,
+            67,
+            0
+          ],
+          [
+            38,
+            64,
+            0
+          ],
+          [
+            41,
+            64,
+            0
+          ],
+          [
+            45,
+            64,
+            0
+          ],
+          [
+            43,
+            62,
+            0
+          ],
+          [
+            39,
+            67,
+            0
+          ],
+          [
+            41,
+            64,
+            0
+          ]
+        ],
+        "n": [
+          [
+            39,
+            65,
+            0
+          ],
+          [
+            39,
+            65,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ],
+          [
+            39,
+            65,
+            0
+          ],
+          [
+            39,
+            63,
+            0
+          ],
+          [
+            39,
+            62,
+            0
+          ],
+          [
+            38,
+            66,
+            0
+          ],
+          [
+            38,
+            67,
+            0
+          ],
+          [
+            38,
+            64,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ],
+          [
+            41,
+            63,
+            0
+          ],
+          [
+            41,
+            62,
+            0
+          ],
+          [
+            41,
+            67,
+            0
+          ],
+          [
+            41,
+            64,
+            0
+          ]
+        ]
+      },
+      "hand_behind": {
+        "ne": false,
+        "n": false
+      },
+      "recolor": true,
+      "style_overrides": {
+        "base:human_face_soft": {
+          "atlas": "art/editor/human_f_face_soft.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_face_square": {
+          "atlas": "art/editor/human_f_face_square.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_face_angular": {
+          "atlas": "art/editor/human_f_face_angular.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_bald": {
+          "atlas": "art/editor/human_f_hair_bald.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_short": {
+          "atlas": "art/editor/human_f_hair_short.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_long": {
+          "atlas": "art/editor/human_f_hair_long.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_braid": {
+          "atlas": "art/editor/human_f_hair_braid.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        }
+      },
+      "pixel_scale": 0.5
+    },
+    {
+      "id": "base:human_f_broad",
+      "kind": "body_plan",
+      "name": "Женский · Крепкое",
+      "body_size": [
+        20,
+        32
+      ],
+      "frame": [
+        48,
+        48
+      ],
+      "directions": 8,
+      "slots": [
+        "back_item",
+        "body",
+        "legs",
+        "feet",
+        "torso",
+        "belt",
+        "hair_back",
+        "head",
+        "face",
+        "eyes",
+        "hair_front",
+        "headwear",
+        "main_hand",
+        "off_hand"
+      ],
+      "appearance_slots": [
+        "face",
+        "hair"
+      ],
+      "colors": [
+        "skin",
+        "hair",
+        "eyes",
+        "cloth_main",
+        "cloth_accent"
+      ],
+      "health": 20,
+      "unarmed": {
+        "kind": "melee",
+        "damage": 1,
+        "reach": 0.8,
+        "arc": 90,
+        "cooldown_ms": 500
+      },
+      "fall_damage": [
+        0,
+        2,
+        6,
+        12,
+        20
+      ]
+    },
+    {
+      "id": "base:visual/human_f_broad",
+      "kind": "visual",
+      "for": "base:human_f_broad",
+      "atlas": "art/editor/human_f_broad_body.png",
+      "rect": [
+        0,
+        0,
+        96,
+        96
+      ],
+      "origin": [
+        48,
+        90
+      ],
+      "mode": "character",
+      "variants": 1,
+      "directions": [
+        "s",
+        "se",
+        "e",
+        "ne",
+        "n"
+      ],
+      "animations": {
+        "idle": {
+          "from": 0,
+          "frames": 4,
+          "fps": 6
+        },
+        "walk": {
+          "from": 4,
+          "frames": 6,
+          "fps": 10
+        },
+        "run": {
+          "from": 10,
+          "frames": 4,
+          "fps": 12
+        }
+      },
+      "layer_order": {
+        "s": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "se": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "e": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "ne": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ],
+        "n": [
+          "back_item",
+          "body",
+          "legs",
+          "feet",
+          "torso",
+          "belt",
+          "head",
+          "face",
+          "eyes",
+          "hair_back",
+          "hair_front",
+          "headwear"
+        ]
+      },
+      "worn_overrides": {
+        "base:linen_shirt": {
+          "atlas": "art/editor/human_f_broad_linen_shirt.png",
+          "layer": "torso",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:work_trousers": {
+          "atlas": "art/editor/human_f_broad_work_trousers.png",
+          "layer": "legs",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:boots": {
+          "atlas": "art/editor/human_f_broad_boots.png",
+          "layer": "feet",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:felt_hat": {
+          "atlas": "art/editor/human_f_hat.png",
+          "layer": "headwear",
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        }
+      },
+      "hands": {
+        "s": [
+          [
+            59,
+            66,
+            0
+          ],
+          [
+            59,
+            66,
+            0
+          ],
+          [
+            59,
+            65,
+            0
+          ],
+          [
+            59,
+            66,
+            0
+          ],
+          [
+            59,
+            68,
+            0
+          ],
+          [
+            59,
+            65,
+            0
+          ],
+          [
+            59,
+            65,
+            0
+          ],
+          [
+            60,
+            63,
+            0
+          ],
+          [
+            59,
+            63,
+            0
+          ],
+          [
+            59,
+            67,
+            0
+          ],
+          [
+            62,
+            68,
+            0
+          ],
+          [
+            62,
+            65,
+            0
+          ],
+          [
+            62,
+            63,
+            0
+          ],
+          [
+            62,
+            63,
+            0
+          ]
+        ],
+        "se": [
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            57,
+            65,
+            0
+          ],
+          [
+            57,
+            66,
+            0
+          ],
+          [
+            54,
+            68,
+            0
+          ],
+          [
+            55,
+            65,
+            0
+          ],
+          [
+            59,
+            65,
+            0
+          ],
+          [
+            60,
+            63,
+            0
+          ],
+          [
+            59,
+            63,
+            0
+          ],
+          [
+            55,
+            67,
+            0
+          ],
+          [
+            57,
+            68,
+            0
+          ],
+          [
+            58,
+            65,
+            0
+          ],
+          [
+            63,
+            63,
+            0
+          ],
+          [
+            61,
+            63,
+            0
+          ]
+        ],
+        "e": [
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            44,
+            65,
+            0
+          ],
+          [
+            44,
+            66,
+            0
+          ],
+          [
+            47,
+            63,
+            0
+          ],
+          [
+            46,
+            63,
+            0
+          ],
+          [
+            41,
+            67,
+            0
+          ],
+          [
+            38,
+            68,
+            0
+          ],
+          [
+            41,
+            65,
+            0
+          ],
+          [
+            46,
+            65,
+            0
+          ],
+          [
+            50,
+            64,
+            0
+          ],
+          [
+            50,
+            62,
+            0
+          ],
+          [
+            41,
+            68,
+            0
+          ],
+          [
+            43,
+            65,
+            0
+          ]
+        ],
+        "ne": [
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            38,
+            64,
+            0
+          ],
+          [
+            38,
+            65,
+            0
+          ],
+          [
+            41,
+            63,
+            0
+          ],
+          [
+            39,
+            62,
+            0
+          ],
+          [
+            36,
+            66,
+            0
+          ],
+          [
+            35,
+            67,
+            0
+          ],
+          [
+            36,
+            64,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ],
+          [
+            43,
+            63,
+            0
+          ],
+          [
+            42,
+            62,
+            0
+          ],
+          [
+            38,
+            67,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ]
+        ],
+        "n": [
+          [
+            37,
+            65,
+            0
+          ],
+          [
+            37,
+            65,
+            0
+          ],
+          [
+            37,
+            64,
+            0
+          ],
+          [
+            37,
+            65,
+            0
+          ],
+          [
+            37,
+            63,
+            0
+          ],
+          [
+            37,
+            62,
+            0
+          ],
+          [
+            37,
+            66,
+            0
+          ],
+          [
+            36,
+            67,
+            0
+          ],
+          [
+            37,
+            64,
+            0
+          ],
+          [
+            37,
+            64,
+            0
+          ],
+          [
+            40,
+            63,
+            0
+          ],
+          [
+            40,
+            62,
+            0
+          ],
+          [
+            39,
+            67,
+            0
+          ],
+          [
+            39,
+            64,
+            0
+          ]
+        ]
+      },
+      "hand_behind": {
+        "ne": false,
+        "n": false
+      },
+      "recolor": true,
+      "style_overrides": {
+        "base:human_face_soft": {
+          "atlas": "art/editor/human_f_face_soft.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_face_square": {
+          "atlas": "art/editor/human_f_face_square.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_face_angular": {
+          "atlas": "art/editor/human_f_face_angular.png",
+          "layer": "head",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_bald": {
+          "atlas": "art/editor/human_f_hair_bald.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_short": {
+          "atlas": "art/editor/human_f_hair_short.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_long": {
+          "atlas": "art/editor/human_f_hair_long.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        },
+        "base:human_hair_braid": {
+          "atlas": "art/editor/human_f_hair_braid.png",
+          "layer": "hair_front",
+          "recolor": true,
+          "rect": [
+            0,
+            0,
+            96,
+            96
+          ]
+        }
+      },
+      "pixel_scale": 0.5
+    },
+    {
+      "id": "base:human_face_soft",
+      "kind": "style",
+      "slot": "face",
+      "body_plans": [
+        "base:human_m",
+        "base:human_m_broad",
+        "base:human_f",
+        "base:human_f_broad"
+      ]
+    },
+    {
+      "id": "base:human_face_square",
+      "kind": "style",
+      "slot": "face",
+      "body_plans": [
+        "base:human_m",
+        "base:human_m_broad",
+        "base:human_f",
+        "base:human_f_broad"
+      ]
+    },
+    {
+      "id": "base:human_face_angular",
+      "kind": "style",
+      "slot": "face",
+      "body_plans": [
+        "base:human_m",
+        "base:human_m_broad",
+        "base:human_f",
+        "base:human_f_broad"
+      ]
+    },
+    {
+      "id": "base:human_hair_bald",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_m",
+        "base:human_m_broad",
+        "base:human_f",
+        "base:human_f_broad"
+      ]
+    },
+    {
+      "id": "base:human_hair_short",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_m",
+        "base:human_m_broad",
+        "base:human_f",
+        "base:human_f_broad"
+      ]
+    },
+    {
+      "id": "base:human_hair_long",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_m",
+        "base:human_m_broad",
+        "base:human_f",
+        "base:human_f_broad"
+      ]
+    },
+    {
+      "id": "base:human_hair_braid",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_m",
+        "base:human_m_broad",
+        "base:human_f",
+        "base:human_f_broad"
+      ]
+    },
+    {
+      "id": "base:felt_hat",
+      "kind": "item",
+      "name": "Фетровая шляпа",
+      "stack": 1,
+      "equip_slot": "headwear"
+    },
+    {
+      "id": "base:visual/felt_hat",
+      "kind": "visual",
+      "for": "base:felt_hat",
+      "mode": "item",
+      "atlas": "art/editor/felt_hat_icon.png",
+      "rect": [
+        0,
+        0,
+        18,
+        12
+      ],
+      "origin": [
+        9,
+        6
+      ],
+      "worn": {
+        "atlas": "art/editor/human_m_hat.png",
+        "layer": "headwear"
+      }
+    }
+  ]
+}

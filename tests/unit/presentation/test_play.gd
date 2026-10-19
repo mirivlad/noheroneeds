@@ -11,7 +11,7 @@ var w: ServerWorld
 
 func before_each() -> void:
 	app = App.new()
-	app.configure({"profile_dir": tmp_dir(), "world": "play", "time": "12"})
+	app.configure({"profile_dir": tmp_dir(), "world": "play", "time": "12", "display": options.get("display", PixelDisplay.DEFAULT_MODE)})
 	(Engine.get_main_loop() as SceneTree).root.add_child(app)
 	g = app.game
 	w = g.game.world
@@ -317,3 +317,36 @@ func test_things_dragged_into_slots_and_a_wall_struck_and_mended_from_the_menu()
 	_frames(10)
 	props = w.chunk("surface", floori(wall.x / 32.0), floori(wall.y / 32.0)).get_props(posmod(wall.x, 32), posmod(wall.y, 32))
 	eq(int(props.get("damage", 0)), 0, "mended")
+
+
+func test_character_window_catches_clicks_and_changes_equipment() -> void:
+	_key(KEY_C)
+	await (Engine.get_main_loop() as SceneTree).process_frame
+	var panel := g.character_panel
+	check(panel.visible, "C opens the character window")
+	check(g.get_viewport_rect().encloses(panel.get_global_rect()),
+		"the whole equipment window fits the native viewport")
+	var hat: CharacterPanel.EquipmentSlot = panel._slots["headwear"]
+	hat._drop_data(Vector2.ZERO, {"item":"base:felt_hat"})
+	_frames(15)
+	eq(g.client.own["appearance"]["worn"].get("headwear"), "base:felt_hat")
+	_click(hat.get_global_rect().get_center())
+	_frames(15)
+	check(not g.client.own["appearance"]["worn"].has("headwear"), "mouse click unequips")
+	eq(g.client.inventory().get("base:felt_hat"), 1, "the hat is back in the bag")
+	var list := panel.bag._list
+	var index := panel.bag._ids.find("base:felt_hat")
+	list.select(index)
+	list.item_selected.emit(index)
+	var at := panel.bag._wear.get_global_rect().get_center()
+	_click(at)
+	_frames(15)
+	eq(g.client.own["appearance"]["worn"].get("headwear"), "base:felt_hat", "bag's wear button equips")
+	if panel.get_global_rect().intersects(g.minimap.get_global_rect()):
+		_move_mouse(g.minimap.get_global_rect().get_center())
+		var hovered := g.get_viewport().gui_get_hovered_control()
+		check(hovered != null and panel.is_ancestor_of(hovered), "equipment catches input above the minimap")
+	else:
+		check(g._opts["display"] == "hd", "HD has room for equipment beside the minimap")
+	_key(KEY_ESCAPE)
+	check(not panel.visible and app.menu == null, "Esc closes equipment before the game menu")

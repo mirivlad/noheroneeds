@@ -448,8 +448,17 @@ func enter(owner: String, c: PortableCharacter) -> String:
 	elif not stored.is_empty():
 		place = Cbor.decode(stored).value
 	var data: Dictionary = known["data"]
-	if (data.get("equipment", {}) as Dictionary).is_empty() and not starter_outfit.is_empty():
-		data["equipment"] = starter_outfit.duplicate()
+	# Only the owner's edited appearance is imported on re-entry. World-earned
+	# possessions and progress remain authoritative in this world's database.
+	var appearance: Dictionary = c.to_data()["appearance"]
+	if data["appearance"] != appearance or data["name"] != c.name:
+		data["appearance"] = appearance
+		data["name"] = c.name
+		_dirty_characters[id] = true
+	if not data.get("outfit_given", false) and (not starter_outfit.is_empty() or not (data.get("equipment", {}) as Dictionary).is_empty()):
+		if (data.get("equipment", {}) as Dictionary).is_empty() and not starter_outfit.is_empty():
+			data["equipment"] = starter_outfit.duplicate()
+		data["outfit_given"] = true
 		_dirty_characters[id] = true
 	present[id] = {"location": String(place["location"]), "pos": Vector2i(int(place["x"]), int(place["y"])),
 		"name": data["name"], "appearance": shown_look(data)}
@@ -992,6 +1001,10 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _look_in(actor, r)
 		"hold":
 			return _hold(actor, r)
+		"equip":
+			return _equip(actor, r, true)
+		"unequip":
+			return _equip(actor, r, false)
 		"strike_part":
 			return _strike_part(actor, r)
 		"repair":
@@ -2159,6 +2172,49 @@ func _hold(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "not_carried"}
 	present[actor]["held"] = item
 	return {"ok": true}
+
+
+## Clothes leave the bag while worn; replacing them returns the old item.
+## Both changes enter the same durable batch as the idempotent request result.
+func _equip(actor: String, r: Dictionary, putting: bool) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	if (putting and typeof(r.get("item")) != TYPE_STRING) or (not putting and typeof(r.get("slot")) != TYPE_STRING):
+		return {"ok": false, "reason": "bad_request"}
+	var data: Dictionary = _known_character(actor)["data"]
+	var equipment: Dictionary = data.get("equipment", {})
+	var item := rs(r, "item") if putting else ""
+	var slot := String(content.get_def(item).get("equip_slot", "")) if putting else rs(r, "slot")
+	var plan := content.get_def(String(data["appearance"]["body_plan"]))
+	if slot == "" or slot in ["main_hand", "off_hand"] or not (plan.get("slots", []) as Array).has(slot):
+		return {"ok": false, "reason": "not_wearable"}
+	var before := String(equipment.get(slot, ""))
+	var inv := inventory(actor)
+	if putting:
+		if not inv.remove(item, 1):
+			return {"ok": false, "reason": "not_carried"}
+		equipment[slot] = item
+	else:
+		if before == "":
+			return {"ok": false, "reason": "empty_slot"}
+		equipment.erase(slot)
+	if before != "":
+		inv.add(before, 1)
+	data["equipment"] = equipment
+	_dirty_characters[actor] = true
+	present[actor]["appearance"] = shown_look(data)
+	_touch_inventory(actor)
+	return {"ok": true}
+
+
+## Worn things follow the world's existing death-drops rule too.
+func drop_equipment(actor: String, until: int) -> void:
+	var data: Dictionary = _known_character(actor)["data"]
+	for item: String in (data.get("equipment", {}) as Dictionary).values():
+		place_item(String(present[actor]["location"]), present[actor]["pos"], item, 1, actor, until)
+	data["equipment"] = {}
+	present[actor]["appearance"] = shown_look(data)
+	_dirty_characters[actor] = true
 
 
 func _transfer(actor: String, r: Dictionary) -> Dictionary:

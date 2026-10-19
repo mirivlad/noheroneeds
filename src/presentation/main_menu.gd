@@ -17,6 +17,7 @@ signal quit_game
 signal settings_changed
 
 const HAIR := {"base:hair_short": "Короткая стрижка", "base:hair_long": "Длинные волосы", "base:hair_braid": "Коса"}
+const BODIES := {"base:humanoid_adult": "Сохранённый облик", "base:traveler": "Сохранённый мужской облик", "base:wayfarer": "Сохранённый женский облик"}
 
 var worlds: WorldLibrary
 var characters: CharacterLibrary
@@ -202,14 +203,14 @@ func show_characters() -> void:
 	var c := characters.load_character(current)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_child(_doll(String(c.styles.get("hair", "")) if c else ""))
+	row.add_child(_doll(c.body_plan if c else "base:humanoid_adult", String(c.styles.get("hair", "")) if c else "", c.styles if c else {}, c.colors if c else {}))
 	var about := VBoxContainer.new()
 	about.alignment = BoxContainer.ALIGNMENT_CENTER
 	var nm := Label.new()
 	nm.text = c.name if c else "—"
 	about.add_child(nm)
 	var hair := Label.new()
-	hair.text = HAIR.get(String(c.styles.get("hair", "")), "") if c else ""
+	hair.text = _look_name(c.body_plan, String(c.styles.get("hair", ""))) if c else ""
 	hair.add_theme_color_override("font_color", Art.TEXT_DIM)
 	about.add_child(hair)
 	row.add_child(about)
@@ -217,7 +218,9 @@ func show_characters() -> void:
 	if in_game:
 		_label("Смена персонажа — со следующего входа в мир", Art.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER, true)
 	_button("Сменить персонажа", show_character_list)
-	_button("Создать нового", show_character_create)
+	if not in_game:
+		_button("Создать нового", show_character_create)
+		_button("Редактировать внешность", func() -> void: show_character_edit(current))
 	_gap()
 	_button("Назад", show_start)
 
@@ -227,7 +230,7 @@ func show_character_list() -> void:
 	var current := _current_character()
 	for c: Dictionary in characters.list():
 		var file: String = c["file"]
-		var label := "%s — %s" % [c["name"], HAIR.get(String(c["hair"]), "")]
+		var label := "%s — %s" % [c["name"], _look_name(c["body_plan"], c["hair"])]
 		var b := _button(label + ("  (сейчас)" if file == current else ""), func() -> void:
 			settings.set_value("character", file)
 			settings.save()
@@ -238,36 +241,30 @@ func show_character_list() -> void:
 
 
 func show_character_create() -> void:
-	_clear("Новый персонаж")
-	var hairs := HAIR.keys()
-	var chosen := [hairs[0]]
-	var doll_box := CenterContainer.new()
-	_body.add_child(doll_box)
-	doll_box.add_child(_doll(chosen[0]))
-	var name_edit := _field("Имя", LineEdit.new()) as LineEdit
-	name_edit.placeholder_text = "Путник"
-	name_edit.max_length = PortableCharacter.NAME_MAX
-	var pick := OptionButton.new()
-	for h: String in hairs:
-		pick.add_item(HAIR[h])
-	_field("Причёска", pick)
-	pick.item_selected.connect(func(i: int) -> void:
-		chosen[0] = hairs[i]
-		for old: Node in doll_box.get_children():
-			old.queue_free()
-		doll_box.add_child(_doll(chosen[0])))
-	_gap()
-	_button("Создать", func() -> void:
-		var file := characters.create(name_edit.text, {"hair": chosen[0]})
+	show_character_edit("")
+
+
+func show_character_edit(file_id: String) -> void:
+	if in_game:
+		return
+	_clear("Редактор персонажа" if file_id != "" else "Новый персонаж")
+	var editor := CharacterEditor.new()
+	_body.add_child(editor)
+	editor.setup(content, characters.load_character(file_id) if file_id != "" else null)
+	editor.cancelled.connect(show_characters)
+	editor.accepted.connect(func(char_name: String, plan: String, styles: Dictionary, colors: Dictionary) -> void:
+		var file := file_id
 		if file == "":
-			_message = "не удалось создать: " + characters.last_error
+			file = characters.create(char_name, styles, colors, plan)
+		elif not characters.edit(file, char_name, plan, styles, colors):
+			file = ""
+		if file == "":
+			_message = "Не удалось сохранить: " + characters.last_error
 			show_start()
 			return
 		settings.set_value("character", file)
 		settings.save()
 		show_characters())
-	_button("Назад", show_characters)
-	name_edit.grab_focus()
 
 
 func show_settings() -> void:
@@ -441,22 +438,23 @@ func _check(text: String, on: bool) -> CheckBox:
 	return c
 
 
+static func _look_name(body: String, hair: String) -> String:
+	if body.begins_with("base:human_"):
+		return ("Женский" if body.begins_with("base:human_f") else "Мужской") + (" · крепкое тело" if body.ends_with("_broad") else " · обычное тело")
+	return HAIR.get(hair, "") if body == "base:humanoid_adult" else BODIES.get(body, body)
+
+
 ## A turning paper doll with a hairstyle and the starter outfit.
-func _doll(hair: String) -> Control:
+func _doll(body_plan: String, hair: String, styles: Dictionary = {}, colors: Dictionary = {}) -> Control:
 	var box := Control.new()
 	box.custom_minimum_size = Vector2(48, 48)
-	var body := content.visual_of("base:humanoid_adult")
+	var body := content.visual_of(body_plan)
 	if body.is_empty():
 		return box
-	var layers := []
-	var hv := content.visual_of(hair)
-	if hv.get("mode") == "layer":
-		layers.append([String(hv["layer"]), Art.texture(hv["atlas_path"])])
-	for item: String in WorldLibrary.STARTER_OUTFIT.values():
-		var worn: Dictionary = content.visual_of(item).get("worn", {})
-		if not worn.is_empty():
-			layers.append([String(worn["layer"]), Art.texture(worn["atlas_path"])])
-	var doll := CharacterSprite.new(Art.texture(body["atlas_path"]), body, layers)
+	var look := {"styles": styles if not styles.is_empty() else {"hair": hair}, "colors": colors,
+		"worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
+	var layers := Art.character_layers(content, body, look)
+	var doll := CharacterSprite.new(Art.character_texture(body, colors), body, layers)
 	doll.position = Vector2(24, 46)
 	box.add_child(doll)
 	var turn := Timer.new()

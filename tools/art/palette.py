@@ -72,6 +72,14 @@ BASE = {
 }
 # Not toned: exact recolour keys (ART_STANDARD 7) and the people outline.
 FIXED = {
+    "character_reference": {
+        "skin": ["a46a46", "d18d61", "f1ba8e"],
+        "hair": ["4e3228", "6a412d", "985c35", "b77745"],
+        "linen": ["7a705e", "a49578", "cdbfa1", "f3e6c8"],
+        "pants": ["392f2c", "51443f", "6b5a50"],
+        "leather": ["5e3f29", "80532e", "a76f35"],
+        "outline": ["332925"],
+    },
     "keys": {
         "key_skin": ["400010", "800020", "c00030", "ff0040", "ff6080"],
         "key_hair": ["400040", "800080", "b000b0", "e000e0", "ff60ff"],

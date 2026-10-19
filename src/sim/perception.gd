@@ -17,8 +17,9 @@ static func sight_range(def: Dictionary, light: float) -> float:
 ## Whether a creature at `eye` in `location` sees the cell `at` of
 ## `at_location` (by default the same): within its sight in the light there,
 ## with nothing in the way (Sight: walls, plants, levels, openings).
+## target_body: the height (storeys) of what is looked at (BodySize "body").
 static func sees(world: ServerWorld, location: String, eye: Vector2i, def: Dictionary, at: Vector2i,
-		at_location := "") -> bool:
+		at_location := "", target_body := Sight.BODY) -> bool:
 	var there := location if at_location == "" else at_location
 	var d := Vector2(eye).distance_to(Vector2(at))
 	if d > float(def["sight"]):
@@ -29,7 +30,8 @@ static func sees(world: ServerWorld, location: String, eye: Vector2i, def: Dicti
 	var least := Daylight.outdoor_light(world.world_time) * Daylight.INDOOR_SHARE if world.has_daylight(there) else 0.0
 	if d > sight_range(def, least) and d > sight_range(def, world.light_at(there, at)):
 		return false
-	return Sight.clear(world, location, eye, there, at)
+	var size := BodySize.of(def)
+	return Sight.clear(world, location, eye, there, at, float(size["eye"]), target_body)
 
 
 ## Whether a noise at `at` reaches a creature at `ear`.

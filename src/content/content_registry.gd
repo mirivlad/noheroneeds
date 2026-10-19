@@ -14,7 +14,7 @@ const PACK_FORMAT := 1
 ## and sound packs never stop anyone from joining.
 const PRESENTATION_FIELDS := ["name", "description"]
 ## Fields the registry adds while loading.
-const DERIVED_FIELDS := ["pack", "atlas_path", "paths"]
+const DERIVED_FIELDS := ["pack", "atlas_path", "paths", "body_size"]
 ## Kinds that only show or sound, never rule.
 const PRESENTATION_KINDS := ["visual", "sound"]
 ## What a sound answers to (sounds.json, ADR-0009).
@@ -236,6 +236,7 @@ func _validate() -> void:
 				_check_amounts(id, "inputs", d.get("inputs", {}), true)
 				_check_amounts(id, "outputs", d.get("outputs", {}), true)
 			"body_plan":
+				d["body_size"] = BodySize.parse(id, d.get("size"), errors)
 				d["health"] = int(d.get("health", 20))
 				var fall: Variant = d.get("fall_damage", [0, 2, 6, 12, 20])
 				if typeof(fall) != TYPE_ARRAY or (fall as Array).is_empty() \
@@ -318,6 +319,7 @@ const BEHAVIORS := ["prey", "villager", "predator", "looter"]
 
 
 func _check_creature(id: String, d: Dictionary) -> void:
+	d["body_size"] = BodySize.parse(id, d.get("size"), errors)
 	if not BEHAVIORS.has(String(d.get("behavior", ""))):
 		errors.append("%s: behavior must be one of %s" % [id, ", ".join(BEHAVIORS)])
 	for f: String in ["speed", "run_speed", "sight", "dark_sight", "hearing", "flee_distance", "home_radius", "memory_s"]:

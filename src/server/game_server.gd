@@ -672,7 +672,8 @@ func _creatures_into(view: Dictionary, ln: int, mine: Vector2i, from: String) ->
 			for id: String in cell_creatures:
 				var r: Replica = cell_creatures[id]
 				if r.x >= lo.x and r.x < hi.x and r.y >= lo.y and r.y < hi.y \
-						and (from == "" or Sight.clear(world, from, mine, r.location, Movement.cell_of(Vector2i(r.x, r.y)))):
+						and (from == "" or Sight.clear(world, from, mine, r.location, Movement.cell_of(Vector2i(r.x, r.y)),
+							Sight.EYE, float(BodySize.of(world.content.get_def(String(r.cold.get("creature", ""))))["body"]))):
 					view[id] = r
 
 

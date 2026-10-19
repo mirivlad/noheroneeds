@@ -180,7 +180,7 @@ func _populate(location: String, cx: int, cy: int, had := 0) -> void:
 				break
 		for attempt in 8:
 			var cell := Vector2i(cx * Chunk.SIZE + r.randi_range(0, Chunk.SIZE - 1), cy * Chunk.SIZE + r.randi_range(0, Chunk.SIZE - 1))
-			if _walkable(location, cell):
+			if _fits_at(location, cell, _half(kind), _walkable):
 				_spawn(kind, location, cell, {}, hash([world.world_seed, location, cx, cy, i]))
 				break
 
@@ -700,7 +700,7 @@ func _move(c: Creature) -> void:
 	var dx := signi(d.x) if absi(d.x) > 24 else 0
 	var dy := signi(d.y) if absi(d.y) > 24 else 0
 	var old_key := _chunk_of(c)
-	var np := Movement.step_at(c.pos, dx, dy, _solid_in(c.location), speed)
+	var np := Movement.step_at(c.pos, dx, dy, _solid_in(c.location), speed, _half(c.kind))
 	if np == c.pos:
 		c.stuck += 1
 		if c.stuck > 4:  # something in the way: give up, think again
@@ -749,13 +749,32 @@ func _free(location: String, cell: Vector2i) -> bool:
 	return not (_solid_in(location).call(cell.x, cell.y) as bool)
 
 
+## Half the box a kind of creature stands in (BodySize), in units.
+func _half(kind: String) -> Vector2i:
+	return BodySize.of(world.content.get_def(kind))["half"]
+
+
+## Whether a creature fits standing in the middle of `cell` (all the cells
+## its body covers are free): a big one does not go through a door.
+func _fits(c: Creature, cell: Vector2i) -> bool:
+	return _fits_at(c.location, cell, _half(c.kind), _free)
+
+
+func _fits_at(location: String, cell: Vector2i, half: Vector2i, free: Callable) -> bool:
+	var at := cell * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
+	for covered: Vector2i in BodySize.cells(at, half):
+		if not free.call(location, covered):
+			return false
+	return true
+
+
 ## A walkable cell within `radius` of `around`, or NO_TARGET.
 func _spot_near(c: Creature, around: Vector2i, radius: float, salt: int) -> Vector2i:
 	for attempt in 6:
 		var a := c.rand(salt * 7 + attempt) * TAU
 		var r := sqrt(c.rand(salt * 13 + attempt + 1)) * radius
 		var cell := around + Vector2i(int(round(cos(a) * r)), int(round(sin(a) * r)))
-		if _free(c.location, cell):
+		if _fits(c, cell):
 			return cell
 	return Creature.NO_TARGET
 
@@ -771,6 +790,6 @@ func _away_from(c: Creature, threat: Vector2i, far: float) -> Vector2i:
 	for turn: float in [0.0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5]:
 		var v := dir.rotated(turn) * far
 		var cell := me + Vector2i(int(round(v.x)), int(round(v.y)))
-		if _free(c.location, cell):
+		if _fits(c, cell):
 			return cell
 	return Creature.NO_TARGET

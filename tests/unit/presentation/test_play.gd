@@ -48,6 +48,15 @@ func _frames(n: int, until_playing := false) -> void:
 		OS.delay_msec(1)
 
 
+## Steps frames until `done` is true (at most n): what waits on the store
+## writer's thread (a build committed, then answered) takes its own time.
+func _frames_until(done: Callable, n := 200) -> void:
+	for i in n:
+		if done.call():
+			return
+		_frames(1)
+
+
 func _me() -> Vector2i:
 	return Movement.cell_of(g.client.position)
 
@@ -213,22 +222,22 @@ func test_q_against_a_wolf_and_things_in_and_out_of_a_chest() -> void:
 	g.target = {"kind": "part", "layer": "structure", "id": "base:chest", "cell": me + Vector2i(0, 1), "location": "surface"}
 	g.actions = Actions.of(g.content, g.client, g.view, "", g.target, Vector2i.ZERO)
 	g._do(Actions.quick(g.actions))
-	_frames(10)
+	_frames_until(func() -> bool: return g.chest_panel.visible)
 	check(g.chest_panel.visible, "the chest opens: %s / %s" % [g._note, Actions.quick(g.actions)])
 	var total := int(g.client.inventory().get("base:arrow", 0))
 	g.chest_panel.move.emit("base:arrow", 1, true)
-	_frames(10)
+	_frames_until(func() -> bool: return not g.chest_panel.contents.is_empty())
 	eq(g.chest_panel.contents, {"base:arrow": 1}, "one")
 	var half := (total - 1) / 2
 	g.chest_panel.move.emit("base:arrow", half, true)
-	_frames(10)
+	_frames_until(func() -> bool: return int(g.chest_panel.contents.get("base:arrow", 0)) == 1 + half)
 	eq(g.chest_panel.contents, {"base:arrow": 1 + half}, "half of what was left")
 	g.chest_panel.move.emit("base:arrow", total - 1 - half, true)
-	_frames(10)
+	_frames_until(func() -> bool: return int(g.chest_panel.contents.get("base:arrow", 0)) == total)
 	eq(g.chest_panel.contents, {"base:arrow": total}, "all")
 	eq(int(g.client.inventory().get("base:arrow", 0)), 0)
 	g.chest_panel.move.emit("base:arrow", total, false)
-	_frames(10)
+	_frames_until(func() -> bool: return int(g.client.inventory().get("base:arrow", 0)) == total)
 	eq(int(g.client.inventory().get("base:arrow", 0)), total, "and back")
 
 

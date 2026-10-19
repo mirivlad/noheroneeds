@@ -540,6 +540,13 @@ func _check_visual(id: String, d: Dictionary) -> void:
 			errors.append("%s: grip needs finite x and y" % id)
 		elif grip[0] < 0 or grip[0] >= d["rect"][2] or grip[1] < 0 or grip[1] >= d["rect"][3]:
 			errors.append("%s: grip outside the frame" % id)
+	# A ground drawn as an LPC terrain on cell corners (WorldView): its rank
+	# over other grounds and how many fills follow its 15 corner tiles.
+	if d.has("terrain"):
+		var t: Variant = d["terrain"]
+		if typeof(t) != TYPE_DICTIONARY or typeof(t.get("priority")) not in [TYPE_INT, TYPE_FLOAT] \
+				or int(t.get("fills", 1)) < 1:
+			errors.append("%s: terrain needs a whole priority and at least one fill" % id)
 	# A seamless texture laid over grid[0] x grid[1] tiles (ground, roofs).
 	if d.has("grid"):
 		var g: Variant = d["grid"]

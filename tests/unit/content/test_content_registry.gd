@@ -15,7 +15,11 @@ func test_base_pack_loads_clean() -> void:
 	eq(ContentRegistry.from_defs([{"id": "test:g", "kind": "ground"},
 		{"id": "test:visual/g", "kind": "visual", "for": "test:g", "mode": "flat", "rect": [0, 0, 16, 16], "origin": [0, 16], "grid": [4, 0]}]) \
 		.errors.has("test:visual/g: grid needs two positive numbers"), true, "a grid needs positive sizes")
-	eq(reg.visual_of("base:grass").get("grid_size"), Vector2i(4, 4), "ground is a seamless 4 x 4 texture")
+	eq(reg.visual_of("base:grass")["terrain"]["fills"] > 0, true, "ground is an LPC terrain with fills")
+	check(ContentRegistry.from_defs([{"id": "test:g", "kind": "ground"},
+		{"id": "test:visual/g", "kind": "visual", "for": "test:g", "mode": "flat", "rect": [0, 0, 32, 32], "origin": [0, 32],
+		"terrain": {"priority": "high"}}]).errors.has("test:visual/g: terrain needs a whole priority and at least one fill"),
+		"a terrain names its rank and fills")
 	var human := reg.visual_of("base:human_m")
 	eq(human["style_overrides"]["base:human_hair_short"]["layer"], "hair", "a hairstyle is a paper-doll layer")
 	check(String(human["worn_overrides"]["base:boots"]["sheets"][0].get("atlas_path", "")).ends_with("feet_boots_basic_male.png"),

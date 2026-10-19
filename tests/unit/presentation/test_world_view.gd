@@ -20,11 +20,9 @@ func test_view_follows_the_client() -> void:
 	for i in 30:
 		g.step()
 	view.update_view(0.0, 0.05)
-	check(view.ground_layer().get_used_cells().size() >= Chunk.CELLS, "what is in sight is drawn at once")
+	check(view.terrain_tiles().size() >= Chunk.CELLS, "what is in sight is drawn at once")
 	while view.pending_chunks() > 0:
 		view.update_view(0.0, 0.05)  # the rest, a few each frame
-	var ground := view.ground_layer()
-	check(ground.get_used_cells().size() >= 9 * Chunk.CELLS, "ground of the nearby chunks: %d cells" % ground.get_used_cells().size())
 	var sprites := view.find_children("*", "Sprite2D", true, false).size()
 	check(sprites > 0, "tall things drawn as sprites: %d" % sprites)
 	check(view._characters.has(g.client.character_id), "own character shown")
@@ -37,23 +35,22 @@ func test_view_follows_the_client() -> void:
 		slots.append((t.resource_path if t.resource_path != "" else t.resource_name).get_file())
 	eq(slots, ["body_bodies_male.png", "feet_boots_basic_male.png", "torso_clothes_longsleeve_longsleeve_male.png",
 		"head_heads_human_male.png", "hair_messy1_adult.png"], "layers in order")
-	# Grounds meet with ragged edges: only on a cell next to a higher ground.
-	var edges := view.edge_cells()
-	check(edges.size() > 0, "edges drawn where grounds meet: %d cells" % edges.size())
-	var prio := {}
-	for id: String in content.visuals:
-		if content.visuals[id].has("edges"):
-			prio[id] = int(content.visuals[id]["edges"]["priority"])
+	# Grounds are LPC terrains on the corners of cells: a corner draws the
+	# lowest of its four cells as a fill and each higher one as its edge.
+	var tiles := view.terrain_tiles()
+	check(tiles.size() >= 9 * Chunk.CELLS, "terrain at the corners of the nearby chunks: %d" % tiles.size())
 	var wrong := 0
-	for cell: Vector2i in edges:
-		var own := view.ground_at("surface", cell)
-		var higher := false
-		for dy in [-1, 0, 1]:
-			for dx in [-1, 0, 1]:
-				var n := view.ground_at("surface", cell + Vector2i(dx, dy))
-				higher = higher or (prio.has(n) and prio.has(own) and prio[n] > prio[own])
-		wrong += 0 if higher else 1
-	eq(wrong, 0, "every edge lies next to a higher ground")
+	var meets := 0
+	for corner: Vector2i in tiles:
+		var want := 0
+		for d: Vector2i in [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(-1, 0), Vector2i(0, 0)]:
+			var gr := view.ground_at("surface", corner + d)
+			if view._terrain_rank.has(gr):
+				want |= 1 << int(view._terrain_rank[gr])
+		wrong += 0 if int(tiles[corner]) == want else 1
+		meets += 1 if want & (want - 1) else 0
+	eq(wrong, 0, "every corner draws exactly the grounds of its cells")
+	check(meets > 0, "grounds meet somewhere: %d corners" % meets)
 	# Sounds: the ground around is heard (ambience), a step is played.
 	var audio := AudioDirector.new()
 	audio.setup(content, g.client, view)

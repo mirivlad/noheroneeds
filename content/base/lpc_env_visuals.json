@@ -1,0 +1,159 @@
+{
+ "format": 1,
+ "defs": [
+  {
+   "id": "base:visual/dirt",
+   "kind": "visual",
+   "for": "base:dirt",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 0,
+    "fills": 4
+   }
+  },
+  {
+   "id": "base:visual/sand",
+   "kind": "visual",
+   "for": "base:sand",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    32,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 1,
+    "fills": 6
+   }
+  },
+  {
+   "id": "base:visual/forest_floor",
+   "kind": "visual",
+   "for": "base:forest_floor",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    64,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 2,
+    "fills": 5
+   }
+  },
+  {
+   "id": "base:visual/grass_dry",
+   "kind": "visual",
+   "for": "base:grass_dry",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    96,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 3,
+    "fills": 5
+   }
+  },
+  {
+   "id": "base:visual/moss",
+   "kind": "visual",
+   "for": "base:moss",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    128,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 4,
+    "fills": 4
+   }
+  },
+  {
+   "id": "base:visual/grass",
+   "kind": "visual",
+   "for": "base:grass",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    160,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 5,
+    "fills": 5
+   }
+  },
+  {
+   "id": "base:visual/water",
+   "kind": "visual",
+   "for": "base:water",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    192,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 6,
+    "fills": 4
+   }
+  }
+ ]
+}

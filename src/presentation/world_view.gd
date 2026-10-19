@@ -58,15 +58,21 @@ var _drawn_around := Vector2i(1 << 30, 0)
 var _characters := {}
 ## visual id -> [source id, first atlas cell Vector2i, variants]
 var _tiles := {}
-## Grounds that lap over lower neighbours (ART_STANDARD 5): ground id ->
-## [source id, first atlas cell, grid, {mask: column}, priority, layer].
-var _edges := {}
-## Ground id -> priority, for every ground taking part (also the lowest).
-var _edge_priority := {}
-## Priority -> ground id.
+## Grounds drawn as LPC terrains on the grid of cell corners (ADR-0024): a
+## tile sits between four cells, its corners are theirs; a ground of a
+## higher rank is drawn with its edge over the lower ones. Ground id ->
+## [source id, atlas row, fills, rank]; ranks in order; a layer per rank.
+var _terrain := {}
+var _terrain_rank := {}
 var _by_rank: Array[String] = []
-## Cell -> bits of the priorities whose edge is drawn on it.
-var _edge_set := {}
+var _terrain_layers: Array[TileMapLayer] = []
+## Corner point (the tile between cells x-1..x, y-1..y) -> bits of the
+## ranks drawn there.
+var _terrain_set := {}
+## The surface seen from a building level: terrain fills, a tile a cell.
+var _below_terrain := TileMapLayer.new()
+## Terrain tiles are 32 px, drawn at half (16 world pixels a cell).
+const TERRAIN_TILE := 32
 ## Drawn where the content has no picture (a texture pack may lack one): a
 ## loud magenta checker, so a gap is noticed rather than hidden.
 var _missing_source := -1
@@ -80,7 +86,7 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	var sources := {}
 	for target: String in content.visuals:
 		var v: Dictionary = content.visuals[target]
-		if v["mode"] != "flat":
+		if v["mode"] != "flat" or v.has("terrain"):
 			continue
 		var path: String = v["atlas_path"]
 		if not sources.has(path):
@@ -106,7 +112,7 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	ms.texture_region_size = Vector2i(CELL, CELL)
 	ms.create_tile(Vector2i.ZERO)
 	_missing_source = ts.add_source(ms)
-	_setup_edges(ts)
+	_setup_terrain()
 	for target: String in content.visuals:
 		var v: Dictionary = content.visuals[target]
 		if v["mode"] != "tall" or v.get("autotile") != "rock":
@@ -130,11 +136,10 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	_covers.z_index = 10
 	add_child(_tint)
 	add_child(_below)
-	add_child(_ground)
-	var lapping := _edges.keys()
-	lapping.sort_custom(func(a: String, b: String) -> bool: return _edges[a][4] < _edges[b][4])
-	for id: String in lapping:
-		add_child(_edges[id][5])  # higher grounds drawn later, over lower ones
+	add_child(_below_terrain)
+	for layer: TileMapLayer in _terrain_layers:
+		add_child(layer)  # higher grounds drawn later, over lower ones
+	add_child(_ground)  # floors over the ground
 	add_child(_cover)
 	_rock_tops.z_index = -1
 	add_child(_rock_tops)
@@ -142,104 +147,89 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	add_child(_covers)
 
 
-func _setup_edges(ts: TileSet) -> void:
+func _setup_terrain() -> void:
+	var ts := TileSet.new()
+	ts.tile_size = Vector2i(TERRAIN_TILE, TERRAIN_TILE)
 	var sources := {}
+	var ids: Array[String] = []
 	for id: String in content.visuals:
-		var e: Dictionary = content.visuals[id].get("edges", {})
-		if e.is_empty():
+		var v: Dictionary = content.visuals[id]
+		if v["mode"] != "flat" or not v.has("terrain"):
 			continue
-		_edge_priority[id] = int(e["priority"])
-		var path: String = e["atlas_path"]
+		var path: String = v["atlas_path"]
 		if not sources.has(path):
 			var src := TileSetAtlasSource.new()
 			src.texture = texture(path)
-			src.texture_region_size = Vector2i(CELL, CELL)
+			src.texture_region_size = Vector2i(TERRAIN_TILE, TERRAIN_TILE)
 			sources[path] = [ts.add_source(src), src]
 		var src: TileSetAtlasSource = sources[path][1]
-		var grid: Vector2i = content.visuals[id].get("grid_size", Vector2i.ONE)
-		var masks: Array = e["masks"]
-		var first := Vector2i(e["rect"][0] / CELL, e["rect"][1] / CELL)
-		for row in grid.x * grid.y:
-			for col in masks.size():
-				var at := first + Vector2i(col, row)
-				if not src.has_tile(at):
-					src.create_tile(at)
-		var column := {}
-		for col in masks.size():
-			column[int(masks[col])] = col
+		var row := int(v["rect"][1]) / TERRAIN_TILE
+		var fills := int(v["terrain"].get("fills", 1))
+		for col in range(1, 15 + fills):
+			if not src.has_tile(Vector2i(col, row)):
+				src.create_tile(Vector2i(col, row))
+		_terrain[id] = [sources[path][0], row, fills, int(v["terrain"]["priority"])]
+		ids.append(id)
+	# Priorities become ranks 0..n-1, so they index small arrays and bits.
+	ids.sort_custom(func(a: String, b: String) -> bool: return _terrain[a][3] < _terrain[b][3])
+	for i in ids.size():
+		_terrain[ids[i]][3] = i
+		_terrain_rank[ids[i]] = i
+		_by_rank.append(ids[i])
 		var layer := TileMapLayer.new()
 		layer.tile_set = ts
 		layer.z_index = -2
-		_edges[id] = [sources[path][0], first, grid, column, int(e["priority"]), layer]
-	# Priorities become ranks 0..n-1, so they index small arrays and bits.
-	var ids := _edge_priority.keys()
-	ids.sort_custom(func(a: String, b: String) -> bool: return _edge_priority[a] < _edge_priority[b])
-	for i in ids.size():
-		_edge_priority[ids[i]] = i
-		_by_rank.append(ids[i])
-	for id: String in _edges:
-		_edges[id][4] = _edge_priority[id]
+		layer.scale = Vector2.ONE * float(CELL) / TERRAIN_TILE
+		layer.position = -Vector2.ONE * CELL / 2.0  # tiles centred on cell corners
+		_terrain_layers.append(layer)
+	_below_terrain.tile_set = ts
+	_below_terrain.scale = Vector2.ONE * float(CELL) / TERRAIN_TILE
+	_below_terrain.z_index = -3
+	_below_terrain.modulate = Color(0.42, 0.42, 0.52)
 
 
-## Neighbour bits as the art tool numbers them: sides N E S W, corners NE SE SW NW.
-const _EDGE_BITS := [[Vector2i(0, -1), 1], [Vector2i(1, 0), 2], [Vector2i(0, 1), 4], [Vector2i(-1, 0), 8],
-	[Vector2i(1, -1), 16], [Vector2i(1, 1), 32], [Vector2i(-1, 1), 64], [Vector2i(-1, -1), 128]]
-
-
-## Where a higher ground meets a cell, its ragged edge laps over it. Done
-## for a rectangle of cells at once: the grounds around are read once into
-## an array of priorities (-1: takes no part, like a building floor).
-func _paint_edges(location: String, x0: int, y0: int, w: int, h: int) -> void:
-	var rw := w + 2
+## The terrain tiles at the corners of a rectangle of cells (corner x is
+## between cells x-1 and x). The four cells round a corner give its tile in
+## each rank: the lowest of them is a fill, each higher one that a corner has
+## is its edge over that — so a pond's bank lies over the grass, and where a
+## corner is a floor or unknown (rank -1) nothing of the ground is drawn.
+func _paint_terrain(location: String, x0: int, y0: int, w: int, h: int) -> void:
+	if _terrain_layers.is_empty():
+		return
+	var rw := w + 2  # cells x0-1 .. x0+w: both sides of every corner
 	var ranks := _ground_ranks(location, x0 - 1, y0 - 1, rw, h + 2)
-	var offs := PackedInt32Array()
-	var bits := PackedInt32Array()
-	for b: Array in _EDGE_BITS:
-		offs.append((b[0] as Vector2i).y * rw + (b[0] as Vector2i).x)
-		bits.append(int(b[1]))
-	var masks := PackedInt32Array()
-	masks.resize(_by_rank.size())
-	for y in h:
-		for x in w:
-			var i := (y + 1) * rw + x + 1
-			var own := ranks[i]
-			var cell := Vector2i(x0 + x, y0 + y)
-			var had: int = _edge_set.get(cell, 0)
-			if own < 0 and had == 0:
-				continue
-			masks.fill(0)
-			var any := 0
-			if own >= 0:
-				for k in 8:
-					var n := ranks[i + offs[k]]
-					if n > own:
-						masks[n] |= bits[k]
-						any |= 1 << n
+	for y in range(h + 1):
+		for x in range(w + 1):
+			var corner := Vector2i(x0 + x, y0 + y)
+			var tl := ranks[y * rw + x]
+			var tr := ranks[y * rw + x + 1]
+			var bl := ranks[(y + 1) * rw + x]
+			var br := ranks[(y + 1) * rw + x + 1]
+			var had: int = _terrain_set.get(corner, 0)
+			var want := 0
+			var lo := 1 << 30
+			for r in [tl, tr, bl, br]:
+				if r >= 0:
+					want |= 1 << r
+					lo = mini(lo, r)
 			for r in _by_rank.size():
-				if any & (1 << r):
-					_set_edge(_by_rank[r], cell, masks[r])
-				elif had & (1 << r):
-					(_edges[_by_rank[r]][5] as TileMapLayer).erase_cell(cell)
-			if any == 0:
-				_edge_set.erase(cell)
+				var bit := 1 << r
+				if want & bit:
+					# The lowest fills every known corner; the others their own and higher.
+					var m := (1 if tl >= r else 0) | (2 if tr >= r else 0) | (4 if bl >= r else 0) | (8 if br >= r else 0)
+					if r == lo:
+						m = (1 if tl >= 0 else 0) | (2 if tr >= 0 else 0) | (4 if bl >= 0 else 0) | (8 if br >= 0 else 0)
+					var t: Array = _terrain[_by_rank[r]]
+					var col := m
+					if m == 15:
+						col = 15 + ((corner.x * 73856093 ^ corner.y * 19349663) & 0x7fffffff) % int(t[2])
+					_terrain_layers[r].set_cell(corner, t[0], Vector2i(col, t[1]))
+				elif had & bit:
+					_terrain_layers[r].erase_cell(corner)
+			if want == 0:
+				_terrain_set.erase(corner)
 			else:
-				_edge_set[cell] = any
-
-
-func _set_edge(g: String, cell: Vector2i, m: int) -> void:
-	var e: Array = _edges[g]
-	# A corner counts only without a side next to it (the tool's shapes).
-	if m & 3:
-		m &= ~16
-	if m & 6:
-		m &= ~32
-	if m & 12:
-		m &= ~64
-	if m & 9:
-		m &= ~128
-	var grid: Vector2i = e[2]
-	var piece := _grid_piece(cell, grid)
-	(e[5] as TileMapLayer).set_cell(cell, e[0], e[1] + Vector2i(e[3][m], piece.y * grid.x + piece.x))
+				_terrain_set[corner] = want
 
 
 func _ground_ranks(location: String, x0: int, y0: int, w: int, h: int) -> PackedInt32Array:
@@ -256,7 +246,7 @@ func _ground_ranks(location: String, x0: int, y0: int, w: int, h: int) -> Packed
 				continue
 			var rank_of := PackedInt32Array()
 			for id: String in c.palette:
-				rank_of.append(_edge_priority.get(id, -1))
+				rank_of.append(_terrain_rank.get(id, -1))
 			var ax := maxi(x0, cx * Chunk.SIZE)
 			var bx := mini(x0 + w, (cx + 1) * Chunk.SIZE)
 			for y in range(maxi(y0, cy * Chunk.SIZE), mini(y0 + h, (cy + 1) * Chunk.SIZE)):
@@ -275,9 +265,14 @@ func ground_at(location: String, cell: Vector2i) -> String:
 	return c.get_cell("ground", cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else ""
 
 
-## Cells with an edge of a higher ground drawn over them -> bits of ranks.
-func edge_cells() -> Dictionary:
-	return _edge_set
+## Cell corners with terrain drawn -> bits of the ranks drawn there.
+func terrain_tiles() -> Dictionary:
+	return _terrain_set
+
+
+## The terrain layer of a ground (tests, tools).
+func terrain_layer(ground: String) -> TileMapLayer:
+	return _terrain_layers[_terrain_rank[ground]] if _terrain_rank.has(ground) else null
 
 
 ## The tile layer of the ground (or floors) of the client's location.
@@ -436,11 +431,12 @@ func _paint_pending() -> void:
 func _clear() -> void:
 	_ground.clear()
 	_pending.clear()
-	for g: String in _edges:
-		(_edges[g][5] as TileMapLayer).clear()
-	_edge_set.clear()
+	for layer: TileMapLayer in _terrain_layers:
+		layer.clear()
+	_terrain_set.clear()
 	_cover.clear()
 	_below.clear()
+	_below_terrain.clear()
 	for key: String in _chunk_nodes:
 		(_chunk_nodes[key] as Node).queue_free()
 	_chunk_nodes.clear()
@@ -535,11 +531,11 @@ func _paint_jobs() -> void:
 func _finish(ctx: PaintContext) -> Array[Callable]:
 	var p := ctx.key.split("|")
 	var steps: Array[Callable] = []
-	# Edges here, and on the rim of the chunks around, which depend on this one.
-	if not _edges.is_empty():
+	# Its terrain, corners on its rim too (shared with the chunks around).
+	if not _terrain_layers.is_empty():
 		steps.append(func() -> void:
 			if p[0] == client.location:
-				_paint_edges(p[0], ctx.ox - 1, ctx.oy - 1, Chunk.SIZE + 2, Chunk.SIZE + 2))
+				_paint_terrain(p[0], ctx.ox, ctx.oy, Chunk.SIZE, Chunk.SIZE))
 	if ctx.spread:
 		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 			var nk := ServerWorld.chunk_key(p[0], int(p[1]) + d.x, int(p[2]) + d.y)
@@ -664,7 +660,7 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 	var i := ly * Chunk.SIZE + lx
 	var cell := Vector2i(ctx.ox + lx, ctx.oy + ly)
 	var ground := ctx.at(ctx.ground, i)
-	_set_flat(_ground, cell, ground)
+	_set_flat(_ground, cell, "" if _terrain.has(ground) else ground)  # terrain: _paint_terrain
 	_cover.erase_cell(cell)
 	var roof := ctx.at(ctx.roof, i)
 	var ceiling := ctx.at(ctx.ceiling, i)
@@ -731,7 +727,13 @@ func _paint_below(c: Chunk, ox: int, oy: int) -> void:
 	for ly in Chunk.SIZE:
 		for lx in Chunk.SIZE:
 			var cell := Vector2i(ox + lx, oy + ly)
-			_set_flat(_below, cell, c.get_cell("ground", lx, ly))
+			var ground := c.get_cell("ground", lx, ly)
+			if _terrain.has(ground):
+				var t: Array = _terrain[ground]
+				_below_terrain.set_cell(cell, t[0], Vector2i(15, t[1]))
+				_below.erase_cell(cell)
+			else:
+				_set_flat(_below, cell, ground)
 
 
 func _set_cover(cell: Vector2i, id: String, layer := "ceiling") -> void:

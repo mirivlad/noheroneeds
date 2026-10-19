@@ -48,12 +48,12 @@ func _frames(n: int, until_playing := false) -> void:
 		OS.delay_msec(1)
 
 
-## Steps frames until `done` is true (at most n): what waits on the store
-## writer's thread (a build committed, then answered) takes its own time.
-func _frames_until(done: Callable, n := 200) -> void:
-	for i in n:
-		if done.call():
-			return
+## Steps frames until `done` is true (at most `seconds` of real time): what
+## waits on the store writer's thread (a build committed, then answered)
+## takes as long as the disk does, which a busy machine makes seconds.
+func _frames_until(done: Callable, seconds := 120.0) -> void:
+	var start := Time.get_ticks_msec()
+	while not done.call() and Time.get_ticks_msec() - start < seconds * 1000.0:
 		_frames(1)
 
 
@@ -187,6 +187,10 @@ func test_blueprints_show_what_cannot_be_built_and_panels_catch_clicks() -> void
 
 
 func test_q_against_a_wolf_and_things_in_and_out_of_a_chest() -> void:
+	# Nothing of the world's to hunt the player meanwhile (a slow machine
+	# takes seconds; a wolf or a spider may come and kill).
+	for cid: String in w.creatures.creatures.keys():
+		w.creatures.remove(cid)
 	var me := _me()
 	var id := g.client.character_id
 	w.grant(id, "base:pickaxe", 1)
@@ -210,6 +214,7 @@ func test_q_against_a_wolf_and_things_in_and_out_of_a_chest() -> void:
 	_click(_screen(Movement.cell_of(wolf.pos), 8.0))
 	_frames(5)
 	eq(wolf.health, 14 - 5, "struck with the spear")
+	w.creatures.remove(wolf.id)  # struck, it wakes and bites back: gone
 	_key(KEY_Q)
 	_frames(3)
 	eq(w.held_of(id), "base:pickaxe", "Q again: the pick back")

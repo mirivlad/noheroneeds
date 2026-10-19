@@ -855,7 +855,7 @@ func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0, faci
 		# The same picture for a cell every time and for every player.
 		var k := absi((cell.x * 73856093) ^ (cell.y * 19349663)) % (alts.size() + 1)
 		if k > 0:
-			v = alts[k - 1]
+			v = v.merged(alts[k - 1], true)  # its own picture, the visual's scale
 	var s := Sprite2D.new()
 	s.texture = texture(v["atlas_path"])
 	s.region_enabled = true

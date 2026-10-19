@@ -245,7 +245,11 @@ def credits():
         for u in c.get("urls", []):
             lines.append("- %s" % u)
         lines.append("")
-    CREDITS.write_text("\n".join(lines), encoding="utf-8")
+    # The environment's part (tools/art/import_lpc_env.py) stays after ours.
+    env = ""
+    if CREDITS.exists() and "<!-- environment -->" in CREDITS.read_text(encoding="utf-8"):
+        env = "\n" + "<!-- environment -->" + CREDITS.read_text(encoding="utf-8").split("<!-- environment -->", 1)[1]
+    CREDITS.write_text("\n".join(lines) + env, encoding="utf-8")
     return len(rows)
 
 

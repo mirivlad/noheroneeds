@@ -16,14 +16,15 @@ func _init() -> void:
 
 func show_look(content: ContentRegistry, looks: Dictionary) -> void:
 	_visual = content.visual_of(String(looks.get("body_plan", "base:humanoid_adult")))
-	var body := Art.character_texture(_visual, looks.get("colors", {}))
-	var layers := Art.character_layers(content, _visual, looks)
-	if doll:
-		doll.dress(body, _visual, layers, looks)
+	if doll and Art.same_kind(doll, _visual):
+		Art.dress(doll, content, _visual, looks)
 	else:
-		doll = CharacterSprite.new(body, _visual, layers, looks.duplicate(true))
-		doll.scale = Vector2(3, 3)
+		if doll:
+			doll.queue_free()
+		doll = Art.character_sprite(content, _visual, looks)
 		add_child(doll)
+	# Two screen pixels a texel, whatever the sheet's own scale.
+	doll.scale = Vector2.ONE * 2.0 / float(_visual.get("pixel_scale", 1.0))
 	doll.position = Vector2(custom_minimum_size.x / 2, 122)
 
 

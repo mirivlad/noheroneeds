@@ -77,6 +77,8 @@ static func audio(path: String, loop := false) -> AudioStream:
 static func clear() -> void:
 	_textures.clear()
 	_sounds.clear()
+	_palettes.clear()
+	_materials.clear()
 	_theme = null
 
 
@@ -85,9 +87,38 @@ static func worn_visual(content: ContentRegistry, body: Dictionary, item: String
 	return body.get("worn_overrides", {}).get(item, content.visual_of(item).get("worn", {}))
 
 
-## The same fitted layers in the editor, equipment window and world.
+## A paper doll for looks: an LPC human (lpc_visuals.json) or a creature's
+## own sheet. Changing looks later: dress() with the same arguments.
+static func character_sprite(content: ContentRegistry, visual: Dictionary, looks: Dictionary) -> CharacterSprite:
+	var body := character_texture(visual, looks.get("colors", {}))
+	var layers := character_layers(content, visual, looks)
+	if visual.get("format") == "lpc":
+		return LpcSprite.new(body, visual, layers, looks.duplicate(true))
+	return CharacterSprite.new(body, visual, layers, looks.duplicate(true))
+
+
+static func dress(sprite: CharacterSprite, content: ContentRegistry, visual: Dictionary, looks: Dictionary) -> void:
+	sprite.dress(character_texture(visual, looks.get("colors", {})), visual, character_layers(content, visual, looks), looks)
+
+
+## Whether a sprite can be dressed in a visual (not a creature's sheet for an LPC body).
+static func same_kind(sprite: CharacterSprite, visual: Dictionary) -> bool:
+	return (sprite is LpcSprite) == (visual.get("format") == "lpc")
+
+
+## The same fitted layers in the editor, equipment window and world:
+## [slot, texture] or, for LPC bodies, [slot, texture, sheet] per sheet.
 static func character_layers(content: ContentRegistry, body: Dictionary, looks: Dictionary) -> Array:
 	var layers := []
+	if body.get("format") == "lpc":
+		for style: Variant in (looks.get("styles", {}) as Dictionary).values():
+			for sheet: Dictionary in body.get("style_overrides", {}).get(String(style), {}).get("sheets", []):
+				layers.append([String(body["style_overrides"][String(style)]["layer"]), texture(sheet["atlas_path"]), sheet])
+		for item: Variant in (looks.get("worn", {}) as Dictionary).values():
+			var worn: Dictionary = body.get("worn_overrides", {}).get(String(item), {})
+			for sheet: Dictionary in worn.get("sheets", []):
+				layers.append([String(worn["layer"]), texture(sheet["atlas_path"]), sheet])
+		return layers
 	var colors: Dictionary = looks.get("colors", {})
 	var hatted := String(looks.get("worn", {}).get("headwear", "")) != ""
 	for style: Variant in (looks.get("styles", {}) as Dictionary).values():
@@ -104,8 +135,8 @@ static func character_layers(content: ContentRegistry, body: Dictionary, looks: 
 ## Palette keys affect skin/hair only; clothes keep their own material colours.
 static func character_texture(visual: Dictionary, colors: Dictionary, under_hat := false) -> Texture2D:
 	var path := String(visual["atlas_path"])
-	if not visual.get("recolor", false):
-		return texture(path)
+	if visual.get("format") == "lpc" or not visual.get("recolor", false):
+		return texture(path)  # LPC layers are recoloured by lpc_material
 	var key := path + str(colors) + str(under_hat)
 	if _textures.has(key):
 		return _textures[key]
@@ -131,6 +162,79 @@ static func character_texture(visual: Dictionary, colors: Dictionary, under_hat 
 	var tex := ImageTexture.create_from_image(img)
 	_textures[key] = tex
 	return tex
+
+
+const PALETTE_SWAP := preload("res://src/presentation/palette_swap.gdshader")
+## A character's colour key with nothing chosen: the LPC ramp it starts as.
+const LPC_DEFAULTS := {"skin": "light", "hair": "light_brown", "eyes": "brown"}
+static var _palettes := {}
+static var _materials := {}
+
+
+## The recolouring of an LPC sheet (its "recolor": material -> "@colour key"
+## or a fixed ramp) for a character's colours; null when nothing changes.
+## A colour is a hex (the portable character's format): the ramp whose
+## middle step is nearest to it is used, so any colour maps to a drawn ramp.
+static func lpc_material(visual: Dictionary, sheet: Dictionary, colors: Dictionary) -> Material:
+	var recolor: Dictionary = sheet.get("recolor", {})
+	if recolor.is_empty():
+		return null
+	var pals := lpc_palettes(String(visual.get("palettes_path", "")))
+	var from := PackedColorArray()
+	var to := PackedColorArray()
+	var key := ""
+	for material: String in recolor:
+		var pal: Dictionary = pals.get(material, {})
+		if pal.is_empty():
+			continue
+		var ramp := String(recolor[material])
+		if ramp.begins_with("@"):
+			ramp = lpc_ramp(pal, String(colors.get(ramp.substr(1), "")), LPC_DEFAULTS.get(ramp.substr(1), pal["base"]))
+		if ramp == pal["base"] or not pal["ramps"].has(ramp):
+			continue
+		key += material + ":" + ramp + ";"
+		for i in mini(pal["ramps"][pal["base"]].size(), pal["ramps"][ramp].size()):
+			from.append(Color(pal["ramps"][pal["base"]][i]))
+			to.append(Color(pal["ramps"][ramp][i]))
+	if from.is_empty():
+		return null
+	if not _materials.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = PALETTE_SWAP
+		m.set_shader_parameter("count", mini(from.size(), 32))
+		from.resize(32)
+		to.resize(32)
+		m.set_shader_parameter("from_colors", from)
+		m.set_shader_parameter("to_colors", to)
+		_materials[key] = m
+	return _materials[key]
+
+
+## The ramp of a material for a colour: nearest by the ramp's middle step.
+static func lpc_ramp(pal: Dictionary, hex: String, fallback: String) -> String:
+	if not hex.begins_with("#") or hex.length() != 7:
+		return fallback
+	var want := Color(hex)
+	var best := fallback
+	var best_d := INF
+	for ramp_name: String in pal.get("choices", pal["ramps"].keys()):
+		var c := Color(String(lpc_middle(pal["ramps"][ramp_name])))
+		var d := Vector3(c.r - want.r, c.g - want.g, c.b - want.b).length_squared()
+		if d < best_d:
+			best_d = d
+			best = ramp_name
+	return best
+
+
+## The step of a ramp that stands for it (its colour in a profile).
+static func lpc_middle(ramp: Array) -> String:
+	return String(ramp[int((ramp.size() - 1) * 2.0 / 3.0)])
+
+
+static func lpc_palettes(path: String) -> Dictionary:
+	if not _palettes.has(path):
+		_palettes[path] = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else {}
+	return _palettes[path]
 
 
 static func _from_source(path: String) -> bool:

@@ -607,8 +607,22 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	worn_layers.append_array(styles.values())
 	if d.has("worn"):
 		worn_layers.append(d["worn"])
+	# Things in the hands drawn with their own frames (LPC tools and weapons).
+	var held: Variant = d.get("held_overrides", {})
+	if typeof(held) != TYPE_DICTIONARY:
+		errors.append("%s: held_overrides must map items to layers" % id)
+		held = {}
+	for item: Variant in held:
+		if kind_of(String(item)) != "item":
+			errors.append("%s: held layer for unknown item '%s'" % [id, item])
+	worn_layers.append_array(held.values())
+	if d.get("format") == "lpc":
+		_check_lpc(id, d, dir)
 	for worn: Variant in worn_layers:
-		if typeof(worn) != TYPE_DICTIONARY or String(worn.get("atlas", "")) == "" or String(worn.get("layer", "")) == "":
+		if typeof(worn) == TYPE_DICTIONARY and worn.has("sheets") and String(worn.get("layer", "")) != "":
+			for sheet: Variant in worn["sheets"]:
+				_check_sheet(id, sheet, dir)
+		elif typeof(worn) != TYPE_DICTIONARY or String(worn.get("atlas", "")) == "" or String(worn.get("layer", "")) == "":
 			errors.append("%s: worn needs atlas and layer" % id)
 		else:
 			worn["atlas_path"] = dir.path_join(String(worn["atlas"])) if dir != "" else ""
@@ -634,6 +648,48 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	var old: Dictionary = visuals.get(target, {})
 	if old.is_empty() or _pack_order(d["pack"]) >= _pack_order(old["pack"]):
 		visuals[target] = d
+
+
+## A body drawn from LPC layers (tools/art/import_lpc.py): its own sheet,
+## the palettes it recolours by, rows of directions, animations as frames
+## of its sheets and the animation of each kind of swing.
+func _check_lpc(id: String, d: Dictionary, dir: String) -> void:
+	_check_sheet(id, d, dir)
+	d["palettes_path"] = dir.path_join(String(d.get("palettes", ""))) if dir != "" else ""
+	if dir != "" and not FileAccess.file_exists(d["palettes_path"]):
+		errors.append("%s: palettes %s not found" % [id, d["palettes_path"]])
+	if d.get("rows") != ["n", "w", "s", "e"]:
+		errors.append("%s: rows must be n, w, s, e" % id)
+	var animations: Variant = d.get("animations")
+	if typeof(animations) != TYPE_DICTIONARY or not ["idle", "walk"].all(func(a: String) -> bool: return animations.has(a)):
+		errors.append("%s: animations need idle and walk" % id)
+		return
+	for a: String in animations:
+		var an: Variant = animations[a]
+		if typeof(an) != TYPE_DICTIONARY or typeof(an.get("frames")) != TYPE_ARRAY or (an["frames"] as Array).is_empty() \
+				or typeof(an.get("fps")) not in [TYPE_INT, TYPE_FLOAT] or float(an["fps"]) <= 0.0:
+			errors.append("%s: animation '%s' needs frames and fps" % [id, a])
+	for kind: Variant in d.get("swings", {}):
+		if not animations.has(d["swings"][kind]):
+			errors.append("%s: swing '%s' plays an unknown animation" % [id, kind])
+
+
+## One LPC layer: an atlas of animations, each [x, y, frame size, frames]
+## over four rows of directions.
+func _check_sheet(id: String, sheet: Variant, dir: String) -> void:
+	if typeof(sheet) != TYPE_DICTIONARY or String(sheet.get("atlas", "")) == "" or typeof(sheet.get("anims")) != TYPE_DICTIONARY:
+		errors.append("%s: a sheet needs atlas and anims" % id)
+		return
+	sheet["atlas_path"] = dir.path_join(String(sheet["atlas"])) if dir != "" else ""
+	if dir != "" and not FileAccess.file_exists(sheet["atlas_path"]) and not ResourceLoader.exists(sheet["atlas_path"]):
+		errors.append("%s: atlas %s not found" % [id, sheet["atlas_path"]])
+	for a: String in sheet["anims"]:
+		var r: Variant = sheet["anims"][a]
+		if typeof(r) != TYPE_ARRAY or (r as Array).size() != 4:
+			errors.append("%s: sheet animation '%s' needs x, y, size and frames" % [id, a])
+		else:
+			sheet["anims"][a] = (r as Array).map(func(n: Variant) -> int: return int(n))
+	sheet["z"] = int(sheet.get("z", 0))
 
 
 ## The sound of an event for a thing: its own, else the general one ("*").

@@ -1020,7 +1020,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		me.show_at(own_pixel_position(alpha), delta, true)
 		me.modulate = Color.WHITE
 		_health(client.character_id, me, client.own, delta)
-		me.hold(item_picture(own_held), item_grip(own_held))
+		me.hold(item_picture(own_held), item_grip(own_held), own_held)
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
@@ -1047,7 +1047,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		var dz := int(e.get("z", client.z)) - client.z
 		var sprite := _character(id, looks)
 		var held := String(e.get("held", ""))
-		sprite.hold(item_picture(held), item_grip(held))
+		sprite.hold(item_picture(held), item_grip(held), held)
 		var blows := int(e.get("swing", 0))
 		if _swing_seen.has(id) and int(_swing_seen[id]) != blows:
 			sprite.swing(Vector2.RIGHT.rotated((blows & 7) * PI / 4), swing_kind(String(e.get("held", ""))))
@@ -1244,12 +1244,12 @@ func _character(id: String, looks: Dictionary) -> CharacterSprite:
 	var variant := posmod(id.hash(), alternates.size() + 1)
 	if variant > 0:
 		v = v.merged(alternates[variant - 1], true)
-	var layers := Art.character_layers(content, v, looks)
-	var body := Art.character_texture(v, looks.get("colors", {}))
-	if old:
-		old.dress(body, v, layers, looks)
+	if old and Art.same_kind(old, v):
+		Art.dress(old, content, v, looks)
 		return old
-	var cs := CharacterSprite.new(body, v, layers, looks.duplicate(true))
+	if old:
+		old.queue_free()
+	var cs := Art.character_sprite(content, v, looks)
 	cs.stepped.connect(func() -> void:
 		if on_step.is_valid():
 			on_step.call(cs.position))

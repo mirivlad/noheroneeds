@@ -29,13 +29,14 @@ func test_view_follows_the_client() -> void:
 	check(sprites > 0, "tall things drawn as sprites: %d" % sprites)
 	check(view._characters.has(g.client.character_id), "own character shown")
 	var dolls := [view._characters[g.client.character_id]]
-	# A paper doll: the body, then hair and the starter outfit, in the body
-	# plan's order (feet under torso under hair).
+	# A paper doll: the body, the starter outfit, the head and hair, in the
+	# layers' own depth (feet under torso under head under hair).
 	var slots := []
 	for child: Node in dolls[0].get_children():
 		var t := (child as Sprite2D).texture
 		slots.append((t.resource_path if t.resource_path != "" else t.resource_name).get_file())
-	eq(slots, ["body.png", "boots.png", "linen_shirt.png", "hair_short.png"], "layers in order")
+	eq(slots, ["body_bodies_male.png", "feet_boots_basic_male.png", "torso_clothes_longsleeve_longsleeve_male.png",
+		"head_heads_human_male.png", "hair_messy1_adult.png"], "layers in order")
 	# Grounds meet with ragged edges: only on a cell next to a higher ground.
 	var edges := view.edge_cells()
 	check(edges.size() > 0, "edges drawn where grounds meet: %d cells" % edges.size())

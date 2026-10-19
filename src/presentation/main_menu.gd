@@ -85,6 +85,8 @@ func show_start() -> void:
 	_button("Подключиться к серверу", show_connect)
 	_button("Персонажи", show_characters)
 	_button("Настройки", show_settings)
+	if not in_game:
+		_button("Авторы", show_credits)
 	if in_game:
 		_button("Выход в главное меню", func() -> void: to_start_screen.emit())
 	else:
@@ -267,6 +269,29 @@ func show_character_edit(file_id: String) -> void:
 		show_characters())
 
 
+## Who made what the game borrows (CREDITS-art.md, written by tools/art/import_lpc.py).
+const CREDITS := "res://CREDITS-art.md"
+
+
+func show_credits() -> void:
+	_clear("Авторы")
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(560, 300)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_body.add_child(scroll)
+	var text := Label.new()
+	text.name = "CreditsText"
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.custom_minimum_size = Vector2(540, 0)
+	text.add_theme_color_override("font_color", Art.TEXT)
+	var lines := PackedStringArray()
+	for line: String in FileAccess.get_file_as_string(CREDITS).split("\n"):
+		lines.append(line.trim_prefix("## ").trim_prefix("# ").replace("`", ""))
+	text.text = "\n".join(lines).strip_edges()
+	scroll.add_child(text)
+	_button("Назад", show_start)
+
+
 func show_settings() -> void:
 	_clear("Настройки")
 	var changed := func(key: String, value: Variant) -> void:
@@ -440,7 +465,7 @@ func _check(text: String, on: bool) -> CheckBox:
 
 static func _look_name(body: String, hair: String) -> String:
 	if body.begins_with("base:human_"):
-		return ("Женский" if body.begins_with("base:human_f") else "Мужской") + (" · крепкое тело" if body.ends_with("_broad") else " · обычное тело")
+		return "Женский облик" if body.begins_with("base:human_f") else "Мужской облик"
 	return HAIR.get(hair, "") if body == "base:humanoid_adult" else BODIES.get(body, body)
 
 
@@ -453,8 +478,8 @@ func _doll(body_plan: String, hair: String, styles: Dictionary = {}, colors: Dic
 		return box
 	var look := {"styles": styles if not styles.is_empty() else {"hair": hair}, "colors": colors,
 		"worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
-	var layers := Art.character_layers(content, body, look)
-	var doll := CharacterSprite.new(Art.character_texture(body, colors), body, layers)
+	var doll := Art.character_sprite(content, body, look)
+	doll.scale = Vector2.ONE / float(body.get("pixel_scale", 1.0))  # a texel a pixel
 	doll.position = Vector2(24, 46)
 	box.add_child(doll)
 	var turn := Timer.new()

@@ -19,6 +19,7 @@ PACKS=(
   "lpc-plants $F/lpc-flowers-plants-fungi-wood.zip ec3e039bd872757b8424a0d11c1818eca0286fd1dc0322d276462a46b0f0948f"
   "lpc-farm $F/submission_daneeklu.zip 4fd2b459b0105bf750dd9766ec36c3d00c54b42b8b67f1a3696341ac8491d0a3"
   "lpc-mine $F/lpc-mine.zip 069b39efefeff64dbcebb6a95c6ff36289541e505fabdc17a807a950eae0d6d0"
+  "lpc-mountains $F/mountains.zip e241bad1b239a2286ebbb81639943f2f57e7092a738afe84fca7d8fb11354c0c"
 )
 # Single pictures.
 FILES=(

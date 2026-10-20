@@ -221,3 +221,27 @@ func test_malformed_lpc_visuals_are_content_errors() -> void:
 			{"style_overrides": {"test:body": {"layer": "hair", "sheets": [{"atlas": ""}]}}}]:
 		check(not ContentRegistry.from_defs([body, visual.merged(bad, true)]).errors.is_empty(),
 			"rejected before drawing: %s" % str(bad))
+
+
+func test_a_diagonal_walk_keeps_one_facing() -> void:
+	var content := _content()
+	var view := WorldView.new()
+	view.content = content
+	var doll := view._character("deer", {"body_plan": "base:deer"}) as LpcSprite
+	doll.show_at(Vector2.ZERO, 0.0, true)
+	var turns := 0
+	var was := -1
+	var at := Vector2.ZERO
+	for i in 60:  # south-east, the steps a little uneven as replicas come
+		at += Vector2(1.0 + (0.15 if i % 2 == 0 else -0.15), 1.0 + (-0.15 if i % 2 == 0 else 0.15))
+		doll.show_at(at, 0.05, true)
+		if was >= 0 and doll._dir != was:
+			turns += 1
+		was = doll._dir
+	eq(turns, 0, "no flicking between side and front on a diagonal")
+	for i in 10:
+		at += Vector2(0, 2)
+		doll.show_at(at, 0.05, true)
+	eq(doll._dir, 2, "straight south: it turns")
+	view.free()
+	await (Engine.get_main_loop() as SceneTree).process_frame

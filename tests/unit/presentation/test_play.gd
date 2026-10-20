@@ -510,3 +510,41 @@ func test_only_what_hides_the_player_is_seen_through_and_only_round_them() -> vo
 	check(not cells.has(me + Vector2i(-1, 1)), "nor the one in front of the next cell")
 	var s: Sprite2D = g.view._faded[cells.find(me + Vector2i(0, 1))]
 	check(s.modulate.a == 1.0 and s.material is ShaderMaterial, "not faded whole: a window round the body")
+
+
+func test_an_axe_takes_a_tree_by_its_crown() -> void:
+	var id := g.client.character_id
+	var me := _me()
+	var tree := me + Vector2i(2, -1)
+	var c := w.chunk("surface", floori(tree.x / 32.0), floori(tree.y / 32.0))
+	c.set_cell("cover", posmod(tree.x, 32), posmod(tree.y, 32), "base:oak")
+	w._changed(ServerWorld.chunk_key("surface", floori(tree.x / 32.0), floori(tree.y / 32.0)))
+	w.grant(id, "base:axe", 1)
+	_frames_until(func() -> bool: return g.client.is_solid(tree.x, tree.y) and g.client.inventory().has("base:axe"))
+	g.hotbar.put(0, "base:axe", -1)
+	_key(KEY_1)
+	for lift in [8.0, 24.0, 40.0]:  # the crown, high above the trunk's cell
+		_move_mouse(_screen(tree + Vector2i(-1, 0), lift))
+		_frames(3)
+		if g.target.get("cell") == tree:
+			break
+	eq(g.target.get("cell"), tree, "the crown is the tree")
+	var chop := Actions.primary(g.actions)
+	eq(chop.get("id"), "gather", "felled by it")
+	g._do(chop)
+	_frames_until(func() -> bool: return int(w._layer_props(c, "cover", posmod(tree.x, 32), posmod(tree.y, 32)).get("work", 0)) > 0, 20.0)
+	check(int(w._layer_props(c, "cover", posmod(tree.x, 32), posmod(tree.y, 32)).get("work", 0)) > 0, "the server agrees: a blow landed")
+
+
+func test_cave_rock_is_drawn_in_its_own_cell_not_over_the_passage() -> void:
+	var me := _me()
+	var rock := me + Vector2i(0, 2)
+	var c := w.chunk("surface", floori(rock.x / 32.0), floori(rock.y / 32.0))
+	c.set_cell("structure", posmod(rock.x, 32), posmod(rock.y, 32), "base:rock")
+	w._changed(ServerWorld.chunk_key("surface", floori(rock.x / 32.0), floori(rock.y / 32.0)))
+	_frames_until(func() -> bool: return g.view._rock_tops.get_cell_source_id(rock) != -1)
+	check(g.view._rock_tops.get_cell_source_id(rock) != -1, "a tile on the rock's cell")
+	eq(g.view._rock_tops.get_cell_source_id(rock - Vector2i(0, 1)), -1, "nothing on the passage north of it")
+	eq(g.view._rock_tops.get_cell_source_id(rock - Vector2i(0, 2)), -1, "nor two cells up")
+	eq(g.view.pick_target(Vector2((rock.x + 0.5) * WorldView.CELL, (rock.y + 0.5) * WorldView.CELL)).get("cell"), rock,
+		"pointed at where it is drawn, it is the rock")

@@ -317,11 +317,11 @@
     0,
     576,
     32,
-    96
+    32
    ],
    "origin": [
     0,
-    96
+    32
    ],
    "pixel_scale": 0.5,
    "variants": 16,
@@ -337,11 +337,11 @@
     0,
     672,
     32,
-    96
+    32
    ],
    "origin": [
     0,
-    96
+    32
    ],
    "pixel_scale": 0.5,
    "variants": 16,
@@ -357,11 +357,11 @@
     0,
     768,
     32,
-    96
+    32
    ],
    "origin": [
     0,
-    96
+    32
    ],
    "pixel_scale": 0.5,
    "variants": 16,
@@ -377,11 +377,11 @@
     0,
     864,
     32,
-    96
+    32
    ],
    "origin": [
     0,
-    96
+    32
    ],
    "pixel_scale": 0.5,
    "variants": 16,
@@ -1097,11 +1097,11 @@
     0,
     422,
     32,
-    77
+    60
    ],
    "origin": [
     0,
-    73
+    56
    ],
    "pixel_scale": 0.5,
    "variants": 1
@@ -1114,7 +1114,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    499,
+    482,
     128,
     224
    ],
@@ -1133,7 +1133,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    723,
+    706,
     32,
     64
    ],
@@ -1152,7 +1152,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    787,
+    770,
     48,
     86
    ],
@@ -1171,7 +1171,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    873,
+    856,
     64,
     90
    ],
@@ -1190,7 +1190,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    963,
+    946,
     32,
     32
    ],

@@ -45,12 +45,26 @@ func _anim(anim_name: String) -> Dictionary:
 	return {"name": anim_name, "frames": (a["frames"] as Array).size(), "fps": float(a["fps"])}
 
 
+## How much more one axis of a move must lead to turn to it from the other.
+const TURN_LEAD := 1.5
+var _faced := false
+
+
 func _face(v: Vector2) -> void:
-	# Diagonals are seen from the side, as walking along a wall is.
-	if absf(v.x) >= absf(v.y):
-		_dir = 3 if v.x > 0.0 else 1
+	# Diagonals are seen from the side, as walking along a wall is. Turning
+	# to the other axis needs it to lead clearly: on a diagonal the two are
+	# near equal and the picture would flick from side to front every frame.
+	var horizontal := absf(v.x) >= absf(v.y)
+	var was_horizontal := _dir == 1 or _dir == 3
+	if horizontal != was_horizontal and _faced:
+		var lead := absf(v.x) / maxf(absf(v.y), 0.0001) if horizontal else absf(v.y) / maxf(absf(v.x), 0.0001)
+		if lead < TURN_LEAD:
+			horizontal = was_horizontal
+	_faced = true
+	if horizontal:
+		_dir = 3 if v.x > 0.0 else (1 if v.x < 0.0 else _dir)
 	else:
-		_dir = 2 if v.y > 0.0 else 0
+		_dir = 2 if v.y > 0.0 else (0 if v.y < 0.0 else _dir)
 	_mirror = false
 	_order()
 	_place_held()

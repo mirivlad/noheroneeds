@@ -159,6 +159,18 @@ WALLS = {
     "base:gem_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (128, 256)},
 }
 ORE = SRC / "ore_0.png"
+# Cave rock (the author, 20.10.2026: walls in caves look like rock, not
+# buildings, and do not stand over the passage): LPC Mountains' grey cliff,
+# drawn inside the rock's own cell. Its top from the corner tiles (by corner
+# mask TL 1, TR 2, BL 4, BR 8), a face where a passage is south: the lip of
+# the cliff and its foot; deep in the mass, the black cliff's top.
+MOUNTAINS = SRC / "lpc-mountains" / "submission" / "mountains-v6.png"
+CLIFF_TOP = {1: 914, 2: 912, 3: 913, 4: 786, 5: 850, 7: 851, 8: 784, 10: 848, 11: 847, 12: 785, 13: 1109, 14: 1108, 15: 849}
+CLIFF_LIP = (912, 913, 914)    # left end, middle, right end: the top's edge and the face below it
+CLIFF_FOOT = (1040, 1041, 1042)  # the foot of the face
+CLIFF_DEEP = 861
+LIP_ROWS = 24  # of the lip tile kept; the foot's first rows below them
+FACE_FROM = 6  # rows of the top kept above the lip (its edge when nothing is north)
 MINE = SRC / "lpc-mine" / "lpc-mine" / "mine.png"
 # Flat things: x, y and grid of a seamless block (floors, ceilings, roofs).
 FLAT = {
@@ -223,6 +235,36 @@ def without(img, colour):
     return out
 
 
+def mountain_tile(sheet, i):
+    x, y = (i % (sheet.width // T)) * T, (i // (sheet.width // T)) * T
+    return sheet.crop((x, y, x + T, y + T))
+
+
+def rock_cell(sheet, nesw):
+    """A cell of cave rock with rock N E S W (bits 1 2 4 8): its top from
+    the cliff's corner tiles (the edge on the cell's border), a face in the
+    cell itself where nothing is south, the black top deep in the mass."""
+    if nesw == 15:
+        return mountain_tile(sheet, CLIFF_DEEP)
+    img = wall_top({m: mountain_tile(sheet, i) for m, i in CLIFF_TOP.items()}, nesw)
+    if not nesw & 4:
+        e, w = (nesw >> 1) & 1, (nesw >> 3) & 1
+        h = T // 2
+        # The cliff's lip and foot are corner tiles too: the cell's left half
+        # is the right half of the tile at its bottom-left corner (a left end
+        # where nothing is west), its right half the other's left half.
+        face = Image.new("RGBA", (T, T))
+        for k_left, k_right in [((1 if w else 0), (1 if e else 2))]:
+            for k, (src_x, at_x) in ((k_left, (h, 0)), (k_right, (0, h))):
+                lip = mountain_tile(sheet, CLIFF_LIP[k]).crop((src_x, FACE_FROM, src_x + h, LIP_ROWS))
+                foot = mountain_tile(sheet, CLIFF_FOOT[k]).crop((src_x, 0, src_x + h, T - LIP_ROWS))
+                face.alpha_composite(lip, (at_x, FACE_FROM))
+                face.alpha_composite(foot, (at_x, LIP_ROWS))
+        img.paste(Image.new("RGBA", (T, T - FACE_FROM)), (0, FACE_FROM))  # the top's lower part gives way to the face
+        img.alpha_composite(face)
+    return img
+
+
 def wall_face(walls, fx, fy, nesw):
     """A face 64 px tall: the block's top and bottom rows; its end tiles at
     the wall's ends."""
@@ -268,6 +310,7 @@ def build_buildings():
     ore = Image.open(ORE).convert("RGBA")
     fills = {n: terrain_fill(n) for n in {spec["fill"] for spec in WALLS.values() if "fill" in spec}}
     doors = Image.open(DOORS_DIR / "windows-doors.png").convert("RGBA")
+    mountains = Image.open(MOUNTAINS).convert("RGBA")
     rows = []  # (visual id parts, [16 images])
     defs = []
     for part, spec in WALLS.items():
@@ -276,6 +319,13 @@ def build_buildings():
             variants = []
             for nesw in range(16):
                 img = Image.new("RGBA", (T, T + STOREY))
+                if "fill" in spec:  # cave rock: a flat cell (the row's top tile)
+                    img.alpha_composite(rock_cell(mountains, nesw), (0, 0))
+                    if "ore" in spec:
+                        x, y = spec["ore"]
+                        img.alpha_composite(ore.crop((x, y, x + T, y + T)), (0, 0))
+                    variants.append(img)
+                    continue
                 if "fill" in spec and nesw != 15:
                     # Rock at the mass's edge: its grey top inside the trim
                     # (the mass's colour of the trim tiles left out).
@@ -305,8 +355,9 @@ def build_buildings():
         at[(part, state)] = [0, r * (T + STOREY), T, T + STOREY]
     atlas.save(OUT / "walls.png", optimize=True)
     for part in WALLS:
+        rect = at[(part, "")] if "fill" not in spec_of(part) else at[(part, "")][:3] + [T]  # rock: a cell
         d = {"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
-             "atlas": "art/lpc_env/walls.png", "rect": at[(part, "")], "origin": [0, T + STOREY],
+             "atlas": "art/lpc_env/walls.png", "rect": rect, "origin": [0, rect[3]],
              "pixel_scale": 0.5, "variants": 16, "autotile": "rock" if "fill" in spec_of(part) else "wall"}
         if (part, "open") in at:
             d["states"] = {"open": at[(part, "open")]}
@@ -398,7 +449,7 @@ PROPS = {
     "base:wood_column": ("lpc-windows-doors/lpc-windows-doors-v2/windows-doors.png", (960, 0, 32, 64), {}),
     "base:chest": ("chest2.png", (0, 0, 32, 32), {"open": (32, 0, 32, 32)}),
     "base:mine_ladder": ("lpc-mine/lpc-mine/mine.png", (0, 288, 32, 96), {}),
-    "base:cave_climb": ("lpc-mine/lpc-mine/mine.png", (0, 288, 32, 96), {}),
+    "base:cave_climb": ("wooden_stairs.png", (0, 320, 32, 64), {}),  # a way up: stairs, read as such
     "base:headframe": ("lpc-mine/lpc-mine/mine.png", (0, 0, 128, 224), {}),
     "base:workbench": ("house_inside_1.png", (96, 32, 32, 64), {}),
     "base:bed": ("house_inside_1.png", (72, 172, 48, 88), {}),
@@ -654,6 +705,7 @@ ENV_CREDITS_START = "<!-- environment -->"
 PACK_CREDITS = [
     ("[LPC] Terrains", "lpc-terrains/lpc-terrains/CREDITS-terrain.txt"),
     ("[LPC] Walls", "lpc-walls/lpc-walls/CREDITS-walls.txt"),
+    ("[LPC] Mountains", "lpc-mountains/submission/CREDITS-mountains.txt"),
     ("[LPC] Windows & Doors", "lpc-windows-doors/lpc-windows-doors-v2/CREDITS-windows-doors.txt"),
     ("[LPC] Floors", "lpc-floors/lpc-floors/CREDITS-floors.txt"),
     ("[LPC] Trees", "lpc-trees/lpc-trees/CREDITS-trees.txt"),

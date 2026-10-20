@@ -1142,6 +1142,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		_at_level(sprite, client.z + dz)
 		_health(id, sprite, e, delta)
 		_lie(sprite, bool(e.get("asleep", false)))
+		_speech(id, sprite, e, delta)
 	for id: String in _characters.keys():
 		if not seen.has(id):
 			_characters[id].queue_free()
@@ -1161,6 +1162,51 @@ func _update_characters(alpha: float, delta: float) -> void:
 		if not seen.has(id):
 			_hp_seen.erase(id)
 			_flash.erase(id)
+	for id: String in _said_seen.keys():
+		if not seen.has(id):
+			_said_seen.erase(id)
+
+
+## Words a dweller said (ADR-0039), last seen count by id; its bubble.
+var _said_seen := {}
+const SPEECH_S := 4.0
+
+
+## A bubble over one who has just said something, for a few seconds.
+func _speech(id: String, sprite: Node2D, e: Dictionary, delta: float) -> void:
+	if not e.has("said"):
+		return
+	var said := int(e["said"])
+	var bubble: Label = sprite.get_node_or_null("Speech")
+	var first := not _said_seen.has(id)  # words said before it came into view are not shown
+	var fresh := not first and int(_said_seen[id]) != said
+	_said_seen[id] = said
+	if fresh:
+		if bubble == null:
+			bubble = Label.new()
+			bubble.name = "Speech"
+			bubble.add_theme_font_override("font", Art.font())
+			bubble.add_theme_font_size_override("font_size", 8)
+			bubble.add_theme_color_override("font_color", Color(0.1, 0.08, 0.06))
+			var box := StyleBoxFlat.new()
+			box.bg_color = Color(0.97, 0.94, 0.86, 0.94)
+			box.set_corner_radius_all(2)
+			box.content_margin_left = 3
+			box.content_margin_right = 3
+			box.content_margin_top = 1
+			box.content_margin_bottom = 1
+			bubble.add_theme_stylebox_override("normal", box)
+			bubble.z_index = 20
+			sprite.add_child(bubble)
+		bubble.text = String(e.get("say", ""))
+		bubble.reset_size()
+		bubble.position = Vector2(-bubble.size.x / 2.0, -38.0 - bubble.size.y)
+		bubble.set_meta("left", SPEECH_S)
+	if bubble:
+		var left := float(bubble.get_meta("left", 0.0)) - delta
+		bubble.set_meta("left", left)
+		if left <= 0.0:
+			bubble.queue_free()
 
 
 ## Asleep in a bed (ADR-0035), seen from above as such games show it: the

@@ -79,6 +79,21 @@ func plan(k: int, rx: int, ry: int) -> Dictionary:
 	return made
 
 
+## A settlement's plan by its id ("kind@rx,ry"); {} if there is none.
+func plan_by_id(id: String) -> Dictionary:
+	var at := id.rfind("@")
+	if at < 0:
+		return {}
+	var kind := id.substr(0, at)
+	var r := id.substr(at + 1).split(",")
+	if r.size() != 2:
+		return {}
+	for k in _kinds.size():
+		if _kinds[k]["id"] == kind:
+			return plan(k, int(r[0]), int(r[1]))
+	return {}
+
+
 ## The settlements of all kinds within `radius` cells of a point (villagers, maps).
 func plans_near(at: Vector2i, radius: int) -> Array:
 	var out := []

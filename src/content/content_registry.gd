@@ -349,6 +349,8 @@ func _validate() -> void:
 				_check_creature(id, d)
 			"settlement":
 				_check_settlement(id, d)
+			"profession":
+				_check_profession(id, d)
 			var other:
 				errors.append("%s: unknown kind '%s'" % [id, other])
 
@@ -386,6 +388,8 @@ func _check_settlement(id: String, d: Dictionary) -> void:
 			errors.append("%s: a building needs a size of 4..12 by 4..10 and a dweller" % id)
 			continue
 		_check_refs(id, "furniture", b.get("furniture", []), "structure")
+		if kind_of(String(b["dweller"])) != "profession":
+			errors.append("%s: a building's dweller '%s' is not a profession" % [id, b["dweller"]])
 		if (b.get("furniture", []) as Array).size() > int(size[0]) - 2:
 			errors.append("%s: more furniture than fits along a building's back wall" % id)
 	var fields: Dictionary = d.get("fields", {})
@@ -399,6 +403,28 @@ func _check_settlement(id: String, d: Dictionary) -> void:
 			if kind_of(String(pen.get(f, ""))) != "structure":
 				errors.append("%s: the pen's '%s' must be a part" % [id, f])
 		_check_weights(id, "pen's animals", pen.get("animals", {}), ["creature"], false)
+
+
+## A villager's trade (ADR-0039): where it works ("field", "pen", "water",
+## "station:<kind>" — a station of that kind in its home), from which hour to
+## which, what it holds while at it, what it says (by situation).
+func _check_profession(id: String, d: Dictionary) -> void:
+	var work := String(d.get("work", ""))
+	if not (work in ["field", "pen", "water"] or (work.begins_with("station:") and work.length() > 8)):
+		errors.append("%s: work is field, pen, water or station:<kind>" % id)
+	var hours: Variant = d.get("hours")
+	if typeof(hours) != TYPE_ARRAY or (hours as Array).size() != 2 or float(hours[0]) < 0.0 or float(hours[1]) > 24.0 \
+			or float(hours[0]) >= float(hours[1]):
+		errors.append("%s: hours is [from, to] within a day" % id)
+	if String(d.get("holds", "")) != "" and kind_of(String(d["holds"])) != "item":
+		errors.append("%s: holds '%s', which is not an item" % [id, d["holds"]])
+	var lines: Variant = d.get("lines", {})
+	if typeof(lines) != TYPE_DICTIONARY:
+		errors.append("%s: lines map a situation to what is said" % id)
+		return
+	for k: Variant in lines:
+		if not String(k) in ["greet", "work", "evening", "rain", "night"] or typeof(lines[k]) != TYPE_ARRAY:
+			errors.append("%s: lines '%s': a situation (greet, work, evening, rain, night) and a list" % [id, k])
 
 
 ## What fills a container from a ground or a creature (ADR-0037):

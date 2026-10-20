@@ -1493,6 +1493,22 @@ func _layer_props(c: Chunk, layer: String, lx: int, ly: int) -> Dictionary:
 	return all.get(layer, {}) if layer != "structure" else all
 
 
+## Opens a closed door for one who is not a player (a dweller, ADR-0039):
+## not a locked one.
+func open_door(location: String, cell: Vector2i) -> void:
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	var c := chunk(location, cx, cy)
+	var lx := cell.x - cx * Chunk.SIZE
+	var ly := cell.y - cy * Chunk.SIZE
+	var props := c.get_props(lx, ly).duplicate()
+	if props.get("open", false) or props.get("locked", false):
+		return
+	props["open"] = true
+	c.set_props(lx, ly, props)
+	_changed(chunk_key(location, cx, cy))
+
+
 ## Whether a roof or a ceiling is over a cell (ADR-0034: out of the rain and the night).
 func sheltered(location: String, x: int, y: int) -> bool:
 	return _part_at(location, x, y, "ceiling") != "" or _part_at(location, x, y, "roof") != ""

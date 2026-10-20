@@ -36,6 +36,19 @@ var bred_at := -1
 var made_at := -1
 ## World ms it last filled a container (a cow milked, ADR-0037).
 var filled_at := -1
+## A villager's place in its settlement (ADR-0039): {"village", "home" (its
+## index), "profession", "water" (a fisher's spot, once found)}.
+var job := {}
+## Not saved — what others see of it: the thing in its hands, its last words
+## and how many it has said, whether it sleeps.
+var held := ""
+var say := ""
+var said := 0
+var said_at := -1
+var asleep := false
+## Not saved: the way it walks (cells where it turns) and where it leads.
+var path: Array[Vector2i] = []
+var path_to := NO_TARGET
 ## Looks of an NPC (as a character's appearance); empty for animals.
 var looks := {}
 ## Its own random sequence, from its id: the same world gives the same lives.
@@ -60,7 +73,7 @@ func to_data() -> Dictionary:
 	return {"kind": kind, "x": pos.x, "y": pos.y, "hx": home.x, "hy": home.y, "state": state,
 		"tx": target.x, "ty": target.y, "run": running, "memory": mem, "last_time": last_time,
 		"looks": looks.duplicate(true), "seed": seed, "health": health, "stomach": stomach.duplicate(true),
-		"owner": owner, "fed": fed, "fed_at": fed_at, "bred_at": bred_at, "made_at": made_at, "filled_at": filled_at}
+		"owner": owner, "fed": fed, "fed_at": fed_at, "bred_at": bred_at, "made_at": made_at, "filled_at": filled_at, "job": job.duplicate()}
 
 
 static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
@@ -83,6 +96,7 @@ static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
 	c.bred_at = int(d.get("bred_at", -1))
 	c.made_at = int(d.get("made_at", -1))
 	c.filled_at = int(d.get("filled_at", -1))
+	c.job = d.get("job", {}) if d.get("job") is Dictionary else {}
 	for e: Variant in d.get("stomach", []):
 		if e is Dictionary:
 			c.stomach.append({"item": String(e.get("item", "")), "count": int(e.get("count", 0)), "at": int(e.get("at", 0))})

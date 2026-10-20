@@ -16,7 +16,9 @@ extends RefCounted
 ## cave drops to the next depth, that depth has a hollow and a way up.
 
 const ID := "base:underground"
-const VERSION := 1
+const VERSION := 2  # 2: ways in caves at both ends, a tunnel where they would be walled in
+## Places tried for a way in a chunk before one is taken where it falls.
+const WAY_TRIES := 24
 ## A chunk holds at most one natural way down to the next depth.
 const NONE := Vector2i(1 << 30, 1 << 30)
 
@@ -102,9 +104,94 @@ func entrance_at(z: int, cx: int, cy: int) -> Vector2i:
 			return Vector2i(int(p[1]), int(p[2]))
 	if _hash3(cx, cy, z, 11) >= _entrance_chance:
 		return NONE
-	var lx := 4 + int(_hash3(cx, cy, z, 12) * (Chunk.SIZE - 8))
-	var ly := 4 + int(_hash3(cx, cy, z, 13) * (Chunk.SIZE - 8))
-	return Vector2i(cx * Chunk.SIZE + lx, cy * Chunk.SIZE + ly)
+	var key := Vector3i(cx, cy, z)
+	if _ways.has(key):
+		return _ways[key]
+	var found := _place_way(z, cx, cy)
+	if _ways.size() > 4096:
+		_ways.clear()
+	_ways[key] = found
+	return found
+
+
+## Ways found (a function of the seed; kept, as chunks round ask again).
+var _ways := {}
+
+
+func _place_way(z: int, cx: int, cy: int) -> Vector2i:
+	# In a cave at both ends (the depth it leads to, and the depth above it
+	# unless that is the surface): a way is not walled in, out of every
+	# passage. A few places are tried, in an order of the seed.
+	var first := NONE
+	for k in WAY_TRIES:
+		var lx := 4 + int(_hash3(cx, cy, z, 12 + 2 * k) * (Chunk.SIZE - 8))
+		var ly := 4 + int(_hash3(cx, cy, z, 13 + 2 * k) * (Chunk.SIZE - 8))
+		var at := Vector2i(cx * Chunk.SIZE + lx, cy * Chunk.SIZE + ly)
+		if first == NONE:
+			first = at
+		if _open_round(at, z) and (z == -1 or _open_round(at, z + 1)):
+			return at
+	return first
+
+
+## Whether a way's place opens on caves, not a pocket: the cell is cave, and
+## so are cells ROUND cells away in at least two of eight directions.
+const ROUND := 5
+
+
+func _open_round(at: Vector2i, z: int) -> bool:
+	if not is_cave(at.x, at.y, z):
+		return false
+	var open := 0
+	for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+			Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
+		if is_cave(at.x + d.x * ROUND, at.y + d.y * ROUND, z):
+			open += 1
+	return open >= 2
+
+
+## How far a tunnel is dug from a way shut in rock to look for a cave.
+const TUNNEL_REACH := 24
+## "z|x|y" -> its tunnel (the same for every chunk that asks).
+var _tunnels := {}
+
+
+## The cells of a tunnel from a way at `at` of depth `z` to the nearest cave
+## out of its hollow, two cells wide; none if it already opens on caves.
+func tunnel(at: Vector2i, z: int) -> Array[Vector2i]:
+	var key := "%d|%d|%d" % [z, at.x, at.y]
+	if _tunnels.has(key):
+		return _tunnels[key]
+	var out: Array[Vector2i] = []
+	if not _open_round(at, z):
+		var to := NONE
+		for r in range(_hollow + 2, TUNNEL_REACH + 1):  # ring by ring, the nearest first
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					if maxi(absi(dx), absi(dy)) != r or to != NONE:
+						continue
+					if is_cave(at.x + dx, at.y + dy, z):
+						to = at + Vector2i(dx, dy)
+			if to != NONE:
+				break
+		if to != NONE:
+			var seen := {}
+			var steps := int(Vector2(to - at).length() * 3.0) + 1
+			for i in steps + 1:
+				var p := Vector2(at).lerp(Vector2(to), float(i) / steps).round()
+				for w: Vector2i in [Vector2i(p), Vector2i(p) + Vector2i(1, 0), Vector2i(p) + Vector2i(0, 1)]:
+					if not seen.has(w):
+						seen[w] = true
+						out.append(w)
+	if _tunnels.size() > 4096:
+		_tunnels.clear()
+	_tunnels[key] = out
+	return out
+
+
+## Whether a cell of a depth is cave (open), as generate() makes it.
+func is_cave(x: int, y: int, z: int) -> bool:
+	return _caves.get_noise_3d(x, y, z * 9.0) > _cave_threshold or absf(_passages.get_noise_3d(x, y, z * 9.0)) < _passage_width
 
 
 func generate(z: int, cx: int, cy: int) -> Chunk:
@@ -114,14 +201,26 @@ func generate(z: int, cx: int, cy: int) -> Chunk:
 		for lx in Chunk.SIZE:
 			var x := cx * Chunk.SIZE + lx
 			var y := cy * Chunk.SIZE + ly
-			var cave := _caves.get_noise_3d(x, y, z * 9.0) > _cave_threshold \
-				or absf(_passages.get_noise_3d(x, y, z * 9.0)) < _passage_width
+			var cave := is_cave(x, y, z)
 			if cave and _water != "" and _pools.get_noise_3d(x, y, z * 9.0) > _water_threshold:
 				c.set_cell("ground", lx, ly, _water)  # an underground pool
 				continue
 			c.set_cell("ground", lx, ly, _floor)
 			if not cave:
 				c.set_cell("structure", lx, ly, _rock_at(x, y, z))
+	# Tunnels from ways shut in rock to the nearest cave: of the ways of this
+	# chunk and its neighbours (a tunnel may cross into it), the cells here.
+	for ny in range(cy - 1, cy + 2):
+		for nx in range(cx - 1, cx + 2):
+			for way: Vector2i in [entrance_at(z, nx, ny), entrance_at(z - 1, nx, ny)]:
+				if way == NONE:
+					continue
+				for t: Vector2i in tunnel(way, z):
+					var lx := t.x - cx * Chunk.SIZE
+					var ly := t.y - cy * Chunk.SIZE
+					if lx >= 0 and ly >= 0 and lx < Chunk.SIZE and ly < Chunk.SIZE:
+						c.set_cell("ground", lx, ly, _floor)
+						c.set_cell("structure", lx, ly, "")
 	# Hollows round the ways: up from this depth (a way down from above ends
 	# here) and down from it (one starts here).
 	var up := entrance_at(z, cx, cy)

@@ -43,7 +43,7 @@
       "health": 15
     },
     {
-      "id": "base:wolf", "kind": "creature", "size": {"half": [0.35, 0.2], "height": 0.5}, "name": "Волк", "behavior": "predator",
+      "id": "base:wolf", "kind": "creature", "size": {"half": [0.35, 0.2], "height": 0.5}, "name": "Волк", "many": "волки", "behavior": "predator",
       "speed": 1.0, "run_speed": 2.2, "sight": 11, "dark_sight": 0.8, "hearing": 12,
       "flee_distance": 0, "home_radius": 14, "think_ticks": 6, "memory_s": 25,
       "health": 14, "territory": 4, "drops": {"base:raw_meat": 2, "base:hide": 1},

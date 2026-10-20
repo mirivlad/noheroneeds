@@ -1658,13 +1658,51 @@
    "variants": 1
   },
   {
+   "id": "base:visual/garnet_amulet",
+   "kind": "visual",
+   "for": "base:garnet_amulet",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    768,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/amethyst_amulet",
+   "kind": "visual",
+   "for": "base:amethyst_amulet",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    800,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/raw_fish",
    "kind": "visual",
    "for": "base:raw_fish",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    768,
+    832,
     0,
     32,
     32
@@ -1683,7 +1721,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    800,
+    864,
     0,
     32,
     32
@@ -1702,7 +1740,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    832,
+    896,
     0,
     32,
     32
@@ -1721,7 +1759,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    864,
+    928,
     0,
     32,
     32
@@ -1740,7 +1778,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    896,
+    960,
     0,
     32,
     32
@@ -1759,7 +1797,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    928,
+    992,
     0,
     32,
     32
@@ -1778,7 +1816,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    960,
+    1024,
     0,
     32,
     32
@@ -1797,7 +1835,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    992,
+    1056,
     0,
     32,
     32
@@ -1816,7 +1854,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1024,
+    1088,
     0,
     32,
     32
@@ -1835,7 +1873,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1056,
+    1120,
     0,
     32,
     32
@@ -1854,7 +1892,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1088,
+    1152,
     0,
     32,
     32
@@ -1873,7 +1911,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1120,
+    1184,
     0,
     32,
     32
@@ -1892,7 +1930,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1152,
+    1216,
     0,
     32,
     32
@@ -1911,7 +1949,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1184,
+    1248,
     0,
     32,
     32
@@ -1930,7 +1968,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1216,
+    1280,
     0,
     32,
     32
@@ -1949,7 +1987,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1248,
+    1312,
     0,
     32,
     32
@@ -1968,7 +2006,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1280,
+    1344,
     0,
     32,
     32
@@ -1987,7 +2025,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1312,
+    1376,
     0,
     32,
     32
@@ -2006,7 +2044,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1344,
+    1408,
     0,
     32,
     32
@@ -2025,7 +2063,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1376,
+    1440,
     0,
     32,
     32

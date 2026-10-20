@@ -227,7 +227,8 @@ func _settle(cx: int, cy: int) -> void:
 			var r := RandomNumberGenerator.new()
 			r.seed = hash([world.world_seed, plan["id"], i])
 			var c := _spawn("base:villager", Levels.SURFACE, bed, villager_looks(r), r.randi())
-			c.job = {"village": plan["id"], "home": i, "profession": String(homes[i]["dweller"])}
+			c.job = {"village": plan["id"], "home": i, "profession": String(homes[i]["dweller"]),
+				"name": String(world.chronicles.dweller_name(plan["id"], i)[0])}
 			c.changed()
 		var pen: Dictionary = plan["pen"]
 		if pen.is_empty() or not chunk.has_point((pen["rect"] as Rect2i).get_center()):
@@ -889,6 +890,9 @@ func _water_spot(from: Vector2i) -> Vector2i:
 ## evening, to bed at night; it walks there by a found way, opening doors;
 ## at work it works (its tool in its hands); it speaks to one who comes near.
 func _dweller(c: Creature, def: Dictionary) -> void:
+	if not c.job.has("name"):  # settled before dwellers had names (ADR-0042)
+		c.job["name"] = String(world.chronicles.dweller_name(String(c.job["village"]), int(c.job.get("home", 0)))[0])
+		c.changed()
 	var attacker := _attacker(c, 12.0)
 	if not attacker.is_empty():
 		var away := _away_from(c, attacker[0], 16.0)
@@ -975,6 +979,10 @@ func _speak(c: Creature, prof: Dictionary, phase: String) -> void:
 	elif phase == "work" and c.rand(_tick + 1) < 0.6:
 		key = "work"
 	var pick: Array = lines.get(key, lines.get("greet", []))
+	# By day, now and then of what it asks or of the village's news (ADR-0042).
+	var told := world.chronicles.gossip(c, c.rand(_tick + 3)) if phase != "night" else ""
+	if told != "":
+		pick = [told]
 	if pick.is_empty():
 		return
 	c.say = String(pick[int(c.rand(_tick + 2) * pick.size()) % pick.size()])

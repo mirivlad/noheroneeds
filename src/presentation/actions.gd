@@ -16,7 +16,7 @@ class_name Actions
 ##   food in the hands ("food")       — is eaten (ADR-0026);
 ##   an animal and what it eats       — it is fed, and tamed (ADR-0030);
 ##   a bed                            — is slept in (ADR-0035);
-##   a dweller of a trade             — is traded with (ADR-0040);
+##   a dweller                        — is talked with (ADR-0042), traded with (ADR-0040);
 ##   a container and water, a cow     — is filled; a liquid poured out, a
 ##                                     crop watered, milk drunk (ADR-0037);
 ##   anything                         — may be looked at.
@@ -55,11 +55,14 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			hit["unarmed"] = true  # the free hand
 		var with := String(content.get_def(held).get("name", "")) if w.get("kind") == "melee" else "рукой"
 		out.append({"id": "strike", "name": "Ударить (%s)" % with, "request": hit, "primary": w.get("kind") == "melee"})
-	# A dweller of a trade that trades (ADR-0040): E — to trade, unless asleep.
-	if living and entity.get("kind") == "creature" and String(entity.get("profession", "")) != "" \
-			and not content.get_def(String(entity["profession"])).get("trade", {}).is_empty() and not entity.get("asleep", false):
-		out.append({"id": "trade", "name": "Торговать", "quick": true, "local": "trade",
-			"request": {"type": "trade_look", "creature": target["id"]}})
+	# A dweller (ADR-0042): E — to talk (what it asks, what its village
+	# remembers); one of a trade that trades (ADR-0040) is traded with too.
+	if living and entity.get("kind") == "creature" and String(entity.get("profession", "")) != "" and not entity.get("asleep", false):
+		out.append({"id": "talk", "name": "Поговорить", "quick": true, "local": "talk",
+			"request": {"type": "talk", "creature": target["id"]}})
+		if not content.get_def(String(entity["profession"])).get("trade", {}).is_empty():
+			out.append({"id": "trade", "name": "Торговать", "local": "trade",
+				"request": {"type": "trade_look", "creature": target["id"]}})
 	# Husbandry (ADR-0030): what an animal eats, held out, is fed to it.
 	if living and entity.get("kind") == "creature" and held != "" \
 			and (content.get_def(String(entity.get("creature", ""))).get("tame", {}).get("food", []) as Array).has(held):
@@ -217,7 +220,9 @@ static func describe(content: ContentRegistry, target: Dictionary, me := "") -> 
 			match String(e.get("kind", "")):
 				"creature":
 					name = String(content.get_def(String(e.get("creature", ""))).get("name", "существо"))
-					if String(e.get("profession", "")) != "":  # a dweller: by its trade (ADR-0039)
+					if String(e.get("profession", "")) != "":  # a dweller: its name and trade (ADR-0039, ADR-0042)
+						if String(e.get("name", "")) != "":
+							name = String(e["name"])
 						name += " — " + String(content.get_def(String(e["profession"])).get("name", "")).to_lower()
 					if String(e.get("owner", "")) != "":
 						name += " (ваша)" if me != "" and e["owner"] == me else " (чья-то)"

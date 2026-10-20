@@ -351,6 +351,12 @@ func _validate() -> void:
 				_check_settlement(id, d)
 			"profession":
 				_check_profession(id, d)
+			"names":
+				for f: String in ["male", "female", "villages"]:
+					if typeof(d.get(f)) != TYPE_ARRAY or (d[f] as Array).is_empty():
+						errors.append("%s: names need lists male, female and villages" % id)
+			"story":
+				_check_story(id, d)
 			var other:
 				errors.append("%s: unknown kind '%s'" % [id, other])
 
@@ -439,6 +445,54 @@ func _check_profession(id: String, d: Dictionary) -> void:
 	for k: Variant in lines:
 		if not String(k) in ["greet", "work", "evening", "rain", "night"] or typeof(lines[k]) != TYPE_ARRAY:
 			errors.append("%s: lines '%s': a situation (greet, work, evening, rain, night) and a list" % [id, k])
+
+
+## A story a village's chronicle grows by (ADR-0042): what it grows from
+## ("founding", "predators", "season:<name>", "dweller_killed",
+## "dweller_hurt"), the entry it writes, and maybe a request one of the
+## dwellers makes of whoever asks: hunt (a kind seen by the village, near
+## it), fetch (an item, so many), find (a thing lost in a cave near it).
+const STORY_FROM := ["founding", "predators", "season:spring", "season:summer", "season:autumn", "season:winter",
+	"dweller_killed", "dweller_hurt"]
+
+
+func _check_story(id: String, d: Dictionary) -> void:
+	if not String(d.get("from", "")) in STORY_FROM:
+		errors.append("%s: from is one of %s" % [id, ", ".join(STORY_FROM)])
+	if typeof(d.get("entry")) != TYPE_STRING or String(d["entry"]) == "":
+		errors.append("%s: a story writes an entry" % id)
+	if String(d.get("needs", "")) not in ["", "cave"]:
+		errors.append("%s: needs is \"cave\" or nothing" % id)
+	if not d.has("request"):
+		return
+	var r: Variant = d["request"]
+	if typeof(r) != TYPE_DICTIONARY:
+		errors.append("%s: request is {kind, asker, ...}" % id)
+		return
+	for f: String in ["ask", "doing", "done", "goal", "deed"]:
+		if typeof(r.get(f)) != TYPE_STRING:
+			errors.append("%s: a request says %s" % [id, f])
+	r["count"] = int(r.get("count", 1))
+	r["reward"] = int(r.get("reward", 0))
+	r["radius"] = int(r.get("radius", 48))
+	var asker := String(r.get("asker", ""))
+	if not (asker == "any" or asker.begins_with("work:") or kind_of(asker) == "profession"):
+		errors.append("%s: asker is any, work:<place> or a profession" % id)
+	match String(r.get("kind", "")):
+		"hunt":
+			if d["from"] != "predators":
+				errors.append("%s: a hunt grows from predators seen" % id)
+		"fetch":
+			if kind_of(String(r.get("item", ""))) != "item" or r["count"] < 1:
+				errors.append("%s: fetch needs an item and a count" % id)
+		"find":
+			if d.get("needs") != "cave":
+				errors.append("%s: a thing to find is lost in a cave (needs cave)" % id)
+			_check_refs(id, "items", r.get("items", []), "item")
+			if (r.get("items", []) as Array).is_empty():
+				errors.append("%s: find needs items to lose" % id)
+		var k:
+			errors.append("%s: unknown request kind '%s'" % [id, k])
 
 
 ## What fills a container from a ground or a creature (ADR-0037):

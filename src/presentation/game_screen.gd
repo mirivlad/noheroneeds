@@ -1108,7 +1108,11 @@ func _update_hud() -> void:
 	if deaths > _deaths_seen and _deaths_seen >= 0:
 		_note = "вы погибли и вернулись к началу"
 	_deaths_seen = deaths if client.own.has("deaths") else _deaths_seen
-	hud.text = clock + level + "     " + health + "  ".join(bag)
+	var fed := ""
+	if client.own.has("needs"):  # ADR-0032: one's own, from the server
+		var satiety := int(client.own["needs"].get("satiety", 100))
+		fed = "Сытость %d%s     " % [satiety, " — голод!" if satiety <= 0 else (" — голодно" if satiety < int(Needs.HUNGRY) else "")]
+	hud.text = clock + level + "     " + health + fed + "  ".join(bag)
 	var info := PackedStringArray()
 	if hosted:
 		info.append("сервер: порт %d%s" % [hosted.port, _lan_address()])

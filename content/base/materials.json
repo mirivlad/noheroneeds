@@ -9,20 +9,20 @@
     {"id": "base:leather", "kind": "item", "name": "Кожа", "stack": 20},
     {"id": "base:wool", "kind": "item", "name": "Шерсть", "stack": 50},
     {"id": "base:cloth", "kind": "item", "name": "Ткань", "stack": 20},
-    {"id": "base:egg", "kind": "item", "name": "Яйцо", "stack": 30, "food": {"heal": 2}},
-    {"id": "base:cooked_meat", "kind": "item", "name": "Жареное мясо", "stack": 20, "food": {"heal": 6}},
+    {"id": "base:egg", "kind": "item", "name": "Яйцо", "stack": 30, "food": {"heal": 2, "satiety": 12}},
+    {"id": "base:cooked_meat", "kind": "item", "name": "Жареное мясо", "stack": 20, "food": {"heal": 6, "satiety": 35}},
     {"id": "base:iron_ingot", "kind": "item", "name": "Железный слиток", "stack": 50},
     {"id": "base:copper_ingot", "kind": "item", "name": "Медный слиток", "stack": 50},
     {"id": "base:hoe", "kind": "item", "name": "Мотыга", "stack": 1, "equip_slot": "main_hand", "tools": ["tilling"], "swing": "thrust"},
     {"id": "base:wheat_seeds", "kind": "item", "name": "Семена пшеницы", "stack": 99, "plants": "base:wheat_crop"},
     {"id": "base:carrot_seeds", "kind": "item", "name": "Семена моркови", "stack": 99, "plants": "base:carrot_crop"},
     {"id": "base:wheat", "kind": "item", "name": "Пшеница", "stack": 50},
-    {"id": "base:carrot", "kind": "item", "name": "Морковь", "stack": 50, "food": {"heal": 2}},
-    {"id": "base:bread", "kind": "item", "name": "Хлеб", "stack": 20, "food": {"heal": 5}},
+    {"id": "base:carrot", "kind": "item", "name": "Морковь", "stack": 50, "food": {"heal": 2, "satiety": 10}},
+    {"id": "base:bread", "kind": "item", "name": "Хлеб", "stack": 20, "food": {"heal": 5, "satiety": 40}},
     {"id": "base:fishing_rod", "kind": "item", "name": "Удочка", "stack": 1, "equip_slot": "main_hand", "tools": ["fishing"], "swing": "cast"},
     {"id": "base:raw_fish", "kind": "item", "name": "Плотва", "stack": 20},
     {"id": "base:perch", "kind": "item", "name": "Окунь", "stack": 20},
     {"id": "base:pike", "kind": "item", "name": "Щука", "stack": 10},
-    {"id": "base:cooked_fish", "kind": "item", "name": "Жареная рыба", "stack": 20, "food": {"heal": 4}}
+    {"id": "base:cooked_fish", "kind": "item", "name": "Жареная рыба", "stack": 20, "food": {"heal": 4, "satiety": 25}}
   ]
 }

@@ -197,8 +197,11 @@ func _validate() -> void:
 				if d.has("plants") and kind_of(String(d["plants"])) != "plant":
 					errors.append("%s: plants names a plant" % id)
 				# Food (ADR-0026): eaten, it heals.
-				if d.has("food") and (typeof(d["food"]) != TYPE_DICTIONARY or int(d["food"].get("heal", 0)) < 1):
-					errors.append("%s: food needs heal of at least 1" % id)
+				# Food heals, fills (ADR-0032 satiety), or both.
+				if d.has("food") and (typeof(d["food"]) != TYPE_DICTIONARY or int(d["food"].get("heal", 0)) < 0
+						or float(d["food"].get("satiety", 0)) < 0.0
+						or int(d["food"].get("heal", 0)) + float(d["food"].get("satiety", 0)) <= 0.0):
+					errors.append("%s: food needs heal or satiety above 0" % id)
 				d["stack"] = int(d.get("stack", 1))
 				if d["stack"] < 1:
 					errors.append("%s: stack must be at least 1" % id)

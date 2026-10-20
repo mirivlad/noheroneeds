@@ -254,6 +254,8 @@ func _step() -> void:
 	world.creatures.step(tick)
 	_lap("creatures")
 	world.combat.step(tick)
+	if tick % TICK_RATE == 0:
+		world.needs.step()
 	_lap("combat")
 	world.commit_async(wait_for_disk)
 	world.flush_state(STATE_ROWS_PER_TICK)
@@ -770,6 +772,14 @@ func _send_snapshot(s: Session) -> void:
 			changed[mine_n] = {}
 		changed[mine_n]["inventory"] = world.inventory(s.character_id).stacks.duplicate()
 		changed[mine_n]["friends"] = world.friends_of(s.character_id).keys()
+	# One's needs (ADR-0032) go only to oneself, when they changed.
+	var needs_v := world.needs.version(s.character_id)
+	if s.known.get("~needs", -1) != needs_v:
+		sent["~needs"] = needs_v
+		var mine_n := _net_id(s, s.character_id)
+		if not changed.has(mine_n):
+			changed[mine_n] = {}
+		changed[mine_n]["needs"] = world.needs.shown(s.character_id)
 	# Who left the view: only when it was worked out again or something went.
 	for id: String in (s.shown.keys() if s.view_built == tick or _gone_tick == tick else []):
 		var r: Replica = view.get(id)

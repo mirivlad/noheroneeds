@@ -1010,6 +1010,12 @@ those base assets can be found at:
 http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 ```
 
+## Лестница из пещеры — сгенерирована (tools/art/generated/cave_ladder)
+
+- Авторы: модели: Stability AI SDXL Base 1.0, nerijs Pixel Art XL, madebyollin SDXL VAE fp16-fix; очистка и палитра [LPC] Wooden Stairs
+- Лицензии: CreativeML OpenRAIL++-M / CreativeML OpenRAIL-M (модели)
+- https://huggingface.co/nerijs/pixel-art-xl
+
 ## [LPC] Thatched-roof Cottage (крыша)
 
 - Авторы: bluecarrot16

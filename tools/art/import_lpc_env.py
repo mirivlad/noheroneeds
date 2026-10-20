@@ -449,7 +449,8 @@ PROPS = {
     "base:wood_column": ("lpc-windows-doors/lpc-windows-doors-v2/windows-doors.png", (960, 0, 32, 64), {}),
     "base:chest": ("chest2.png", (0, 0, 32, 32), {"open": (32, 0, 32, 32)}),
     "base:mine_ladder": ("lpc-mine/lpc-mine/mine.png", (0, 288, 32, 96), {}),
-    "base:cave_climb": ("wooden_stairs.png", (0, 320, 32, 64), {}),  # a way up: stairs, read as such
+    # A ladder out of a cave: generated (docs/art/AI_ASSETS.md), LPC wood colours.
+    "base:cave_climb": (str(ROOT / "tools" / "art" / "generated" / "cave_ladder" / "cave_ladder.png"), (0, 0, 32, 74), {}),
     "base:headframe": ("lpc-mine/lpc-mine/mine.png", (0, 0, 128, 224), {}),
     "base:workbench": ("house_inside_1.png", (96, 32, 32, 64), {}),
     "base:bed": ("house_inside_1.png", (72, 172, 48, 88), {}),
@@ -714,6 +715,9 @@ PACK_CREDITS = [
     ("[LPC] Farming tilesets (пашня, посевы, урожай, семена)", "lpc-farm/submission_daneeklu/readme.txt"),
 ]
 FILE_CREDITS = [
+    ("Лестница из пещеры — сгенерирована (tools/art/generated/cave_ladder)",
+     "модели: Stability AI SDXL Base 1.0, nerijs Pixel Art XL, madebyollin SDXL VAE fp16-fix; очистка и палитра [LPC] Wooden Stairs",
+     "CreativeML OpenRAIL++-M / CreativeML OpenRAIL-M (модели)", "https://huggingface.co/nerijs/pixel-art-xl"),
     ("[LPC] Thatched-roof Cottage (крыша)", "bluecarrot16", "CC-BY-SA 3.0 / GPL 3.0",
      "https://opengameart.org/content/lpc-thatched-roof-cottage"),
     ("[LPC] Wooden Stairs (лестница)", "Nyom", "CC-BY-SA 4.0", "https://opengameart.org/content/lpc-wooden-stairs"),

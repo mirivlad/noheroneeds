@@ -55,9 +55,9 @@ var _chunk_nodes := {}
 ## cell they stand on, so what is near a point is found without looking at
 ## them all (fading, picking).
 var _cell_sprites := {}
-## Tops of rock deep in the mass (rock north, south and to both northern
-## corners): drawn as tiles, not as sprites — nothing ever goes in front of or
-## behind them, and a cave is mostly such rock (thousands of sprites).
+## Cave rock: a tile in its own cell (its top, or its face where a passage
+## is south), never over a passage, so nothing goes in front of or behind it
+## — tiles, not sprites, and a cave is mostly rock (thousands of them).
 var _rock_tops := TileMapLayer.new()
 ## visual id -> [source id, first atlas cell] of its tops.
 var _rock_top_tiles := {}
@@ -719,7 +719,7 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 	var ceiling := ctx.at(ctx.ceiling, i)
 	if roof != "" or ceiling != "" or _cover_sprites.has(cell):
 		_set_cover(cell, roof if roof != "" else ceiling, "roof" if roof != "" else "ceiling")
-	_rock_tops.erase_cell(cell + Vector2i(0, -STOREY_CELLS))
+	_rock_tops.erase_cell(cell)
 	var c := ctx.chunk
 	for layer in ["cover", "structure"]:
 		var id := ctx.at(ctx.cover, i) if layer == "cover" else ctx.at(ctx.structure, i)
@@ -734,13 +734,11 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 				north = ctx.group(lx, ly - 1)
 				variant = (1 if north == own else 0) | (2 if ctx.group(lx + 1, ly) == own else 0) \
 					| (4 if ctx.group(lx, ly + 1) == own else 0) | (8 if ctx.group(lx - 1, ly) == own else 0)
-			if layer == "structure" and own != 0 and own == _group_codes.get("rock", -1) and _rock_top_tiles.has(id) \
-					and variant & 5 == 5 and ctx.group(lx - 1, ly - 1) == own and ctx.group(lx + 1, ly - 1) == own \
-					and ctx.group(lx, ly - STOREY_CELLS) == own:
-				# Rock deep in the mass: nobody can stand where its top is drawn or
-				# just behind it, nor in front of its face — a tile, not a sprite.
+			if layer == "structure" and own != 0 and own == _group_codes.get("rock", -1) and _rock_top_tiles.has(id):
+				# Cave rock is drawn in its own cell, flat (its face too, where a
+				# passage is south): it never stands over a passage — a tile.
 				var t: Array = _rock_top_tiles[id]
-				_rock_tops.set_cell(cell + Vector2i(0, -STOREY_CELLS), t[0], (t[1] as Vector2i) + Vector2i(variant, 0))
+				_rock_tops.set_cell(cell, t[0], (t[1] as Vector2i) + Vector2i(variant, 0))
 				continue
 			var props := c.get_props(lx, ly)
 			var state := "open" if props.get("open", false) else ""
@@ -1049,10 +1047,8 @@ func pick_target(point: Vector2) -> Dictionary:
 	if not best.is_empty():
 		return best
 	var cell := under
-	if _rock_tops.get_cell_source_id(cell) != -1:  # the top of rock deep in the mass, drawn as a tile
-		var rock := cell + Vector2i(0, STOREY_CELLS)
-		return {"kind": "part", "layer": "structure", "id": _cell_layer(rock, "structure"), "cell": rock,
-			"location": client.location}
+	if _rock_tops.get_cell_source_id(cell) != -1:  # cave rock, drawn as a tile in its own cell
+		return part_target(cell)
 	var flat := _cell_layer(cell, "cover")
 	if flat != "":
 		return {"kind": "part", "layer": "cover", "id": flat, "cell": cell, "location": client.location}

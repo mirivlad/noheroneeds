@@ -1277,6 +1277,13 @@ func _update_target() -> void:
 		# A pick or an axe works on the first solid thing toward the cursor,
 		# within three cells, not on what the cursor is over (Reach).
 		var hit := Reach.first_solid(client.position, Vector2(aim), client.is_solid)
+		# What the cursor is over (a crown counts as its tree) is taken when the
+		# way to it is clear: the line to its cell meets nothing before it.
+		if target.get("kind") == "part" and client.is_solid(target["cell"].x, target["cell"].y):
+			var middle := Vector2((target["cell"] as Vector2i) * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
+			if Reach.first_solid(client.position, middle, client.is_solid) == target["cell"]:
+				hit = target["cell"]
+				aim = Vector2i(middle)
 		if hit != Reach.NONE:
 			target = view.part_target(hit)
 			target["aim"] = aim

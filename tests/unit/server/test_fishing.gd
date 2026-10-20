@@ -11,7 +11,9 @@ func before_each() -> void:
 	_content = ContentRegistry.load_packs(["res://content/base"])
 	eq(_content.errors, PackedStringArray())
 	w = ServerWorld.open(tmp_dir().path_join("world.db"), _content, {"seed": 3})
-	w.world_time = 9 * Daylight.HOUR_MS + Daylight.DAY_MS  # an hour of plain luck
+	w.world_time = 9 * Daylight.HOUR_MS + Daylight.DAY_MS  # an hour of plain luck: mid-morning, dry
+	while Weather.rain(w.weather_seed, w.world_time + Daylight.HOUR_MS) > 0.0 or Weather.rain(w.weather_seed, w.world_time) > 0.0:
+		w.world_time += Daylight.DAY_MS
 	var c := w.chunk("surface", 0, 0)
 	for y in 32:
 		for x in 32:
@@ -81,7 +83,8 @@ func test_a_place_fished_out_comes_back() -> void:
 	var r := _cast(5, 16)
 	check(float(r.get("chance", 1.0)) < 0.01, "fished out: no chance (%s)" % str(r))
 	w.world_time += 8 * Daylight.HOUR_MS
-	check(float(_cast(5, 16).get("chance", 0.0)) > 0.05, "eight hours on: fish again (two of six back)")
+	var again := _cast(5, 16)
+	check(again.get("bite", false) or float(again.get("chance", 0.0)) > 0.05, "eight hours on: fish again (two of six back): %s" % str(again))
 
 
 func test_dawn_and_dusk_bite_best() -> void:

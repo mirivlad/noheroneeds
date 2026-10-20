@@ -178,3 +178,30 @@ func test_a_hide_becomes_leather_and_leather_armour() -> void:
 	eq(_req(a, {"type": "craft", "recipe": "base:make_leather_armor", "count": 1}).get("made"), {"base:leather_armor": 1})
 	check(_req(a, {"type": "equip", "item": "base:leather_armor"}).get("ok", false), "worn in its own slot")
 	eq(w.combat.armor_of(a), 2)
+
+
+func test_a_pick_digs_the_nearest_rock_toward_the_aim_within_three_cells() -> void:
+	var a := _player("Аня")  # at (3, 3)
+	var c := w.chunk("surface", 0, 0)
+	for x in [5, 6]:
+		c.set_cell("structure", x, 3, "base:rock")
+	c.set_cell("structure", 3, 8, "base:rock")
+	w.grant(a, "base:pickaxe", 1)
+	_req(a, {"type": "hold", "item": "base:pickaxe"})
+	var dig := func(x: int, y: int, aim := Vector2i(-1, -1)) -> Dictionary:
+		w.tick += 40
+		w.combat.step(w.tick)
+		var r := {"type": "gather", "location": "surface", "x": x, "y": y, "layer": "structure", "item": "base:pickaxe"}
+		if aim.x >= 0:
+			r["ax"] = aim.x
+			r["ay"] = aim.y
+		return _req(a, r)
+	eq(dig.call(6, 3).get("reason"), "in_the_way", "not the rock behind another")
+	eq(dig.call(6, 3, Vector2i(6 * 256 + 128, 3 * 256 + 128)).get("reason"), "in_the_way", "aimed at it either")
+	check(dig.call(5, 3, Vector2i(6 * 256 + 128, 3 * 256 + 128)).get("ok", false), "the nearer one, aimed beyond it")
+	while c.get_cell("structure", 5, 3) != "":
+		dig.call(5, 3)
+	check(dig.call(6, 3).get("ok", false), "dug through: the next one is reached")
+	eq(dig.call(3, 8).get("reason"), "too_far", "five cells away: out of reach")
+	check(Reach.digs(_content, "base:pickaxe") and Reach.digs(_content, "base:axe"), "a pick and an axe dig by the line")
+	check(not Reach.digs(_content, "base:hoe") and not Reach.digs(_content, "base:fishing_rod"), "a hoe and a rod work where one points")

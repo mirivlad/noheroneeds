@@ -1053,6 +1053,19 @@ func pick_target(point: Vector2) -> Dictionary:
 	return {"kind": "ground", "id": ground_at(client.location, cell), "cell": cell, "location": client.location}
 
 
+## The solid thing on a cell as a target: its part, else its plant (a tree).
+func part_target(cell: Vector2i) -> Dictionary:
+	var layer := "structure" if _cell_layer(cell, "structure") != "" else "cover"
+	var out := {"kind": "part", "layer": layer, "id": _cell_layer(cell, layer), "cell": cell, "location": client.location}
+	var at_cell := props_at(cell)
+	var worn: Dictionary = at_cell if layer == "structure" else at_cell.get(layer, {})
+	if int(worn.get("damage", 0)) > 0:
+		out["damage"] = int(worn["damage"])
+	if int(worn.get("work", 0)) > 0:
+		out["work"] = int(worn["work"])
+	return out
+
+
 func _cell_layer(cell: Vector2i, layer: String) -> String:
 	var cx := floori(cell.x / float(Chunk.SIZE))
 	var cy := floori(cell.y / float(Chunk.SIZE))

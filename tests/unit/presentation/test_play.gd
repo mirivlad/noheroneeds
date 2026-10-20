@@ -468,3 +468,26 @@ func test_the_weather_on_the_screen_follows_the_sky() -> void:
 	eq(g.weather.rain, 0.0, "no rain on the screen when it does not rain")
 	eq(g.weather.snow, 0.0)
 	check(g.hud.text.begins_with("Весна, день"), "the season in the clock line: " + g.hud.text)
+
+
+func test_a_pick_aims_at_the_nearest_rock_toward_the_cursor() -> void:
+	var id := g.client.character_id
+	var me := _me()
+	var c := w.chunk("surface", floori(me.x / 32.0), floori(me.y / 32.0))
+	for dx in [2, 3]:
+		c.set_cell("structure", posmod(me.x + dx, 32), posmod(me.y, 32), "base:rock")
+	w._changed(ServerWorld.chunk_key("surface", floori(me.x / 32.0), floori(me.y / 32.0)))
+	w.grant(id, "base:pickaxe", 1)
+	_frames_until(func() -> bool: return g.client.is_solid(me.x + 3, me.y) and g.client.inventory().has("base:pickaxe"))
+	g.hotbar.put(0, "base:pickaxe", -1)
+	_key(KEY_1)
+	_move_mouse(_screen(me + Vector2i(6, 0)))
+	_frames(3)
+	eq(g.target.get("cell"), me + Vector2i(2, 0), "the nearest rock toward the cursor, not what is under it")
+	var dig := Actions.primary(g.actions)
+	eq(dig.get("id"), "gather")
+	eq(int(dig["request"]["x"]), me.x + 2)
+	check(dig["request"].has("ax"), "with the line it was aimed along")
+	_move_mouse(_screen(me + Vector2i(0, -6)))
+	_frames(3)
+	check(g.target.get("kind") != "part" or g.target.get("cell") != me + Vector2i(2, 0), "another way: not that rock")

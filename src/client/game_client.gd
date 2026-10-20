@@ -367,6 +367,11 @@ func _reconcile(server_pos: Vector2i, ack: int) -> void:
 	has_position = true
 
 
+## Whether a cell of the client's location is solid, as far as it knows.
+func is_solid(x: int, y: int) -> bool:
+	return _solid(x, y)
+
+
 func _solid(x: int, y: int) -> bool:
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)

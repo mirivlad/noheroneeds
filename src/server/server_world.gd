@@ -1589,6 +1589,15 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var g: Dictionary = content.get_def(thing).get("gather", {}) if thing != "" else {}
 	if g.is_empty():
 		return {"ok": false, "reason": "nothing_to_gather"}
+	# Something solid (rock, a tree) is reached as Reach says: the first
+	# solid from the digger toward the aim, within three cells.
+	if layer != "ground" and present.has(actor) and is_solid(loc, x, y):
+		var aim := Vector2(float(r.get("ax", x * Movement.UNIT + Movement.UNIT / 2)), float(r.get("ay", y * Movement.UNIT + Movement.UNIT / 2))) \
+			if typeof(r.get("ax")) in [TYPE_INT, TYPE_FLOAT] and typeof(r.get("ay")) in [TYPE_INT, TYPE_FLOAT] \
+			else Vector2(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2)
+		var hit := Reach.first_solid(present[actor]["pos"], aim, func(sx: int, sy: int) -> bool: return is_solid(loc, sx, sy))
+		if hit != Vector2i(x, y):
+			return {"ok": false, "reason": "too_far" if hit == Reach.NONE else "in_the_way"}
 	var why := check_held(actor, r)
 	if why != "":
 		return {"ok": false, "reason": why}

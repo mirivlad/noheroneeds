@@ -214,3 +214,22 @@ func test_energy_runs_down_and_a_bed_brings_it_back() -> void:
 	check(w.needs.energy_of(a) > 95.0, "rested: %.1f" % w.needs.energy_of(a))
 	check(not w.needs.asleep(a), "and up by oneself")
 	eq(_req(a, bed.duplicate()).get("reason"), "not_tired", "rested ones do not lie down")
+
+
+func test_winter_is_colder_and_summer_nights_milder() -> void:
+	var a := _player()
+	_clear_round(a)
+	for slot: String in (w.present[a]["appearance"].get("worn", {}) as Dictionary).keys():
+		_req(a, {"type": "unequip", "slot": slot})
+	var at := func(season: int, night: bool) -> float:
+		for h in 24 * Seasons.DAYS:
+			var t := season * Seasons.SEASON_MS + h * Daylight.HOUR_MS + Daylight.HOUR_MS / 2
+			if Daylight.is_night(t) == night and Weather.precipitation(w.weather_seed, t) == 0.0:
+				w.world_time = t
+				return w.needs.warming(a)
+		return 0.0
+	eq(at.call(Seasons.SPRING, true), -Needs.NIGHT_CHILL)
+	eq(at.call(Seasons.SUMMER, true), -Needs.NIGHT_CHILL * 0.5, "summer nights half as cold")
+	check(at.call(Seasons.WINTER, true) < -Needs.NIGHT_CHILL * 2.0, "winter nights much colder")
+	check(at.call(Seasons.WINTER, false) < 0.0, "and winter days cold too")
+	eq(at.call(Seasons.SUMMER, false), Needs.DAY_WARMS, "a summer day warms")

@@ -64,3 +64,35 @@ func test_rain_and_fog_shorten_sight() -> void:
 	check(rainy >= 0.0, "a downpour somewhere")
 	check(Weather.sight(SEED, rainy) <= 0.66, "in a downpour, two thirds")
 	eq(Weather.sight(SEED, 13.0 * Daylight.HOUR_MS) if Weather.kind(SEED, 13.0 * Daylight.HOUR_MS) == "clear" else 1.0, 1.0)
+
+
+func test_the_year_goes_round_spring_first() -> void:
+	eq(Seasons.of(0.0), Seasons.SPRING)
+	eq(Seasons.name_of(Daylight.START_MS), "весна", "a world begins in spring")
+	eq(Seasons.day_of(Daylight.START_MS), 1)
+	eq(Seasons.of(Seasons.SEASON_MS * 3.5), Seasons.WINTER)
+	eq(Seasons.of(Seasons.YEAR_MS + 1.0), Seasons.SPRING, "and round again")
+	eq(Seasons.day_of(Seasons.SEASON_MS + 2.5 * Daylight.DAY_MS), 3)
+	eq(Seasons.winter_ms(0.0, Seasons.SEASON_MS * 3.0), 0.0, "no winter before it")
+	eq(Seasons.winter_ms(Seasons.SEASON_MS * 2.5, Seasons.YEAR_MS * 2.0 + Daylight.DAY_MS), 2.0 * Seasons.SEASON_MS, "two winters")
+	var worst := 0.0
+	var edge := float(Seasons.SEASON_MS)
+	for m in range(-24 * 60, 24 * 60):
+		var a := edge + m * 60000.0
+		worst = maxf(worst, absf(Weather.wetness(SEED, a + 60000.0) - Weather.wetness(SEED, a)))
+	check(worst < 0.01, "a season comes in without a jump: %.4f" % worst)
+
+
+func test_winter_snows_instead_and_crops_stand_still() -> void:
+	var snowy := -1.0
+	for h in range(int(3 * Seasons.SEASON_MS / Daylight.HOUR_MS), int(Seasons.YEAR_MS / Daylight.HOUR_MS)):
+		if Weather.precipitation(SEED, h * Daylight.HOUR_MS) > 0.5:
+			snowy = h * Daylight.HOUR_MS
+			break
+	check(snowy > 0.0, "it comes down in winter too")
+	eq(Weather.rain(SEED, snowy), 0.0, "not as rain")
+	check(Weather.snow(SEED, snowy) > 0.5 and Weather.kind(SEED, snowy) == "snow", "as snow")
+	var wheat := {"crop": {"stages": 49, "grow_hours": 48.0}}
+	var autumn_end := 3.0 * Seasons.SEASON_MS - 10.0 * Daylight.HOUR_MS
+	eq(Crops.stage(wheat, autumn_end, autumn_end + 10.0 * Daylight.HOUR_MS + Seasons.SEASON_MS), 10,
+		"sown ten hours before winter: ten hours' growing by spring")

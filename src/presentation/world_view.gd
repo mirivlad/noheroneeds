@@ -364,6 +364,8 @@ func _update_light() -> void:
 	if client.z >= 0:  # an overcast sky is darker and greyer (ADR-0033)
 		var dim := 1.0 - 0.25 * Weather.clouds(client.weather_seed, client.world_time)
 		_tint.color = Color(_tint.color.r * dim, _tint.color.g * dim, _tint.color.b * (dim * 0.5 + 0.5))
+		if Seasons.of(client.world_time) == Seasons.WINTER:  # a colder light (ADR-0036)
+			_tint.color = Color(_tint.color.r * 0.86, _tint.color.g * 0.92, _tint.color.b)
 	var dark := 1.0 - Daylight.sun(client.world_time) if client.z >= 0 else 1.0  # below, always night
 	for i in range(_lights.size() - 1, -1, -1):
 		var l := _lights[i]

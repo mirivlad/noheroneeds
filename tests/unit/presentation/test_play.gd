@@ -453,3 +453,18 @@ func test_a_bed_is_slept_in_seen_lying_and_left_by_walking() -> void:
 	_frames_until(func() -> bool: return not bool(g.client.own.get("asleep", false)))
 	_frames(3)
 	check(doll.get_node_or_null("Blanket") == null or doll.get_node("Blanket").is_queued_for_deletion(), "standing again")
+
+
+func test_the_weather_on_the_screen_follows_the_sky() -> void:
+	var seed := g.client.weather_seed
+	var t := -1.0
+	for h in 24 * 60:
+		var at := (h + 0.5) * Daylight.HOUR_MS
+		if Weather.rain(seed, at) == 0.0 and Weather.snow(seed, at) == 0.0 and Weather.fog(seed, at) == 0.0:
+			t = at
+			break
+	w.world_time = int(t)
+	_frames(30)
+	eq(g.weather.rain, 0.0, "no rain on the screen when it does not rain")
+	eq(g.weather.snow, 0.0)
+	check(g.hud.text.begins_with("Весна, день"), "the season in the clock line: " + g.hud.text)

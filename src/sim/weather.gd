@@ -24,12 +24,22 @@ static func wetness(seed: int, time_ms: float) -> float:
 	var i := floori(k)
 	var f := k - i
 	f = f * f * (3.0 - 2.0 * f)
-	return lerpf(_roll(seed, i), _roll(seed, i + 1), f)
+	return lerpf(_roll(seed, i), _roll(seed, i + 1), f) + Seasons.wetter(time_ms)
 
 
-## How hard it rains now, 0..1.
-static func rain(seed: int, time_ms: float) -> float:
+## How hard it rains or snows now, 0..1.
+static func precipitation(seed: int, time_ms: float) -> float:
 	return clampf((wetness(seed, time_ms) - RAIN_FROM) / (RAIN_FULL - RAIN_FROM), 0.0, 1.0)
+
+
+## How hard it rains now, 0..1 (in winter it snows instead, ADR-0036).
+static func rain(seed: int, time_ms: float) -> float:
+	return 0.0 if Seasons.of(time_ms) == Seasons.WINTER else precipitation(seed, time_ms)
+
+
+## How hard it snows now, 0..1.
+static func snow(seed: int, time_ms: float) -> float:
+	return precipitation(seed, time_ms) if Seasons.of(time_ms) == Seasons.WINTER else 0.0
 
 
 ## How overcast the sky is, 0..1 (rain is overcast too).
@@ -54,12 +64,14 @@ static func storm(seed: int, time_ms: float) -> bool:
 	return rain(seed, time_ms) > 0.6 and _roll(seed * 31 + 7, i) > STORM_FROM
 
 
-## What it is like, in a word: "clear", "cloudy", "rain", "storm", "fog".
+## What it is like, in a word: "clear", "cloudy", "rain", "storm", "snow", "fog".
 static func kind(seed: int, time_ms: float) -> String:
 	if storm(seed, time_ms):
 		return "storm"
 	if rain(seed, time_ms) > 0.15:
 		return "rain"
+	if snow(seed, time_ms) > 0.15:
+		return "snow"
 	if fog(seed, time_ms) > 0.4:
 		return "fog"
 	return "cloudy" if clouds(seed, time_ms) > 0.5 else "clear"
@@ -67,7 +79,7 @@ static func kind(seed: int, time_ms: float) -> String:
 
 ## How far one sees in it, a share of a clear day's (creatures, ADR-0018).
 static func sight(seed: int, time_ms: float) -> float:
-	return 1.0 - 0.35 * rain(seed, time_ms) - 0.5 * fog(seed, time_ms)
+	return 1.0 - 0.35 * precipitation(seed, time_ms) - 0.5 * fog(seed, time_ms)
 
 
 ## Game hours of rain (by its strength) between two world times.

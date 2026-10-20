@@ -150,3 +150,18 @@ func test_an_animal_is_fed_what_it_eats() -> void:
 	sheep["entity"]["owner"] = "me"
 	eq(Actions.describe(content, sheep, "me"), "Овца (ваша)")
 	eq(Actions.describe(content, sheep, "other"), "Овца (чья-то)")
+
+
+func test_a_bucket_fills_at_water_and_pours() -> void:
+	var water := {"kind": "ground", "id": "base:water", "cell": Vector2i(5, 5), "location": "surface"}
+	eq(Actions.primary(Actions.of(content, client, view, "base:bucket", water, Vector2i.ZERO)).get("id"), "fill", "a bucket at water")
+	var crop := _part("base:wheat_crop", Vector2i(6, 6), "cover")
+	eq(Actions.primary(Actions.of(content, client, view, "base:water_bucket", crop, Vector2i.ZERO)).get("name"), "Полить")
+	var grass := {"kind": "ground", "id": "base:grass", "cell": Vector2i(5, 5), "location": "surface"}
+	eq(Actions.primary(Actions.of(content, client, view, "base:water_bucket", grass, Vector2i.ZERO)).get("name"), "Вылить")
+	eq(Actions.primary(Actions.of(content, client, view, "base:milk_bucket", grass, Vector2i.ZERO)).get("name"), "Выпить (ведро молока)")
+	var cow := {"kind": "entity", "id": "c1", "location": "surface",
+		"entity": {"kind": "creature", "creature": "base:cow", "x": 900, "y": 900, "owner": "me"}}
+	eq(Actions.primary(Actions.of(content, client, view, "base:bucket", cow, Vector2i.ZERO)).get("name"), "Подоить")
+	cow["entity"]["owner"] = "other"
+	check(not _ids(Actions.of(content, client, view, "base:bucket", cow, Vector2i.ZERO)).has("fill"), "not another's cow")

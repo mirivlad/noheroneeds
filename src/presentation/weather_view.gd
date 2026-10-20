@@ -6,6 +6,8 @@ extends Control
 ## the player's own ceiling) or below ground. Worked out from the weather
 ## seed and the time, as the server does; nothing of it is sent.
 
+## A flash of lightning began (the audio's thunder answers it).
+signal lightning
 const DROPS := 520
 const DROP := Color(0.78, 0.85, 1.0, 0.75)
 const FOG := Color(0.82, 0.85, 0.88)
@@ -47,8 +49,9 @@ func _process(delta: float) -> void:
 	# Lightning: in a storm, now and then, the same for everyone at the time.
 	if sky and Weather.storm(seed, now):
 		var beat := int(now / (Daylight.HOUR_MS / 6.0))
-		if beat != _flash_seen and absi(hash([seed, beat])) % 3 == 0:
+		if beat != _flash_seen and absi(hash([seed, beat])) % 3 == 0 and _flash_seen >= 0:
 			flash = 0.55
+			lightning.emit()
 		_flash_seen = beat
 	flash = maxf(0.0, flash - delta * 2.5)
 	queue_redraw()

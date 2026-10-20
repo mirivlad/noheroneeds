@@ -16,6 +16,8 @@ class_name Actions
 ##   food in the hands ("food")       — is eaten (ADR-0026);
 ##   an animal and what it eats       — it is fed, and tamed (ADR-0030);
 ##   a bed                            — is slept in (ADR-0035);
+##   a container and water, a cow     — is filled; a liquid poured out, a
+##                                     crop watered, milk drunk (ADR-0037);
 ##   anything                         — may be looked at.
 ## So a scythe and crops, a rod and fish come as data: a tool kind on the
 ## item, a "gather" on what it works on.
@@ -57,6 +59,11 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			and (content.get_def(String(entity.get("creature", ""))).get("tame", {}).get("food", []) as Array).has(held):
 		out.append({"id": "feed", "name": "Покормить", "primary": true,
 			"request": {"type": "feed", "creature": target["id"], "item": held}})
+	# Liquids (ADR-0037): an empty container is filled from water or one's own cow.
+	if living and entity.get("kind") == "creature" and held != "" and String(entity.get("owner", "")) == client.character_id \
+			and content.get_def(String(entity.get("creature", ""))).get("fills", {}).has(held):
+		out.append({"id": "fill", "name": "Подоить", "primary": true,
+			"request": {"type": "fill", "creature": target["id"], "item": held}})
 	if living and entity.get("kind") == "character":
 		var friend := client.friends().has(target["id"])
 		out.append({"id": "friend", "name": "Убрать из друзей" if friend else "Добавить в друзья",
@@ -82,6 +89,14 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			and content.get_def(String(target.get("id", ""))).get("farmland", false):
 		out.append({"id": "sow", "name": "Посеять", "primary": true,
 			"request": {"type": "sow", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
+	if kind == "ground" and held != "" and content.get_def(String(target.get("id", ""))).get("fills", {}).has(held):
+		out.append({"id": "fill", "name": "Набрать", "primary": true, "quick": true,
+			"request": {"type": "fill", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
+	var liquid: Dictionary = content.get_def(held).get("liquid", {}) if held != "" else {}
+	if not liquid.is_empty() and liquid.get("waters", false) and kind == "part" \
+			and content.get_def(String(target.get("id", ""))).has("crop"):
+		out.append({"id": "pour", "name": "Полить", "primary": true,
+			"request": {"type": "pour", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
 	if kind == "entity" and entity.get("kind") == "item":
 		out.append({"id": "pickup", "name": "Подобрать", "request": {"type": "pickup", "entity": target["id"]},
 			"quick": true})
@@ -151,11 +166,14 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 	if w.get("kind") == "melee" and not living:
 		out.append({"id": "swing", "name": "Взмахнуть", "primary": out.filter(func(a: Dictionary) -> bool:
 			return a.get("primary", false)).is_empty(), "request": {"type": "attack", "item": held, "x": aim.x, "y": aim.y}})
-	# Food in the hands is eaten, unless the left button has better to do.
+	# Food in the hands is eaten (drunk), unless the left button has better to do.
 	if held != "" and not content.get_def(held).get("food", {}).is_empty():
-		out.append({"id": "eat", "name": "Съесть (%s)" % String(content.get_def(held).get("name", "")).to_lower(),
+		out.append({"id": "eat", "name": ("Выпить (%s)" if not liquid.is_empty() else "Съесть (%s)") % String(content.get_def(held).get("name", "")).to_lower(),
 			"request": {"type": "eat", "item": held}, "primary": out.filter(func(a: Dictionary) -> bool:
 				return a.get("primary", false)).is_empty()})
+	if not liquid.is_empty():  # poured out anywhere, from the menu or if nothing else
+		out.append({"id": "pour", "name": "Вылить", "request": {"type": "pour", "item": held},
+			"primary": out.filter(func(a: Dictionary) -> bool: return a.get("primary", false)).is_empty()})
 	out.append({"id": "inspect", "name": "Осмотреть", "local": "inspect",
 		"primary": out.filter(func(a: Dictionary) -> bool: return a.get("primary", false)).is_empty()})
 	return out

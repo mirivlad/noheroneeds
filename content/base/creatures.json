@@ -25,7 +25,8 @@
       "speed": 0.6, "run_speed": 1.5, "sight": 9, "dark_sight": 0.4, "hearing": 8,
       "flee_distance": 3, "home_radius": 10, "think_ticks": 14, "memory_s": 30,
       "health": 16, "drops": {"base:raw_meat": 4, "base:hide": 2},
-      "tame": {"food": ["base:wheat", "base:carrot"], "feeds": 3, "breed_hours": 72}
+      "tame": {"food": ["base:wheat", "base:carrot"], "feeds": 3, "breed_hours": 72},
+      "fills": {"base:bucket": "base:milk_bucket"}, "fill_hours": 12
     },
     {
       "id": "base:chicken", "kind": "creature", "size": {"half": [0.12, 0.1], "height": 0.3}, "name": "Курица", "behavior": "prey", "fauna_since": 3,

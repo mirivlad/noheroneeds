@@ -19,7 +19,8 @@ const DERIVED_FIELDS := ["pack", "atlas_path", "paths", "body_size"]
 const PRESENTATION_KINDS := ["visual", "sound"]
 ## What a sound answers to (sounds.json, ADR-0009).
 const SOUND_EVENTS := ["step", "build", "dismantle", "open", "close", "pickup", "drop", "climb", "click", "ambience", "wind",
-	"swing", "hit", "shoot"]
+	"swing", "hit", "shoot", "fill", "pour", "drink", "eat", "splash", "till", "sow", "craft", "gather", "thunder",
+	"rain", "equip", "sleep", "feed"]
 ## What a structure part is for (ADR-0007). Columns and beams are decoration.
 const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture",
 	"rock", "shaft"]
@@ -189,6 +190,9 @@ func _validate() -> void:
 				# A tool's power: the work a blow does (ADR-0026: iron does more).
 				if d.has("power") and (typeof(d["power"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["power"]) < 1):
 					errors.append("%s: power is the work of a blow, at least 1" % id)
+				# A liquid in a container (ADR-0037): poured out, the empty one is left.
+				if d.has("liquid") and (typeof(d["liquid"]) != TYPE_DICTIONARY or kind_of(String(d["liquid"].get("empty", ""))) != "item"):
+					errors.append("%s: liquid needs {empty: the container left}" % id)
 				# What worn armour takes off every blow (ADR-0029).
 				if d.has("armor") and (typeof(d["armor"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["armor"]) < 0 \
 						or String(d.get("equip_slot", "")) in ["", "main_hand", "off_hand"]):
@@ -296,6 +300,7 @@ func _validate() -> void:
 			"achievement":
 				pass
 			"ground", "plant":
+				_check_fills(id, d)
 				d["solid"] = bool(d.get("solid", false))
 				if d.has("gather"):
 					_check_gather(id, d)
@@ -351,6 +356,19 @@ func _validate() -> void:
 const BEHAVIORS := ["prey", "villager", "predator", "looter"]
 
 
+## What fills a container from a ground or a creature (ADR-0037):
+## {empty container: what it becomes}.
+func _check_fills(id: String, d: Dictionary) -> void:
+	if not d.has("fills"):
+		return
+	if typeof(d["fills"]) != TYPE_DICTIONARY or (d["fills"] as Dictionary).is_empty():
+		errors.append("%s: fills maps a container to what it becomes" % id)
+		return
+	for k: Variant in d["fills"]:
+		if kind_of(String(k)) != "item" or kind_of(String(d["fills"][k])) != "item":
+			errors.append("%s: fills '%s' -> '%s' are not both items" % [id, k, d["fills"][k]])
+
+
 func _check_creature(id: String, d: Dictionary) -> void:
 	d["body_size"] = BodySize.parse(id, d.get("size"), errors)
 	if not BEHAVIORS.has(String(d.get("behavior", ""))):
@@ -389,6 +407,9 @@ func _check_creature(id: String, d: Dictionary) -> void:
 			t["breed_hours"] = float(t.get("breed_hours", 0.0))
 			if t["feeds"] < 1 or t["breed_hours"] < 0.0:
 				errors.append("%s: tame feeds at least 1, breed_hours not negative (0: it does not breed)" % id)
+	_check_fills(id, d)
+	if d.has("fills") and float(d.get("fill_hours", 12.0)) <= 0.0:
+		errors.append("%s: fill_hours must be above 0" % id)
 	if d.has("produce"):
 		var pr: Variant = d["produce"]
 		if typeof(pr) != TYPE_DICTIONARY or kind_of(String(pr.get("item", ""))) != "item" or float(pr.get("hours", 0)) <= 0.0 \

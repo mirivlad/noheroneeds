@@ -1042,6 +1042,10 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _feed(actor, r)
 		"sleep":
 			return _sleep(actor, r)
+		"fill":
+			return _fill(actor, r)
+		"pour":
+			return _pour(actor, r)
 		"wake":
 			wake(actor)
 			return {"ok": true}
@@ -2201,7 +2205,12 @@ func _eat(actor: String, r: Dictionary) -> Dictionary:
 	_touch_inventory(actor)
 	combat.heal(actor, int(food.get("heal", 0)))
 	needs.set_satiety(actor, needs.satiety_of(actor) + float(food.get("satiety", 0)))
-	return {"ok": true, "health": combat.health_of(actor), "satiety": needs.shown(actor)["satiety"]}
+	var out := {"ok": true, "health": combat.health_of(actor), "satiety": needs.shown(actor)["satiety"]}
+	var empty := String(content.get_def(item).get("liquid", {}).get("empty", ""))
+	if empty != "":  # drunk: the container is left (a bucket of milk)
+		inventory(actor).add(empty, 1)
+		out["now"] = empty
+	return out
 
 
 # --- fields (ADR-0027) ------------------------------------------------------------
@@ -2231,6 +2240,92 @@ func _till(actor: String, r: Dictionary) -> Dictionary:
 	c.set_cell("ground", at[3], at[4], into)
 	_changed(chunk_key(at[0], at[1], at[2]))
 	return {"ok": true}
+
+
+# --- liquids (ADR-0037) ---------------------------------------------------------
+
+## Fills the empty container in the hands from a ground (water) or one's own
+## animal (a cow) whose "fills" takes it: it becomes the filled thing.
+func _fill(actor: String, r: Dictionary) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var why := check_held(actor, r)
+	if why != "":
+		return {"ok": false, "reason": why}
+	var item := held_of(actor)
+	if item == "":
+		return {"ok": false, "reason": "not_held"}
+	var into := ""
+	if typeof(r.get("creature")) == TYPE_STRING:
+		var c := creatures.get_creature(String(r["creature"]))
+		if c == null:
+			return {"ok": false, "reason": "nothing_there"}
+		var def := content.get_def(c.kind)
+		into = String(def.get("fills", {}).get(item, ""))
+		if into == "":
+			return {"ok": false, "reason": "nothing_to_fill"}
+		var p: Dictionary = present[actor]
+		if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+			return {"ok": false, "reason": "too_far"}
+		if c.owner != actor:
+			return {"ok": false, "reason": "not_yours"}
+		if c.filled_at >= 0 and world_time - c.filled_at < int(float(def.get("fill_hours", 12.0)) * Daylight.HOUR_MS):
+			return {"ok": false, "reason": "not_yet"}
+		c.filled_at = world_time
+		c.changed()
+	else:
+		var at := _cell(r)
+		if not _reaches(actor, at[0], ri(r, "x", 0), ri(r, "y", 0), USE_REACH):
+			return {"ok": false, "reason": "too_far"}
+		into = String(content.get_def(chunk(at[0], at[1], at[2]).get_cell("ground", at[3], at[4])).get("fills", {}).get(item, ""))
+		if into == "":
+			return {"ok": false, "reason": "nothing_to_fill"}
+	var inv := inventory(actor)
+	if not inv.remove(item, 1):
+		return {"ok": false, "reason": "not_carried"}
+	inv.add(into, 1)
+	_touch_inventory(actor)
+	return {"ok": true, "now": into}
+
+
+## How long a watered crop is helped, and how much.
+const WATERED_HOURS := 12.0
+const WATER_GROWS := 6.0
+
+
+## Pours out the liquid in the hands: the container is empty again. On a
+## crop, water waters it (as six hours of growing, once in twelve).
+func _pour(actor: String, r: Dictionary) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var why := check_held(actor, r)
+	if why != "":
+		return {"ok": false, "reason": why}
+	var item := held_of(actor)
+	var liquid: Dictionary = content.get_def(item).get("liquid", {}) if item != "" else {}
+	if liquid.is_empty():
+		return {"ok": false, "reason": "not_a_liquid"}
+	var watered := false
+	if r.has("x") and r.has("y") and bool(liquid.get("waters", false)):
+		var at := _cell(r)
+		if not _reaches(actor, at[0], ri(r, "x", 0), ri(r, "y", 0), USE_REACH):
+			return {"ok": false, "reason": "too_far"}
+		var c := chunk(at[0], at[1], at[2])
+		var crop := c.get_cell("cover", at[3], at[4])
+		if crop != "" and content.get_def(crop).has("crop"):
+			var props := _layer_props(c, "cover", at[3], at[4]).duplicate()
+			if not props.has("watered_at") or world_time - int(props["watered_at"]) >= int(WATERED_HOURS * Daylight.HOUR_MS):
+				props["planted"] = int(props.get("planted", world_time)) - int(WATER_GROWS * Daylight.HOUR_MS)
+				props["watered_at"] = world_time
+				_set_layer_props(c, "cover", at[3], at[4], props)
+				_changed(chunk_key(at[0], at[1], at[2]))
+				watered = true
+	var inv := inventory(actor)
+	if not inv.remove(item, 1):
+		return {"ok": false, "reason": "not_carried"}
+	inv.add(String(liquid["empty"]), 1)
+	_touch_inventory(actor)
+	return {"ok": true, "now": String(liquid["empty"]), "watered": watered}
 
 
 ## Lies down in a bed within reach (ADR-0035): one sleeps on it, energy

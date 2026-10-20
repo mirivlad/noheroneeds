@@ -47,6 +47,8 @@
       "inputs": {"base:cloth": 2}, "outputs": {"base:work_trousers": 1}},
     {"id": "base:sew_cloak", "kind": "recipe", "name": "Сшить плащ", "station": "workbench",
       "inputs": {"base:cloth": 3}, "outputs": {"base:wool_cloak": 1}},
+    {"id": "base:make_bucket", "kind": "recipe", "name": "Ведро", "station": "workbench",
+      "inputs": {"base:plank": 3}, "outputs": {"base:bucket": 1}},
     {"id": "base:make_boots", "kind": "recipe", "name": "Стачать сапоги", "station": "workbench",
       "inputs": {"base:leather": 2}, "outputs": {"base:boots": 1}},
     {"id": "base:forge_iron_helmet", "kind": "recipe", "name": "Железный шлем", "station": "forge",

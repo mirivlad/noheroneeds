@@ -145,7 +145,7 @@ const REASONS := {
 	"roof_below": "внизу крыша", "bad_request": "не получилось",
 	"no_tool": "этим этого не сделать", "nothing_to_gather": "здесь нечего добыть", "natural": "это не разобрать — только выкопать", "not_buildable": "это не строится",
 	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят",
-	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
+	"blocked_below": "внизу что-то построено", "box_full": "сундук полон", "full": "сумка полна", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
 	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "in_the_way": "мешает то, что ближе", "no_trade": "не торгует", "not_now": "сейчас не до торговли", "not_sold": "этого не продаёт", "sold_out": "больше нет", "no_money": "не хватает монет", "not_bought": "это не покупает", "no_money_there": "у него не хватает монет", "nothing_to_fill": "здесь не набрать", "not_yours": "это не ваше", "not_yet": "ещё рано", "not_a_liquid": "выливать нечего", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
@@ -870,6 +870,7 @@ func _build_tools(layer: CanvasLayer) -> void:
 	inventory_panel.drop.connect(func(item: String, n: int) -> void:
 		_sound_on_ok[client.request({"type": "drop", "item": item, "count": n})] = "drop")
 	inventory_panel.wear.connect(_wear_item)
+	inventory_panel.arranged.connect(_save_bag)
 	character_panel.setup(content, view)
 	character_panel.position = Vector2(10, 16)
 	character_panel.wear.connect(_wear_item)
@@ -930,6 +931,8 @@ func _wear_item(item: String) -> void:
 ## its weapons and tools.
 func _load_hotbar(inv: Dictionary) -> void:
 	_hotbar_loaded = true
+	var bags: Dictionary = settings.get_value("bags") if settings else {}
+	inventory_panel.order = (bags.get(client.character_id, []) as Array).duplicate()
 	var saved: Dictionary = settings.get_value("hotbars") if settings else {}
 	var mine: Array = saved.get(client.character_id, [])
 	if mine.is_empty():
@@ -946,6 +949,18 @@ func _save_hotbar() -> void:
 	var saved: Dictionary = (settings.get_value("hotbars") as Dictionary).duplicate()
 	saved[client.character_id] = Array(hotbar.items)
 	settings.set_value("hotbars", saved)
+	settings.save()
+
+
+## The bag's cells as the player arranged them (ADR-0041).
+func _save_bag(order: Array) -> void:
+	if settings == null or client.character_id == "":
+		return
+	var saved: Dictionary = (settings.get_value("bags") as Dictionary).duplicate()
+	if saved.get(client.character_id, []) == order:
+		return
+	saved[client.character_id] = order.duplicate()
+	settings.set_value("bags", saved)
 	settings.save()
 
 
@@ -1159,6 +1174,7 @@ func _update_hud() -> void:
 			_chest_rids.erase(rid)
 			client.results.erase(rid)
 			if r.get("ok"):
+				chest_panel.bag_order = inventory_panel.order
 				chest_panel.open_at(at, r.get("contents", {}), int(r.get("slots", 0)), client.inventory())
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))

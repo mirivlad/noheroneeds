@@ -700,10 +700,37 @@ func _known_character(id: String) -> Dictionary:
 	return known
 
 
-## Gives items outside of any request (world setup, tests).
+## Gives items outside of any request (world setup, tests): past the bag's
+## cells too.
 func grant(owner: String, content_id: String, n: int) -> void:
 	inventory(owner).add(content_id, n)
 	_touch_inventory(owner)
+
+
+## Whether an inventory is a character's bag, of Bag.SIZE cells (ADR-0041);
+## chests count their own, a dweller's goods and a looter's stomach none.
+func _is_bag(owner: String) -> bool:
+	return not owner.contains("|") and (present.has(owner) or not _known_character(owner).is_empty())
+
+
+## How many more of an item an inventory takes.
+func room_for(owner: String, item: String) -> int:
+	if not _is_bag(owner):
+		return 1 << 30
+	return Bag.room_for(content, inventory(owner).stacks, item)
+
+
+## Gives a character what was got (dug, made, refunded): into the bag as far
+## as it goes, the rest on the ground at its feet (ADR-0041). Returns how
+## many went into the bag. One not in the world gets all of it.
+func give(owner: String, item: String, n: int) -> int:
+	var fits := n if not present.has(owner) else mini(n, room_for(owner, item))
+	if fits > 0:
+		inventory(owner).add(item, fits)
+	if n > fits:
+		place_item(String(present[owner]["location"]), present[owner]["pos"], item, n - fits)
+	_touch_inventory(owner)
+	return fits
 
 
 ## Frequently changing state of an entity (position, needs...). CBOR-compatible.
@@ -1273,6 +1300,15 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 			return {"ok": false, "reason": "too_far"}
 	if not may_take(actor, it):
 		return {"ok": false, "reason": "kept_for_dead", "seconds": ceili(float(int(it["until"]) - tick) / Movement.TICK_RATE)}
+	var fits := mini(int(it["count"]), room_for(actor, String(it["item"])))
+	if fits <= 0:
+		return {"ok": false, "reason": "full"}
+	if fits < int(it["count"]):  # what the bag takes; the rest stays lying
+		it["count"] = int(it["count"]) - fits
+		_dirty_items[id] = true
+		inventory(actor).add(String(it["item"]), fits)
+		_touch_inventory(actor)
+		return {"ok": true, "item": it["item"], "count": fits, "left": it["count"]}
 	take_item(id, inventory(actor))
 	_touch_inventory(actor)
 	return {"ok": true, "item": it["item"], "count": it["count"]}
@@ -1426,7 +1462,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 			# its cost comes back, the floor it made above goes — an opening.
 			var ceiling := c.get_cell("ceiling", at[3], at[4])
 			for id: String in content.structure_cost(ceiling):
-				inv.add(id, int(content.structure_cost(ceiling)[id]))
+				give(actor, id, int(content.structure_cost(ceiling)[id]))
 			_take_down(loc, c, at, "ceiling", ceiling, _above(loc, c, at, "ceiling")[1])
 	var others: Array = []
 	if role == "ceiling" and not on_level:
@@ -1577,10 +1613,8 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	_take_down(loc, c, at, layer, part, above[1])
 	creatures.noise(loc, Vector2i(x, y))
 	var costs := content.structure_cost(part)
-	var inv := inventory(actor)
 	for id: String in costs:
-		inv.add(id, int(costs[id]))
-	_touch_inventory(actor)
+		give(actor, id, int(costs[id]))
 	return {"ok": true, "part": part}
 
 
@@ -1702,11 +1736,9 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	if layer != "ground":
 		c.set_cell(layer, at[3], at[4], "")
 	_changed(chunk_key(loc, at[1], at[2]))
-	var inv := inventory(actor)
 	var drops: Dictionary = g.get("drops", {})
 	for id: String in drops:
-		inv.add(id, int(drops[id]))
-	_touch_inventory(actor)
+		give(actor, id, int(drops[id]))
 	return {"ok": true, "thing": thing, "drops": drops}
 
 
@@ -1739,8 +1771,7 @@ func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dicti
 	props["at"] = world_time
 	_set_layer_props(c, "ground", at[3], at[4], props)
 	_changed(chunk_key(at[0], at[1], at[2]))
-	inventory(actor).add(got, 1)
-	_touch_inventory(actor)
+	give(actor, got, 1)
 	return {"ok": true, "thing": thing, "bite": true, "drops": {got: 1}}
 
 
@@ -2039,8 +2070,7 @@ func _settle_stairs(location: String, cx: int, cy: int, c: Chunk) -> void:
 		if builder != "" and content.has(ceiling):
 			var cost := content.structure_cost(ceiling)
 			for id: String in cost:
-				inventory(builder).add(id, int(cost[id]))
-			_touch_inventory(builder)
+				give(builder, id, int(cost[id]))
 		_mark_way_down(up, own, true)
 
 
@@ -2157,14 +2187,6 @@ func _container(actor: String, r: Dictionary) -> Array:
 	return ["store|" + String(props["store"]), spec, ""]
 
 
-## Cells a set of stacks takes in a container (by each item's stack size).
-func _slots_used(stacks: Dictionary) -> int:
-	var n := 0
-	for id: String in stacks:
-		n += ceili(float(stacks[id]) / maxi(1, int(content.get_def(id).get("stack", 1))))
-	return n
-
-
 func _look_in(actor: String, r: Dictionary) -> Dictionary:
 	var c := _container(actor, r)
 	if c[2] != "":
@@ -2186,11 +2208,15 @@ func _move_items(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 	var to := box if putting else inventory(actor)
 	if from.count(item) < n:
 		return {"ok": false, "reason": "not_enough"}
+	if not putting:
+		n = mini(n, room_for(actor, item))  # what the bag takes
+		if n <= 0:
+			return {"ok": false, "reason": "full"}
 	if putting:
 		var after := box.stacks.duplicate()
 		after[item] = int(after.get(item, 0)) + n
-		if _slots_used(after) > int(c[1]["slots"]):
-			return {"ok": false, "reason": "full"}
+		if Bag.used(content, after) > int(c[1]["slots"]):
+			return {"ok": false, "reason": "box_full"}
 	from.remove(item, n)
 	to.add(item, n)
 	_touch_inventory(actor)
@@ -2222,7 +2248,7 @@ func _craft(actor: String, r: Dictionary) -> Dictionary:
 	var made := {}
 	for item: String in d["outputs"]:
 		made[item] = int(d["outputs"][item]) * n
-		bag.add(item, made[item])
+		give(actor, item, made[item])
 	_touch_inventory(actor)
 	return {"ok": true, "made": made}
 
@@ -2266,7 +2292,7 @@ func _eat(actor: String, r: Dictionary) -> Dictionary:
 	var out := {"ok": true, "health": combat.health_of(actor), "satiety": needs.shown(actor)["satiety"]}
 	var empty := String(content.get_def(item).get("liquid", {}).get("empty", ""))
 	if empty != "":  # drunk: the container is left (a bucket of milk)
-		inventory(actor).add(empty, 1)
+		give(actor, empty, 1)
 		out["now"] = empty
 	return out
 
@@ -2373,6 +2399,12 @@ func _trade(actor: String, r: Dictionary) -> Dictionary:
 			return {"ok": false, "reason": "sold_out"}
 		if inv.count(COIN) < price:
 			return {"ok": false, "reason": "no_money"}
+		var after := inv.stacks.duplicate()
+		after[COIN] = int(after[COIN]) - price
+		if after[COIN] == 0:
+			after.erase(COIN)
+		if Bag.room_for(content, after, item) < n:
+			return {"ok": false, "reason": "full"}
 		inv.remove(COIN, price)
 		stock.remove(item, n)
 		inv.add(item, n)
@@ -2386,7 +2418,7 @@ func _trade(actor: String, r: Dictionary) -> Dictionary:
 		if int(c.job.get("purse", 0)) < price:
 			return {"ok": false, "reason": "no_money_there"}
 		inv.remove(item, n)
-		inv.add(COIN, price)
+		give(actor, COIN, price)
 		c.job["purse"] = int(c.job.get("purse", 0)) - price
 	c.changed()
 	_touch_inventory(actor)
@@ -2435,8 +2467,7 @@ func _fill(actor: String, r: Dictionary) -> Dictionary:
 	var inv := inventory(actor)
 	if not inv.remove(item, 1):
 		return {"ok": false, "reason": "not_carried"}
-	inv.add(into, 1)
-	_touch_inventory(actor)
+	give(actor, into, 1)
 	return {"ok": true, "now": into}
 
 
@@ -2475,8 +2506,7 @@ func _pour(actor: String, r: Dictionary) -> Dictionary:
 	var inv := inventory(actor)
 	if not inv.remove(item, 1):
 		return {"ok": false, "reason": "not_carried"}
-	inv.add(String(liquid["empty"]), 1)
-	_touch_inventory(actor)
+	give(actor, String(liquid["empty"]), 1)
 	return {"ok": true, "now": String(liquid["empty"]), "watered": watered}
 
 
@@ -2732,9 +2762,11 @@ func _equip(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 	else:
 		if before == "":
 			return {"ok": false, "reason": "empty_slot"}
+		if room_for(actor, before) < 1:
+			return {"ok": false, "reason": "full"}  # it stays on rather than falls
 		equipment.erase(slot)
 	if before != "":
-		inv.add(before, 1)
+		give(actor, before, 1)
 	data["equipment"] = equipment
 	_dirty_characters[actor] = true
 	present[actor]["appearance"] = shown_look(data)
@@ -2758,6 +2790,8 @@ func _transfer(actor: String, r: Dictionary) -> Dictionary:
 	var n := ri(r, "count", 0)
 	if to == "" or to == actor or n <= 0:
 		return {"ok": false, "reason": "bad_request"}
+	if room_for(to, item) < n:
+		return {"ok": false, "reason": "full"}
 	if not inventory(actor).remove(item, n):
 		return {"ok": false, "reason": "not_enough"}
 	inventory(to).add(item, n)

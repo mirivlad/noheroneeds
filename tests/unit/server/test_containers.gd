@@ -70,10 +70,43 @@ func test_a_chest_keeps_things_for_its_owner() -> void:
 func test_a_chest_holds_so_many_cells() -> void:
 	var a := _player("Аня")
 	w.grant(a, "base:plank", 2000)
-	_req(a, _at({"type": "build", "part": "base:chest"}))
+	var r := _req(a, _at({"type": "build", "part": "base:chest"}))
 	# Planks stack by 99: 16 cells hold 1584.
 	eq(_req(a, _at({"type": "store", "item": "base:plank", "count": 1584})).get("ok"), true)
-	eq(_req(a, _at({"type": "store", "item": "base:plank", "count": 1})).get("reason"), "full")
+	eq(_req(a, _at({"type": "store", "item": "base:plank", "count": 1})).get("reason"), "box_full")
+	# Taken out: what the bag takes. A bag of stone with one cell free takes
+	# a cell's worth of planks.
+	w.inventory(a).remove("base:plank", w.inventory(a).count("base:plank"))
+	w.grant(a, "base:stone", 99 * (Bag.SIZE - 1))
+	r = _req(a, _at({"type": "take", "item": "base:plank", "count": 500}))
+	eq(w.inventory(a).count("base:plank"), 99, "a cell's worth taken: %s" % r)
+	eq(_req(a, _at({"type": "take", "item": "base:plank", "count": 1})).get("reason"), "full", "then no more")
+
+
+## ADR-0041: a character carries Bag.SIZE cells; what is got past them falls
+## at its feet, what it would pick up or take out stays where it is.
+func test_a_bag_holds_so_many_cells() -> void:
+	var a := _player("Аня")
+	var wall := content_cost("base:wood_wall")
+	for id: String in wall:
+		w.grant(a, id, int(wall[id]))
+	check(_req(a, _at({"type": "build", "part": "base:wood_wall"})).get("ok", false), "built")
+	w.grant(a, "base:stone", Bag.SIZE * 99)
+	eq(Bag.used(_content, w.inventory(a).stacks), Bag.SIZE, "full")
+	check(_req(a, _at({"type": "dismantle", "layer": "structure"})).get("ok", false), "taken apart")
+	var lying := ""
+	for id: String in w.items:
+		if String(w.items[id]["item"]) in wall:
+			lying = id
+	check(lying != "", "what it gave back fell at the feet")
+	eq(_req(a, {"type": "pickup", "entity": lying}).get("reason"), "full", "nothing picked up into a full bag")
+	check(_req(a, {"type": "drop", "item": "base:stone", "count": 99}).get("ok", false), "a cell freed")
+	var r := _req(a, {"type": "pickup", "entity": lying})
+	check(r.get("ok", false), "now it goes in: %s" % r)
+
+
+func content_cost(part: String) -> Dictionary:
+	return _content.structure_cost(part)
 
 
 ## Parts wear and break under blows (anyone's, unless the world forbids

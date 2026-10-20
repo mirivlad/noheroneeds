@@ -35,6 +35,14 @@
       "inputs": {"base:hide": 1}, "outputs": {"base:leather": 1}},
     {"id": "base:make_leather_armor", "kind": "recipe", "name": "Кожаный доспех", "station": "workbench",
       "inputs": {"base:leather": 4}, "outputs": {"base:leather_armor": 1}},
+    {"id": "base:weave_cloth", "kind": "recipe", "name": "Соткать ткань", "station": "workbench",
+      "inputs": {"base:wool": 2}, "outputs": {"base:cloth": 1}},
+    {"id": "base:sew_shirt", "kind": "recipe", "name": "Сшить рубаху", "station": "workbench",
+      "inputs": {"base:cloth": 2}, "outputs": {"base:linen_shirt": 1}},
+    {"id": "base:sew_trousers", "kind": "recipe", "name": "Сшить штаны", "station": "workbench",
+      "inputs": {"base:cloth": 2}, "outputs": {"base:work_trousers": 1}},
+    {"id": "base:make_boots", "kind": "recipe", "name": "Стачать сапоги", "station": "workbench",
+      "inputs": {"base:leather": 2}, "outputs": {"base:boots": 1}},
     {"id": "base:forge_iron_helmet", "kind": "recipe", "name": "Железный шлем", "station": "forge",
       "inputs": {"base:iron_ingot": 3}, "outputs": {"base:iron_helmet": 1}}
   ]

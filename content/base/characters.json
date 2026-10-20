@@ -48,7 +48,7 @@
     {
       "id": "base:linen_shirt",
       "kind": "item",
-      "name": "Льняная рубаха",
+      "name": "Рубаха",
       "stack": 1,
       "equip_slot": "torso"
     },

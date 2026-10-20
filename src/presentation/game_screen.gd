@@ -42,6 +42,8 @@ var catalog := BuildCatalog.new()
 var crafts := CraftPanel.new()
 ## Requests to craft: their result says what was made.
 var _craft_rids := {}
+## Feeding an animal (ADR-0030): how it took it.
+var _feed_rids := {}
 var inventory_panel := InventoryPanel.new()
 var character_panel := CharacterPanel.new()
 var chest_panel := ChestPanel.new()
@@ -136,7 +138,7 @@ const REASONS := {
 	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
-	"not_ripe": "ещё не созрело", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
+	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
 }
 
 
@@ -419,6 +421,17 @@ func _process(delta: float) -> void:
 		if _frames == 50:
 			hotbar.put(0, "base:fishing_rod", -1)
 			_choose_slot(0)
+	if _opts.get("demo") == "farm" and game and _frames == 40:  # dev only: a herd of one's own in the pen (ADR-0030)
+		var w := game.world
+		var i := 0
+		for kind: String in ["base:sheep", "base:sheep", "base:cow", "base:chicken", "base:chicken", "base:chicken"]:
+			var c := w.creatures._spawn(kind, client.location, Vector2i(-6 + i % 4, 6 + (i / 4)), {}, i + 1)
+			c.owner = client.character_id
+			c.fed_at = w.world_time
+			c.changed()
+			i += 1
+		w.move_character(client.character_id, Vector2i(-4, 10) * 256 + Vector2i(128, 128))
+		w.grant(client.character_id, "base:wheat", 5)
 	if _opts.get("demo") == "armor" and game and _frames == 40:  # dev only: leather and a helmet on (ADR-0029)
 		for item: String in ["base:leather_armor", "base:iron_helmet"]:
 			game.world.grant(client.character_id, item, 1)
@@ -632,7 +645,7 @@ func _do(a: Dictionary) -> void:
 		_note = String(a.get("why", "нельзя"))
 		return
 	if a.get("local") == "inspect":
-		_note = Actions.describe(content, target)
+		_note = Actions.describe(content, target, client.character_id)
 		return
 	if a.get("local") == "lock":
 		pin_panel.open_for(Vector2i(int(a["request"]["x"]), int(a["request"]["y"])), true)
@@ -658,6 +671,8 @@ func _do(a: Dictionary) -> void:
 					audio.play("swing", item, null)
 			if a["id"] != "gather":
 				hotbar.used(item)
+		"feed":
+			_feed_rids[rid] = true
 		"pickup":
 			_sound_on_ok[rid] = "pickup"
 		"use":
@@ -669,7 +684,7 @@ func _do(a: Dictionary) -> void:
 func _open_menu() -> void:
 	_menu.clear()
 	_menu_actions = actions.duplicate()
-	var title := Actions.describe(content, target)
+	var title := Actions.describe(content, target, client.character_id)
 	if title != "":
 		_menu.add_separator(title)
 	for i in _menu_actions.size():
@@ -1036,6 +1051,13 @@ func _update_hud() -> void:
 				client.results.erase(rid)
 				pin_panel.open_for(door, false)  # the code is asked for
 				continue
+		if _feed_rids.has(rid):
+			_feed_rids.erase(rid)
+			if r.get("ok"):
+				client.results.erase(rid)
+				_note = "приручено — теперь ваше" if r.get("tamed") else (
+					"поели (%d из %d)" % [int(r.get("fed", 0)), int(r.get("of", 1))] if String(r.get("owner", "")) == "" else "поели")
+				continue
 		if _craft_rids.has(rid):
 			_craft_rids.erase(rid)
 			client.results.erase(rid)
@@ -1121,7 +1143,7 @@ func _update_hud() -> void:
 		doing += "  ПКМ — отпустить"
 	else:
 		var p := Actions.primary(actions)
-		var what := Actions.describe(content, target)
+		var what := Actions.describe(content, target, client.character_id)
 		if not p.is_empty() and p["id"] != "inspect":
 			doing = "ЛКМ: %s%s" % [p["name"], " — " + what if what != "" else ""]
 		elif what != "":

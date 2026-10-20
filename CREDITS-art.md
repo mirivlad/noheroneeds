@@ -994,6 +994,12 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - Лицензии: CC-BY 3.0 / CC-BY 4.0 / GPL 2.0 / GPL 3.0 / OGA-BY 3.0
 - https://opengameart.org/content/lpc-spider
 
+## LPC Style Farm Animals (овца, корова, курица)
+
+- Авторы: Daniel Eddeland (daneeklu)
+- Лицензии: CC-BY 3.0 / GPL 2.0
+- https://opengameart.org/content/lpc-style-farm-animals
+
 ## [LPC] Monsters (слизни: поринг перекрашен, попоринг)
 
 - Авторы: Charles Sanchez (CharlesGabriel), bluecarrot16; заказ Pierre Vigier

@@ -98,7 +98,9 @@ func test_old_chunks_get_only_the_new_kinds() -> void:
 			var k := w.creatures.get_creature(id).kind
 			kinds[k] = int(kinds.get(k, 0)) + 1
 	check(not kinds.is_empty(), "some came")
-	check(kinds.keys().all(func(k: String) -> bool: return k in ["base:poring", "base:poporing"]), "looters only: %s" % kinds)
+	check(kinds.keys().all(func(k: String) -> bool: return int(_content.get_def(k)["fauna_since"]) > 1),
+		"kinds new since only (looters, farm animals): %s" % kinds)
+	check(kinds.has("base:poring") or kinds.has("base:poporing"), "looters among them: %s" % kinds)
 	var n := 0
 	for k: String in kinds:
 		n += int(kinds[k])

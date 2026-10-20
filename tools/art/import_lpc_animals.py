@@ -42,6 +42,8 @@ DEER_ROWS = {"n": 0, "w": 1, "e": 2, "s": 3}
 WOLF = "wolfsheet1_0.png"
 SPIDER_ROWS = {"n": 0, "w": 1, "s": 2, "e": 3}
 SLIME = "monsters/lpc-monsters/slime.png"
+FARM = "farm/"
+FARM_ROWS = {"n": 0, "w": 1, "s": 2, "e": 3}
 # kind -> {anims}, swing animation, fps, frame recolour (hue turn), alternates (other sheets, same layout)
 ANIMALS = {
     "base:deer": {
@@ -82,6 +84,22 @@ ANIMALS = {
         "alternates": ["spiders/LPC_Spiders/spider05.png", "spiders/LPC_Spiders/spider09.png"],
         "attack": "attack", "fps": 10,
     },
+    # Farm animals (rows n, w, s, e): walking and grazing, the head down.
+    "base:sheep": {
+        "anims": lambda p: {"walk": grid(p, 128, 128, FARM_ROWS, range(4)), "idle": grid(p, 128, 128, FARM_ROWS, [0]),
+                            "attack": grid(FARM + "sheep_eat.png", 128, 128, FARM_ROWS, range(4))},
+        "sheet": FARM + "sheep_walk.png", "attack": "attack", "fps": 6,
+    },
+    "base:cow": {
+        "anims": lambda p: {"walk": grid(p, 128, 128, FARM_ROWS, range(4)), "idle": grid(p, 128, 128, FARM_ROWS, [0]),
+                            "attack": grid(FARM + "cow_eat.png", 128, 128, FARM_ROWS, range(4))},
+        "sheet": FARM + "cow_walk.png", "attack": "attack", "fps": 5,
+    },
+    "base:chicken": {
+        "anims": lambda p: {"walk": grid(p, 32, 32, FARM_ROWS, range(4)), "idle": grid(p, 32, 32, FARM_ROWS, [0]),
+                            "attack": grid(FARM + "chicken_eat.png", 32, 32, FARM_ROWS, range(4))},
+        "sheet": FARM + "chicken_walk.png", "attack": "attack", "fps": 8,
+    },
     # Slimes look the same every way: their hop and their spit in every row.
     "base:poporing": {
         "anims": lambda p: {"walk": {d: [(p, (i * 64, 0, 64, 64)) for i in range(6)] for d in DIRS},
@@ -107,6 +125,8 @@ CREDITS_ANIMALS = [
      "https://opengameart.org/content/reorganised-lpc-rabbit"),
     ("[LPC] Spider (пещерный паук)", "Redshrike, заказ William.Thompsonj", "CC-BY 3.0 / CC-BY 4.0 / GPL 2.0 / GPL 3.0 / OGA-BY 3.0",
      "https://opengameart.org/content/lpc-spider"),
+    ("LPC Style Farm Animals (овца, корова, курица)", "Daniel Eddeland (daneeklu)", "CC-BY 3.0 / GPL 2.0",
+     "https://opengameart.org/content/lpc-style-farm-animals"),
     ("[LPC] Monsters (слизни: поринг перекрашен, попоринг)", "Charles Sanchez (CharlesGabriel), bluecarrot16; заказ Pierre Vigier",
      "CC-BY-SA 3.0 / GPL 3.0", "https://opengameart.org/content/lpc-monsters"),
 ]

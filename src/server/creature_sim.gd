@@ -24,7 +24,7 @@ const THINKS_PER_TICK := 48
 ## Raised when kinds come to the fauna; a creature's "fauna_since" says from
 ## which: chunks populated before get those kinds only (old worlds meet the
 ## looters too, without a second crowd of hares).
-const FAUNA_VERSION := 2
+const FAUNA_VERSION := 3
 const VILLAGERS := 3
 ## A creature away longer than this (real seconds) catches up on return.
 const CATCH_UP_S := 20.0
@@ -50,6 +50,8 @@ var _movers := {}
 var _last_saved := {}
 ## Ids still to look at in this round of saving.
 var _save_order: Array = []
+## Ids whose owner changed (tamed, born to one), for the replicas.
+var _owned := {}
 ## [location, cell, world time]
 var _noises: Array = []
 var _tick := 0
@@ -63,6 +65,13 @@ func _init(w: ServerWorld) -> void:
 
 func in_chunk(location: String, cx: int, cy: int) -> Array:
 	return (_by_chunk.get(ServerWorld.chunk_key(location, cx, cy), {}) as Dictionary).keys()
+
+
+## {id: true} of creatures whose owner changed since the last call.
+func take_owner_changes() -> Dictionary:
+	var out := _owned
+	_owned = {}
+	return out
 
 
 ## [appeared, left, moved] ({id: true} each) since the last call.
@@ -386,6 +395,19 @@ func _think(c: Creature, tick: int) -> void:
 		_catch_up(c, def)
 	c.last_time = now
 	_perceive(c, def)
+	if c.owner != "" and def.has("tame"):
+		_tame(c, def)
+	else:
+		_behave(c, def)
+	if c.target != Creature.NO_TARGET:
+		_movers[c.id] = true
+	else:
+		_movers.erase(c.id)
+	var soon := c.state in ["flee", "alert", "hunt", "attack", "loot", "follow"]
+	_schedule(c, tick + (maxi(2, int(def["think_ticks"]) / 2) if soon else int(def["think_ticks"])))
+
+
+func _behave(c: Creature, def: Dictionary) -> void:
 	match String(def["behavior"]):
 		"prey":
 			_prey(c, def)
@@ -395,12 +417,6 @@ func _think(c: Creature, tick: int) -> void:
 			_predator(c, def)
 		"looter":
 			_looter(c, def)
-	if c.target != Creature.NO_TARGET:
-		_movers[c.id] = true
-	else:
-		_movers.erase(c.id)
-	var soon := c.state in ["flee", "alert", "hunt", "attack", "loot"]
-	_schedule(c, tick + (maxi(2, int(def["think_ticks"]) / 2) if soon else int(def["think_ticks"])))
 
 
 ## Real seconds as world time (game ms at the world's pace).
@@ -417,7 +433,8 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 	var night := Daylight.is_night(world.world_time)
 	var cell := c.home
 	if not (String(def["behavior"]) == "villager" and night):
-		var spot := _spot_near(c, c.home, float(def["home_radius"]), int(world.world_time / 1000))
+		var radius := TAME_RADIUS if c.owner != "" else float(def["home_radius"])
+		var spot := _spot_near(c, c.home, radius, int(world.world_time / 1000))
 		if spot != Creature.NO_TARGET:
 			cell = spot
 	var old := _chunk_of(c)
@@ -462,10 +479,13 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 func _nearest_threat(c: Creature, within: float, noise_s: float) -> Array:
 	var me := c.cell()
 	var best := []
+	var def := world.content.get_def(c.kind)
 	for k: String in c.memory:
 		var m: Dictionary = c.memory[k]
 		if m["what"] == "noise" and world.world_time - int(m["time"]) > _ms(noise_s):
 			continue
+		if m["what"] == "character" and _holds_its_food(k, def):
+			continue  # one holding out what it eats is let come close (ADR-0030)
 		var d := Vector2(me).distance_to(Vector2(m["pos"]))
 		if d <= within and (best.is_empty() or d < float(best[1])):
 			best = [m["pos"], d]
@@ -612,6 +632,134 @@ func _looter(c: Creature, def: Dictionary) -> void:
 			_go(c, "wander", spot, false)
 			return
 	_go(c, "idle", Creature.NO_TARGET, false)
+
+
+## Husbandry (ADR-0030): one's own animal keeps near where it was left (a
+## pen), follows its owner holding out what it eats (and stays where it was
+## led), runs from who hurts it, rests at night. Fed within FED_HOURS it
+## gives its produce and breeds with another fed one of its kind near.
+const TAME_RADIUS := 2.0
+const FED_HOURS := 24.0
+const BREED_NEAR := 3.0
+## No young where this many of its kind are about (within 8 cells).
+const HERD_CAP := 8
+
+
+func _tame(c: Creature, def: Dictionary) -> void:
+	var attacker := _attacker(c, float(def["sight"]))
+	if not attacker.is_empty():
+		var away := _away_from(c, attacker[0], 8.0)
+		if away != Creature.NO_TARGET:
+			_go(c, "flee", away, true)
+			return
+	if fed_lately(c):
+		_produce(c, def)
+		_breed(c, def)
+	var m: Dictionary = c.memory.get(c.owner, {})
+	if not m.is_empty() and int(m["time"]) == world.world_time and _holds_its_food(c.owner, def):
+		var d := Vector2(c.cell()).distance_to(Vector2(m["pos"]))
+		if d > 1.5:
+			_go(c, "follow", m["pos"], false)
+		else:
+			_go(c, "look", Creature.NO_TARGET, false)
+		_home_here(c)
+		return
+	if c.state == "follow":
+		_home_here(c)  # led here: it stays here
+	if Daylight.is_night(world.world_time) and world.has_daylight(c.location):
+		if c.target == Creature.NO_TARGET:
+			_go(c, "rest", Creature.NO_TARGET, false)
+		return
+	if c.target != Creature.NO_TARGET and c.state == "wander":
+		return
+	if c.rand(int(world.world_time / 1000) + c.next_think) < 0.3:
+		var spot := _spot_near(c, c.home, TAME_RADIUS, c.next_think)
+		if spot != Creature.NO_TARGET:
+			_go(c, "wander", spot, false)
+			return
+	_go(c, "graze", Creature.NO_TARGET, false)
+
+
+func _home_here(c: Creature) -> void:
+	if c.home != c.cell():
+		c.home = c.cell()
+		c.changed()
+
+
+## Whether a present character holds out a thing this kind eats.
+func _holds_its_food(pid: String, def: Dictionary) -> bool:
+	var food: Array = def.get("tame", {}).get("food", [])
+	return not food.is_empty() and food.has(world.held_of(pid))
+
+
+func fed_lately(c: Creature) -> bool:
+	return c.fed_at >= 0 and world.world_time - c.fed_at <= int(FED_HOURS * Daylight.HOUR_MS)
+
+
+## Its produce (an egg, wool) on the ground where it is, every so often.
+func _produce(c: Creature, def: Dictionary) -> void:
+	var pr: Dictionary = def.get("produce", {})
+	if pr.is_empty():
+		return
+	if c.made_at < 0 or world.world_time - c.made_at >= int(float(pr["hours"]) * Daylight.HOUR_MS):
+		if c.made_at >= 0:
+			world.place_item(c.location, c.pos, String(pr["item"]), 1)
+		c.made_at = world.world_time
+		c.changed()
+
+
+## Young of two fed ones of a kind near each other, the owner's.
+func _breed(c: Creature, def: Dictionary) -> void:
+	var hours := float(def["tame"].get("breed_hours", 0.0))
+	if hours <= 0.0:
+		return
+	var every := int(hours * Daylight.HOUR_MS)
+	var now := world.world_time
+	if c.bred_at >= 0 and now - c.bred_at < every:
+		return
+	var me := c.cell()
+	var herd := 0
+	var mate: Creature = null
+	for cy in range((me.y - 8) >> 5, ((me.y + 8) >> 5) + 1):
+		for cx in range((me.x - 8) >> 5, ((me.x + 8) >> 5) + 1):
+			for id: String in in_chunk(c.location, cx, cy):
+				var o := get_creature(id)
+				if o == null or o.kind != c.kind or Vector2(o.cell()).distance_to(Vector2(me)) > 8.0:
+					continue
+				herd += 1
+				if o != c and mate == null and o.owner != "" and fed_lately(o) \
+						and Vector2(o.cell()).distance_to(Vector2(me)) <= BREED_NEAR and (o.bred_at < 0 or now - o.bred_at >= every):
+					mate = o
+	if mate == null or herd >= HERD_CAP:
+		return
+	var young := _spawn(c.kind, c.location, me, {}, hash([c.seed, mate.seed, now]))
+	young.owner = c.owner
+	young.home = c.home
+	young.bred_at = now
+	young.changed()
+	_owned[young.id] = true
+	for o: Creature in [c, mate]:
+		o.bred_at = now
+		o.changed()
+
+
+## Fed by `who` (ServerWorld checks reach and the thing): counts toward
+## taming a wild one; the last feed makes it `who`'s, where it stands.
+func fed_by(c: Creature, who: String) -> bool:
+	var tame: Dictionary = world.content.get_def(c.kind)["tame"]
+	c.fed_at = world.world_time
+	var tamed := false
+	if c.owner == "":
+		c.fed += 1
+		if c.fed >= int(tame["feeds"]):
+			c.owner = who
+			c.home = c.cell()
+			c.made_at = world.world_time
+			_owned[c.id] = true
+			tamed = true
+	c.changed()
+	alarm(c)
+	return tamed
 
 
 ## Swallowed things whose time is up are gone (a looter's digest_s).

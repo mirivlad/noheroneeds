@@ -366,6 +366,25 @@ func _check_creature(id: String, d: Dictionary) -> void:
 		d["stomach"] = int(d.get("stomach", 10))
 		if d["digest_s"] <= 0.0 or d["stomach"] < 1:
 			errors.append("%s: a looter needs digest_s above 0 and a stomach of at least 1 stack" % id)
+	# Husbandry (ADR-0030): fed what it eats `feeds` times it is one's own;
+	# fed, it breeds every breed_hours and gives its produce every hours.
+	if d.has("tame"):
+		var t: Variant = d["tame"]
+		if typeof(t) != TYPE_DICTIONARY or typeof(t.get("food")) != TYPE_ARRAY or (t["food"] as Array).is_empty():
+			errors.append("%s: tame needs {food: [items], feeds, breed_hours}" % id)
+		else:
+			_check_refs(id, "tame food", t["food"], "item")
+			t["feeds"] = int(t.get("feeds", 1))
+			t["breed_hours"] = float(t.get("breed_hours", 0.0))
+			if t["feeds"] < 1 or t["breed_hours"] < 0.0:
+				errors.append("%s: tame feeds at least 1, breed_hours not negative (0: it does not breed)" % id)
+	if d.has("produce"):
+		var pr: Variant = d["produce"]
+		if typeof(pr) != TYPE_DICTIONARY or kind_of(String(pr.get("item", ""))) != "item" or float(pr.get("hours", 0)) <= 0.0 \
+				or not d.has("tame"):
+			errors.append("%s: produce needs {item, hours above 0} and a tame kind" % id)
+		else:
+			pr["hours"] = float(pr["hours"])
 	if d["speed"] <= 0.0 or d["run_speed"] < d["speed"] or d["run_speed"] * Movement.WALK >= Movement.UNIT:
 		errors.append("%s: speeds must be positive, running not slower, a step shorter than a cell" % id)
 	if d["dark_sight"] > 1.0:

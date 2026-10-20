@@ -473,6 +473,9 @@ ITEMS = {
     "base:raw_fish": ("items1_0.png", 416, 224),
     "base:cooked_fish": ("items1_0.png", 352, 128),
     "base:leather": ("idyl/leather.png", 0, 0),
+    "base:wool": ("idyl/thread.png", 0, 0),
+    "base:cloth": ("idyl/cloth.png", 0, 0),
+    "base:egg": ("idyl/egg.png", 0, 0),
 }
 # Tools drawn in the hands by LPC: the south standing frame of their layers.
 HELD_ICONS = {"base:hoe": ["tools/hoe/bg/walk.png", "tools/hoe/fg/walk.png"]}

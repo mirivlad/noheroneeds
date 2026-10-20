@@ -17,6 +17,7 @@ PACKS=(
   "lpc-windows-doors $F/lpc-windows-doors-v2.zip 5a1c01aacc54fae857451fcd01871e2a8919ff9d84ca0eaccba9210148eef2be"
   "lpc-trees $F/lpc-trees.zip 47803bf90669759f3c6ca8a74ac1d1a05895dfba1b990851a56bcf164aec42a5"
   "lpc-plants $F/lpc-flowers-plants-fungi-wood.zip ec3e039bd872757b8424a0d11c1818eca0286fd1dc0322d276462a46b0f0948f"
+  "lpc-farm $F/submission_daneeklu.zip 4fd2b459b0105bf750dd9766ec36c3d00c54b42b8b67f1a3696341ac8491d0a3"
   "lpc-mine $F/lpc-mine.zip 069b39efefeff64dbcebb6a95c6ff36289541e505fabdc17a807a950eae0d6d0"
 )
 # Single pictures.

@@ -1339,6 +1339,47 @@
       }
      ]
     },
+    "base:hoe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_hoe_bg.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_hoe_fg.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
     "base:spear": {
      "layer": "main_hand",
      "sheets": [
@@ -2767,6 +2808,47 @@
          0,
          128,
          6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:hoe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_hoe_bg.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_hoe_fg.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ],
+        "thrust": [
+         576,
+         0,
+         64,
+         8
         ]
        },
        "z": 150

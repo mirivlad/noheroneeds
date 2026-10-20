@@ -189,6 +189,9 @@ func _validate() -> void:
 				# A tool's power: the work a blow does (ADR-0026: iron does more).
 				if d.has("power") and (typeof(d["power"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["power"]) < 1):
 					errors.append("%s: power is the work of a blow, at least 1" % id)
+				# A seed (ADR-0027): the plant it sows.
+				if d.has("plants") and kind_of(String(d["plants"])) != "plant":
+					errors.append("%s: plants names a plant" % id)
 				# Food (ADR-0026): eaten, it heals.
 				if d.has("food") and (typeof(d["food"]) != TYPE_DICTIONARY or int(d["food"].get("heal", 0)) < 1):
 					errors.append("%s: food needs heal of at least 1" % id)
@@ -282,6 +285,12 @@ func _validate() -> void:
 				if d.has("gather"):
 					_check_gather(id, d)
 				_check_height(id, d, 1.0)
+				# Fields (ADR-0027): what a ground is tilled into; how a crop grows.
+				if d.has("tilled") and kind_of(String(d["tilled"])) != "ground":
+					errors.append("%s: tilled names a ground" % id)
+				if d.has("crop") and (typeof(d["crop"]) != TYPE_DICTIONARY or int(d["crop"].get("stages", 0)) < 2
+						or float(d["crop"].get("grow_hours", 0)) <= 0.0):
+					errors.append("%s: a crop has two stages or more and grows some hours" % id)
 			"generator" when String(d.get("space", "surface")) == "underground":
 				_check_underground(id, d)
 			"deposit":

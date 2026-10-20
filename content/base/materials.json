@@ -8,6 +8,12 @@
     {"id": "base:hide", "kind": "item", "name": "Шкура", "stack": 20},
     {"id": "base:cooked_meat", "kind": "item", "name": "Жареное мясо", "stack": 20, "food": {"heal": 6}},
     {"id": "base:iron_ingot", "kind": "item", "name": "Железный слиток", "stack": 50},
-    {"id": "base:copper_ingot", "kind": "item", "name": "Медный слиток", "stack": 50}
+    {"id": "base:copper_ingot", "kind": "item", "name": "Медный слиток", "stack": 50},
+    {"id": "base:hoe", "kind": "item", "name": "Мотыга", "stack": 1, "equip_slot": "main_hand", "tools": ["tilling"], "swing": "thrust"},
+    {"id": "base:wheat_seeds", "kind": "item", "name": "Семена пшеницы", "stack": 99, "plants": "base:wheat_crop"},
+    {"id": "base:carrot_seeds", "kind": "item", "name": "Семена моркови", "stack": 99, "plants": "base:carrot_crop"},
+    {"id": "base:wheat", "kind": "item", "name": "Пшеница", "stack": 50},
+    {"id": "base:carrot", "kind": "item", "name": "Морковь", "stack": 50, "food": {"heal": 2}},
+    {"id": "base:bread", "kind": "item", "name": "Хлеб", "stack": 20, "food": {"heal": 5}}
   ]
 }

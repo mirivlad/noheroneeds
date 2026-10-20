@@ -82,6 +82,7 @@ HELD = {
     "base:iron_axe": (D + "tools/tool_axe.json", None),
     "base:pickaxe": (D + "tools/tool_pickaxe.json", None),
     "base:iron_pickaxe": (D + "tools/tool_pickaxe.json", None),
+    "base:hoe": (D + "tools/tool_hoe.json", None),
     "base:spear": (D + "weapons/polearm/weapon_polearm_spear.json", "medium"),
     "base:bow": (D + "weapons/ranged/bow/weapon_ranged_bow_normal.json", "medium"),
 }

@@ -395,3 +395,26 @@ func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	g._do(Actions.primary(acts))
 	_frames_until(func() -> bool: return int(w.present[id]["health"]) > 15)
 	eq(int(w.present[id]["health"]), 20, "eaten: health back")
+
+
+func test_a_field_grows_on_the_screen_and_a_hoe_ploughs() -> void:
+	var me := _me()
+	var cell := me + Vector2i(2, 0)
+	var acts := Actions.of(g.content, g.client, g.view, "base:hoe", {"kind": "ground", "id": "base:grass", "cell": cell,
+		"location": "surface"}, Vector2i.ZERO)
+	eq(Actions.primary(acts).get("id"), "till", "a hoe on grass ploughs")
+	acts = Actions.of(g.content, g.client, g.view, "base:wheat_seeds", {"kind": "ground", "id": "base:farmland", "cell": cell,
+		"location": "surface"}, Vector2i.ZERO)
+	eq(Actions.primary(acts).get("id"), "sow", "a seed on a field is sown")
+	var c := w.chunk("surface", floori(cell.x / 32.0), floori(cell.y / 32.0))
+	c.set_cell("ground", posmod(cell.x, 32), posmod(cell.y, 32), "base:farmland")
+	c.set_cell("cover", posmod(cell.x, 32), posmod(cell.y, 32), "base:wheat_crop")
+	w._set_layer_props(c, "cover", posmod(cell.x, 32), posmod(cell.y, 32), {"planted": w.world_time})
+	w._changed(ServerWorld.chunk_key("surface", floori(cell.x / 32.0), floori(cell.y / 32.0)))
+	_frames_until(func() -> bool: return g.view._crops.has(cell))
+	var v := g.content.visual_of("base:wheat_crop")
+	var s: Sprite2D = g.view._crops[cell][0]
+	eq(s.region_rect, Rect2(v["states"]["stage_0"][0], v["states"]["stage_0"][1], 32, 64), "just sown: a sprout")
+	w.world_time += 48 * Daylight.HOUR_MS  # the clock goes on; the client hears it
+	_frames_until(func() -> bool: return s.region_rect.position.x == float(v["states"]["stage_3"][0]))
+	eq(s.region_rect.position.x, float(v["states"]["stage_3"][0]), "ripe on the screen with nothing sent but the time")

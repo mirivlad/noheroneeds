@@ -1021,6 +1021,10 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _befriend(actor, r, false)
 		"craft":
 			return _craft(actor, r)
+		"till":
+			return _till(actor, r)
+		"sow":
+			return _sow(actor, r)
 		"eat":
 			return _eat(actor, r)
 	return {"ok": false, "reason": "unknown_type"}
@@ -1560,6 +1564,10 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	if why != "":
 		return {"ok": false, "reason": why}
 	var item := held_of(actor)
+	# A crop is gathered ripe only (ADR-0027).
+	var crop := content.get_def(thing)
+	if crop.has("crop") and not Crops.ripe(crop, float(_layer_props(c, layer, at[3], at[4]).get("planted", 0)), world_time):
+		return {"ok": false, "reason": "not_ripe"}
 	var tool := String(g["tool"])
 	if tool != "" and (item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool)):
 		return {"ok": false, "reason": "no_tool"}  # the tool must be in the hands, not in the bag
@@ -2104,6 +2112,62 @@ func _eat(actor: String, r: Dictionary) -> Dictionary:
 	_touch_inventory(actor)
 	combat.heal(actor, int(food["heal"]))
 	return {"ok": true, "health": combat.health_of(actor)}
+
+
+# --- fields (ADR-0027) ------------------------------------------------------------
+
+## Turns the ground of a cell over with a tilling tool in the hands: it
+## becomes what its ground is "tilled" to (a field), if nothing grows or
+## stands on it.
+func _till(actor: String, r: Dictionary) -> Dictionary:
+	var at := _cell(r)
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
+	if not _reaches(actor, at[0], x, y, BUILD_REACH):
+		return {"ok": false, "reason": "too_far"}
+	var why := check_held(actor, r)
+	if why != "":
+		return {"ok": false, "reason": why}
+	var item := held_of(actor)
+	if item == "" or not (content.get_def(item).get("tools", []) as Array).has("tilling"):
+		return {"ok": false, "reason": "no_tool"}
+	var c := chunk(at[0], at[1], at[2])
+	var into := String(content.get_def(c.get_cell("ground", at[3], at[4])).get("tilled", ""))
+	if into == "":
+		return {"ok": false, "reason": "not_tillable"}
+	if c.get_cell("structure", at[3], at[4]) != "" or c.get_cell("cover", at[3], at[4]) != "":
+		return {"ok": false, "reason": "occupied"}
+	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
+	c.set_cell("ground", at[3], at[4], into)
+	_changed(chunk_key(at[0], at[1], at[2]))
+	return {"ok": true}
+
+
+## Sows a seed one carries (an item that "plants" a crop) in a field: the
+## crop takes the cell, sown now (its props: "planted", world ms).
+func _sow(actor: String, r: Dictionary) -> Dictionary:
+	var at := _cell(r)
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
+	if not _reaches(actor, at[0], x, y, BUILD_REACH):
+		return {"ok": false, "reason": "too_far"}
+	var item := rs(r, "item")
+	var crop := String(content.get_def(item).get("plants", ""))
+	if crop == "" or content.kind_of(crop) != "plant":
+		return {"ok": false, "reason": "not_a_seed"}
+	if inventory(actor).count(item) < 1:
+		return {"ok": false, "reason": "not_carried"}
+	var c := chunk(at[0], at[1], at[2])
+	if not content.get_def(c.get_cell("ground", at[3], at[4])).get("farmland", false):
+		return {"ok": false, "reason": "not_a_field"}
+	if c.get_cell("structure", at[3], at[4]) != "" or c.get_cell("cover", at[3], at[4]) != "":
+		return {"ok": false, "reason": "occupied"}
+	inventory(actor).remove(item, 1)
+	_touch_inventory(actor)
+	c.set_cell("cover", at[3], at[4], crop)
+	_set_layer_props(c, "cover", at[3], at[4], {"planted": world_time})
+	_changed(chunk_key(at[0], at[1], at[2]))
+	return {"ok": true}
 
 
 # --- wear and repair of parts (ADR-0021) -------------------------------------------

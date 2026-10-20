@@ -211,6 +211,8 @@ static func describe(content: ContentRegistry, target: Dictionary, me := "") -> 
 			match String(e.get("kind", "")):
 				"creature":
 					name = String(content.get_def(String(e.get("creature", ""))).get("name", "существо"))
+					if String(e.get("profession", "")) != "":  # a dweller: by its trade (ADR-0039)
+						name += " — " + String(content.get_def(String(e["profession"])).get("name", "")).to_lower()
 					if String(e.get("owner", "")) != "":
 						name += " (ваша)" if me != "" and e["owner"] == me else " (чья-то)"
 				"item":

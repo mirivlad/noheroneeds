@@ -467,10 +467,11 @@ func _process(delta: float) -> void:
 			client.request({"type": "sleep", "location": client.location, "x": bed.x, "y": bed.y})
 	if _opts.has("goto") and game and _frames == 40:  # dev only: --goto=X,Y (or "village") puts one at a cell
 		var cell := Vector2i.ZERO
-		if String(_opts["goto"]) == "village":
+		if String(_opts["goto"]).begins_with("village"):  # "village" or "village,DX,DY" from its fire
 			var near := game.world.generator.settlements.plans_near(Vector2i.ZERO, 1200)
+			var off := String(_opts["goto"]).split(",")
 			if not near.is_empty():
-				cell = (near[0]["fire"] as Vector2i) + Vector2i(2, 0)
+				cell = (near[0]["fire"] as Vector2i) + (Vector2i(int(off[1]), int(off[2])) if off.size() == 3 else Vector2i(2, 0))
 		else:
 			var to := String(_opts["goto"]).split(",")
 			cell = Vector2i(int(to[0]), int(to[1]))

@@ -532,23 +532,24 @@ func _update_creature_replicas() -> void:
 		if _replica.has(id):
 			_lagging[id] = true  # left and came back in one tick
 			continue
-		var cold := {"kind": "creature", "creature": c.kind}
-		if not c.looks.is_empty():
-			cold["appearance"] = c.looks
-		if c.owner != "":
-			cold["owner"] = c.owner  # one's own animal (ADR-0030)
+		var cold := _creature_cold(c)
 		var r := Replica.new("creature", c.location, world.levels.z(c.location), c.pos.x, c.pos.y, cold)
 		r.set_health(c.health, world.combat.max_health_of(id), 0, int(world.combat.swings.get(id, 0)))
 		r.phase = absi(hash(id)) % CREATURE_HOT_TICKS
 		_replica[id] = r
 		_to_grid(id, r, c.location)
 	_lagging.merge(ch[2])
-	for id: String in world.creatures.take_owner_changes():
+	var cold_changed := world.creatures.take_owner_changes()
+	cold_changed.merge(world.creatures.take_cold_changes())
+	for id: String in cold_changed:
 		var c := world.creatures.get_creature(id)
 		var r: Replica = _replica.get(id)
-		if c and r and String(r.cold.get("owner", "")) != c.owner:
-			r.cold = r.cold.duplicate()
-			r.cold["owner"] = c.owner
+		if c == null or r == null:
+			continue
+		var cold := _creature_cold(c)
+		cold["z"] = r.cold.get("z", 0)
+		if cold != r.cold:
+			r.cold = cold
 			r.cold_size = Cbor.encode_fast(r.cold).size()
 			r.cv += 1
 	for id: String in world.combat.take_health_changes():
@@ -570,6 +571,23 @@ func _update_creature_replicas() -> void:
 			r.y = c.pos.y
 			r.hv += 1
 			_to_grid(id, r, c.location)
+
+
+## What all may know of a creature that changes seldom: its kind, looks,
+## owner (ADR-0030), what it holds, its last words and how many, sleep (ADR-0039).
+func _creature_cold(c: Creature) -> Dictionary:
+	var cold := {"kind": "creature", "creature": c.kind}
+	if not c.looks.is_empty():
+		cold["appearance"] = c.looks
+	if c.owner != "":
+		cold["owner"] = c.owner
+	if not c.job.is_empty():  # always told, empty too: a client keeps what it was told last
+		cold["profession"] = String(c.job.get("profession", ""))
+		cold["held"] = c.held
+		cold["asleep"] = c.asleep
+		cold["say"] = c.say
+		cold["said"] = c.said
+	return cold
 
 
 ## Creatures' replicas by cells of GRID x GRID: Vector3i(gx, gy, location

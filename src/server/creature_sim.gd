@@ -24,8 +24,7 @@ const THINKS_PER_TICK := 48
 ## Raised when kinds come to the fauna; a creature's "fauna_since" says from
 ## which: chunks populated before get those kinds only (old worlds meet the
 ## looters too, without a second crowd of hares).
-const FAUNA_VERSION := 3
-const VILLAGERS := 3
+const FAUNA_VERSION := 4  # 4: settlements' dwellers and their animals (ADR-0039)
 ## A creature away longer than this (real seconds) catches up on return.
 const CATCH_UP_S := 20.0
 ## Active: its chunk was needed by a player within this many ticks.
@@ -135,11 +134,10 @@ func on_chunk_ready(location: String, cx: int, cy: int, c: Chunk) -> void:
 	if not wild or had >= FAUNA_VERSION:
 		return
 	_populate(location, cx, cy, had)
+	if location == Levels.SURFACE and had < 4:
+		_settle(cx, cy)
 	c.meta["fauna"] = FAUNA_VERSION
 	world.mark_chunk_dirty(location, cx, cy)
-	if cx == 0 and cy == 0 and world.store.read_meta("villagers") == "":
-		_villagers()
-		world.note_fact("villagers", "1")
 
 
 ## Who lives in a chunk made just now: the surface's biome's fauna, or the
@@ -212,17 +210,38 @@ static func villager_looks(r: RandomNumberGenerator) -> Dictionary:
 		"worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
 
 
-## A few villagers near the spawn point, each with its own looks and home.
-func _villagers() -> void:
-	for i in VILLAGERS:
-		var r := RandomNumberGenerator.new()
-		r.seed = hash([world.world_seed, "villager", i])
-		for attempt in 12:
-			var cell := Vector2i(r.randi_range(-12, 12), r.randi_range(-12, 12))
-			if cell.length() < 5 or not _walkable(Levels.SURFACE, cell):
+## The people and animals of settlements whose homes and pens are in a
+## chunk made just now (ADR-0039): a dweller a home, sleeping in its bed,
+## with its home's trade; the pen's animals, the village's.
+func _settle(cx: int, cy: int) -> void:
+	var settlements := world.generator.settlements if world.generator else null
+	if settlements == null:
+		return
+	var chunk := Rect2i(cx * Chunk.SIZE, cy * Chunk.SIZE, Chunk.SIZE, Chunk.SIZE)
+	for plan: Dictionary in settlements.plans_touching(cx, cy):
+		var homes: Array = plan["homes"]
+		for i in homes.size():
+			var bed: Vector2i = homes[i]["bed"]
+			if bed == Settlements.NONE or not chunk.has_point(bed):
 				continue
-			_spawn("base:villager", Levels.SURFACE, cell, villager_looks(r), hash([world.world_seed, "villager", i]))
-			break
+			var r := RandomNumberGenerator.new()
+			r.seed = hash([world.world_seed, plan["id"], i])
+			var c := _spawn("base:villager", Levels.SURFACE, bed, villager_looks(r), r.randi())
+			c.job = {"village": plan["id"], "home": i, "profession": String(homes[i]["dweller"])}
+			c.changed()
+		var pen: Dictionary = plan["pen"]
+		if pen.is_empty() or not chunk.has_point((pen["rect"] as Rect2i).get_center()):
+			continue
+		var inside := (pen["rect"] as Rect2i).grow(-1)
+		var k := 0
+		for kind: String in pen["animals"]:
+			for n in int(pen["animals"][kind]):
+				var cell := inside.position + Vector2i(k % inside.size.x, (k / inside.size.x) % inside.size.y)
+				var a := _spawn(kind, Levels.SURFACE, cell, {}, hash([world.world_seed, plan["id"], "pen", k]))
+				a.owner = String(plan["id"])
+				a.home = inside.get_center()
+				a.changed()
+				k += 1
 
 
 ## A crowd for load tests (server option --populate=N): n creatures within
@@ -403,7 +422,7 @@ func _think(c: Creature, tick: int) -> void:
 		_movers[c.id] = true
 	else:
 		_movers.erase(c.id)
-	var soon := c.state in ["flee", "alert", "hunt", "attack", "loot", "follow"]
+	var soon := c.state in ["flee", "alert", "hunt", "attack", "loot", "follow", "walk"]
 	_schedule(c, tick + (maxi(2, int(def["think_ticks"]) / 2) if soon else int(def["think_ticks"])))
 
 
@@ -412,7 +431,10 @@ func _behave(c: Creature, def: Dictionary) -> void:
 		"prey":
 			_prey(c, def)
 		"villager":
-			_villager(c, def)
+			if not c.job.is_empty():
+				_dweller(c, def)
+			else:
+				_villager(c, def)
 		"predator":
 			_predator(c, def)
 		"looter":
@@ -432,6 +454,17 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 	c.running = false
 	var night := Daylight.is_night(world.world_time)
 	var cell := c.home
+	if not c.job.is_empty():  # a dweller is where its day has it now
+		var spot := _dweller_spot(c, _phase(c))
+		if spot != Creature.NO_TARGET:
+			var old_chunk := _chunk_of(c)
+			c.pos = spot * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
+			c.path.clear()
+			c.state = "arrived"
+			_index(c, old_chunk)
+			_moved[c.id] = true
+			c.changed()
+			return
 	if not (String(def["behavior"]) == "villager" and night):
 		var radius := TAME_RADIUS if c.owner != "" else float(def["home_radius"])
 		var spot := _spot_near(c, c.home, radius, int(world.world_time / 1000))
@@ -760,6 +793,261 @@ func fed_by(c: Creature, who: String) -> bool:
 	c.changed()
 	alarm(c)
 	return tamed
+
+
+# --- dwellers (ADR-0039) -----------------------------------------------------
+
+## The evening (by the fire) ends at this hour; then home to bed.
+const EVENING_END := 21.0
+## Seconds (real) between a dweller's words to someone near.
+const SAY_EVERY := 25.0
+## How far a dweller looks for a way (cells round its start and goal).
+const ROUTE_MARGIN := 14
+const ROUTE_MOST := 140
+
+
+func _profession(c: Creature) -> Dictionary:
+	return world.content.get_def(String(c.job.get("profession", "")))
+
+
+func _plan_of(c: Creature) -> Dictionary:
+	var s := world.generator.settlements if world.generator else null
+	return s.plan_by_id(String(c.job.get("village", ""))) if s else {}
+
+
+## "work", "evening" or "night", by the world's hour and the trade's hours.
+func _phase(c: Creature) -> String:
+	var hours: Array = _profession(c).get("hours", [7, 19])
+	var h := Daylight.hour_of(world.world_time)
+	if h >= float(hours[0]) and h < float(hours[1]):
+		return "work"
+	if h >= float(hours[1]) and h < EVENING_END:
+		return "evening"
+	return "night"
+
+
+## Where a dweller's day has it: its work, the fire, its bed.
+func _dweller_spot(c: Creature, phase: String) -> Vector2i:
+	var plan := _plan_of(c)
+	if plan.is_empty():
+		return Creature.NO_TARGET
+	var home: Dictionary = (plan["homes"] as Array)[int(c.job.get("home", 0)) % (plan["homes"] as Array).size()]
+	var i := int(c.job.get("home", 0))
+	match phase:
+		"night":
+			return home["bed"]
+		"evening":
+			var round := [Vector2i(-2, 0), Vector2i(2, 0), Vector2i(-1, 1), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-3, 1), Vector2i(3, 1)]
+			return (plan["fire"] as Vector2i) + round[i % round.size()]
+	var work := String(_profession(c).get("work", ""))
+	if work == "field" and not (plan["fields"] as Array).is_empty():
+		var f: Rect2i = plan["fields"][i % (plan["fields"] as Array).size()]
+		var day := int(world.world_time / Daylight.DAY_MS) * 24 + int(Daylight.hour_of(world.world_time) / 2.0)
+		var roll := absi(hash([c.seed, day]))
+		return f.position + Vector2i(roll % f.size.x, (roll / 7) % f.size.y)  # another row every two hours
+	if work == "pen" and not (plan["pen"] as Dictionary).is_empty():
+		return (plan["pen"]["gate"] as Vector2i) + Vector2i(0, -1)
+	if work == "water":
+		if not c.job.has("water"):
+			var spot := _water_spot(plan["fire"])
+			c.job["water"] = [spot.x, spot.y]
+			c.changed()
+		var w: Array = c.job["water"]
+		if Vector2i(int(w[0]), int(w[1])) != Creature.NO_TARGET:
+			return Vector2i(int(w[0]), int(w[1]))
+	if work.begins_with("station:"):
+		var kind := work.substr(8)
+		var r: Rect2i = home["rect"]
+		for y in range(r.position.y + 1, r.end.y - 1):
+			for x in range(r.position.x + 1, r.end.x - 1):
+				if String(world.content.get_def(world.part_at(Levels.SURFACE, x, y)).get("station", "")) == kind:
+					return Vector2i(x, y + 1)
+	return (plan["fire"] as Vector2i) + Vector2i(0, 1)
+
+
+## A dry cell by the water nearest a place (a fisher's), or NO_TARGET.
+func _water_spot(from: Vector2i) -> Vector2i:
+	var gen := world.generator
+	for r in range(2, 70):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var at := from + Vector2i(dx, dy)
+				if not gen.is_wet(at.x, at.y):
+					continue
+				# back toward the village to the first dry cell one can stand on
+				var dir := Vector2(from - at).normalized()
+				for k in range(1, 6):
+					var back := at + Vector2i(Vector2(dir * k).round())
+					if not gen.is_wet(back.x, back.y):
+						return back
+	return Creature.NO_TARGET
+
+
+## A dweller's day: to work by its trade's hours, by the fire in the
+## evening, to bed at night; it walks there by a found way, opening doors;
+## at work it works (its tool in its hands); it speaks to one who comes near.
+func _dweller(c: Creature, def: Dictionary) -> void:
+	var attacker := _attacker(c, 12.0)
+	if not attacker.is_empty():
+		var away := _away_from(c, attacker[0], 16.0)
+		if away != Creature.NO_TARGET:
+			c.path.clear()
+			_dress(c, "", false)
+			_go(c, "flee", away, true)
+			return
+	var phase := _phase(c)
+	var spot := _dweller_spot(c, phase)
+	if spot == Creature.NO_TARGET:
+		_villager(c, def)
+		return
+	var prof := _profession(c)
+	if _someone_close(c, 3.0) and (c.said_at < 0 or _tick - c.said_at > int(SAY_EVERY * Movement.TICK_RATE)):
+		_speak(c, prof, phase)
+	if Vector2(c.cell()).distance_to(Vector2(spot)) <= 1.0:
+		c.path.clear()
+		_dress(c, String(prof.get("holds", "")) if phase == "work" else "", phase == "night")
+		if phase == "work":
+			_work(c, spot, prof)
+		_go(c, phase, Creature.NO_TARGET, false)
+		return
+	_dress(c, "", false)
+	if c.path_to != spot or c.path.is_empty():
+		c.path = _route(c, spot)
+		c.path_to = spot
+	while not c.path.is_empty() and c.path[0] == c.cell():
+		c.path.pop_front()
+	if c.path.is_empty():
+		_go(c, "lost", Creature.NO_TARGET, false)  # no way there now (a door locked, a wall built)
+		return
+	_open_doors(c, c.cell(), c.path[0])
+	_go(c, "walk", c.path[0], false)
+
+
+## What a dweller holds and whether it sleeps (seen by all): a change is told.
+func _dress(c: Creature, holds: String, sleeping: bool) -> void:
+	if c.held != holds or c.asleep != sleeping:
+		c.held = holds
+		c.asleep = sleeping
+		_cold[c.id] = true
+
+
+## At work: now and then a stroke of its trade; a herder feeds the pen.
+func _work(c: Creature, spot: Vector2i, prof: Dictionary) -> void:
+	if c.rand(_tick) < 0.5:
+		var toward := spot + Vector2i(0, -1)
+		match String(prof.get("work", "")):
+			"water":
+				toward = c.cell() + Vector2i(Vector2(_toward_water(c)).round())
+			"field":
+				toward = c.cell() + Vector2i(1, 0)
+		world.combat.swung(c.id, toward * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
+	if String(prof.get("work", "")) == "pen":
+		var plan := _plan_of(c)
+		var pen: Rect2i = plan["pen"]["rect"]
+		for cy in range(floori(pen.position.y / 32.0), floori((pen.end.y - 1) / 32.0) + 1):
+			for cx in range(floori(pen.position.x / 32.0), floori((pen.end.x - 1) / 32.0) + 1):
+				for id: String in in_chunk(Levels.SURFACE, cx, cy):
+					var a := get_creature(id)
+					if a and a.owner == String(plan["id"]) and not fed_lately(a):
+						a.fed_at = world.world_time
+						a.changed()
+
+
+func _toward_water(c: Creature) -> Vector2:
+	for d: Vector2i in [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1)]:
+		if world.generator.is_wet(c.cell().x + d.x * 2, c.cell().y + d.y * 2):
+			return Vector2(d)
+	return Vector2(0, 1)
+
+
+## A line for one near: of the trade, by rain, night, evening, work, else a greeting.
+func _speak(c: Creature, prof: Dictionary, phase: String) -> void:
+	var lines: Dictionary = prof.get("lines", {})
+	var key := "greet"
+	if phase == "night":
+		key = "night"
+	elif world.has_daylight(c.location) and Weather.rain(world.weather_seed, world.world_time) > 0.2 and lines.has("rain"):
+		key = "rain"
+	elif phase == "evening":
+		key = "evening"
+	elif phase == "work" and c.rand(_tick + 1) < 0.6:
+		key = "work"
+	var pick: Array = lines.get(key, lines.get("greet", []))
+	if pick.is_empty():
+		return
+	c.say = String(pick[int(c.rand(_tick + 2) * pick.size()) % pick.size()])
+	c.said += 1
+	c.said_at = _tick
+	_cold[c.id] = true
+
+
+## A way from a dweller's cell to `goal`: the cells where it turns, found
+## over the cells round both (doors count as open: it opens them).
+func _route(c: Creature, goal: Vector2i) -> Array[Vector2i]:
+	var start := c.cell()
+	var box := Rect2i(start, Vector2i.ONE).merge(Rect2i(goal, Vector2i.ONE)).grow(ROUTE_MARGIN)
+	if box.size.x > ROUTE_MOST or box.size.y > ROUTE_MOST:
+		return []
+	var came := {start: start}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var at := queue[head]
+		head += 1
+		if at == goal:
+			break
+		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n := at + d
+			if came.has(n) or not box.has_point(n):
+				continue
+			if n != goal and not _free(c.location, n) and not _door(c.location, n):
+				continue
+			came[n] = at
+			queue.append(n)
+	if not came.has(goal):
+		return []
+	var cells: Array[Vector2i] = []
+	var at := goal
+	while at != start:
+		cells.push_front(at)
+		at = came[at]
+	# Only where it turns (and the goal): it walks straight between them.
+	var out: Array[Vector2i] = []
+	for k in cells.size():
+		var before: Vector2i = start if k == 0 else cells[k - 1]
+		var after: Vector2i = cells[k + 1] if k + 1 < cells.size() else cells[k]
+		if k + 1 == cells.size() or (cells[k] - before) != (after - cells[k]) or _door(c.location, cells[k]):
+			out.append(cells[k])
+	return out
+
+
+func _door(location: String, cell: Vector2i) -> bool:
+	var part := world.part_at(location, cell.x, cell.y)
+	return part != "" and bool(world.content.get_def(part).get("openable", false))
+
+
+## Opens the closed doors on the straight way from one cell to another.
+func _open_doors(c: Creature, from: Vector2i, to: Vector2i) -> void:
+	var step := Vector2i(signi(to.x - from.x), signi(to.y - from.y))
+	var at := from
+	for i in absi(to.x - from.x) + absi(to.y - from.y) + 1:
+		if _door(c.location, at):
+			world.open_door(c.location, at)
+		if at == to:
+			break
+		at += step
+
+
+## Ids whose open part (held, words, sleep) changed, for the replicas.
+var _cold := {}
+
+
+func take_cold_changes() -> Dictionary:
+	var out := _cold
+	_cold = {}
+	return out
 
 
 ## Swallowed things whose time is up are gone (a looter's digest_s).

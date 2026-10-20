@@ -141,7 +141,7 @@ const REASONS := {
 	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
-	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
+	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "in_the_way": "мешает то, что ближе", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
 }
 
 
@@ -1210,7 +1210,18 @@ func _update_target() -> void:
 	var mouse := _mouse_world()
 	target = view.pick_target(mouse)
 	var aim := Vector2i(mouse * WorldView.UNITS_PER_PIXEL)
-	actions = Actions.of(content, client, view, hotbar.held(client.inventory()), target, aim)
+	var held := hotbar.held(client.inventory())
+	if Reach.digs(content, held) and client.has_position:
+		# A pick or an axe works on the first solid thing toward the cursor,
+		# within three cells, not on what the cursor is over (Reach).
+		var hit := Reach.first_solid(client.position, Vector2(aim), client.is_solid)
+		if hit != Reach.NONE:
+			target = view.part_target(hit)
+			target["aim"] = aim
+		elif target.get("kind") == "part" and client.is_solid(target["cell"].x, target["cell"].y):
+			target = {"kind": "ground", "id": view.ground_at(client.location, Movement.cell_of(aim)),
+				"cell": Movement.cell_of(aim), "location": client.location}  # out of reach: nothing to dig
+	actions = Actions.of(content, client, view, held, target, aim)
 	var p := Actions.primary(actions)
 	var aiming := _blueprint == "" and String(p.get("id", "")) in ["strike", "shoot", "swing"]
 	if aiming != _cursor_aim:

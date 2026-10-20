@@ -96,6 +96,9 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			"why": "нужно взять в руки: " + tool_names(content, tool),
 			"request": {"type": "gather", "location": loc, "x": cell.x, "y": cell.y,
 				"layer": String(target.get("layer", "ground")), "item": held}})
+		if target.has("aim"):  # the line it was reached along (Reach), for the server to check
+			out[-1]["request"]["ax"] = (target["aim"] as Vector2i).x
+			out[-1]["request"]["ay"] = (target["aim"] as Vector2i).y
 	if kind == "part":
 		var id := String(target["id"])
 		var def := content.get_def(id)

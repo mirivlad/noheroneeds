@@ -150,18 +150,20 @@ func test_a_rod_fishes_in_water_and_the_water_stays() -> void:
 	eq(_req(a, {"type": "craft", "recipe": "base:make_fishing_rod", "count": 1}).get("made"), {"base:fishing_rod": 1})
 	_req(a, {"type": "hold", "item": "base:fishing_rod"})
 	var casts := 0
-	while w.inventory(a).count("base:raw_fish") == 0 and casts < 20:
+	var got := {}
+	while got.is_empty() and casts < 60:
 		w.tick += 40  # past the cast's cooldown
 		w.combat.step(w.tick)
 		var r := _req(a, fish.merged({"item": "base:fishing_rod"}))
 		check(r.get("ok", false), "cast %d: %s" % [casts, str(r)])
+		got = r.get("drops", {})
 		casts += 1
-	eq(casts, 5, "five casts to a fish")
+	eq(got.size(), 1, "a fish, sooner or later (%d casts)" % casts)
 	eq(c.get_cell("ground", 4, 3), "base:water", "the water is still there")
-	check(not c.get_props(4, 3).has("ground"), "and the catch begins anew")
 	# Cooked at a fire, eaten.
 	w.grant(a, "base:log", 2)
 	check(_req(a, {"type": "build", "location": "surface", "x": 3, "y": 2, "part": "base:campfire"}).get("ok", false), "a fire")
+	w.grant(a, "base:raw_fish", 1)
 	eq(_req(a, {"type": "craft", "recipe": "base:cook_fish", "count": 1}).get("made"), {"base:cooked_fish": 1})
 	w.combat.hurt(a, 10, "")
 	eq(_req(a, {"type": "eat", "item": "base:cooked_fish"}).get("health"), 14, "four back")

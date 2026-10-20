@@ -20,7 +20,9 @@
     {"id": "base:carrot", "kind": "item", "name": "Морковь", "stack": 50, "food": {"heal": 2}},
     {"id": "base:bread", "kind": "item", "name": "Хлеб", "stack": 20, "food": {"heal": 5}},
     {"id": "base:fishing_rod", "kind": "item", "name": "Удочка", "stack": 1, "equip_slot": "main_hand", "tools": ["fishing"], "swing": "cast"},
-    {"id": "base:raw_fish", "kind": "item", "name": "Сырая рыба", "stack": 20},
+    {"id": "base:raw_fish", "kind": "item", "name": "Плотва", "stack": 20},
+    {"id": "base:perch", "kind": "item", "name": "Окунь", "stack": 20},
+    {"id": "base:pike", "kind": "item", "name": "Щука", "stack": 10},
     {"id": "base:cooked_fish", "kind": "item", "name": "Жареная рыба", "stack": 20, "food": {"heal": 4}}
   ]
 }

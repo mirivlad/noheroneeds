@@ -1581,8 +1581,12 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 		var pace: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
 		if not combat.ready(actor, float(pace.get("cooldown_ms", 700))):
 			return {"ok": false, "reason": "not_ready"}
+	if g.has("chance") and not combat.ready(actor, float((content.get_def(item).get("weapon", {}) if item != "" else {}).get("cooldown_ms", 700))):
+		return {"ok": false, "reason": "not_ready"}
 	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
 	creatures.noise(loc, Vector2i(x, y))
+	if g.has("chance"):
+		return _gather_by_luck(actor, c, at, thing, g)
 	# A better tool does more a blow ("power": an iron axe fells sooner).
 	var power := maxi(1, int(content.get_def(item).get("power", 1))) if item != "" else 1
 	var done := int(_layer_props(c, layer, at[3], at[4]).get("work", 0)) + power
@@ -1606,6 +1610,48 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 		inv.add(id, int(drops[id]))
 	_touch_inventory(actor)
 	return {"ok": true, "thing": thing, "drops": drops}
+
+
+## A gather by luck (ADR-0031: fishing): every try has the ground's
+## "chance" of a catch, better at dawn and dusk, less where much was taken
+## lately (its "stock", back one every "restock_hours"); a catch is one of
+## "pick" by weight. The ground stays; what was taken is in its props.
+func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dictionary) -> Dictionary:
+	var props := _layer_props(c, "ground", at[3], at[4]).duplicate()
+	var taken := maxf(0.0, float(props.get("taken", 0.0))
+		- float(world_time - int(props.get("at", world_time))) / (float(g["restock_hours"]) * Daylight.HOUR_MS))
+	var chance := float(g["chance"]) * bite_hour(world_time) * maxf(0.0, 1.0 - taken / float(g["stock"]))
+	var roll := float(absi(hash([world_seed, actor, at[0], at[1], at[2], at[3], at[4], tick])) % 100003) / 100003.0
+	if roll >= chance:
+		return {"ok": true, "thing": thing, "bite": false, "chance": chance}
+	var pick: Dictionary = g["pick"]
+	var total := 0.0
+	for id: String in pick:
+		total += float(pick[id])
+	var r := float(absi(hash([roll, world_seed, tick])) % 100003) / 100003.0 * total
+	var got := ""
+	for id: String in pick:
+		got = id
+		r -= float(pick[id])
+		if r < 0.0:
+			break
+	props["taken"] = taken + 1.0
+	props["at"] = world_time
+	_set_layer_props(c, "ground", at[3], at[4], props)
+	_changed(chunk_key(at[0], at[1], at[2]))
+	inventory(actor).add(got, 1)
+	_touch_inventory(actor)
+	return {"ok": true, "thing": thing, "bite": true, "drops": {got: 1}}
+
+
+## How well fish bite at an hour: best at dawn and dusk, worst at noon and midnight.
+static func bite_hour(time_ms: int) -> float:
+	var h := Daylight.hour_of(time_ms)
+	if (h >= 5.0 and h < 8.0) or (h >= 18.0 and h < 21.0):
+		return 1.5
+	if (h >= 11.0 and h < 15.0) or h >= 23.0 or h < 3.0:
+		return 0.7
+	return 1.0
 
 
 ## Anything on a cell of a level: a part, a ceiling, a roof, a thing, a person.

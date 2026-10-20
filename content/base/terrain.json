@@ -9,7 +9,8 @@
     {"id": "base:farmland", "kind": "ground", "name": "Пашня", "farmland": true},
     {"id": "base:sand", "kind": "ground", "name": "Песок"},
     {"id": "base:water", "kind": "ground", "name": "Вода", "solid": true,
-      "gather": {"tool": "fishing", "verb": "Ловить рыбу", "drops": {"base:raw_fish": 1}, "work": 5}},
+      "gather": {"tool": "fishing", "verb": "Ловить рыбу", "drops": {}, "chance": 0.3,
+        "pick": {"base:raw_fish": 6, "base:perch": 3, "base:pike": 1}, "stock": 6, "restock_hours": 4}},
 
     {"id": "base:tall_grass", "kind": "plant", "name": "Высокая трава",
       "gather": {"tool": "", "verb": "Сорвать", "drops": {"base:wheat_seeds": 1}}},

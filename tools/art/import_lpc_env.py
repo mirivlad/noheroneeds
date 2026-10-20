@@ -471,6 +471,8 @@ ITEMS = {
     "base:bread": ("idyl/bread.png", 0, 0),
     "base:fishing_rod": ("items1_0.png", 384, 224),
     "base:raw_fish": ("items1_0.png", 416, 224),
+    "base:perch": (str(FARM / "farming_fishing.png"), 528, 194),
+    "base:pike": (str(FARM / "farming_fishing.png"), 528, 321),
     "base:cooked_fish": ("items1_0.png", 352, 128),
     "base:leather": ("idyl/leather.png", 0, 0),
     "base:wool": ("idyl/thread.png", 0, 0),

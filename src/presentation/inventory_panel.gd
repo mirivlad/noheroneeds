@@ -1,135 +1,136 @@
 class_name InventoryPanel
 extends PanelContainer
-## The things one carries (I): dragged onto a quick slot to have them at hand
-## (ADR-0021, 16.10.2026: by dragging, not by a click); a slot dragged back
-## here is emptied. Right click drops (Shift all, Ctrl half); G drops one of
-## what is in the hands.
+## The things one carries (I), as a grid of cells (ADR-0041): Bag.SIZE cells,
+## a stack a cell, laid out as the player arranged them (dragged cell to
+## cell; kept in the settings). A cell is dragged onto a quick slot to have
+## the thing at hand (ADR-0021), onto the doll to wear it; a quick slot or a
+## worn thing dragged back here is emptied or taken off. Right click drops
+## one (Shift the cell's stack, Ctrl half of it); a double click wears.
+## Compact, beside the doll (C): only what can be worn or held.
 
-## Drop (item, count) on the ground: right click one, Shift all, Ctrl half.
+## Drop (item, count) on the ground.
 signal drop(item: String, count: int)
 ## A quick slot was dragged back onto the things: it is emptied.
 signal unslot(slot: int)
 signal wear(item: String)
 signal take_off(slot: String)
-
-
-## The list a thing is dragged out of, onto a quick slot — and where a slot's
-## thing is dragged back to.
-class DragList:
-	extends ItemList
-	var ids: Array[String] = []
-	var panel: InventoryPanel
-
-	func _can_drop_data(_at: Vector2, data: Variant) -> bool:
-		return typeof(data) == TYPE_DICTIONARY and (int(data.get("from_slot", -1)) >= 0 or data.has("equipment_slot"))
-
-	func _drop_data(_at: Vector2, data: Variant) -> void:
-		if data.has("equipment_slot"):
-			panel.take_off.emit(String(data["equipment_slot"]))
-		else:
-			panel.unslot.emit(int(data["from_slot"]))
-
-	func _get_drag_data(at: Vector2) -> Variant:
-		var i := get_item_at_position(at, true)
-		if i < 0 and is_anything_selected():
-			i = get_selected_items()[0]  # the row the press chose
-		if i < 0 or i >= ids.size():
-			return null
-		var preview := TextureRect.new()
-		preview.texture = get_item_icon(i)
-		preview.size = Vector2(32, 32)
-		if get_viewport() and get_viewport().gui_is_dragging():
-			set_drag_preview(preview)
-		else:
-			preview.free()
-		return {"item": ids[i]}
-
+## The cells were arranged anew: the order to keep (item id or "" per cell).
+signal arranged(order: Array)
 
 var content: ContentRegistry
 var view: WorldView
-var _list: DragList
-var _title: Label
-var _ids: Array[String] = []
+var grid := SlotGrid.new()
+## The order of the cells (an item id or "" each), as the player left them.
+var order: Array = []
+var _title := Label.new()
+var _hint := Label.new()
 var _have := {}
 var _wear := Button.new()
 var _compact := false
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE and is_instance_valid(_wear) and _wear.get_parent() == null:
-		_wear.free()
+	if what == NOTIFICATION_PREDELETE:
+		for node: Node in [grid, _title, _hint, _wear]:
+			if is_instance_valid(node) and node.get_parent() == null:
+				node.free()
 
 
 func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -> void:
 	content = registry
 	view = world_view
 	_compact = compact
-	_list = DragList.new()
-	_list.panel = self
-	_title = Label.new()
 	theme = Art.theme()
-	custom_minimum_size = Vector2(232, 434) if compact else Vector2(300, 170)
 	var box := VBoxContainer.new()
 	add_child(box)
 	# The pixel font is drawn at its own size (16) or not at all readable.
 	_title.add_theme_font_size_override("font_size", 16)
-	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_title.custom_minimum_size = Vector2(220 if compact else 290, 0)
 	box.add_child(_title)
-	_list.custom_minimum_size = Vector2(220 if compact else 290, 364 if compact else 130)
-	_list.add_theme_font_override("font", Art.font())
-	_list.add_theme_font_size_override("font_size", 16)
-	_list.fixed_icon_size = Vector2i(32, 32)
-	_list.allow_rmb_select = true
-	_list.item_clicked.connect(func(i: int, _at: Vector2, button: int) -> void:
+	grid.setup(content, view, 5 if compact else Bag.COLUMNS, "worn_bag" if compact else "bag")
+	grid.accepts = func(data: Dictionary) -> bool:
+		return int(data.get("from_slot", -1)) >= 0 or data.has("equipment_slot")
+	grid.taken.connect(func(data: Dictionary, _at: int) -> void:
+		if data.has("equipment_slot"):
+			take_off.emit(String(data["equipment_slot"]))
+		elif int(data.get("from_slot", -1)) >= 0:
+			unslot.emit(int(data["from_slot"])))
+	grid.moved.connect(_move)
+	grid.clicked.connect(func(i: int, button: int) -> void:
 		if button == MOUSE_BUTTON_RIGHT:
-			drop_some(_ids[i]))
-	box.add_child(_list)
+			drop_some(i)
+		else:
+			_wear.disabled = not _can_wear(grid.item_at(i)))
+	grid.activated.connect(func(i: int) -> void:
+		if _can_wear(grid.item_at(i)):
+			wear.emit(grid.item_at(i)))
+	box.add_child(grid)
+	_hint.add_theme_font_size_override("font_size", 16)
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint.custom_minimum_size.x = grid.columns * (SlotGrid.CELL + 2)
+	_hint.add_theme_color_override("font_color", Art.TEXT_DIM)
+	_hint.text = "Двойной щелчок — надеть" if compact else \
+		"Тащите: в ячейку, на панель внизу, на куклу (C). Двойной щелчок — надеть. ПКМ — бросить (Shift — стопку, Ctrl — половину)"
+	box.add_child(_hint)
 	_wear.text = "Надеть / взять в руки"
 	_wear.disabled = true
-	_list.item_selected.connect(func(i: int) -> void: _wear.disabled = not _can_wear(_ids[i]))
-	_list.item_activated.connect(func(i: int) -> void:
-		if _can_wear(_ids[i]):
-			wear.emit(_ids[i]))
 	_wear.pressed.connect(func() -> void:
-		if _list.is_anything_selected():
-			wear.emit(_ids[_list.get_selected_items()[0]]))
+		if _can_wear(grid.item_at(grid.selected)):
+			wear.emit(grid.item_at(grid.selected)))
 	box.add_child(_wear)
 	visible = false
 
 
 func _can_wear(id: String) -> bool:
+	if id == "":
+		return false
 	var d := content.get_def(id)
 	return String(d.get("equip_slot", "")) != "" or d.has("tools") or d.has("weapon")
 
 
-## Right click on a thing: one of it on the ground; with Shift all, with Ctrl half.
-func drop_some(id: String) -> void:
-	var have := int(_have.get(id, 0))
+## Right click on a cell: one of it on the ground; with Shift the cell's
+## stack, with Ctrl half of it.
+func drop_some(index: int) -> void:
+	var id := grid.item_at(index)
+	var have := grid.count_at(index)
+	if id == "" or have <= 0:
+		return
 	var n := have if Input.is_key_pressed(KEY_SHIFT) else (maxi(1, have / 2) if Input.is_key_pressed(KEY_CTRL) else 1)
 	drop.emit(id, n)
 
 
+## A cell's stack onto another cell: the two change places.
+func _move(from: int, to: int) -> void:
+	if _compact:
+		return  # beside the doll the cells keep to names
+	while order.size() <= maxi(from, to):
+		order.append("")
+	var was: Variant = order[to]
+	order[to] = order[from]
+	order[from] = was
+	show_for(_have, 0)
+	arranged.emit(order)
+
+
 func show_for(inventory: Dictionary, _slot: int) -> void:
-	_title.text = "Снаряжение: надеть, взять в руки" if _compact else "Вещи. Двойной щелчок — надеть; перетащите вниз — в руки. C — персонаж. ПКМ — бросить (Shift — всё, Ctrl — половину)"
 	_have = inventory
-	_wear.disabled = true
-	_list.clear()
-	_ids.clear()
-	var ids: Array = inventory.keys()
-	ids.sort_custom(func(a: String, b: String) -> bool:
-		return String(content.get_def(a).get("name", a)) < String(content.get_def(b).get("name", b)))
 	if _compact:  # beside the doll: only what is worn or held (the rest is in the things, I)
-		ids = ids.filter(_can_wear)
-	for id: String in ids:
-		var v := content.visual_of(id)
-		var icon: Texture2D = null
-		if not v.is_empty():
-			var at := AtlasTexture.new()
-			at.atlas = view.texture(v["atlas_path"])
-			at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
-			icon = at
-		_list.add_item("%s  ×%d" % [content.get_def(id).get("name", id), int(inventory[id])], icon)
-		_ids.append(id)
-	_list.ids = _ids
+		var mine := {}
+		for id: String in inventory:
+			if _can_wear(id):
+				mine[id] = inventory[id]
+		var laid := Bag.lay_out(content, mine, [], 0)
+		var cells: Array = laid["cells"]
+		while cells.size() < 40 or cells.size() % grid.columns != 0:
+			cells.append(["", 0])
+		_title.text = "Снаряжение"
+		grid.show_cells(cells)
+	else:
+		var before := order.duplicate()
+		var laid := Bag.lay_out(content, inventory, order)
+		order = laid["order"]
+		_title.text = "Вещи: занято %d из %d" % [Bag.used(content, inventory), Bag.SIZE]
+		grid.show_cells(laid["cells"])
+		if order != before:
+			arranged.emit(order)
+	_wear.disabled = not _can_wear(grid.item_at(grid.selected))
 	visible = true

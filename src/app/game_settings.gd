@@ -24,6 +24,8 @@ const DEFAULTS := {
 	"character": "",
 	## Quick slots of each character (ADR-0021): character id -> [item id, ...].
 	"hotbars": {},
+	## Cells of each character's bag (ADR-0041): character id -> [item id or "", ...].
+	"bags": {},
 }
 
 ## Volume setting -> audio bus (default_bus_layout.tres).

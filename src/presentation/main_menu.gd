@@ -162,7 +162,7 @@ func show_load() -> void:
 		text.text = String(w["name"])
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text.clip_text = true
-		text.tooltip_text = "Этажей не выше %d · %s" % [w["max_levels"], _when(int(w["last_played"]))]
+		text.tooltip_text = "Этажей не выше %d, %s" % [w["max_levels"], _when(int(w["last_played"]))]
 		text.mouse_filter = Control.MOUSE_FILTER_PASS
 		row.add_child(text)
 		var when := Label.new()

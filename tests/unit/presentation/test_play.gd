@@ -275,15 +275,15 @@ func test_things_dragged_into_slots_and_a_wall_struck_and_mended_from_the_menu()
 	var id := g.client.character_id
 	w.grant(id, "base:axe", 1)
 	_frames(5)
-	# Drag: the list gives the thing, the slot takes it (what Godot's drag does
+	# Drag: a cell gives the thing, the slot takes it (what Godot's drag does
 	# between them; the gesture itself is not pushed here).
 	_key(KEY_I)
-	var list: InventoryPanel.DragList = g.inventory_panel._list
-	var row := list.ids.find("base:axe")
-	check(row >= 0, "the axe is in the list")
-	list.select(row)
-	var data: Variant = list._get_drag_data(list.get_item_rect(row).get_center())
-	eq(data, {"item": "base:axe"})
+	var bag: SlotGrid = g.inventory_panel.grid
+	eq(bag.cells.size(), Bag.SIZE, "a grid of the bag's cells")
+	var at := g.inventory_panel.order.find("base:axe")
+	check(at >= 0, "the axe is in a cell")
+	var data: Variant = bag.cell(at)._get_drag_data(Vector2.ZERO)
+	eq(data, {"item": "base:axe", "count": 1, "grid": "bag", "cell": at})
 	var slot: Hotbar.Slot = g.hotbar._slots[4]
 	check(slot._can_drop_data(Vector2.ZERO, data), "a slot takes it")
 	slot._drop_data(Vector2.ZERO, data)
@@ -295,14 +295,23 @@ func test_things_dragged_into_slots_and_a_wall_struck_and_mended_from_the_menu()
 	(g.hotbar._slots[6] as Hotbar.Slot)._drop_data(Vector2.ZERO, {"item": "base:axe", "from_slot": 4})
 	eq(g.hotbar.items[6], "base:axe", "slot to slot")
 	eq(g.hotbar.items[4], "", "the old slot left")
-	# A click on the list no longer puts a thing into a slot: only a drag does;
-	# a slot dragged back onto the list is emptied.
-	list.item_clicked.emit(row, Vector2.ZERO, MOUSE_BUTTON_LEFT)
+	# Cell to cell: the stacks change places, and the order is kept.
+	var empty := g.inventory_panel.order.find("")
+	check(empty >= 0, "a free cell")
+	var into := bag.cell(empty) as SlotGrid.Cell
+	check(into._can_drop_data(Vector2.ZERO, data), "a cell takes another's stack")
+	check(not (bag.cell(at) as SlotGrid.Cell)._can_drop_data(Vector2.ZERO, data), "not its own")
+	into._drop_data(Vector2.ZERO, data)
+	eq(bag.item_at(empty), "base:axe", "moved")
+	eq(bag.item_at(at), "", "the old cell freed")
+	eq((g.settings.get_value("bags")[id] as Array)[empty], "base:axe", "kept for the character")
+	# A click on a cell no longer puts a thing into a slot: only a drag does;
+	# a slot dragged back onto the grid is emptied.
+	bag.clicked.emit(empty, MOUSE_BUTTON_LEFT)
 	eq(g.hotbar.items.count("base:axe"), 1, "a click: no slot changed")
 	var back: Variant = (g.hotbar._slots[6] as Hotbar.Slot)._get_drag_data(Vector2.ZERO)
-	check(list._can_drop_data(Vector2.ZERO, back), "the list takes a slot's thing back")
-	check(not list._can_drop_data(Vector2.ZERO, data), "not its own row")
-	list._drop_data(Vector2.ZERO, back)
+	check(into._can_drop_data(Vector2.ZERO, back), "the grid takes a slot's thing back")
+	into._drop_data(Vector2.ZERO, back)
 	eq(g.hotbar.items[6], "", "the slot emptied")
 	check(int(g.client.inventory().get("base:axe", 0)) > 0, "the axe still carried")
 	g.hotbar.put(6, "base:axe", -1)
@@ -348,14 +357,13 @@ func test_character_window_catches_clicks_and_changes_equipment() -> void:
 	_frames(15)
 	check(not g.client.own["appearance"]["worn"].has("headwear"), "mouse click unequips")
 	eq(g.client.inventory().get("base:felt_hat"), 1, "the hat is back in the bag")
-	var list := panel.bag._list
-	check(not panel.bag._ids.is_empty() and panel.bag._ids.all(panel.bag._can_wear),
-		"beside the doll only what is worn or held: %s" % str(panel.bag._ids))
-	check(g.client.inventory().has("base:plank") and not panel.bag._ids.has("base:plank"), "planks stay in the things (I)")
+	var worn: Array = panel.bag.grid.cells.map(func(c: Array) -> String: return String(c[0])).filter(func(i: String) -> bool: return i != "")
+	check(not worn.is_empty() and worn.all(panel.bag._can_wear),
+		"beside the doll only what is worn or held: %s" % str(worn))
+	check(g.client.inventory().has("base:plank") and not worn.has("base:plank"), "planks stay in the things (I)")
 	check(panel.size.y >= 430, "a tall window: %d" % panel.size.y)
-	var index := panel.bag._ids.find("base:felt_hat")
-	list.select(index)
-	list.item_selected.emit(index)
+	var index := worn.find("base:felt_hat")
+	_click(panel.bag.grid.cell(index).get_global_rect().get_center())
 	var at := panel.bag._wear.get_global_rect().get_center()
 	_click(at)
 	_frames(15)

@@ -54,7 +54,7 @@ func setup(registry: ContentRegistry, view: WorldView) -> void:
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title)
 	var close := Button.new()
-	close.text = "Закрыть · C"
+	close.text = "Закрыть (C)"
 	close.pressed.connect(func() -> void: hide())
 	header.add_child(close)
 	var columns := HBoxContainer.new()
@@ -97,12 +97,12 @@ func show_for(own: Dictionary, held: String) -> void:
 		return
 	_seen = state
 	var look: Dictionary = own.get("appearance", {"body_plan": "base:human_m"})
-	_title.text = "Персонаж · " + String(own.get("name", ""))
+	_title.text = "Персонаж: " + String(own.get("name", ""))
 	var armor := 0
 	for item: Variant in (look.get("worn", {}) as Dictionary).values():
 		armor += int(content.get_def(String(item)).get("armor", 0))
 	if armor > 0:
-		_title.text += " · защита %d" % armor  # off every blow (ADR-0029)
+		_title.text += ", защита %d" % armor  # off every blow (ADR-0029)
 	preview.show_look(content, look)
 	# Twice the size of the world's: a pixel of the picture is 2x2 on the screen.
 	preview.doll.scale = Vector2.ONE * 2.0 / float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0))
@@ -117,5 +117,5 @@ func show_for(own: Dictionary, held: String) -> void:
 			item_name += " (защита %d)" % int(content.get_def(b.item)["armor"])
 		b.text = SLOTS[slot] + ("" if b.item != "" else " —")
 		b.icon = _view.item_picture(b.item) if b.item != "" else null
-		b.tooltip_text = SLOTS[slot] + ": " + (item_name + " · нажать или перетащить в инвентарь, чтобы снять" if b.item != "" else "перетащите вещь из инвентаря")
+		b.tooltip_text = SLOTS[slot] + ": " + (item_name + " — нажать или перетащить в инвентарь, чтобы снять" if b.item != "" else "перетащите вещь из инвентаря")
 	bag.show_for(own.get("inventory", {}), 0)

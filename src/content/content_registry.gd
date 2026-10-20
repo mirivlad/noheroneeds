@@ -347,6 +347,8 @@ func _validate() -> void:
 				d["fauna_density"] = float(d.get("fauna_density", 0.0))  # creatures a chunk, on average
 			"creature":
 				_check_creature(id, d)
+			"settlement":
+				_check_settlement(id, d)
 			var other:
 				errors.append("%s: unknown kind '%s'" % [id, other])
 
@@ -354,6 +356,49 @@ func _validate() -> void:
 ## A living creature (ADR-0018): how it behaves is data, the code knows
 ## only the behaviours by name.
 const BEHAVIORS := ["prey", "villager", "predator", "looter"]
+
+
+## A kind of settlement (ADR-0038): where it may be, how many houses, what
+## it is built of, its buildings (their size, furniture, who lives there),
+## fields and a pen. The generator only lays them out.
+func _check_settlement(id: String, d: Dictionary) -> void:
+	d["region_chunks"] = int(d.get("region_chunks", 12))
+	d["chance"] = float(d.get("chance", 0.0))
+	if d["region_chunks"] < 4 or d["chance"] < 0.0 or d["chance"] > 1.0:
+		errors.append("%s: region_chunks at least 4, chance within 0..1" % id)
+	var houses: Variant = d.get("houses")
+	if typeof(houses) != TYPE_ARRAY or (houses as Array).size() != 2 or int(houses[0]) < 1 or int(houses[1]) < int(houses[0]):
+		errors.append("%s: houses is [least, most], at least one" % id)
+	for f: String in ["road", "floor"]:
+		if kind_of(String(d.get(f, ""))) != "ground":
+			errors.append("%s: '%s' must be a ground" % [id, f])
+	for f: String in ["wall", "door", "window", "roof", "square"]:
+		if kind_of(String(d.get(f, ""))) != "structure":
+			errors.append("%s: '%s' must be a part" % [id, f])
+	var buildings: Variant = d.get("buildings")
+	if typeof(buildings) != TYPE_ARRAY or (buildings as Array).is_empty():
+		errors.append("%s: buildings must list at least one" % id)
+		return
+	for b: Variant in buildings:
+		var size: Variant = b.get("size") if typeof(b) == TYPE_DICTIONARY else null
+		if typeof(size) != TYPE_ARRAY or (size as Array).size() != 2 or int(size[0]) < 4 or int(size[1]) < 4 \
+				or int(size[0]) > 12 or int(size[1]) > 10 or String(b.get("dweller", "")) == "":
+			errors.append("%s: a building needs a size of 4..12 by 4..10 and a dweller" % id)
+			continue
+		_check_refs(id, "furniture", b.get("furniture", []), "structure")
+		if (b.get("furniture", []) as Array).size() > int(size[0]) - 2:
+			errors.append("%s: more furniture than fits along a building's back wall" % id)
+	var fields: Dictionary = d.get("fields", {})
+	if not fields.is_empty():
+		if kind_of(String(fields.get("ground", ""))) != "ground":
+			errors.append("%s: fields' ground must be a ground" % id)
+		_check_weights(id, "fields' crops", fields.get("crops", {}), ["plant"])
+	var pen: Dictionary = d.get("pen", {})
+	if not pen.is_empty():
+		for f: String in ["fence", "gate"]:
+			if kind_of(String(pen.get(f, ""))) != "structure":
+				errors.append("%s: the pen's '%s' must be a part" % [id, f])
+		_check_weights(id, "pen's animals", pen.get("animals", {}), ["creature"], false)
 
 
 ## What fills a container from a ground or a creature (ADR-0037):

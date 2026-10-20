@@ -465,6 +465,16 @@ func _process(delta: float) -> void:
 			w.needs.set_energy(client.character_id, 10.0)
 		if _frames == 60:
 			client.request({"type": "sleep", "location": client.location, "x": bed.x, "y": bed.y})
+	if _opts.has("goto") and game and _frames == 40:  # dev only: --goto=X,Y (or "village") puts one at a cell
+		var cell := Vector2i.ZERO
+		if String(_opts["goto"]) == "village":
+			var near := game.world.generator.settlements.plans_near(Vector2i.ZERO, 1200)
+			if not near.is_empty():
+				cell = (near[0]["fire"] as Vector2i) + Vector2i(2, 0)
+		else:
+			var to := String(_opts["goto"]).split(",")
+			cell = Vector2i(int(to[0]), int(to[1]))
+		game.world.move_character(client.character_id, cell * 256 + Vector2i(128, 128))
 	if _opts.get("demo") == "occlude" and game and _frames == 40:  # dev only: a wall south and one aside, a tree south
 		var w := game.world
 		var me := Vector2i(0, 7)

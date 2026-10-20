@@ -96,3 +96,19 @@ func test_malformed_fields_are_content_errors() -> void:
 			{"id": "test:c", "kind": "plant", "crop": {"stages": 3}},
 			{"id": "test:d", "kind": "item", "plants": "test:g"}]:
 		check(not ContentRegistry.from_defs([good, bad]).errors.is_empty(), "refused: %s" % str(bad))
+
+
+func test_a_fence_keeps_out_but_is_seen_over_and_a_gate_opens() -> void:
+	var a := _player()
+	w.grant(a, "base:plank", 20)
+	for x in [3, 5]:
+		check(_req(a, _at({"type": "build", "part": "base:wood_fence"}, x, 5)).get("ok", false), "fence")
+	check(_req(a, _at({"type": "build", "part": "base:wood_gate"}, 4, 5)).get("ok", false), "gate")
+	check(w.is_solid("surface", 3, 5) and w.is_solid("surface", 4, 5), "a fence and a shut gate stop one")
+	# A man's eyes see over a fence (half a storey); a hare's do not.
+	check(Sight.clear(w, "surface", Vector2i(3, 3), "surface", Vector2i(3, 7)), "seen over the fence")
+	check(not Sight.clear(w, "surface", Vector2i(3, 3), "surface", Vector2i(3, 7), 0.2, 0.2), "a hare behind it is hidden")
+	w.move_character(a, Vector2i(4 * 256 + 128, 4 * 256 + 128))
+	check(_req(a, _at({"type": "use"}, 4, 5)).get("ok", false), "the gate opens")
+	check(not w.is_solid("surface", 4, 5), "an open gate lets through")
+	check(not w.is_solid("surface", 6, 5), "beside the fence is open")

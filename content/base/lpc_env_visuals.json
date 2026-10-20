@@ -1803,6 +1803,54 @@
      64
     ]
    }
+  },
+  {
+   "id": "base:visual/wood_fence",
+   "kind": "visual",
+   "for": "base:wood_fence",
+   "mode": "tall",
+   "atlas": "art/lpc_env/fences.png",
+   "rect": [
+    0,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    30
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "fence"
+  },
+  {
+   "id": "base:visual/wood_gate",
+   "kind": "visual",
+   "for": "base:wood_gate",
+   "mode": "tall",
+   "atlas": "art/lpc_env/fences.png",
+   "rect": [
+    0,
+    32,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    30
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "fence",
+   "states": {
+    "open": [
+     0,
+     64,
+     32,
+     32
+    ]
+   }
   }
  ]
 }

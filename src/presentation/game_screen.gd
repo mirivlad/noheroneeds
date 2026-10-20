@@ -375,6 +375,13 @@ func _process(delta: float) -> void:
 				c.set_cell("cover", at.x & 31, at.y & 31, "base:wheat_crop" if i < 4 else "base:carrot_crop")
 				w._set_layer_props(c, "cover", at.x & 31, at.y & 31, {"planted": w.world_time - (i % 4) * 16 * Daylight.HOUR_MS})
 				w._changed(ServerWorld.chunk_key(client.location, at.x >> 5, at.y >> 5))
+			# fenced round, a gate in its front
+			for x in range(-7, -1):
+				for y in range(5, 9):
+					if x in [-7, -2] or y in [5, 8]:
+						var c := w.chunk(client.location, x >> 5, y >> 5)
+						c.set_cell("structure", x & 31, y & 31, "base:wood_gate" if x == -4 and y == 8 else "base:wood_fence")
+						w._changed(ServerWorld.chunk_key(client.location, x >> 5, y >> 5))
 	if _opts.get("demo") == "" and _frames == 30:
 		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
 	if _opts.get("demo") == "fight" and game:  # dev only: a wolf, a hurt deer, an arrow (ADR-0019)

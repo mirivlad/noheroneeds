@@ -111,6 +111,13 @@
 - https://opengameart.org/content/lpc-gentleman
 - https://opengameart.org/content/lpc-expanded-hats-facial-helmets
 
+## hat/helmet/nasal
+
+- Авторы: bluecarrot16
+- Лицензии: CC-BY 3.0, CC-BY 4.0, OGA-BY 3.0, GPL 2.0, GPL 3.0
+- https://opengameart.org/content/lpc-helmets
+- https://opengameart.org/content/lpc-expanded-hats-facial-helmets
+
 ## head/heads/human/female
 
 - Авторы: bluecarrot16, Benjamin K. Smith (BenCreating), Stephen Challener (Redshrike)
@@ -201,6 +208,25 @@
 - Лицензии: OGA-BY-3.0, CC-BY 4.0, CC-BY-SA 3.0+, GPL 2.0+
 - Примечание: original by bluecarrot16, color reduced by JaidynReiman
 - https://opengameart.org/content/lpc-hand-tools
+
+## torso/armour/leather
+
+- Авторы: Johannes Sjölund (wulax), bluecarrot16, JaidynReiman
+- Лицензии: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+- Примечание: adapted to v3 bases by bluecarrot16, reduced colors and climb/emote/jump by JaidynReiman
+- https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+- https://opengameart.org/content/lpc-clothing-updates
+- https://opengameart.org/content/lpc-expanded-armor
+
+## torso/armour/leather/female
+
+- Авторы: Michael Whitlock (bigbeargames), Matthew Krohn (makrohn), Johannes Sjölund (wulax), bluecarrot16, JaidynReiman
+- Лицензии: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+- Примечание: recolor of torso/armour/leather/female/brown.png, adapted to v3 bases by bluecarrot16, reduced colors and climb/emote/jump by JaidynReiman
+- https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+- https://opengameart.org/content/lpc-combat-armor-for-women
+- https://opengameart.org/content/lpc-clothing-updates
+- https://opengameart.org/content/lpc-expanded-armor
 
 ## torso/clothes/longsleeve/longsleeve/female
 

@@ -7,7 +7,7 @@ signal take_off(slot: String)
 signal drop(item: String, count: int)
 signal unslot(slot: int)
 
-const SLOTS := {"headwear": "Голова", "torso": "Торс", "legs": "Ноги", "feet": "Обувь", "back_item": "Спина", "belt": "Пояс", "main_hand": "В руках"}
+const SLOTS := {"headwear": "Голова", "torso": "Торс", "armor": "Доспех", "legs": "Ноги", "feet": "Обувь", "back_item": "Спина", "belt": "Пояс", "main_hand": "В руках"}
 
 class EquipmentSlot:
 	extends Button
@@ -96,8 +96,13 @@ func show_for(own: Dictionary, held: String) -> void:
 	if state == _seen:
 		return
 	_seen = state
-	_title.text = "Персонаж · " + String(own.get("name", ""))
 	var look: Dictionary = own.get("appearance", {"body_plan": "base:human_m"})
+	_title.text = "Персонаж · " + String(own.get("name", ""))
+	var armor := 0
+	for item: Variant in (look.get("worn", {}) as Dictionary).values():
+		armor += int(content.get_def(String(item)).get("armor", 0))
+	if armor > 0:
+		_title.text += " · защита %d" % armor  # off every blow (ADR-0029)
 	preview.show_look(content, look)
 	preview.doll.scale = Vector2.ONE * 1.0 / float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0))
 	preview.doll.position = Vector2(102, 64)
@@ -107,6 +112,8 @@ func show_for(own: Dictionary, held: String) -> void:
 		var b: EquipmentSlot = _slots[slot]
 		b.item = held if slot == "main_hand" else String(worn.get(slot, ""))
 		var item_name := String(content.get_def(b.item).get("name", ""))
+		if int(content.get_def(b.item).get("armor", 0)) > 0:
+			item_name += " (защита %d)" % int(content.get_def(b.item)["armor"])
 		b.text = SLOTS[slot] + ("" if b.item != "" else " —")
 		b.icon = _view.item_picture(b.item) if b.item != "" else null
 		b.tooltip_text = SLOTS[slot] + ": " + (item_name + " · нажать или перетащить в инвентарь, чтобы снять" if b.item != "" else "перетащите вещь из инвентаря")

@@ -472,6 +472,7 @@ ITEMS = {
     "base:fishing_rod": ("items1_0.png", 384, 224),
     "base:raw_fish": ("items1_0.png", 416, 224),
     "base:cooked_fish": ("items1_0.png", 352, 128),
+    "base:leather": ("idyl/leather.png", 0, 0),
 }
 # Tools drawn in the hands by LPC: the south standing frame of their layers.
 HELD_ICONS = {"base:hoe": ["tools/hoe/bg/walk.png", "tools/hoe/fg/walk.png"]}
@@ -480,6 +481,8 @@ WORN_ICONS = {
     "base:work_trousers": "legs_pants_male.png",
     "base:boots": "feet_boots_basic_male.png",
     "base:felt_hat": "hat_formal_bowler_adult_brown.png",
+    "base:leather_armor": "torso_armour_leather_male.png",
+    "base:iron_helmet": "hat_helmet_nasal_adult.png",
 }
 # Worn things are dyed in the game (lpc_visuals.json); the icon shows that.
 WORN_DYE = {"base:work_trousers": "walnut", "base:boots": "leather"}

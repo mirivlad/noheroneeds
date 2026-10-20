@@ -109,6 +109,24 @@ func _set_health(id: String, value: int) -> void:
 			_health_changed[id] = true
 
 
+## What one wears against blows (ADR-0029): the "armor" of every worn
+## thing of a character, a creature's own (a hide, a shell).
+func armor_of(id: String) -> int:
+	if world.present.has(id):
+		var total := 0
+		for item: Variant in (world.present[id].get("appearance", {}).get("worn", {}) as Dictionary).values():
+			total += int(world.content.get_def(String(item)).get("armor", 0))
+		return total
+	var c := world.creatures.get_creature(id)
+	return int(world.content.get_def(c.kind).get("armor", 0)) if c else 0
+
+
+## The health a blow of `damage` takes from `target`: less its armour, but a
+## blow always tells (at least 1). Falls and hunger are not blows.
+func through_armor(target: String, damage: int) -> int:
+	return maxi(1, damage - armor_of(target)) if damage > 0 else 0
+
+
 ## Gives back up to `amount` of health, never above the most one has.
 func heal(id: String, amount: int) -> void:
 	_set_health(id, mini(max_health_of(id), health_of(id) + amount))
@@ -282,7 +300,7 @@ func _blow(attacker: String, location: String, from: Vector2i, aim: Vector2i, w:
 		best = id
 		best_d = d
 	if best != "":
-		hurt(best, int(w["damage"]), attacker)
+		hurt(best, through_armor(best, int(w["damage"])), attacker)
 	return best
 
 
@@ -402,7 +420,7 @@ func _fly() -> void:
 			pr.left -= dist / steps
 			var target := _hit_near(pr)
 			if target != "":
-				hurt(target, pr.damage, pr.owner)
+				hurt(target, through_armor(target, pr.damage), pr.owner)
 				projectiles.erase(id)
 				break
 			if pr.left <= 0.0:

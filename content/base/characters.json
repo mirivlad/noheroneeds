@@ -67,6 +67,22 @@
       "equip_slot": "feet"
     },
     {
+      "id": "base:leather_armor",
+      "kind": "item",
+      "name": "Кожаный доспех",
+      "stack": 1,
+      "equip_slot": "armor",
+      "armor": 2
+    },
+    {
+      "id": "base:iron_helmet",
+      "kind": "item",
+      "name": "Железный шлем",
+      "stack": 1,
+      "equip_slot": "headwear",
+      "armor": 1
+    },
+    {
       "id": "base:axe",
       "kind": "item",
       "name": "Топор",

@@ -6,6 +6,7 @@
     {"id": "base:stone", "kind": "item", "name": "Камень", "stack": 99},
     {"id": "base:raw_meat", "kind": "item", "name": "Сырое мясо", "stack": 20},
     {"id": "base:hide", "kind": "item", "name": "Шкура", "stack": 20},
+    {"id": "base:leather", "kind": "item", "name": "Кожа", "stack": 20},
     {"id": "base:cooked_meat", "kind": "item", "name": "Жареное мясо", "stack": 20, "food": {"heal": 6}},
     {"id": "base:iron_ingot", "kind": "item", "name": "Железный слиток", "stack": 50},
     {"id": "base:copper_ingot", "kind": "item", "name": "Медный слиток", "stack": 50},

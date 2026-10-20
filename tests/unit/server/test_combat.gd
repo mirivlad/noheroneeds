@@ -287,3 +287,33 @@ func test_jumping_off_a_level() -> void:
 	w.sync()
 	_place(p, l[0], Vector2i(166, 168))
 	eq(_do(p, {"request_id": "j3", "type": "jump", "dx": -1, "dy": 0}).get("reason"), "blocked", "not into a wall")
+
+
+func test_armour_takes_off_every_blow_but_a_blow_always_tells() -> void:
+	var a := _player("Аня", Vector2i(170, 170))
+	var b := _player("Боря", Vector2i(171, 170))
+	w.combat.pvp = "free"
+	w.grant(a, "base:spear", 1)
+	_ticks(20)
+	eq(_attack(a, Vector2i(171, 170), "base:spear").get("hit"), b)
+	var spear := int(_content.get_def("base:spear")["weapon"]["damage"])
+	eq(w.combat.health_of(b), 20 - spear, "unarmoured: the whole blow")
+	w.combat.heal(b, 20)
+	for item: String in ["base:leather_armor", "base:iron_helmet"]:
+		w.grant(b, item, 1)
+		w.handle(b, {"request_id": Uuid.v4(), "type": "equip", "item": item})
+	w.sync()
+	eq(w.combat.armor_of(b), 3, "leather 2 and a helmet 1")
+	_ticks(20)
+	eq(_attack(a, Vector2i(171, 170), "base:spear").get("hit"), b)
+	eq(w.combat.health_of(b), 20 - (spear - 3), "three off the blow")
+	w.combat.heal(b, 20)
+	_ticks(20)
+	_attack(a, Vector2i(171, 170), "")
+	eq(w.combat.health_of(b), 19, "a fist on armour still tells")
+	w.combat.hurt(b, 5, "")
+	eq(w.combat.health_of(b), 14, "not a blow (a fall): armour does nothing")
+	check(not ContentRegistry.from_defs([{"id": "test:x", "kind": "item", "armor": 2}]).errors.is_empty(),
+		"armour on what is not worn: a content error")
+	check(not ContentRegistry.from_defs([{"id": "test:x", "kind": "item", "equip_slot": "torso", "armor": -1}]).errors.is_empty(),
+		"negative armour: a content error")

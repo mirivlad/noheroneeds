@@ -1019,6 +1019,10 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _befriend(actor, r, true)
 		"unfriend":
 			return _befriend(actor, r, false)
+		"craft":
+			return _craft(actor, r)
+		"eat":
+			return _eat(actor, r)
 	return {"ok": false, "reason": "unknown_type"}
 
 
@@ -2032,6 +2036,72 @@ func _move_items(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 	_touch_inventory(actor)
 	_touch_inventory(c[0])
 	return {"ok": true, "contents": box.stacks.duplicate(), "slots": int(c[1]["slots"])}
+
+
+# --- crafts and food (ADR-0026) ---------------------------------------------------
+
+## Makes a recipe `count` times, at a station of its kind within reach (none
+## for one made in the hands), from what one carries: all of it or nothing.
+func _craft(actor: String, r: Dictionary) -> Dictionary:
+	var id := rs(r, "recipe")
+	var d := content.get_def(id)
+	var n := ri(r, "count", 1)
+	if d.get("kind") != "recipe" or n < 1 or n > 100:
+		return {"ok": false, "reason": "bad_request"}
+	var station := String(d.get("station", ""))
+	if station != "" and not station_near(actor, station):
+		return {"ok": false, "reason": "no_station", "station": station}
+	var bag := inventory(actor)
+	var need := {}
+	for item: String in d["inputs"]:
+		need[item] = int(d["inputs"][item]) * n
+	if not bag.has_all(need):
+		return {"ok": false, "reason": "not_enough"}
+	for item: String in need:
+		bag.remove(item, need[item])
+	var made := {}
+	for item: String in d["outputs"]:
+		made[item] = int(d["outputs"][item]) * n
+		bag.add(item, made[item])
+	_touch_inventory(actor)
+	return {"ok": true, "made": made}
+
+
+## Whether a station of a kind ("station" of a part) stands within reach of
+## a present character, on its own location.
+func station_near(actor: String, station: String) -> bool:
+	if not present.has(actor):
+		return false
+	var p: Dictionary = present[actor]
+	var loc := String(p["location"])
+	var at := Movement.cell_of(p["pos"])
+	var r := ceili(float(USE_REACH) / Movement.UNIT)
+	for y in range(at.y - r, at.y + r + 1):
+		for x in range(at.x - r, at.x + r + 1):
+			var part := chunk(loc, x >> 5, y >> 5).get_cell("structure", x & 31, y & 31)
+			if part != "" and content.get_def(part).get("station") == station and _reaches(actor, loc, x, y, USE_REACH):
+				return true
+	return false
+
+
+## Eats one of a food one carries: it heals, up to one's most health.
+func _eat(actor: String, r: Dictionary) -> Dictionary:
+	var item := rs(r, "item")
+	var food: Dictionary = content.get_def(item).get("food", {})
+	if food.is_empty():
+		return {"ok": false, "reason": "not_food"}
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	if inventory(actor).count(item) < 1:
+		return {"ok": false, "reason": "not_enough"}
+	var health := combat.health_of(actor)
+	var most := combat.max_health_of(actor)
+	if health >= most:
+		return {"ok": false, "reason": "not_hungry"}
+	inventory(actor).remove(item, 1)
+	_touch_inventory(actor)
+	combat.heal(actor, int(food["heal"]))
+	return {"ok": true, "health": combat.health_of(actor)}
 
 
 # --- wear and repair of parts (ADR-0021) -------------------------------------------

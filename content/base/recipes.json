@@ -1,6 +1,23 @@
 {
   "format": 1,
   "defs": [
-    {"id": "base:saw_planks", "kind": "recipe", "name": "Распилить бревно", "inputs": {"base:log": 1}, "outputs": {"base:plank": 4}}
+    {"id": "base:saw_planks", "kind": "recipe", "name": "Распилить бревно", "station": "workbench",
+      "inputs": {"base:log": 1}, "outputs": {"base:plank": 4}},
+    {"id": "base:make_axe", "kind": "recipe", "name": "Топор", "station": "workbench",
+      "inputs": {"base:plank": 1, "base:stone": 2}, "outputs": {"base:axe": 1}},
+    {"id": "base:make_pickaxe", "kind": "recipe", "name": "Кирка", "station": "workbench",
+      "inputs": {"base:plank": 1, "base:stone": 3}, "outputs": {"base:pickaxe": 1}},
+    {"id": "base:make_spear", "kind": "recipe", "name": "Копьё", "station": "workbench",
+      "inputs": {"base:plank": 2, "base:stone": 1}, "outputs": {"base:spear": 1}},
+    {"id": "base:make_bow", "kind": "recipe", "name": "Лук", "station": "workbench",
+      "inputs": {"base:plank": 2, "base:hide": 1}, "outputs": {"base:bow": 1}},
+    {"id": "base:make_arrows", "kind": "recipe", "name": "Стрелы", "station": "workbench",
+      "inputs": {"base:plank": 1, "base:stone": 1}, "outputs": {"base:arrow": 10}},
+    {"id": "base:smelt_iron", "kind": "recipe", "name": "Выплавить железо", "station": "forge",
+      "inputs": {"base:iron_ore": 2, "base:log": 1}, "outputs": {"base:iron_ingot": 1}},
+    {"id": "base:smelt_copper", "kind": "recipe", "name": "Выплавить медь", "station": "forge",
+      "inputs": {"base:copper_ore": 2, "base:log": 1}, "outputs": {"base:copper_ingot": 1}},
+    {"id": "base:cook_meat", "kind": "recipe", "name": "Пожарить мясо", "station": "fire",
+      "inputs": {"base:raw_meat": 1}, "outputs": {"base:cooked_meat": 1}}
   ]
 }

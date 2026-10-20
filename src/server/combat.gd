@@ -109,6 +109,11 @@ func _set_health(id: String, value: int) -> void:
 			_health_changed[id] = true
 
 
+## Gives back up to `amount` of health, never above the most one has.
+func heal(id: String, amount: int) -> void:
+	_set_health(id, mini(max_health_of(id), health_of(id) + amount))
+
+
 ## Takes `amount` of health from `target` (a character or a creature) for
 ## `attacker`; it remembers who did it; at nothing it dies.
 func hurt(target: String, amount: int, attacker: String) -> void:

@@ -54,4 +54,11 @@ get "$ANIMALS/rabbit_3.png" "$F/rabbit_3.png" 89da7327cb5662ac1f8ef14ec7c00d3821
 [[ -d "$ANIMALS/animals2022" ]] || unzip -q -o "$ANIMALS/lpc_animals_2022_v1.1.zip" -d "$ANIMALS/animals2022"
 [[ -d "$ANIMALS/spiders" ]] || unzip -q -o "$ANIMALS/LPC_Spiders.zip" -d "$ANIMALS/spiders"
 [[ -d "$ANIMALS/monsters" ]] || unzip -q -o "$ANIMALS/lpc-monsters.zip" -d "$ANIMALS/monsters"
-echo "LPC environment packs in $DEST, animals in $ANIMALS"
+# Item pictures (tools/art/import_lpc_env.py, ITEMS).
+ITEMS="$ROOT/art_src/lpc_items"
+mkdir -p "$ITEMS"
+get "$ITEMS/idylwilds_inventory.zip" "$F/idylwilds_inventory.zip" ecf73c5d795eb94e409dc361fad51c78b5c640fe44eb44b13e55e572eecca5de
+get "$ITEMS/items1_0.png" "$F/items1_0.png" e3a3a9ddf6b761548476df3546b47855efc1cf9db6a71c882678baa94579b030
+get "$ITEMS/effects_5.png" "$F/effects_5.png" 9046fc06c0b1ea642f3d859deca80c9d4bfe8d0b9465417a912dd2200c4440ab
+[[ -d "$ITEMS/idyl" ]] || unzip -q -o "$ITEMS/idylwilds_inventory.zip" -d "$ITEMS/idyl"
+echo "LPC environment packs in $DEST, animals in $ANIMALS, items in $ITEMS"

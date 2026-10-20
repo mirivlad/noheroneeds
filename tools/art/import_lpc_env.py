@@ -355,6 +355,9 @@ PROPS = {
     "base:mine_ladder": ("lpc-mine/lpc-mine/mine.png", (0, 288, 32, 96), {}),
     "base:cave_climb": ("lpc-mine/lpc-mine/mine.png", (0, 288, 32, 96), {}),
     "base:headframe": ("lpc-mine/lpc-mine/mine.png", (0, 0, 128, 224), {}),
+    "base:workbench": ("house_inside_1.png", (96, 32, 32, 64), {}),
+    "base:forge": ("ore_0.png", (64, 384, 64, 128), {}),
+    "base:campfire": ("../lpc_items/effects_5.png", (544, 32, 32, 32), {}),
 }
 # Openings in the ground, a cell each: an LPC terrain's lone piece (a pit).
 HOLES = {
@@ -426,6 +429,9 @@ ITEMS = {
     "base:bow": ("items1_0.png", 128, 32),
     "base:raw_gem": ("items1_0.png", 384, 96),
     "base:stone": (str(ORE), 192, 32),
+    "base:iron_ingot": (str(ORE), 32, 352),
+    "base:copper_ingot": (str(ORE), 96, 352),
+    "base:cooked_meat": ("items1_0.png", 256, 192),
 }
 WORN_ICONS = {
     "base:linen_shirt": "torso_clothes_longsleeve_longsleeve_male.png",
@@ -489,15 +495,15 @@ FILE_CREDITS = [
     ("[LPC] Thatched-roof Cottage (крыша)", "bluecarrot16", "CC-BY-SA 3.0 / GPL 3.0",
      "https://opengameart.org/content/lpc-thatched-roof-cottage"),
     ("[LPC] Wooden Stairs (лестница)", "Nyom", "CC-BY-SA 4.0", "https://opengameart.org/content/lpc-wooden-stairs"),
-    ("[LPC] House Insides (факел)", "Lanea Zimmerman (Sharm), репак", "CC-BY-SA 3.0 / GPL 3.0",
+    ("[LPC] House Insides (факел, верстак)", "Lanea Zimmerman (Sharm), репак", "CC-BY-SA 3.0 / GPL 3.0",
      "https://opengameart.org/content/lpc-house-insides"),
     ("Modified 32x32 Treasure chest (сундук)", "Blarumyrran, правка Gaurav", "CC0",
      "https://opengameart.org/content/modified-32x32-treasure-chest"),
-    ("[LPC] Ore and Forge (руда в камне, камень)", "bluecarrot16", "CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0",
+    ("[LPC] Ore and Forge (руда в камне, камень, слитки, печь)", "bluecarrot16", "CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0",
      "https://opengameart.org/content/lpc-ore-and-forge"),
     ("Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда)", "Idylwild", "CC0",
      "https://opengameart.org/content/idylwilds-inventory"),
-    ("[LPC] Items and game effects (топор, копьё, лук, самоцвет)", "Lanea Zimmerman (Sharm) и др. (LPC)",
+    ("[LPC] Items and game effects (топор, копьё, лук, самоцвет, жареное мясо, пламя костра)", "Lanea Zimmerman (Sharm) и др. (LPC)",
      "CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0", "https://opengameart.org/content/lpc-items-and-game-effects"),
 ]
 

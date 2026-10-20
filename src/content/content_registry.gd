@@ -186,6 +186,9 @@ func _validate() -> void:
 			"item":
 				if d.has("weapon"):
 					_check_weapon(id, "weapon", d["weapon"], true)
+				# Food (ADR-0026): eaten, it heals.
+				if d.has("food") and (typeof(d["food"]) != TYPE_DICTIONARY or int(d["food"].get("heal", 0)) < 1):
+					errors.append("%s: food needs heal of at least 1" % id)
 				d["stack"] = int(d.get("stack", 1))
 				if d["stack"] < 1:
 					errors.append("%s: stack must be at least 1" % id)
@@ -235,6 +238,9 @@ func _validate() -> void:
 			"recipe":
 				_check_amounts(id, "inputs", d.get("inputs", {}), true)
 				_check_amounts(id, "outputs", d.get("outputs", {}), true)
+				# Made at a kind of station (ADR-0026), or in the hands.
+				if d.has("station") and (typeof(d["station"]) != TYPE_STRING or String(d["station"]) == ""):
+					errors.append("%s: station names a kind of station" % id)
 			"body_plan":
 				d["body_size"] = BodySize.parse(id, d.get("size"), errors)
 				d["health"] = int(d.get("health", 20))

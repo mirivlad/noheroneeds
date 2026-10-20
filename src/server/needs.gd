@@ -21,6 +21,9 @@ const RAIN_CHILL := 20.0
 const SHELTER_WARMS := 10.0
 const DAY_WARMS := 5.0
 const FIRE_REACH := 3
+## By season (ADR-0036): the night's chill as a share, and a chill by day too.
+const SEASON_NIGHT := [1.0, 0.5, 1.2, 1.8]
+const SEASON_DAY := [0.0, 0.0, 0.0, 6.0]
 ## Energy (0..100, ADR-0035): awake it lasts this many game hours; in a bed
 ## it comes back this much an hour. Below TIRED one does not run.
 const AWAKE_HOURS := 40.0
@@ -111,9 +114,11 @@ func warming(id: String) -> float:
 	var sky := world.has_daylight(loc) and not world.sheltered(loc, cell.x, cell.y)
 	var chill := 0.0
 	if sky:
+		var season := Seasons.of(world.world_time)
 		if Daylight.is_night(world.world_time):
-			chill += NIGHT_CHILL
-		chill += RAIN_CHILL * Weather.rain(world.weather_seed, world.world_time)
+			chill += NIGHT_CHILL * SEASON_NIGHT[season]
+		chill += SEASON_DAY[season]
+		chill += RAIN_CHILL * Weather.precipitation(world.weather_seed, world.world_time)
 	chill *= 1.0 - minf(MOST_KEPT, KEPT_A_POINT * float(clothes_warmth(id)))
 	if chill > 0.0:
 		return heat - chill

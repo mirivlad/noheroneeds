@@ -16,7 +16,8 @@ static func stage(def: Dictionary, planted: float, now: float, weather_seed := -
 	var grow := float(crop.get("grow_hours", 0.0)) * Daylight.HOUR_MS
 	if grow <= 0.0:
 		return stages - 1
-	var grown := now - planted
+	# Nothing grows in winter (ADR-0036).
+	var grown := now - planted - Seasons.winter_ms(planted, now)
 	if weather_seed >= 0 and grown > 0.0:
 		grown += RAIN_GROWTH * Weather.rain_hours(weather_seed, planted, now) * Daylight.HOUR_MS
 	return clampi(int(floorf(grown / grow * (stages - 1))), 0, stages - 1)

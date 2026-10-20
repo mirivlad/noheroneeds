@@ -1027,6 +1027,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _sow(actor, r)
 		"eat":
 			return _eat(actor, r)
+		"feed":
+			return _feed(actor, r)
 	return {"ok": false, "reason": "unknown_type"}
 
 
@@ -2143,6 +2145,39 @@ func _till(actor: String, r: Dictionary) -> Dictionary:
 	c.set_cell("ground", at[3], at[4], into)
 	_changed(chunk_key(at[0], at[1], at[2]))
 	return {"ok": true}
+
+
+## Feeds an animal what it eats, held in the hands (ADR-0030): a wild one
+## fed its "tame" feeds becomes the feeder's; one's own (anyone's) is fed
+## for its produce and young, not again while full.
+const FULL_HOURS := 6.0
+
+
+func _feed(actor: String, r: Dictionary) -> Dictionary:
+	if typeof(r.get("creature")) != TYPE_STRING:
+		return {"ok": false, "reason": "bad_request"}
+	var c := creatures.get_creature(String(r["creature"]))
+	if c == null or not present.has(actor):
+		return {"ok": false, "reason": "nothing_there"}
+	var tame: Dictionary = content.get_def(c.kind).get("tame", {})
+	if tame.is_empty():
+		return {"ok": false, "reason": "not_tameable"}
+	var p: Dictionary = present[actor]
+	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+		return {"ok": false, "reason": "too_far"}
+	var why := check_held(actor, r)
+	if why != "":
+		return {"ok": false, "reason": why}
+	var item := held_of(actor)
+	if not (tame["food"] as Array).has(item):
+		return {"ok": false, "reason": "not_its_food"}
+	if c.owner != "" and c.fed_at >= 0 and world_time - c.fed_at < int(FULL_HOURS * Daylight.HOUR_MS):
+		return {"ok": false, "reason": "fed_already"}
+	if not inventory(actor).remove(item, 1):
+		return {"ok": false, "reason": "not_enough"}
+	_touch_inventory(actor)
+	var tamed := creatures.fed_by(c, actor)
+	return {"ok": true, "tamed": tamed, "fed": c.fed, "of": int(tame["feeds"]), "owner": c.owner}
 
 
 ## Sows a seed one carries (an item that "plants" a crop) in a field: the

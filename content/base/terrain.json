@@ -40,7 +40,7 @@
       "ground": {"base:grass": 8, "base:grass_dry": 1, "base:dirt": 0.3},
       "cover": {"base:tall_grass": 10, "base:clover": 5, "base:flower_red": 1.2, "base:flower_yellow": 1.2, "base:flower_blue": 0.8, "base:bush": 0.6, "base:oak": 0.4, "base:birch": 0.3},
       "cover_density": 0.3,
-      "fauna": {"base:hare": 2, "base:deer": 0.6, "base:poring": 0.5}, "fauna_density": 1.2
+      "fauna": {"base:hare": 2, "base:deer": 0.6, "base:poring": 0.5, "base:sheep": 0.6, "base:cow": 0.3, "base:chicken": 0.4}, "fauna_density": 1.2
     },
     {
       "id": "base:forest", "kind": "biome", "name": "Лес",

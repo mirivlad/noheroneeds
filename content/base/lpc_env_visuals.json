@@ -1696,13 +1696,70 @@
    "variants": 1
   },
   {
+   "id": "base:visual/wool",
+   "kind": "visual",
+   "for": "base:wool",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    864,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/cloth",
+   "kind": "visual",
+   "for": "base:cloth",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    896,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/egg",
+   "kind": "visual",
+   "for": "base:egg",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    928,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/linen_shirt",
    "kind": "visual",
    "for": "base:linen_shirt",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    864,
+    960,
     0,
     32,
     32
@@ -1721,7 +1778,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    896,
+    992,
     0,
     32,
     32
@@ -1740,7 +1797,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    928,
+    1024,
     0,
     32,
     32
@@ -1759,7 +1816,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    960,
+    1056,
     0,
     32,
     32
@@ -1778,7 +1835,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    992,
+    1088,
     0,
     32,
     32
@@ -1797,7 +1854,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1024,
+    1120,
     0,
     32,
     32
@@ -1816,7 +1873,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1056,
+    1152,
     0,
     32,
     32

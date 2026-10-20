@@ -14,6 +14,27 @@
       "health": 10, "drops": {"base:raw_meat": 3, "base:hide": 1}
     },
     {
+      "id": "base:sheep", "kind": "creature", "size": {"half": [0.35, 0.22], "height": 0.7}, "name": "Овца", "behavior": "prey", "fauna_since": 3,
+      "speed": 0.7, "run_speed": 1.8, "sight": 9, "dark_sight": 0.4, "hearing": 8,
+      "flee_distance": 4, "home_radius": 10, "think_ticks": 12, "memory_s": 30,
+      "health": 8, "drops": {"base:raw_meat": 2, "base:wool": 2},
+      "tame": {"food": ["base:wheat"], "feeds": 2, "breed_hours": 48}, "produce": {"item": "base:wool", "hours": 24}
+    },
+    {
+      "id": "base:cow", "kind": "creature", "size": {"half": [0.55, 0.3], "height": 1.1}, "name": "Корова", "behavior": "prey", "fauna_since": 3,
+      "speed": 0.6, "run_speed": 1.5, "sight": 9, "dark_sight": 0.4, "hearing": 8,
+      "flee_distance": 3, "home_radius": 10, "think_ticks": 14, "memory_s": 30,
+      "health": 16, "drops": {"base:raw_meat": 4, "base:hide": 2},
+      "tame": {"food": ["base:wheat", "base:carrot"], "feeds": 3, "breed_hours": 72}
+    },
+    {
+      "id": "base:chicken", "kind": "creature", "size": {"half": [0.12, 0.1], "height": 0.3}, "name": "Курица", "behavior": "prey", "fauna_since": 3,
+      "speed": 0.7, "run_speed": 1.9, "sight": 7, "dark_sight": 0.3, "hearing": 7,
+      "flee_distance": 3, "home_radius": 8, "think_ticks": 8, "memory_s": 20,
+      "health": 2, "drops": {"base:raw_meat": 1},
+      "tame": {"food": ["base:wheat_seeds"], "feeds": 1, "breed_hours": 36}, "produce": {"item": "base:egg", "hours": 12}
+    },
+    {
       "id": "base:villager", "kind": "creature", "name": "Житель", "behavior": "villager",
       "body_plan": "base:human_m",
       "speed": 0.8, "run_speed": 1.3, "sight": 10, "dark_sight": 0.3, "hearing": 8,

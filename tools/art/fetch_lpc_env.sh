@@ -52,6 +52,16 @@ get "$ANIMALS/LPC_Spiders.zip" "$F/LPC_Spiders.zip" fce56f13629d2aa8be48f1ef904f
 get "$ANIMALS/lpc-monsters.zip" "$F/lpc-monsters.zip" 2c591d0e0c89dd579f84fb10ac9b24b97836941d6881abb5db85dc257892878f
 get "$ANIMALS/wolfsheet1_0.png" "$F/wolfsheet1_0.png" 35037f84c065844cb974d7d692875115b4c6ebf34e242921991351f370e1fa4f
 get "$ANIMALS/rabbit_3.png" "$F/rabbit_3.png" 89da7327cb5662ac1f8ef14ec7c00d38218827582bc0f273e1cea873ce570ae1
+mkdir -p "$ANIMALS/farm"
+for line in "chicken_eat c02621f1096d46dba0f11b6358e4ee8901e76b4ea57f58c6e2cd8cd514e63b06" \
+    "chicken_walk 9f2e5b54f283a6e9b4a0e0439a548844b6ce1a20f34e719ae944206e4e206ebe" \
+    "cow_eat 61bf45f6a448a9bda98d5f92e4263d821f2f8860e1a6438e70c745708275145f" \
+    "cow_walk f338ac144fcafdbbdb5c67ce674365b919b87c2a6ef757af60ec7e4abf23796b" \
+    "sheep_eat 20fcc7218839747e20ff5895d315c947a9637d6b1adf03308b19b5bbcd5d2c9c" \
+    "sheep_walk 2ccaecd23d4dba308974a72415e660a6afa64135253d7061827fb62b67f9d29e"; do
+  read -r name sum <<<"$line"
+  get "$ANIMALS/farm/$name.png" "$F/$name.png" "$sum"  # LPC Style Farm Animals, Daniel Eddeland
+done
 [[ -d "$ANIMALS/animals2022" ]] || unzip -q -o "$ANIMALS/lpc_animals_2022_v1.1.zip" -d "$ANIMALS/animals2022"
 [[ -d "$ANIMALS/spiders" ]] || unzip -q -o "$ANIMALS/LPC_Spiders.zip" -d "$ANIMALS/spiders"
 [[ -d "$ANIMALS/monsters" ]] || unzip -q -o "$ANIMALS/lpc-monsters.zip" -d "$ANIMALS/monsters"

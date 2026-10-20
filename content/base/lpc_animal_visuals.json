@@ -450,6 +450,237 @@
    ]
   },
   {
+   "id": "base:visual/sheep",
+   "kind": "visual",
+   "for": "base:sheep",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/sheep.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     128,
+     1
+    ],
+    "walk": [
+     128,
+     0,
+     128,
+     4
+    ],
+    "attack": [
+     640,
+     0,
+     128,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    128,
+    128
+   ],
+   "origin": [
+    64,
+    88
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 6
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 10
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/cow",
+   "kind": "visual",
+   "for": "base:cow",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/cow.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     128,
+     1
+    ],
+    "walk": [
+     128,
+     0,
+     128,
+     4
+    ],
+    "attack": [
+     640,
+     0,
+     128,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    128,
+    128
+   ],
+   "origin": [
+    64,
+    111
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 5
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 9
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/chicken",
+   "kind": "visual",
+   "for": "base:chicken",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/chicken.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     32,
+     1
+    ],
+    "walk": [
+     32,
+     0,
+     32,
+     4
+    ],
+    "attack": [
+     160,
+     0,
+     32,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    16,
+    30
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 12
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
    "id": "base:visual/poporing",
    "kind": "visual",
    "for": "base:poporing",

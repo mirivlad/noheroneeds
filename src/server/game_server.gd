@@ -523,12 +523,22 @@ func _update_creature_replicas() -> void:
 		var cold := {"kind": "creature", "creature": c.kind}
 		if not c.looks.is_empty():
 			cold["appearance"] = c.looks
+		if c.owner != "":
+			cold["owner"] = c.owner  # one's own animal (ADR-0030)
 		var r := Replica.new("creature", c.location, world.levels.z(c.location), c.pos.x, c.pos.y, cold)
 		r.set_health(c.health, world.combat.max_health_of(id), 0, int(world.combat.swings.get(id, 0)))
 		r.phase = absi(hash(id)) % CREATURE_HOT_TICKS
 		_replica[id] = r
 		_to_grid(id, r, c.location)
 	_lagging.merge(ch[2])
+	for id: String in world.creatures.take_owner_changes():
+		var c := world.creatures.get_creature(id)
+		var r: Replica = _replica.get(id)
+		if c and r and String(r.cold.get("owner", "")) != c.owner:
+			r.cold = r.cold.duplicate()
+			r.cold["owner"] = c.owner
+			r.cold_size = Cbor.encode_fast(r.cold).size()
+			r.cv += 1
 	for id: String in world.combat.take_health_changes():
 		var c := world.creatures.get_creature(id)
 		var r: Replica = _replica.get(id)

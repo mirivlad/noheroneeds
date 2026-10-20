@@ -14,6 +14,7 @@ class_name Actions
 ##   another person                   — befriended (opens one's chests and
 ##                                     locked doors) or no longer;
 ##   food in the hands ("food")       — is eaten (ADR-0026);
+##   an animal and what it eats       — it is fed, and tamed (ADR-0030);
 ##   anything                         — may be looked at.
 ## So a scythe and crops, a rod and fish come as data: a tool kind on the
 ## item, a "gather" on what it works on.
@@ -50,6 +51,11 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			hit["unarmed"] = true  # the free hand
 		var with := String(content.get_def(held).get("name", "")) if w.get("kind") == "melee" else "рукой"
 		out.append({"id": "strike", "name": "Ударить (%s)" % with, "request": hit, "primary": w.get("kind") == "melee"})
+	# Husbandry (ADR-0030): what an animal eats, held out, is fed to it.
+	if living and entity.get("kind") == "creature" and held != "" \
+			and (content.get_def(String(entity.get("creature", ""))).get("tame", {}).get("food", []) as Array).has(held):
+		out.append({"id": "feed", "name": "Покормить", "primary": true,
+			"request": {"type": "feed", "creature": target["id"], "item": held}})
 	if living and entity.get("kind") == "character":
 		var friend := client.friends().has(target["id"])
 		out.append({"id": "friend", "name": "Убрать из друзей" if friend else "Добавить в друзья",
@@ -172,7 +178,7 @@ static func tool_names(content: ContentRegistry, kind: String) -> String:
 
 
 ## What one sees looking at a target: its name and what is known of it.
-static func describe(content: ContentRegistry, target: Dictionary) -> String:
+static func describe(content: ContentRegistry, target: Dictionary, me := "") -> String:
 	match String(target.get("kind", "")):
 		"entity":
 			var e: Dictionary = target["entity"]
@@ -180,6 +186,8 @@ static func describe(content: ContentRegistry, target: Dictionary) -> String:
 			match String(e.get("kind", "")):
 				"creature":
 					name = String(content.get_def(String(e.get("creature", ""))).get("name", "существо"))
+					if String(e.get("owner", "")) != "":
+						name += " (ваша)" if me != "" and e["owner"] == me else " (чья-то)"
 				"item":
 					name = "%s ×%d" % [content.get_def(String(e.get("item", ""))).get("name", "вещь"), int(e.get("count", 1))]
 			if e.has("max_health") and int(e["max_health"]) > 0:

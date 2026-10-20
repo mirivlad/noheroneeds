@@ -136,3 +136,17 @@ func test_a_rod_fishes_in_water() -> void:
 	a = Actions.of(content, client, view, "base:fishing_rod", {"kind": "ground", "id": "base:grass", "cell": Vector2i(5, 5),
 		"location": "surface"}, Vector2i.ZERO)
 	check(not _ids(a).has("gather"), "no fish in grass")
+
+
+func test_an_animal_is_fed_what_it_eats() -> void:
+	var sheep := {"kind": "entity", "id": "s1", "location": "surface",
+		"entity": {"kind": "creature", "creature": "base:sheep", "x": 900, "y": 900}}
+	var a := Actions.of(content, client, view, "base:wheat", sheep, Vector2i(900, 900))
+	eq(Actions.primary(a).get("id"), "feed", "wheat to a sheep")
+	eq(Actions.primary(a)["request"], {"type": "feed", "creature": "s1", "item": "base:wheat"})
+	a = Actions.of(content, client, view, "base:wheat_seeds", sheep, Vector2i(900, 900))
+	check(not _ids(a).has("feed"), "a sheep does not eat seeds")
+	eq(Actions.describe(content, sheep, "me"), "Овца", "a wild one")
+	sheep["entity"]["owner"] = "me"
+	eq(Actions.describe(content, sheep, "me"), "Овца (ваша)")
+	eq(Actions.describe(content, sheep, "other"), "Овца (чья-то)")

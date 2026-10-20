@@ -27,7 +27,9 @@ class_name Protocol
 ## 11: "warm" adds blows struck [.., swing] (count * 8 + octant), for swings to
 ##    be seen; the own private part carries "friends" with the inventory;
 ##    REQUESTs "lock", "befriend", "unfriend" (ADR-0016).
-const VERSION := 11
+## 12: WELCOME tells the weather seed (ADR-0033); the own private part
+##    carries "needs" (ADR-0032); REQUESTs "craft", "eat", "till", "sow", "feed".
+const VERSION := 12
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.
@@ -64,7 +66,8 @@ const CLIENT_FIELDS := {
 ## Same for messages from the server.
 const SERVER_FIELDS := {
 	CHALLENGE: {"nonce": TYPE_PACKED_BYTE_ARRAY, "server_id": TYPE_STRING},
-	WELCOME: {"character_id": TYPE_STRING, "location": TYPE_STRING, "tick": TYPE_INT, "max_levels": TYPE_INT},
+	WELCOME: {"character_id": TYPE_STRING, "location": TYPE_STRING, "tick": TYPE_INT, "max_levels": TYPE_INT,
+		"weather_seed": TYPE_INT},
 	REJECT: {"reason": TYPE_STRING},
 	# Differences from what the client acknowledged. hot: int32 [net, x, y]
 	# positions; entities: {net number: {field: value}} - whole when new to

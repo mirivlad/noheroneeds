@@ -387,9 +387,10 @@ func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	check(g._note.begins_with("сделано"), "the note says what was made: " + g._note)
 	_key(KEY_K)
 	check(not g.crafts.visible, "K closes them")
-	# Food in the hands: the left button eats it, when one is hurt.
+	# Food in the hands: the left button eats it, when one is hurt or hungry.
 	w.grant(id, "base:cooked_meat", 1)
 	w.combat.hurt(id, 5, "")
+	w.needs.set_satiety(id, 40.0)
 	_frames(5)
 	g.hotbar.put(0, "base:cooked_meat", -1)
 	_key(KEY_1)
@@ -399,6 +400,8 @@ func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	g._do(Actions.primary(acts))
 	_frames_until(func() -> bool: return int(w.present[id]["health"]) > 15)
 	eq(int(w.present[id]["health"]), 20, "eaten: health back")
+	_frames_until(func() -> bool: return int(g.client.own.get("needs", {}).get("satiety", 0)) >= 75)
+	check(g.hud.text.contains("Сытость 75"), "the screen shows one's own satiety: " + g.hud.text)
 
 
 func test_a_field_grows_on_the_screen_and_a_hoe_ploughs() -> void:

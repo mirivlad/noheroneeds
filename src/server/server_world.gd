@@ -142,6 +142,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	var world := ServerWorld.new(s, registry, w)
 	world.creatures = CreatureSim.new(world)
 	world.combat = Combat.new(world)
+	world.needs = Needs.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	var saved_time := s.read_meta("time")
 	if saved_time.is_valid_int():
@@ -219,6 +220,7 @@ func close() -> void:
 	store.close()
 	creatures.detach()  # they hold each other: let both go
 	combat.world = null
+	needs.world = null
 
 
 ## Stops without committing what is not yet handed to the writer (tests of crashes).
@@ -231,6 +233,7 @@ func abandon() -> void:
 	store.close()
 	creatures.detach()
 	combat.world = null
+	needs.world = null
 
 
 # --- request fields (input from the network: any type may come) ----------------
@@ -464,6 +467,7 @@ func enter(owner: String, c: PortableCharacter) -> String:
 		"name": data["name"], "appearance": shown_look(data)}
 	present[id]["health"] = int(place.get("health", combat.max_health_of(id)))
 	present[id]["deaths"] = int(place.get("deaths", 0))
+	present[id]["satiety"] = float(place.get("satiety", Needs.FULL))
 	# Its floor may have gone while it was away (the author, 16.10.2026: a
 	# floor is not kept for those away — a ceiling broken, stairs opened, old
 	# stairs brought to today's way): it is put on the floor below, down to
@@ -488,7 +492,7 @@ func leave(id: String) -> void:
 	if present.has(id):
 		var p: Dictionary = present[id]
 		_left_places[id] = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
-			"health": p.get("health", 0), "deaths": p.get("deaths", 0)}
+			"health": p.get("health", 0), "deaths": p.get("deaths", 0), "satiety": p.get("satiety", Needs.FULL)}
 		_dirty_world_characters[id] = true
 		flush_state()  # its last position goes out with this batch
 		present.erase(id)
@@ -788,6 +792,8 @@ var _time_dirty := false
 var creatures: CreatureSim
 ## Health, blows, arrows, death (ADR-0019).
 var combat: Combat
+## Satiety and what else a character needs (ADR-0032).
+var needs: Needs
 ## World facts to write with the next state batch (set_meta).
 var _pending_meta := {}
 ## Light sources by chunk, worked out when first asked, forgotten on change.
@@ -928,7 +934,7 @@ func flush_state(limit := -1) -> void:
 		if present.has(id):
 			var p: Dictionary = present[id]
 			b.world_characters.append([id, {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
-				"health": int(p.get("health", 0)), "deaths": int(p.get("deaths", 0))}])
+				"health": int(p.get("health", 0)), "deaths": int(p.get("deaths", 0)), "satiety": float(p.get("satiety", Needs.FULL))}])
 		_dirty_world_characters.erase(id)
 	for id: String in _dirty_entities.keys():
 		if limit >= 0 and b.entities.size() >= limit:
@@ -2156,12 +2162,14 @@ func _eat(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "not_enough"}
 	var health := combat.health_of(actor)
 	var most := combat.max_health_of(actor)
-	if health >= most:
+	# Eaten when hurt or not full (ADR-0032): it heals and fills.
+	if health >= most and needs.satiety_of(actor) > Needs.FULL - 5.0:
 		return {"ok": false, "reason": "not_hungry"}
 	inventory(actor).remove(item, 1)
 	_touch_inventory(actor)
-	combat.heal(actor, int(food["heal"]))
-	return {"ok": true, "health": combat.health_of(actor)}
+	combat.heal(actor, int(food.get("heal", 0)))
+	needs.set_satiety(actor, needs.satiety_of(actor) + float(food.get("satiety", 0)))
+	return {"ok": true, "health": combat.health_of(actor), "satiety": needs.shown(actor)["satiety"]}
 
 
 # --- fields (ADR-0027) ------------------------------------------------------------

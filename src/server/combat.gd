@@ -170,6 +170,8 @@ func step(tick: int) -> void:
 		if not world.present.has(id) and not world.creatures.has(id):
 			_hurt_at.erase(id)
 			continue
+		if world.present.has(id) and not world.needs.may_heal(id):
+			continue  # hungry: health does not come back (ADR-0032)
 		var h := health_of(id) + 1
 		_set_health(id, mini(h, max_health_of(id)))
 		if h >= max_health_of(id):
@@ -190,6 +192,7 @@ func _character_dies(id: String) -> void:
 	p["pos"] = world.spawn_position
 	p["health"] = max_health_of(id)
 	p["deaths"] = int(p.get("deaths", 0)) + 1
+	world.needs.set_satiety(id, maxf(world.needs.satiety_of(id), Needs.AFTER_DEATH))
 	_hurt_at.erase(id)
 	world.relocated[id] = true
 	world.note_character(id)
@@ -262,6 +265,7 @@ func creature_attack(c: Creature, target: String) -> bool:
 ## Someone struck (or shot, or worked with a tool) toward `toward` (movement
 ## units): counted, with the direction, so those who see it see the swing.
 func swung(id: String, toward: Vector2i) -> void:
+	world.needs.worked(id)
 	var from := _position(id)
 	var octant := 0
 	if from != NO_POS and toward != from:

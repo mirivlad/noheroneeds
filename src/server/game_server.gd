@@ -417,8 +417,13 @@ func _apply_input(s: Session) -> void:
 		s.last_input_seq = e[0]
 		var p: Dictionary = world.present[s.character_id]
 		var loc: String = p["location"]
+		if e[1] == 0 and e[2] == 0:
+			continue
+		world.wake(s.character_id)  # moving gets one up (ADR-0035)
+		# Tired, one does not run: the client knows it too and does not try.
+		var run: bool = e[3] == 1 and world.needs.may_run(s.character_id)
 		world.move_character(s.character_id, Movement.step(p["pos"], e[1], e[2],
-			func(x: int, y: int) -> bool: return world.is_solid(loc, x, y), e[3] == 1))
+			func(x: int, y: int) -> bool: return world.is_solid(loc, x, y), run))
 
 
 ## Keeps one ring of chunks beyond what the client sees loading in advance.
@@ -483,6 +488,11 @@ func _update_replica() -> void:
 			r.cv += 1
 		if r.location != p["location"]:
 			r.relocate(p["location"], world.levels.z(p["location"]))
+		if bool(r.cold.get("asleep", false)) != p.has("asleep"):
+			r.cold = r.cold.duplicate()
+			r.cold["asleep"] = p.has("asleep")  # lying in a bed, for all to see (ADR-0035)
+			r.cold_size = Cbor.encode_fast(r.cold).size()
+			r.cv += 1
 		if String(r.cold.get("held", "")) != String(p.get("held", "")):
 			r.cold = r.cold.duplicate()
 			r.cold["held"] = String(p.get("held", ""))  # what is in its hands, for all to see

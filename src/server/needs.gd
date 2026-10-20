@@ -21,6 +21,11 @@ const RAIN_CHILL := 20.0
 const SHELTER_WARMS := 10.0
 const DAY_WARMS := 5.0
 const FIRE_REACH := 3
+## Energy (0..100, ADR-0035): awake it lasts this many game hours; in a bed
+## it comes back this much an hour. Below TIRED one does not run.
+const AWAKE_HOURS := 40.0
+const BED_RESTS := 34.0
+const TIRED := 20.0
 ## Below this one is cold: food goes faster, health does not come back.
 const COLD := 25.0
 ## Each point of what one wears ("warmth") keeps off this share, to MOST_KEPT.
@@ -65,6 +70,30 @@ func set_warmth(id: String, value: float) -> void:
 	if int(ceilf(p["warmth"])) != was:
 		p["needs_v"] = int(p.get("needs_v", 0)) + 1
 		world.note_character(id)
+
+
+func energy_of(id: String) -> float:
+	return float(world.present[id].get("energy", FULL)) if world.present.has(id) else FULL
+
+
+func set_energy(id: String, value: float) -> void:
+	if not world.present.has(id):
+		return
+	var p: Dictionary = world.present[id]
+	var was := int(ceilf(float(p.get("energy", FULL))))
+	p["energy"] = clampf(value, 0.0, FULL)
+	if int(ceilf(p["energy"])) != was:
+		p["needs_v"] = int(p.get("needs_v", 0)) + 1
+		world.note_character(id)
+
+
+## Whether one may run (not when tired).
+func may_run(id: String) -> bool:
+	return energy_of(id) >= TIRED
+
+
+func asleep(id: String) -> bool:
+	return world.present.has(id) and world.present[id].has("asleep")
 
 
 ## Whether health may come back (not while hungry or cold).
@@ -118,7 +147,7 @@ func worked(id: String) -> void:
 
 ## What the player is told of their own needs, and its version.
 func shown(id: String) -> Dictionary:
-	return {"satiety": int(ceilf(satiety_of(id))), "warmth": int(ceilf(warmth_of(id)))}
+	return {"satiety": int(ceilf(satiety_of(id))), "warmth": int(ceilf(warmth_of(id))), "energy": int(ceilf(energy_of(id)))}
 
 
 func version(id: String) -> int:
@@ -137,10 +166,15 @@ func step() -> void:
 		return
 	var hours := float(gone) / Daylight.HOUR_MS
 	for id: String in world.present:
+		# Awake it runs down; asleep in a bed it comes back, and full one wakes.
+		var sleeping := asleep(id)
+		set_energy(id, energy_of(id) + (BED_RESTS if sleeping else -FULL / AWAKE_HOURS) * hours)
+		if sleeping and energy_of(id) >= FULL:
+			world.wake(id)
 		var warm := warmth_of(id) + warming(id) * hours
 		set_warmth(id, warm)
 		# The cold burns food: half as fast again.
-		var left := satiety_of(id) - FULL / EMPTY_HOURS * hours * (1.5 if warm < COLD else 1.0)
+		var left := satiety_of(id) - FULL / EMPTY_HOURS * hours * (1.5 if warm < COLD else 1.0) * (0.5 if sleeping else 1.0)
 		set_satiety(id, left)
 		if left > 0.0 and warm > 0.0:
 			_starving.erase(id)

@@ -227,6 +227,8 @@ func _validate() -> void:
 				d["rotations"] = _check_rotations(id, d.get("rotations", []))
 				if d.has("light"):
 					_check_light(id, d)
+				if d.has("bed") and typeof(d["bed"]) != TYPE_BOOL:
+					errors.append("%s: bed is true or false (one sleeps on it, ADR-0035)" % id)
 				if d.has("heat") and (typeof(d["heat"]) not in [TYPE_INT, TYPE_FLOAT] or float(d["heat"]) < 0.0):
 					errors.append("%s: heat is the warmth a part gives near it an hour, 0 or more" % id)
 				_check_height(id, d, 1.0)

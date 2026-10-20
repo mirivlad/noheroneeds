@@ -425,3 +425,31 @@ func test_a_field_grows_on_the_screen_and_a_hoe_ploughs() -> void:
 	w.world_time += 48 * Daylight.HOUR_MS  # the clock goes on; the client hears it
 	_frames_until(func() -> bool: return s.region_rect.position.x == float(v["states"]["stage_3"][0]))
 	eq(s.region_rect.position.x, float(v["states"]["stage_3"][0]), "ripe on the screen with nothing sent but the time")
+
+
+func test_a_bed_is_slept_in_seen_lying_and_left_by_walking() -> void:
+	var id := g.client.character_id
+	var me := _me()
+	var cell := me + Vector2i(1, 0)
+	var c := w.chunk("surface", floori(cell.x / 32.0), floori(cell.y / 32.0))
+	c.set_cell("structure", posmod(cell.x, 32), posmod(cell.y, 32), "base:bed")
+	w._changed(ServerWorld.chunk_key("surface", floori(cell.x / 32.0), floori(cell.y / 32.0)))
+	w.needs.set_energy(id, 15.0)
+	_frames_until(func() -> bool: return int(g.client.own.get("needs", {}).get("energy", 100)) <= 15)
+	check(g.hud.text.contains("устали"), "the screen says one is tired: " + g.hud.text)
+	var acts := Actions.of(g.content, g.client, g.view, "", {"kind": "part", "id": "base:bed", "layer": "structure",
+		"cell": cell, "location": "surface"}, Vector2i.ZERO)
+	eq(Actions.quick(acts).get("id"), "sleep", "E on a bed: to sleep")
+	g._do(Actions.quick(acts))
+	_frames_until(func() -> bool: return bool(g.client.own.get("asleep", false)))
+	check(w.needs.asleep(id), "asleep on the server")
+	_frames(3)
+	var doll: CharacterSprite = g.view._characters[id]
+	check(doll.get_node_or_null("Blanket") != null, "seen in bed, under the blanket")
+	g._opts["walk"] = "-1,0"
+	_frames_until(func() -> bool: return not w.needs.asleep(id))
+	g._opts.erase("walk")
+	check(not w.needs.asleep(id), "a step gets one up")
+	_frames_until(func() -> bool: return not bool(g.client.own.get("asleep", false)))
+	_frames(3)
+	check(doll.get_node_or_null("Blanket") == null or doll.get_node("Blanket").is_queued_for_deletion(), "standing again")

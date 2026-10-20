@@ -15,6 +15,7 @@ class_name Actions
 ##                                     locked doors) or no longer;
 ##   food in the hands ("food")       — is eaten (ADR-0026);
 ##   an animal and what it eats       — it is fed, and tamed (ADR-0030);
+##   a bed                            — is slept in (ADR-0035);
 ##   anything                         — may be looked at.
 ## So a scythe and crops, a rod and fish come as data: a tool kind on the
 ## item, a "gather" on what it works on.
@@ -99,6 +100,9 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 		var id := String(target["id"])
 		var def := content.get_def(id)
 		var layer := String(target["layer"])
+		if def.get("bed", false) and layer == "structure":  # ADR-0035
+			out.append({"id": "sleep", "name": "Лечь спать", "quick": true,
+				"request": {"type": "sleep", "location": loc, "x": cell.x, "y": cell.y}})
 		if def.has("container") and layer == "structure":
 			out.append({"id": "open_container", "name": "Открыть", "quick": true, "local": "container",
 				"request": {"type": "look_in", "location": loc, "x": cell.x, "y": cell.y}})

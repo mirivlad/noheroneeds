@@ -39,7 +39,10 @@ var _crops := {}
 var _crops_seen := 0.0
 ## Sprites made see-through because they stand in front of the player.
 var _faded: Array[Sprite2D] = []
-const FADED := 0.4
+## Things in front of the player are seen through a window round the body.
+var _see_through := ShaderMaterial.new()
+## The drawn body of a character (world pixels from its feet): what may be hidden.
+const BODY_SEEN := Rect2(-5, -24, 10, 24)
 var _room_from := Vector2i(1 << 30, 0)
 var _sorted := Node2D.new()
 ## The hour's light over the whole world (ADR-0014), and the lights of the
@@ -339,10 +342,10 @@ func update_view(alpha: float, delta: float) -> void:
 func _grow_crops() -> void:
 	for cell: Vector2i in _crops.keys():
 		var c: Array = _crops[cell]
-		var s: Sprite2D = c[0]
-		if not is_instance_valid(s):
+		if not is_instance_valid(c[0]):  # gone with its cell (dug, cleared): not a typed read of a freed one
 			_crops.erase(cell)
 			continue
+		var s: Sprite2D = c[0]
 		var r: Array = (c[1] as Dictionary)["states"].get("stage_%d" % Crops.stage(c[2], c[3], client.world_time, _crop_weather()), [])
 		if not r.is_empty():
 			s.region_rect = Rect2(r[0], r[1], r[2], r[3])
@@ -972,23 +975,26 @@ func _fade_occluders() -> void:
 	if not client.has_position or not _characters.has(client.character_id):
 		return
 	var me: Node2D = _characters[client.character_id]
-	var body := Rect2(me.position + Vector2(-10, -30), Vector2(20, 30))
+	var body := Rect2(me.position + BODY_SEEN.position, BODY_SEEN.size)
 	for s: Sprite2D in _faded:
-		if is_instance_valid(s):
-			s.modulate.a = 1.0
+		if is_instance_valid(s) and s.material == _see_through:
+			s.material = null
 	_faded.clear()
 	if client.own.get("asleep", false):
 		return  # in bed one is drawn over it: nothing hides one to see through
-	# What stands in front (south) of the player, up to a tall tree's size away.
+	if _see_through.shader == null:
+		_see_through.shader = load("res://src/presentation/see_through.gdshader")
+	_see_through.set_shader_parameter("hole", body.get_center())
+	# What stands in front (south) of the player and covers the drawn body.
 	var at := Vector2i(floori(me.position.x / CELL), floori((me.position.y - 1) / CELL))
 	for s: Sprite2D in _sprites_near(at, 4, 4, 0, 6):
-		if is_instance_valid(s) and s.position.y > me.position.y and _sprite_rect(s).intersects(body):
-			s.modulate.a = FADED
+		if is_instance_valid(s) and s.material == null and s.position.y > me.position.y and _sprite_rect(s).intersects(body):
+			s.material = _see_through
 			_faded.append(s)
 	for cell: Vector2i in _cover_sprites:
 		var cs: Sprite2D = _cover_sprites[cell]
-		if cs.visible and (cell.y + 1) * CELL > me.position.y and _sprite_rect(cs).intersects(body):
-			cs.modulate.a = FADED
+		if cs.visible and cs.material == null and (cell.y + 1) * CELL > me.position.y and _sprite_rect(cs).intersects(body):
+			cs.material = _see_through
 			_faded.append(cs)
 
 

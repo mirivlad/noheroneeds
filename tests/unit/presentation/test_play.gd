@@ -491,3 +491,22 @@ func test_a_pick_aims_at_the_nearest_rock_toward_the_cursor() -> void:
 	_move_mouse(_screen(me + Vector2i(0, -6)))
 	_frames(3)
 	check(g.target.get("kind") != "part" or g.target.get("cell") != me + Vector2i(2, 0), "another way: not that rock")
+
+
+func test_only_what_hides_the_player_is_seen_through_and_only_round_them() -> void:
+	var me := _me()
+	var cx := floori(me.x / 32.0)
+	var cy := floori(me.y / 32.0)
+	var c := w.chunk("surface", cx, cy)
+	c.set_cell("structure", posmod(me.x, 32), posmod(me.y + 1, 32), "base:stone_wall")  # south: in front
+	c.set_cell("structure", posmod(me.x + 1, 32), posmod(me.y, 32), "base:stone_wall")  # aside
+	c.set_cell("structure", posmod(me.x - 1, 32), posmod(me.y + 1, 32), "base:stone_wall")  # south-west
+	w._changed(ServerWorld.chunk_key("surface", cx, cy))
+	_frames_until(func() -> bool: return not g.view._faded.is_empty())
+	_frames(2)
+	var cells := g.view._faded.map(func(s: Sprite2D) -> Vector2i: return s.get_meta("cell") if s.has_meta("cell") else Vector2i(-1, -1))
+	check(cells.has(me + Vector2i(0, 1)), "the wall in front is seen through: %s" % str(cells))
+	check(not cells.has(me + Vector2i(1, 0)), "the wall aside is not")
+	check(not cells.has(me + Vector2i(-1, 1)), "nor the one in front of the next cell")
+	var s: Sprite2D = g.view._faded[cells.find(me + Vector2i(0, 1))]
+	check(s.modulate.a == 1.0 and s.material is ShaderMaterial, "not faded whole: a window round the body")

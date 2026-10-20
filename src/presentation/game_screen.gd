@@ -50,6 +50,9 @@ var _feed_rids := {}
 var inventory_panel := InventoryPanel.new()
 var character_panel := CharacterPanel.new()
 var chest_panel := ChestPanel.new()
+## Trade with a dweller (ADR-0040), and the requests about it: rid -> the dweller.
+var trade_panel := TradePanel.new()
+var _trade_rids := {}
 var pin_panel := PinPanel.new()
 ## Request id -> the door's cell, for a locked one to ask the code.
 var _door_rids := {}
@@ -145,7 +148,7 @@ const REASONS := {
 	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
-	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "in_the_way": "мешает то, что ближе", "nothing_to_fill": "здесь не набрать", "not_yours": "это не ваше", "not_yet": "ещё рано", "not_a_liquid": "выливать нечего", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
+	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "in_the_way": "мешает то, что ближе", "no_trade": "не торгует", "not_now": "сейчас не до торговли", "not_sold": "этого не продаёт", "sold_out": "больше нет", "no_money": "не хватает монет", "not_bought": "это не покупает", "no_money_there": "у него не хватает монет", "nothing_to_fill": "здесь не набрать", "not_yours": "это не ваше", "not_yet": "ещё рано", "not_a_liquid": "выливать нечего", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
 }
 
 
@@ -263,7 +266,7 @@ func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
 		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog, crafts,
-				inventory_panel, character_panel, chest_panel, pin_panel, _menu, weather]:
+				inventory_panel, character_panel, chest_panel, trade_panel, pin_panel, _menu, weather]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -516,7 +519,7 @@ func _process(delta: float) -> void:
 		view.swing_own(Vector2.RIGHT)
 	if _opts.has("open_map") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of the map
 		world_map.open()
-	if _opts.has("ui") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of a panel
+	if _opts.has("ui") and _frames == int(_opts.get("frames", "120")) - (40 if String(_opts["ui"]) == "trade" else 8):  # dev: a picture of a panel
 		match String(_opts["ui"]):
 			"catalog":
 				catalog.open(client.inventory())
@@ -526,6 +529,17 @@ func _process(delta: float) -> void:
 				inventory_panel.show_for(client.inventory(), hotbar.selected)
 			"character":
 				character_panel.show_for(client.own, hotbar.held(client.inventory()))
+			"trade":  # the nearest dweller, one stepped up to it
+				var best := ""
+				for id: String in client.entities:
+					var e: Dictionary = client.entities[id]
+					if String(e.get("profession", "")) != "" and (best == "" or Vector2(int(e["x"]), int(e["y"])).distance_to(Vector2(client.position))
+							< Vector2(int(client.entities[best]["x"]), int(client.entities[best]["y"])).distance_to(Vector2(client.position))):
+						best = id
+				if best != "" and game:
+					var c := game.world.creatures.get_creature(best)
+					game.world.move_character(client.character_id, c.pos + Vector2i(Movement.UNIT, 0))
+					_trade_rids[client.request({"type": "trade_look", "creature": best})] = best
 			"pin":
 				pin_panel.open_for(Vector2i(0, 2), false)
 			"plan":  # a row of walls dragged, part of it out of reach
@@ -588,7 +602,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
-		if catalog.visible or crafts.visible or inventory_panel.visible or character_panel.visible or chest_panel.visible or pin_panel.visible or _blueprint != "":
+		if catalog.visible or crafts.visible or inventory_panel.visible or character_panel.visible or chest_panel.visible or trade_panel.visible or pin_panel.visible or _blueprint != "":
 			_close_tools()
 			return
 		menu_requested.emit()
@@ -652,6 +666,8 @@ func _key(k: int, shift: bool) -> void:
 			_sound_on_ok[client.request({"type": "drop", "item": held, "count": 1})] = "drop"
 	elif k == KEY_E and chest_panel.visible:
 		chest_panel.visible = false
+	elif k == KEY_E and trade_panel.visible:
+		trade_panel.visible = false
 	elif k == KEY_E:
 		var q := Actions.quick(actions)
 		if not q.is_empty():
@@ -719,6 +735,9 @@ func _do(a: Dictionary) -> void:
 	var rid := client.request(a["request"])
 	if a.get("local") == "container":
 		_chest_rids[rid] = Vector2i(int(a["request"]["x"]), int(a["request"]["y"]))
+		return
+	if a.get("local") == "trade":
+		_trade_rids[rid] = String(a["request"]["creature"])
 		return
 	match String(a["id"]):
 		"strike", "shoot", "swing", "strike_part", "gather", "till":
@@ -819,6 +838,7 @@ func _close_tools() -> void:
 	inventory_panel.visible = false
 	character_panel.hide()
 	chest_panel.visible = false
+	trade_panel.visible = false
 	pin_panel.visible = false
 	_blueprint = ""
 	_drag_from = NO_CELL
@@ -871,6 +891,13 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_chest_rids[client.request({"type": "store" if putting else "take", "location": client.location,
 			"x": c.x, "y": c.y, "item": item, "count": n})] = c)
 	layer.add_child(chest_panel)
+	trade_panel.setup(content, view)
+	trade_panel.position = Vector2(40, 40)
+	trade_panel.deal.connect(func(item: String, n: int, buying: bool) -> void:
+		if n > 0:
+			_trade_rids[client.request({"type": "trade", "creature": trade_panel.creature, "item": item, "count": n,
+				"buy": buying})] = trade_panel.creature)
+	layer.add_child(trade_panel)
 	pin_panel.setup()
 	pin_panel.position = Vector2(180, 90)
 	pin_panel.entered.connect(func(c: Vector2i, pin: String, new_code: bool) -> void:
@@ -1116,6 +1143,17 @@ func _direction() -> Vector2i:
 func _update_hud() -> void:
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
+		if _trade_rids.has(rid):
+			var who: String = _trade_rids[rid]
+			_trade_rids.erase(rid)
+			client.results.erase(rid)
+			if r.get("ok"):
+				if trade_panel.visible and trade_panel.creature == who:
+					audio.play("pickup", "", null)
+				trade_panel.open_for(who, r, client.inventory())
+			else:
+				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+			continue
 		if _chest_rids.has(rid):
 			var at: Vector2i = _chest_rids[rid]
 			_chest_rids.erase(rid)
@@ -1271,6 +1309,8 @@ func _update_hud() -> void:
 		_inv_seen = inv.hash()
 		if chest_panel.visible:
 			chest_panel.refresh(inv)
+		if trade_panel.visible:
+			trade_panel.refresh(inv)
 		if inventory_panel.visible:
 			inventory_panel.show_for(inv, hotbar.selected)
 

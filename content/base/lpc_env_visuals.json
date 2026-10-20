@@ -1829,13 +1829,32 @@
    "variants": 1
   },
   {
+   "id": "base:visual/coin",
+   "kind": "visual",
+   "for": "base:coin",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1056,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/water_bucket",
    "kind": "visual",
    "for": "base:water_bucket",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1056,
+    1088,
     0,
     32,
     32
@@ -1854,7 +1873,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1088,
+    1120,
     0,
     32,
     32
@@ -1873,7 +1892,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1120,
+    1152,
     0,
     32,
     32
@@ -1892,7 +1911,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1152,
+    1184,
     0,
     32,
     32
@@ -1911,7 +1930,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1184,
+    1216,
     0,
     32,
     32
@@ -1930,7 +1949,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1216,
+    1248,
     0,
     32,
     32
@@ -1949,7 +1968,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1248,
+    1280,
     0,
     32,
     32
@@ -1968,7 +1987,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1280,
+    1312,
     0,
     32,
     32
@@ -1987,7 +2006,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1312,
+    1344,
     0,
     32,
     32
@@ -2006,7 +2025,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1344,
+    1376,
     0,
     32,
     32

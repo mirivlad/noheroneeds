@@ -2,6 +2,7 @@
   "format": 1,
   "defs": [
     {"id": "base:plank", "kind": "item", "name": "Доска", "stack": 99},
+    {"id": "base:coin", "kind": "item", "name": "Монета", "stack": 9999},
     {"id": "base:log", "kind": "item", "name": "Бревно", "stack": 20},
     {"id": "base:stone", "kind": "item", "name": "Камень", "stack": 99},
     {"id": "base:raw_meat", "kind": "item", "name": "Сырое мясо", "stack": 20},

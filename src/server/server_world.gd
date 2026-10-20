@@ -1074,6 +1074,10 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _sleep(actor, r)
 		"fill":
 			return _fill(actor, r)
+		"trade_look":
+			return _trade_look(actor, r)
+		"trade":
+			return _trade(actor, r)
 		"pour":
 			return _pour(actor, r)
 		"wake":
@@ -2294,6 +2298,100 @@ func _till(actor: String, r: Dictionary) -> Dictionary:
 	c.set_cell("ground", at[3], at[4], into)
 	_changed(chunk_key(at[0], at[1], at[2]))
 	return {"ok": true}
+
+
+# --- trade (ADR-0040) ------------------------------------------------------------
+
+const COIN := "base:coin"
+
+
+## The dweller one trades with, checked: [creature, its trade] or [null, reason].
+func _trader(actor: String, r: Dictionary) -> Array:
+	if not present.has(actor) or typeof(r.get("creature")) != TYPE_STRING:
+		return [null, "bad_request"]
+	var c := creatures.get_creature(String(r["creature"]))
+	if c == null or c.job.is_empty():
+		return [null, "nothing_there"]
+	var trade: Dictionary = content.get_def(String(c.job.get("profession", ""))).get("trade", {})
+	if trade.is_empty():
+		return [null, "no_trade"]
+	var p: Dictionary = present[actor]
+	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+		return [null, "too_far"]
+	if c.asleep or c.state == "flee":
+		return [null, "not_now"]
+	# Each morning the stock and the purse are as the trade says.
+	var day := world_time / Daylight.DAY_MS
+	if int(c.job.get("stocked", -1)) != day:
+		var stock := inventory("trade|" + c.id)
+		for item: String in stock.stacks.keys():
+			stock.remove(item, int(stock.stacks[item]))
+		for item: String in trade.get("sells", {}):
+			stock.add(item, int(trade["sells"][item][0]))
+		_touch_inventory("trade|" + c.id)
+		c.job["stocked"] = day
+		c.job["purse"] = int(trade.get("purse", 0))
+		c.changed()
+	return [c, trade]
+
+
+func _goods(c: Creature, trade: Dictionary) -> Dictionary:
+	var stock := inventory("trade|" + c.id)
+	var sells := {}
+	for item: String in trade.get("sells", {}):
+		sells[item] = [stock.count(item), int(trade["sells"][item][1])]
+	return {"ok": true, "profession": String(c.job.get("profession", "")), "sells": sells,
+		"buys": (trade.get("buys", {}) as Dictionary).duplicate(), "purse": int(c.job.get("purse", 0))}
+
+
+func _trade_look(actor: String, r: Dictionary) -> Dictionary:
+	var t := _trader(actor, r)
+	if t[0] == null:
+		return {"ok": false, "reason": t[1]}
+	return _goods(t[0], t[1])
+
+
+## Buys from a dweller (coins for its goods, as its stock has) or sells to it
+## (goods it buys, for coins as its purse has) — all or nothing.
+func _trade(actor: String, r: Dictionary) -> Dictionary:
+	var t := _trader(actor, r)
+	if t[0] == null:
+		return {"ok": false, "reason": t[1]}
+	var c: Creature = t[0]
+	var trade: Dictionary = t[1]
+	var item := rs(r, "item")
+	var n := ri(r, "count", 1)
+	if n < 1 or n > 999:
+		return {"ok": false, "reason": "bad_request"}
+	var inv := inventory(actor)
+	var stock := inventory("trade|" + c.id)
+	if bool(r.get("buy", true)):
+		if not (trade.get("sells", {}) as Dictionary).has(item):
+			return {"ok": false, "reason": "not_sold"}
+		var price := int(trade["sells"][item][1]) * n
+		if stock.count(item) < n:
+			return {"ok": false, "reason": "sold_out"}
+		if inv.count(COIN) < price:
+			return {"ok": false, "reason": "no_money"}
+		inv.remove(COIN, price)
+		stock.remove(item, n)
+		inv.add(item, n)
+		c.job["purse"] = int(c.job.get("purse", 0)) + price
+	else:
+		if not (trade.get("buys", {}) as Dictionary).has(item):
+			return {"ok": false, "reason": "not_bought"}
+		var price := int(trade["buys"][item]) * n
+		if inv.count(item) < n:
+			return {"ok": false, "reason": "not_carried"}
+		if int(c.job.get("purse", 0)) < price:
+			return {"ok": false, "reason": "no_money_there"}
+		inv.remove(item, n)
+		inv.add(COIN, price)
+		c.job["purse"] = int(c.job.get("purse", 0)) - price
+	c.changed()
+	_touch_inventory(actor)
+	_touch_inventory("trade|" + c.id)
+	return _goods(c, trade)
 
 
 # --- liquids (ADR-0037) ---------------------------------------------------------

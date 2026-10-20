@@ -61,6 +61,7 @@
     {
       "id": "base:human_f",
       "kind": "body_plan",
+      "feminine": true,
       "name": "Женский · Обычное",
       "body_size": [
         20,

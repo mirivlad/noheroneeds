@@ -145,6 +145,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.creatures = CreatureSim.new(world)
 	world.combat = Combat.new(world)
 	world.needs = Needs.new(world)
+	world.chronicles = Chronicles.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	world.weather_seed = absi(hash([world.world_seed, "weather"]))
 	var saved_time := s.read_meta("time")
@@ -224,6 +225,7 @@ func close() -> void:
 	creatures.detach()  # they hold each other: let both go
 	combat.world = null
 	needs.world = null
+	chronicles.world = null
 
 
 ## Stops without committing what is not yet handed to the writer (tests of crashes).
@@ -237,6 +239,7 @@ func abandon() -> void:
 	creatures.detach()
 	combat.world = null
 	needs.world = null
+	chronicles.world = null
 
 
 # --- request fields (input from the network: any type may come) ----------------
@@ -307,6 +310,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		creatures.take_rows(location, rows)
 		creatures.on_chunk_ready(location, cx, cy, c)
 		_settle_stairs(location, cx, cy, c)
+		chronicles.lie_lost(location, cx, cy)  # a thing lost in a cave lies there again (ADR-0042)
 		sync_loads += 1
 	return c
 
@@ -856,6 +860,8 @@ var creatures: CreatureSim
 var combat: Combat
 ## Satiety and what else a character needs (ADR-0032).
 var needs: Needs
+## Villages' chronicles and their dwellers' requests (ADR-0042).
+var chronicles: Chronicles
 ## World facts to write with the next state batch (set_meta).
 var _pending_meta := {}
 ## Light sources by chunk, worked out when first asked, forgotten on change.
@@ -865,6 +871,13 @@ var _lights_by_chunk := {}
 ## A world fact written with the next state batch (meta).
 func note_fact(key: String, value: String) -> void:
 	_pending_meta[key] = value
+
+
+## A world fact as it is now: noted and not yet written, or as kept.
+func fact(key: String) -> String:
+	if _pending_meta.has(key):
+		return String(_pending_meta[key])
+	return store.read_meta(key) if store else ""
 
 
 func mark_chunk_dirty(location: String, cx: int, cy: int) -> void:
@@ -1101,6 +1114,10 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _sleep(actor, r)
 		"fill":
 			return _fill(actor, r)
+		"talk", "promise", "report":
+			return _talk(actor, r, rs(r, "type"))
+		"journal":
+			return chronicles.journal(actor) if present.has(actor) else {"ok": false, "reason": "not_here"}
 		"trade_look":
 			return _trade_look(actor, r)
 		"trade":
@@ -1311,6 +1328,7 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": true, "item": it["item"], "count": fits, "left": it["count"]}
 	take_item(id, inventory(actor))
 	_touch_inventory(actor)
+	chronicles.picked(actor, String(it["item"]))
 	return {"ok": true, "item": it["item"], "count": it["count"]}
 
 
@@ -2346,6 +2364,8 @@ func _trader(actor: String, r: Dictionary) -> Array:
 		return [null, "too_far"]
 	if c.asleep or c.state == "flee":
 		return [null, "not_now"]
+	if chronicles.bears_grudge(c, actor):
+		return [null, "grudge"]
 	# Each morning the stock and the purse are as the trade says.
 	var day := world_time / Daylight.DAY_MS
 	if int(c.job.get("stocked", -1)) != day:
@@ -2359,6 +2379,27 @@ func _trader(actor: String, r: Dictionary) -> Array:
 		c.job["purse"] = int(trade.get("purse", 0))
 		c.changed()
 	return [c, trade]
+
+
+## Talk with a dweller (ADR-0042): what it says and asks ("talk"), taking
+## its request on ("promise"), telling it is done ("report").
+func _talk(actor: String, r: Dictionary, what: String) -> Dictionary:
+	if not present.has(actor) or typeof(r.get("creature")) != TYPE_STRING:
+		return {"ok": false, "reason": "bad_request"}
+	var c := creatures.get_creature(String(r["creature"]))
+	if c == null or not c.job.has("village"):
+		return {"ok": false, "reason": "nothing_there"}
+	var p: Dictionary = present[actor]
+	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+		return {"ok": false, "reason": "too_far"}
+	if c.asleep:
+		return {"ok": false, "reason": "not_now"}
+	match what:
+		"promise":
+			return chronicles.promise(actor, c)
+		"report":
+			return chronicles.report(actor, c)
+	return chronicles.talk(actor, c)
 
 
 func _goods(c: Creature, trade: Dictionary) -> Dictionary:

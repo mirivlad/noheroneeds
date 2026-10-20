@@ -147,9 +147,12 @@ func hurt(target: String, amount: int, attacker: String) -> void:
 		world.creatures.alarm(c)
 	if left > 0:
 		_set_health(target, left)
+		if c and not c.job.is_empty():
+			world.chronicles.struck(c, attacker)  # the village remembers (ADR-0042)
 	elif world.present.has(target):
 		_character_dies(target)
 	elif c:
+		world.chronicles.died(c, attacker)
 		_creature_dies(c)
 
 

@@ -256,6 +256,7 @@ func _step() -> void:
 	world.combat.step(tick)
 	if tick % TICK_RATE == 0:
 		world.needs.step()
+		world.chronicles.step()
 	_lap("combat")
 	world.commit_async(wait_for_disk)
 	world.flush_state(STATE_ROWS_PER_TICK)
@@ -583,6 +584,7 @@ func _creature_cold(c: Creature) -> Dictionary:
 		cold["owner"] = c.owner
 	if not c.job.is_empty():  # always told, empty too: a client keeps what it was told last
 		cold["profession"] = String(c.job.get("profession", ""))
+		cold["name"] = String(c.job.get("name", ""))
 		cold["held"] = c.held
 		cold["asleep"] = c.asleep
 		cold["say"] = c.say

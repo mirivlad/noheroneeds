@@ -538,6 +538,8 @@ ITEMS = {
     "base:carrot": (str(FARM / "plants.png"), 64, 352),
     "base:bread": ("idyl/bread.png", 0, 0),
     "base:fishing_rod": ("items1_0.png", 384, 224),
+    "base:garnet_amulet": ("items1_0.png", 416, 160),
+    "base:amethyst_amulet": ("items1_0.png", 416, 192),
     "base:raw_fish": ("items1_0.png", 416, 224),
     "base:perch": (str(FARM / "farming_fishing.png"), 528, 194),
     "base:pike": (str(FARM / "farming_fishing.png"), 528, 321),

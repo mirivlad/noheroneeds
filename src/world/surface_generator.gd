@@ -11,7 +11,8 @@ extends RefCounted
 const ID := "base:surface"
 ## 2: ground lies in patches instead of per-cell noise.
 ## 3: cave mouths where the underground has a way up (ADR-0017).
-const VERSION := 3
+## 4: settlements (ADR-0038).
+const VERSION := 4
 var world_seed := 0
 ## From the generator's own definition (content "base:surface").
 var _water := ""
@@ -34,6 +35,8 @@ var _water_noise := FastNoiseLite.new()
 var _patch_noise: Array[FastNoiseLite] = []
 ## Where the ways into the underground are (null: none).
 var underground: UndergroundGenerator
+## Where the settlements are and how they lie (ADR-0038).
+var settlements: Settlements
 
 
 func _init(seed_value: int, content: ContentRegistry) -> void:
@@ -66,6 +69,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	_water_noise.seed = seed_value + 7919
 	_water_noise.frequency = 0.03
 	_water_noise.fractal_octaves = 2
+	settlements = Settlements.new(seed_value, content, is_wet, _clearing)
 	for i in 8:
 		var n := FastNoiseLite.new()
 		n.seed = seed_value + 104729 * (i + 1)
@@ -102,11 +106,40 @@ func generate(cx: int, cy: int) -> Chunk:
 				var plant := _pick(b["cover"], _hash(x, y, 3))
 				if plant != "" and not (clearing and _solid.has(plant)):
 					c.set_cell("cover", lx, ly, plant)
+	# Settlements: the cells of each whose plan falls in this chunk (the same
+	# in any order the chunks are made).
+	for plan: Dictionary in settlements.plans_touching(cx, cy):
+		# No trees in or round it (their crowns over roofs and streets); grass
+		# and flowers stay.
+		var free := (plan["bounds"] as Rect2i).grow(Settlements.TREE_FREE)
+		for y in range(maxi(free.position.y, cy * Chunk.SIZE), mini(free.end.y, (cy + 1) * Chunk.SIZE)):
+			for x in range(maxi(free.position.x, cx * Chunk.SIZE), mini(free.end.x, (cx + 1) * Chunk.SIZE)):
+				if _solid.has(c.get_cell("cover", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)):
+					c.set_cell("cover", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, "")
+		var cells: Dictionary = plan["cells"]
+		for at: Vector2i in cells:
+			var lx := at.x - cx * Chunk.SIZE
+			var ly := at.y - cy * Chunk.SIZE
+			if lx < 0 or ly < 0 or lx >= Chunk.SIZE or ly >= Chunk.SIZE:
+				continue
+			var spec: Dictionary = cells[at]
+			for layer: String in ["ground", "cover", "structure", "roof"]:
+				if spec.has(layer):
+					c.set_cell(layer, lx, ly, spec[layer])
+			if c.get_cell("ground", lx, ly) == _water:
+				c.set_cell("ground", lx, ly, _shore)  # a little water at its edge is made land
+			if spec.has("props"):
+				c.set_props(lx, ly, (spec["props"] as Dictionary).duplicate(true))
 	if underground and underground.way_down_surface != "":
 		var mouth := underground.entrance_at(-1, cx, cy)
 		if mouth != UndergroundGenerator.NONE:
 			place_mouth(c, mouth.x - cx * Chunk.SIZE, mouth.y - cy * Chunk.SIZE, underground.way_down_surface)
 	return c
+
+
+## Whether the surface at a world cell is water or its shore (no settlement there).
+func is_wet(x: int, y: int) -> bool:
+	return _water_noise.get_noise_2d(x, y) > _water_level - _shore_width
 
 
 ## A cave mouth at a cell of a chunk, on dry ground with nothing around it.

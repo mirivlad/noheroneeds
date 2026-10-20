@@ -1,0 +1,23 @@
+{
+  "format": 1,
+  "defs": [
+    {
+      "id": "base:village", "kind": "settlement", "name": "Деревня",
+      "region_chunks": 12, "chance": 0.45, "near_spawn": true,
+      "houses": [4, 7],
+      "road": "base:dirt", "floor": "base:wood_floor", "wall": "base:wood_wall", "door": "base:wood_door",
+      "window": "base:wood_window", "roof": "base:thatch_roof", "square": "base:campfire",
+      "buildings": [
+        {"id": "house", "name": "Дом", "size": [5, 4], "weight": 5, "furniture": ["base:bed", "base:chest"], "dweller": "farmer"},
+        {"id": "smithy", "name": "Кузница", "size": [6, 5], "weight": 3, "max": 1,
+          "furniture": ["base:bed", "base:forge", "base:workbench"], "dweller": "smith"},
+        {"id": "fisher", "name": "Дом рыбака", "size": [5, 4], "weight": 2, "max": 1,
+          "furniture": ["base:bed", "base:chest"], "dweller": "fisher"},
+        {"id": "herder", "name": "Дом пастуха", "size": [5, 4], "weight": 2, "max": 1,
+          "furniture": ["base:bed", "base:chest"], "dweller": "herder"}
+      ],
+      "fields": {"count": [1, 3], "size": [6, 4], "ground": "base:farmland", "crops": {"base:wheat_crop": 2, "base:carrot_crop": 1}},
+      "pen": {"size": [7, 5], "fence": "base:wood_fence", "gate": "base:wood_gate", "animals": {"base:sheep": 2, "base:chicken": 3}}
+    }
+  ]
+}

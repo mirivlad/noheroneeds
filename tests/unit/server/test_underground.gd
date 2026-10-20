@@ -296,3 +296,46 @@ func test_arrows_fly_underground() -> void:
 		if w.items[id]["location"] == loc and w.items[id]["item"] == "base:arrow":
 			lying = Movement.cell_of(Vector2i(w.items[id]["x"], w.items[id]["y"])).x
 	check(lying > at.x + 10, "a miss falls far away, at its range or a wall: %d" % lying)
+
+
+## Open cells 4 to 6 cells round a way (outside its hollow), in its depth.
+func _open_round_way(g: UndergroundGenerator, z: int, at: Vector2i) -> int:
+	var chunks := {}
+	var open := 0
+	for dy in range(-6, 7):
+		for dx in range(-6, 7):
+			var d2 := dx * dx + dy * dy
+			if d2 <= 10 or d2 > 36:
+				continue
+			var p := at + Vector2i(dx, dy)
+			var k := Vector2i(floori(p.x / 32.0), floori(p.y / 32.0))
+			if not chunks.has(k):
+				chunks[k] = g.generate(z, k.x, k.y)
+			if (chunks[k] as Chunk).get_cell("structure", p.x - k.x * 32, p.y - k.y * 32) == "":
+				open += 1
+	return open
+
+
+func test_ways_up_and_down_open_on_caves_not_walled_in() -> void:
+	var g := UndergroundGenerator.new(12345, _content)
+	var ways := 0
+	for z in [-1, -2]:
+		for cy in range(-8, 8):
+			for cx in range(-8, 8):
+				for way: Vector2i in [g.entrance_at(z, cx, cy), g.entrance_at(z - 1, cx, cy)]:
+					if way == UndergroundGenerator.NONE:
+						continue
+					ways += 1
+					check(_open_round_way(g, z, way) > 0, "depth %d, way at %s: walled in" % [z, way])
+	check(ways > 10, "ways enough to say so: %d" % ways)
+	# A tunnel crossing a chunk's edge is dug alike whichever chunk comes first.
+	var a := UndergroundGenerator.new(12345, _content)
+	var b := UndergroundGenerator.new(12345, _content)
+	for cy in range(-8, 8):
+		for cx in range(-8, 8):
+			var first := a.generate(-1, cx, cy)
+			var second := b.generate(-1, -1 - cx, -1 - cy)  # another order
+			check(first != null and second != null, "made")
+	for cy in range(-8, 8):
+		for cx in range(-8, 8):
+			check(a.generate(-1, cx, cy).same_as(b.generate(-1, cx, cy)), "chunk %d,%d the same either way" % [cx, cy])

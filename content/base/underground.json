@@ -14,11 +14,11 @@
 
     {"id": "base:rock", "kind": "structure", "natural": true, "role": "rock", "name": "Порода", "height": 1.0,
       "gather": {"tool": "mining", "verb": "Копать", "drops": {"base:stone": 1}}},
-    {"id": "base:iron_ore_rock", "kind": "structure", "natural": true, "role": "rock", "name": "Железная руда",
+    {"id": "base:iron_ore_rock", "kind": "structure", "natural": true, "role": "rock", "hidden_as": "base:rock", "name": "Железная руда",
       "gather": {"tool": "mining", "verb": "Копать", "drops": {"base:iron_ore": 1, "base:stone": 1}}},
-    {"id": "base:copper_ore_rock", "kind": "structure", "natural": true, "role": "rock", "name": "Медная руда",
+    {"id": "base:copper_ore_rock", "kind": "structure", "natural": true, "role": "rock", "hidden_as": "base:rock", "name": "Медная руда",
       "gather": {"tool": "mining", "verb": "Копать", "drops": {"base:copper_ore": 1}}},
-    {"id": "base:gem_rock", "kind": "structure", "natural": true, "role": "rock", "name": "Самоцвет в породе",
+    {"id": "base:gem_rock", "kind": "structure", "natural": true, "role": "rock", "hidden_as": "base:rock", "name": "Самоцвет в породе",
       "gather": {"tool": "mining", "verb": "Копать", "drops": {"base:raw_gem": 1, "base:stone": 1}}},
 
     {"id": "base:iron_vein", "kind": "deposit", "rock": "base:iron_ore_rock", "depths": [-1, -999], "shape": "vein",

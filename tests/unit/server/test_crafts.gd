@@ -247,3 +247,37 @@ func test_a_bucket_is_filled_poured_milked_and_drunk() -> void:
 	r = _req(a, {"type": "eat", "item": "base:milk_bucket"})
 	check(r.get("ok", false) and r.get("now") == "base:bucket", "drunk, the bucket left: %s" % str(r))
 	eq(w.inventory(a).count("base:bucket"), 2)
+
+
+func test_ore_shut_in_rock_is_told_as_rock_until_dug_open() -> void:
+	var depth := Levels.depth_id(-1)
+	var c := w.chunk(depth, 0, 0)
+	for y in range(0, 12):
+		for x in range(0, 12):
+			c.set_cell("structure", x, y, "base:rock")
+	c.set_cell("structure", 5, 5, "base:iron_ore_rock")
+	w._changed(ServerWorld.chunk_key(depth, 0, 0))
+	var sent := func() -> String:
+		return ChunkCodec.decode(w.encoded_chunk(depth, 0, 0)).get_cell("structure", 5, 5)
+	var mapped := func() -> String:
+		var t := MapTile.decode(w.map_tile(depth, 0, 0))
+		return (t["palette"] as PackedStringArray)[(t["cells"] as PackedByteArray)[5 * Chunk.SIZE + 5]]
+	eq(sent.call(), "base:rock", "shut in: sent as rock")
+	eq(mapped.call(), "base:rock", "and on the map")
+	eq(c.get_cell("structure", 5, 5), "base:iron_ore_rock", "the world keeps the ore")
+	c.set_cell("structure", 5, 6, "")  # dug next to it
+	w._changed(ServerWorld.chunk_key(depth, 0, 0))
+	eq(sent.call(), "base:iron_ore_rock", "laid open: told as it is")
+	eq(mapped.call(), "base:iron_ore_rock")
+	# At a chunk's edge: digging in the next chunk tells this one again.
+	c.set_cell("structure", 0, 8, "base:copper_ore_rock")
+	var west := w.chunk(depth, -1, 0)
+	west.set_cell("structure", 31, 8, "base:rock")
+	w._changed(ServerWorld.chunk_key(depth, 0, 0))
+	var west_of := func() -> String: return ChunkCodec.decode(w.encoded_chunk(depth, 0, 0)).get_cell("structure", 0, 8)
+	eq(west_of.call(), "base:rock")
+	var rev := w.chunk_revision(depth, 0, 0)
+	west.set_cell("structure", 31, 8, "")
+	w._changed(ServerWorld.chunk_key(depth, -1, 0))
+	check(w.chunk_revision(depth, 0, 0) > rev, "the neighbour is told again")
+	eq(west_of.call(), "base:copper_ore_rock", "and its ore shows")

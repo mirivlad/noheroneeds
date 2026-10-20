@@ -571,7 +571,11 @@ func map_tile(location: String, cx: int, cy: int) -> PackedByteArray:
 		c = ChunkCodec.decode(data)
 		if c == null:
 			return PackedByteArray()
-	var bytes := MapTile.encode(MapTile.of(c))
+	# Shut-in ore shows as rock on the map too; chunks not in memory count as
+	# solid round it (a map is no way to find veins).
+	var bytes := MapTile.encode(MapTile.of(shown_chunk(location, cx, cy, c, func(x: int, y: int) -> bool:
+		var k := chunk_key(location, floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
+		return not _chunks.has(k) or is_solid(location, x, y))))
 	if _map_tiles.size() > 4096:
 		_map_tiles.clear()  # a cache, not a store
 	_map_tiles[key] = [rev, bytes]
@@ -648,15 +652,41 @@ func chunk_revision(location: String, cx: int, cy: int) -> int:
 	return _chunk_rev.get(chunk_key(location, cx, cy), 0)
 
 
-## The chunk as clients receive it, encoded once per revision.
+## The chunk as clients receive it, encoded once per revision: what is
+## shut in rock is told as the rock it looks like (shown_chunk).
 func encoded_chunk(location: String, cx: int, cy: int) -> PackedByteArray:
 	var key := chunk_key(location, cx, cy)
 	var rev: int = _chunk_rev.get(key, 0)
 	var cached: Array = _encoded.get(key, [])
 	if cached.is_empty() or cached[0] != rev:
-		cached = [rev, ChunkCodec.encode(chunk(location, cx, cy))]
+		cached = [rev, ChunkCodec.encode(shown_chunk(location, cx, cy, chunk(location, cx, cy),
+			func(x: int, y: int) -> bool: return is_solid(location, x, y)))]
 		_encoded[key] = cached
 	return cached[1]
+
+
+## A chunk as clients may know it: a part with "hidden_as" (ore in the rock)
+## shut in on all four sides by solid cells (`solid`, world cells) is told as
+## what it looks like there — nobody sees a vein before it is dug open, not on
+## the screen, not on the map, not in what is sent.
+func shown_chunk(location: String, cx: int, cy: int, c: Chunk, solid: Callable) -> Chunk:
+	var hidden := {}
+	for id: String in c.layer_ids("structure"):
+		if id != "" and content.get_def(id).has("hidden_as"):
+			hidden[id] = String(content.get_def(id)["hidden_as"])
+	if hidden.is_empty():
+		return c
+	var out := c.snapshot()
+	for ly in Chunk.SIZE:
+		for lx in Chunk.SIZE:
+			var id := c.get_cell("structure", lx, ly)
+			if not hidden.has(id):
+				continue
+			var x := cx * Chunk.SIZE + lx
+			var y := cy * Chunk.SIZE + ly
+			if solid.call(x, y - 1) and solid.call(x + 1, y) and solid.call(x, y + 1) and solid.call(x - 1, y):
+				out.set_cell("structure", lx, ly, hidden[id])
+	return out
 
 
 func _known_character(id: String) -> Dictionary:
@@ -1278,6 +1308,14 @@ func _changed(key: String) -> void:
 	_lights_by_chunk.erase(key)
 	_chunk_rev[key] = _chunk_rev.get(key, 0) + 1
 	revision_epoch += 1
+	# Underground, digging at a chunk's edge may lay open ore in the next one
+	# (shown_chunk): those are told again too (not saved: nothing in them changed).
+	var parts := key.rsplit("|", true, 2)
+	if parts.size() == 3 and levels.kind(parts[0]) != Levels.BUILDING_LEVEL and parts[0] != SURFACE:
+		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var next := chunk_key(parts[0], int(parts[1]) + d.x, int(parts[2]) + d.y)
+			if _chunk_rev.has(next) or _chunks.has(next):
+				_chunk_rev[next] = _chunk_rev.get(next, 0) + 1
 
 
 func _touch_inventory(owner: String) -> void:

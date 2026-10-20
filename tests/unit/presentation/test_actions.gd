@@ -165,3 +165,18 @@ func test_a_bucket_fills_at_water_and_pours() -> void:
 	eq(Actions.primary(Actions.of(content, client, view, "base:bucket", cow, Vector2i.ZERO)).get("name"), "Подоить")
 	cow["entity"]["owner"] = "other"
 	check(not _ids(Actions.of(content, client, view, "base:bucket", cow, Vector2i.ZERO)).has("fill"), "not another's cow")
+
+
+func test_the_map_marks_ways_up_and_down() -> void:
+	var c := Chunk.new()
+	c.set_cell("ground", 0, 0, "base:grass")
+	c.set_cell("structure", 3, 4, "base:wood_stairs")
+	c.set_cell("structure", 5, 5, "base:cave_mouth")
+	c.set_cell("structure", 7, 7, "base:cave_climb")
+	c.set_cell("structure", 9, 9, "base:wood_wall")
+	client.map_tiles["surface|0|0"] = MapTile.of(c)
+	var painter := MapPainter.new()
+	painter.setup(content, view, client)
+	var marks := painter.marks("surface", Vector2i.ZERO)
+	marks.sort_custom(func(a: Array, b: Array) -> bool: return a[0].x < b[0].x)
+	eq(marks, [[Vector2i(3, 4), true], [Vector2i(5, 5), false], [Vector2i(7, 7), true]], "stairs and a climb up, a mouth down; a wall nothing")

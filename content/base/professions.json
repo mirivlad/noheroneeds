@@ -1,19 +1,19 @@
 {
   "format": 1,
   "defs": [
-    {"id": "base:farmer", "kind": "profession", "name": "Земледелец", "work": "field", "hours": [6, 18], "holds": "base:hoe",
+    {"id": "base:farmer", "kind": "profession", "trade": {"purse": 60, "sells": {"base:wheat": [12, 2], "base:carrot": [10, 2], "base:wheat_seeds": [10, 1], "base:carrot_seeds": [8, 1], "base:bread": [4, 6]}, "buys": {"base:raw_meat": 3, "base:hide": 4, "base:raw_fish": 2, "base:egg": 1}}, "name": "Земледелец", "work": "field", "hours": [6, 18], "holds": "base:hoe",
       "lines": {"greet": ["Доброго дня!", "Урожай нынче обещает быть.", "Заходи, коли нужда будет."],
         "work": ["Земля любит, когда её не забывают.", "Ещё грядка — и домой.", "Не топчи посевы, ладно?"],
         "evening": ["Уф, умаялся за день.", "Хорошо у огня."], "rain": ["Дождик — полю радость."], "night": ["Поздно уже, спать пора."]}},
-    {"id": "base:smith", "kind": "profession", "name": "Кузнец", "work": "station:forge", "hours": [7, 19], "holds": "base:iron_pickaxe",
+    {"id": "base:smith", "kind": "profession", "trade": {"purse": 120, "sells": {"base:axe": [1, 15], "base:pickaxe": [1, 15], "base:hoe": [1, 12], "base:iron_axe": [1, 40], "base:iron_pickaxe": [1, 45], "base:iron_helmet": [1, 50], "base:bucket": [2, 8], "base:arrow": [20, 1]}, "buys": {"base:iron_ore": 4, "base:copper_ore": 3, "base:stone": 1, "base:log": 2, "base:iron_ingot": 10}}, "name": "Кузнец", "work": "station:forge", "hours": [7, 19], "holds": "base:iron_pickaxe",
       "lines": {"greet": ["Железо любит жар и терпение.", "Нужен инструмент — приходи с рудой."],
         "work": ["Не стой у горна — обожжёшься.", "Куй, пока горячо."],
         "evening": ["Руки гудят, а на душе спокойно."], "rain": ["В дождь у горна самое место."], "night": ["Горн остыл. До утра."]}},
-    {"id": "base:fisher", "kind": "profession", "name": "Рыбак", "work": "water", "hours": [5, 17], "holds": "base:fishing_rod",
+    {"id": "base:fisher", "kind": "profession", "trade": {"purse": 50, "sells": {"base:raw_fish": [6, 3], "base:perch": [4, 4], "base:pike": [1, 12], "base:cooked_fish": [4, 6], "base:fishing_rod": [1, 10]}, "buys": {"base:bread": 5, "base:wheat": 1, "base:plank": 1}}, "name": "Рыбак", "work": "water", "hours": [5, 17], "holds": "base:fishing_rod",
       "lines": {"greet": ["Клюёт нынче на рассвете.", "Рыба тишину любит."],
         "work": ["Тише, спугнёшь.", "Щука тут водится, сам видел."],
         "evening": ["Сегодня улов так себе.", "Зато вода спокойная."], "rain": ["В дождь самый клёв!"], "night": ["Ночью рыба спит, и я с ней."]}},
-    {"id": "base:herder", "kind": "profession", "name": "Пастух", "work": "pen", "hours": [6, 19], "holds": "base:wheat",
+    {"id": "base:herder", "kind": "profession", "trade": {"purse": 60, "sells": {"base:wool": [6, 3], "base:egg": [8, 2], "base:milk_bucket": [1, 10], "base:leather": [3, 6], "base:cloth": [2, 8]}, "buys": {"base:wheat": 1, "base:carrot": 1, "base:wheat_seeds": 1}}, "name": "Пастух", "work": "pen", "hours": [6, 19], "holds": "base:wheat",
       "lines": {"greet": ["Овцы сыты — и я доволен.", "Скотину не обижай."],
         "work": ["Ну-ну, не толкайтесь.", "Кому зерна?"],
         "evening": ["Загон закрыт, все на месте."], "rain": ["Овцы дождя не любят."], "night": ["Тихо, животина спит."]}}

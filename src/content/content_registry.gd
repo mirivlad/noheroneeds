@@ -418,6 +418,20 @@ func _check_profession(id: String, d: Dictionary) -> void:
 		errors.append("%s: hours is [from, to] within a day" % id)
 	if String(d.get("holds", "")) != "" and kind_of(String(d["holds"])) != "item":
 		errors.append("%s: holds '%s', which is not an item" % [id, d["holds"]])
+	# What it trades (ADR-0040): sells {item: [a day's stock, price]}, buys
+	# {item: price}, a purse for a day; prices in coins.
+	var trade: Variant = d.get("trade", {})
+	if typeof(trade) != TYPE_DICTIONARY:
+		errors.append("%s: trade is {sells, buys, purse}" % id)
+	elif not (trade as Dictionary).is_empty():
+		trade["purse"] = int(trade.get("purse", 0))
+		for item: Variant in trade.get("sells", {}):
+			var v: Variant = trade["sells"][item]
+			if kind_of(String(item)) != "item" or typeof(v) != TYPE_ARRAY or (v as Array).size() != 2 or int(v[0]) < 1 or int(v[1]) < 1:
+				errors.append("%s: sells '%s' needs an item and [stock, price], both at least 1" % [id, item])
+		for item: Variant in trade.get("buys", {}):
+			if kind_of(String(item)) != "item" or typeof(trade["buys"][item]) not in [TYPE_INT, TYPE_FLOAT] or int(trade["buys"][item]) < 1:
+				errors.append("%s: buys '%s' needs an item and a price of at least 1" % [id, item])
 	var lines: Variant = d.get("lines", {})
 	if typeof(lines) != TYPE_DICTIONARY:
 		errors.append("%s: lines map a situation to what is said" % id)

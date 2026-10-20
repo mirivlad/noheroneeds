@@ -180,3 +180,14 @@ func test_the_map_marks_ways_up_and_down() -> void:
 	var marks := painter.marks("surface", Vector2i.ZERO)
 	marks.sort_custom(func(a: Array, b: Array) -> bool: return a[0].x < b[0].x)
 	eq(marks, [[Vector2i(3, 4), true], [Vector2i(5, 5), false], [Vector2i(7, 7), true]], "stairs and a climb up, a mouth down; a wall nothing")
+
+
+func test_a_dweller_of_a_trade_is_traded_with() -> void:
+	var smith := {"kind": "entity", "id": "v1", "location": "surface",
+		"entity": {"kind": "creature", "creature": "base:villager", "x": 900, "y": 900, "profession": "base:smith", "asleep": false}}
+	var a := Actions.of(content, client, view, "", smith, Vector2i.ZERO)
+	eq(Actions.quick(a).get("id"), "trade", "E: to trade")
+	eq(Actions.quick(a)["request"], {"type": "trade_look", "creature": "v1"})
+	eq(Actions.describe(content, smith), "Житель — кузнец")
+	smith["entity"]["asleep"] = true
+	check(not _ids(Actions.of(content, client, view, "", smith, Vector2i.ZERO)).has("trade"), "not in its sleep")

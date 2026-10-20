@@ -111,3 +111,54 @@ func test_one_near_is_spoken_to_by_trade() -> void:
 	for k: String in lines:
 		all.append_array(lines[k])
 	check(all.has(c.say), "a line of its trade")
+
+
+func _req(actor: String, r: Dictionary) -> Dictionary:
+	r["request_id"] = Uuid.v4()
+	w.handle(actor, r)
+	w.sync()
+	for ack: Array in w.take_acks():
+		if ack[1] == r["request_id"]:
+			return ack[2]
+	return {}
+
+
+func test_trade_with_a_dweller_coins_stock_purse_and_the_morning() -> void:
+	_live(10.0, 1600)
+	var farmer: Creature = _dwellers().filter(func(c: Creature) -> bool: return c.job["profession"] == "base:farmer")[0]
+	var pc := PortableCharacter.create("Аня", "base:human_m")
+	pc.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
+	w.enter("k-" + pc.character_id, pc)
+	var a := pc.character_id
+	w.move_character(a, farmer.pos + Vector2i(Movement.UNIT * 8, 0))
+	eq(_req(a, {"type": "trade_look", "creature": farmer.id}).get("reason"), "too_far")
+	w.move_character(a, farmer.pos + Vector2i(Movement.UNIT, 0))
+	var g := _req(a, {"type": "trade_look", "creature": farmer.id})
+	check(g.get("ok", false), str(g))
+	eq(g["sells"]["base:bread"], [4, 6], "four loaves at six")
+	eq(g["purse"], 60)
+	var buy := {"type": "trade", "creature": farmer.id, "item": "base:bread", "count": 1, "buy": true}
+	eq(_req(a, buy.duplicate()).get("reason"), "no_money", "no coins yet")
+	w.grant(a, "base:coin", 20)
+	g = _req(a, buy.merged({"count": 2}, true))
+	check(g.get("ok", false), str(g))
+	eq(w.inventory(a).count("base:bread"), 2)
+	eq(w.inventory(a).count("base:coin"), 8, "twelve paid")
+	eq(g["sells"]["base:bread"][0], 2, "two left")
+	eq(g["purse"], 72, "into its purse")
+	eq(_req(a, buy.merged({"count": 3}, true)).get("reason"), "sold_out")
+	w.grant(a, "base:raw_meat", 30)
+	g = _req(a, {"type": "trade", "creature": farmer.id, "item": "base:raw_meat", "count": 10, "buy": false})
+	eq(w.inventory(a).count("base:coin"), 38, "ten pieces of meat at three")
+	eq(g["purse"], 42)
+	eq(_req(a, {"type": "trade", "creature": farmer.id, "item": "base:raw_meat", "count": 20, "buy": false}).get("reason"),
+		"no_money_there", "its purse is not bottomless")
+	eq(_req(a, {"type": "trade", "creature": farmer.id, "item": "base:stone", "count": 1, "buy": false}).get("reason"), "not_bought")
+	# The next morning: stock and purse as the trade says again.
+	_live(-1.0, 0)
+	w.world_time += Daylight.DAY_MS
+	g = _req(a, {"type": "trade_look", "creature": farmer.id})
+	eq(g["sells"]["base:bread"][0], 4, "restocked")
+	eq(g["purse"], 60)
+	farmer.asleep = true
+	eq(_req(a, {"type": "trade_look", "creature": farmer.id}).get("reason"), "not_now", "not in its sleep")

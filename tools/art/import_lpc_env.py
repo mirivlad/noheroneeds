@@ -547,6 +547,7 @@ ITEMS = {
     "base:cloth": ("idyl/cloth.png", 0, 0),
     "base:egg": ("idyl/egg.png", 0, 0),
     "base:bucket": ("idyl/bucket.png", 0, 0),
+    "base:coin": (str(ROOT / "tools" / "art" / "generated" / "coin" / "coin.png"), 0, 0),  # generated (docs/art/AI_ASSETS.md)
 }
 # A picture with some of its colours changed inside a box (a recolouring, not
 # a new drawing: the bucket's dark inside as water or milk): id -> (file,
@@ -715,6 +716,9 @@ PACK_CREDITS = [
     ("[LPC] Farming tilesets (пашня, посевы, урожай, семена)", "lpc-farm/submission_daneeklu/readme.txt"),
 ]
 FILE_CREDITS = [
+    ("Монета — сгенерирована (tools/art/generated/coin)",
+     "модели: Stability AI SDXL Base 1.0, nerijs Pixel Art XL, madebyollin SDXL VAE fp16-fix; палитра золота Idylwild's Inventory",
+     "CreativeML OpenRAIL++-M / CreativeML OpenRAIL-M (модели)", "https://huggingface.co/nerijs/pixel-art-xl"),
     ("Лестница из пещеры — сгенерирована (tools/art/generated/cave_ladder)",
      "модели: Stability AI SDXL Base 1.0, nerijs Pixel Art XL, madebyollin SDXL VAE fp16-fix; очистка и палитра [LPC] Wooden Stairs",
      "CreativeML OpenRAIL++-M / CreativeML OpenRAIL-M (модели)", "https://huggingface.co/nerijs/pixel-art-xl"),

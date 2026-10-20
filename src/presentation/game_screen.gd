@@ -465,6 +465,27 @@ func _process(delta: float) -> void:
 			w.needs.set_energy(client.character_id, 10.0)
 		if _frames == 60:
 			client.request({"type": "sleep", "location": client.location, "x": bed.x, "y": bed.y})
+	if _opts.get("demo") == "occlude" and game and _frames == 40:  # dev only: a wall south and one aside, a tree south
+		var w := game.world
+		var me := Vector2i(0, 7)
+		var c := w.chunk(client.location, 0, 0)
+		for y in range(5, 12):
+			for x in range(-3, 4):
+				var cc := w.chunk(client.location, x >> 5, y >> 5)
+				cc.set_cell("cover", x & 31, y & 31, "")
+				cc.set_cell("structure", x & 31, y & 31, "")
+		for x in range(-1, 2):
+			c.set_cell("structure", x & 31, 8, "base:stone_wall")
+		for y in range(5, 8):
+			c.set_cell("structure", 2, y, "base:stone_wall")
+		c.set_cell("cover", (-2) & 31, 9, "base:oak")
+		if _opts.has("tree"):  # a crown over the player instead of the walls
+			for x in range(-1, 2):
+				c.set_cell("structure", x & 31, 8, "")
+			c.set_cell("cover", 0, 9, "base:oak")
+		w._changed(ServerWorld.chunk_key(client.location, 0, 0))
+		w._changed(ServerWorld.chunk_key(client.location, -1, 0))
+		w.move_character(client.character_id, me * 256 + Vector2i(128, 128))
 	if _opts.get("demo") == "armor" and game and _frames == 40:  # dev only: leather and a helmet on (ADR-0029)
 		for item: String in ["base:leather_armor", "base:iron_helmet"]:
 			game.world.grant(client.character_id, item, 1)

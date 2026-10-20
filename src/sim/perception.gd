@@ -22,7 +22,10 @@ static func sees(world: ServerWorld, location: String, eye: Vector2i, def: Dicti
 		at_location := "", target_body := Sight.BODY) -> bool:
 	var there := location if at_location == "" else at_location
 	var d := Vector2(eye).distance_to(Vector2(at))
-	if d > float(def["sight"]):
+	var most := float(def["sight"])
+	if world.has_daylight(there):  # rain and fog shorten it outdoors (ADR-0033)
+		most *= Weather.sight(world.weather_seed, world.world_time)
+	if d > most:
 		return false  # beyond sight even in full light: no need to ask the light
 	# The light of the cell is asked only when it matters: no cell is darker
 	# than the day indoors (in a location with daylight), so nearer than the

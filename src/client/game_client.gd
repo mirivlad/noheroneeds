@@ -23,6 +23,8 @@ var own := {}
 var world_time := 0.0
 var time_rate := 0
 var has_time := false
+## The world's weather (ADR-0033) is worked out here from this and the time.
+var weather_seed := 0
 var location := ""
 ## The level label of the location (0 on the surface).
 var z := 0
@@ -183,6 +185,7 @@ func _on_message(m: Dictionary) -> void:
 			character_id = m["character_id"]
 			location = m["location"]
 			max_levels = int(m["max_levels"])
+			weather_seed = int(m.get("weather_seed", 0))
 			state = "playing"
 			# The server knows nothing of our hands after a (re)join: they come
 			# before anything resent that may be done with them.

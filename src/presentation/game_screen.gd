@@ -42,6 +42,9 @@ var catalog := BuildCatalog.new()
 var crafts := CraftPanel.new()
 ## Requests to craft: their result says what was made.
 var _craft_rids := {}
+const WEATHER_WORDS := {"clear": "ясно", "cloudy": "пасмурно", "rain": "дождь", "storm": "гроза", "fog": "туман"}
+## Rain, fog, lightning over the world (ADR-0033).
+var weather := WeatherView.new()
 ## Feeding an animal (ADR-0030): how it took it.
 var _feed_rids := {}
 var inventory_panel := InventoryPanel.new()
@@ -171,6 +174,13 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 			if _opts.has("time"):  # dev only: --time=HOUR sets the world's clock
 				var day_start := game.world.world_time - game.world.world_time % Daylight.DAY_MS
 				game.world.world_time = day_start + int(float(_opts["time"]) * Daylight.HOUR_MS)
+			if _opts.has("weather"):  # dev only: --weather=rain|storm|fog|clear, the clock on to the next such hour
+				var w := game.world
+				for h in 24 * 60:
+					if Weather.kind(w.weather_seed, w.world_time) == String(_opts["weather"]) \
+							and (String(_opts["weather"]) == "fog" or not Daylight.is_night(w.world_time)):
+						break
+					w.world_time += Daylight.HOUR_MS / 2
 			client = game.client
 	view.setup(content, client)
 	add_child(view)
@@ -181,6 +191,8 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	add_child(camera)
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	weather.setup(client, view)
+	layer.add_child(weather)  # first: under everything else on the screen
 	for l: Label in [hud, status, _info]:
 		l.add_theme_font_override("font", Art.font())
 		l.add_theme_font_size_override("font_size", 16)
@@ -246,7 +258,7 @@ func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
 		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog, crafts,
-				inventory_panel, character_panel, chest_panel, pin_panel, _menu]:
+				inventory_panel, character_panel, chest_panel, pin_panel, _menu, weather]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -1100,8 +1112,8 @@ func _update_hud() -> void:
 	for id: String in MATERIALS:
 		bag.append("%s %d" % [content.get_def(id).get("name", id), int(inv.get(id, 0))])
 	var level := "Поверхность  0" if client.z == 0 else ("Этаж  %+d" % client.z if client.z > 0 else "Глубина  −%d" % -client.z)
-	var clock := "День %d  %s     " % [Daylight.day_of(int(client.world_time)), Daylight.clock_text(client.world_time)] \
-		if client.has_time else ""
+	var clock := "День %d  %s  %s     " % [Daylight.day_of(int(client.world_time)), Daylight.clock_text(client.world_time),
+		WEATHER_WORDS[Weather.kind(client.weather_seed, client.world_time)] if client.z >= 0 else ""] if client.has_time else ""
 	var top := int(client.own.get("max_health", 0))
 	var health := "Здоровье %d/%d     " % [int(client.own.get("health", top)), top] if top > 0 else ""
 	var deaths := int(client.own.get("deaths", 0))

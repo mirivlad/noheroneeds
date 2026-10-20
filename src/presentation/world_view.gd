@@ -343,7 +343,7 @@ func _grow_crops() -> void:
 		if not is_instance_valid(s):
 			_crops.erase(cell)
 			continue
-		var r: Array = (c[1] as Dictionary)["states"].get("stage_%d" % Crops.stage(c[2], c[3], client.world_time), [])
+		var r: Array = (c[1] as Dictionary)["states"].get("stage_%d" % Crops.stage(c[2], c[3], client.world_time, _crop_weather()), [])
 		if not r.is_empty():
 			s.region_rect = Rect2(r[0], r[1], r[2], r[3])
 
@@ -361,6 +361,9 @@ func _update_light() -> void:
 		return
 	# Underground (ADR-0017) no day: dark but for torches; a little to see by.
 	_tint.color = Daylight.tint(client.world_time) if client.z >= 0 else UNDERGROUND_TINT
+	if client.z >= 0:  # an overcast sky is darker and greyer (ADR-0033)
+		var dim := 1.0 - 0.25 * Weather.clouds(client.weather_seed, client.world_time)
+		_tint.color = Color(_tint.color.r * dim, _tint.color.g * dim, _tint.color.b * (dim * 0.5 + 0.5))
 	var dark := 1.0 - Daylight.sun(client.world_time) if client.z >= 0 else 1.0  # below, always night
 	for i in range(_lights.size() - 1, -1, -1):
 		var l := _lights[i]
@@ -739,7 +742,7 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 			var planted: Variant = (props.get("cover", {}) as Dictionary).get("planted") if layer == "cover" else null
 			var crop := content.get_def(id) if planted != null else {}
 			if planted != null and crop.has("crop"):
-				state = "stage_%d" % Crops.stage(crop, float(planted), client.world_time)
+				state = "stage_%d" % Crops.stage(crop, float(planted), client.world_time, _crop_weather())
 			var s := _tall_sprite(v, cell, state, variant, String(props.get("facing", "")))
 			if planted != null and crop.has("crop"):
 				_crops[cell] = [s, v, crop, float(planted)]
@@ -1141,6 +1144,11 @@ func _update_characters(alpha: float, delta: float) -> void:
 
 ## Blows last seen struck, by id (a change: a swing to show).
 var _swing_seen := {}
+
+
+## The weather crops here grow under (ADR-0033): the sky's, or none below.
+func _crop_weather() -> int:
+	return client.weather_seed if client.z >= 0 else -1
 
 
 ## How a blow with a thing looks (CharacterSprite.swing).

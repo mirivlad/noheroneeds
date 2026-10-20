@@ -362,7 +362,7 @@ func _join(s: Session, file: PackedByteArray) -> void:
 	s.state = "playing"
 	var p: Dictionary = world.present[id]
 	_send(s, Transport.Channel.RELIABLE, Protocol.WELCOME, {"character_id": id, "location": p["location"], "tick": tick,
-		"max_levels": world.max_levels})
+		"max_levels": world.max_levels, "weather_seed": world.weather_seed})
 	_send_map_known(s)
 	_tell_location(s)
 

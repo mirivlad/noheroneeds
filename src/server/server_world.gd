@@ -36,6 +36,8 @@ var underground: UndergroundGenerator
 var max_depth := 0
 var loader := ChunkLoader.new()
 var world_seed := 0
+## The seed of its weather (ADR-0033): told to clients, unlike the world's.
+var weather_seed := 0
 ## Chunks the simulation had to load or generate itself because the loader
 ## had not brought them yet (each one costs tick time).
 var sync_loads := 0
@@ -144,6 +146,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.combat = Combat.new(world)
 	world.needs = Needs.new(world)
 	world.world_seed = int(s.read_meta("seed"))
+	world.weather_seed = absi(hash([world.world_seed, "weather"]))
 	var saved_time := s.read_meta("time")
 	if saved_time.is_valid_int():
 		world.world_time = int(saved_time)
@@ -1575,7 +1578,8 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var item := held_of(actor)
 	# A crop is gathered ripe only (ADR-0027).
 	var crop := content.get_def(thing)
-	if crop.has("crop") and not Crops.ripe(crop, float(_layer_props(c, layer, at[3], at[4]).get("planted", 0)), world_time):
+	if crop.has("crop") and not Crops.ripe(crop, float(_layer_props(c, layer, at[3], at[4]).get("planted", 0)), world_time,
+			weather_seed if has_daylight(loc) else -1):
 		return {"ok": false, "reason": "not_ripe"}
 	var tool := String(g["tool"])
 	if tool != "" and (item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool)):
@@ -1627,6 +1631,8 @@ func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dicti
 	var taken := maxf(0.0, float(props.get("taken", 0.0))
 		- float(world_time - int(props.get("at", world_time))) / (float(g["restock_hours"]) * Daylight.HOUR_MS))
 	var chance := float(g["chance"]) * bite_hour(world_time) * maxf(0.0, 1.0 - taken / float(g["stock"]))
+	if has_daylight(at[0]):
+		chance *= 1.0 + 0.3 * Weather.rain(weather_seed, world_time)  # fish bite in the rain
 	var roll := float(absi(hash([world_seed, actor, at[0], at[1], at[2], at[3], at[4], tick])) % 100003) / 100003.0
 	if roll >= chance:
 		return {"ok": true, "thing": thing, "bite": false, "chance": chance}

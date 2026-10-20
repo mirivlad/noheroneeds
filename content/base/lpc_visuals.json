@@ -1216,7 +1216,89 @@
       }
      ]
     },
+    "base:iron_axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
     "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_male.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:iron_pickaxe": {
      "layer": "main_hand",
      "sheets": [
       {
@@ -2568,7 +2650,89 @@
       }
      ]
     },
+    "base:iron_axe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_axe_thin.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_axe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_axe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
     "base:pickaxe": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/tools_pickaxe_thin.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         64,
+         9
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_bg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/tools_pickaxe_fg_chop.png",
+       "anims": {
+        "chop": [
+         0,
+         0,
+         128,
+         6
+        ]
+       },
+       "z": 150
+      }
+     ]
+    },
+    "base:iron_pickaxe": {
      "layer": "main_hand",
      "sheets": [
       {

@@ -84,6 +84,24 @@
       }
     },
     {
+      "id": "base:iron_axe",
+      "kind": "item",
+      "name": "Железный топор",
+      "stack": 1,
+      "equip_slot": "main_hand",
+      "tools": [
+        "chopping"
+      ],
+      "power": 2,
+      "weapon": {
+        "kind": "melee",
+        "damage": 6,
+        "reach": 1.0,
+        "arc": 100,
+        "cooldown_ms": 650
+      }
+    },
+    {
       "id": "base:spear",
       "kind": "item",
       "name": "Копьё",

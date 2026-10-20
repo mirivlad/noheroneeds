@@ -186,6 +186,9 @@ func _validate() -> void:
 			"item":
 				if d.has("weapon"):
 					_check_weapon(id, "weapon", d["weapon"], true)
+				# A tool's power: the work a blow does (ADR-0026: iron does more).
+				if d.has("power") and (typeof(d["power"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["power"]) < 1):
+					errors.append("%s: power is the work of a blow, at least 1" % id)
 				# Food (ADR-0026): eaten, it heals.
 				if d.has("food") and (typeof(d["food"]) != TYPE_DICTIONARY or int(d["food"].get("heal", 0)) < 1):
 					errors.append("%s: food needs heal of at least 1" % id)

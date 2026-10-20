@@ -553,6 +553,53 @@ def build_crops():
     return defs
 
 
+# Fences (ADR-0024: half a storey): a post on the cell's middle, rails to the
+# fence cells beside it, from the [LPC] Farming fence block.
+FENCES = {"base:wood_fence": "fence"}
+GATES = {"base:wood_gate": "fence"}
+
+
+def build_fences():
+    def cut(img, c, r):
+        return img.crop((c * T, r * T, c * T + T, r * T + T))
+    rows = []
+    for part, sheet in list(FENCES.items()) + list(GATES.items()):
+        img = Image.open(FARM / (sheet + ".png")).convert("RGBA")
+        post, rail, down = cut(img, 0, 1), cut(img, 1, 0), cut(img, 1, 1)
+        if part in GATES:
+            gate = cut(img, 1, 5)
+            rows.append((part, "", [gate] * 16))
+            rows.append((part, "open", [post] * 16))
+            continue
+        variants = []
+        for nesw in range(16):
+            v = post.copy()
+            if nesw & 2:
+                v.alpha_composite(rail.crop((T // 2, 0, T, T)), (T // 2, 0))
+            if nesw & 8:
+                v.alpha_composite(rail.crop((0, 0, T // 2, T)), (0, 0))
+            if nesw & 4:
+                v.alpha_composite(down)
+            variants.append(v)
+        rows.append((part, "", variants))
+    atlas = Image.new("RGBA", (16 * T, len(rows) * T))
+    at = {}
+    for r, (part, state, variants) in enumerate(rows):
+        for i, img in enumerate(variants):
+            atlas.paste(img, (i * T, r * T))
+        at[(part, state)] = [0, r * T, T, T]
+    atlas.save(OUT / "fences.png", optimize=True)
+    defs = []
+    for part in list(FENCES) + list(GATES):
+        d = {"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
+             "atlas": "art/lpc_env/fences.png", "rect": at[(part, "")], "origin": [0, T - 2],
+             "pixel_scale": 0.5, "variants": 16, "autotile": "fence"}
+        if (part, "open") in at:
+            d["states"] = {"open": at[(part, "open")]}
+        defs.append(d)
+    return defs
+
+
 ENV_CREDITS_START = "<!-- environment -->"
 
 
@@ -608,7 +655,7 @@ def credits():
 def main():
     if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF, PLANTS_PNG, TREES_DIR, ORE, MINE]):
         sys.exit("no LPC environment sources: run tools/art/fetch_lpc_env.sh")
-    defs = build_terrain() + build_buildings() + build_plants() + build_props() + build_items() + build_crops()
+    defs = build_terrain() + build_buildings() + build_plants() + build_props() + build_items() + build_crops() + build_fences()
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     credits()
     print("%d environment visuals" % len(defs))

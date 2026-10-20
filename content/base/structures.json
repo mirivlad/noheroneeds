@@ -7,6 +7,10 @@
     {"id": "base:wood_door", "kind": "structure", "role": "door", "openable": true, "name": "Деревянная дверь", "cost": {"base:plank": 4}, "durability": 780, "material": "wood"},
     {"id": "base:wood_window", "kind": "structure", "role": "window", "name": "Окно", "rotations": ["s", "e", "n", "w"],
       "opening": {"sector": 110, "range": 14}, "cost": {"base:plank": 3}, "durability": 650, "material": "wood"},
+    {"id": "base:wood_fence", "kind": "structure", "role": "fence", "name": "Забор", "cost": {"base:plank": 2},
+      "height": 0.5, "opaque": true, "durability": 520, "material": "wood"},
+    {"id": "base:wood_gate", "kind": "structure", "role": "door", "openable": true, "name": "Калитка", "cost": {"base:plank": 3},
+      "height": 0.5, "opaque": true, "durability": 520, "material": "wood"},
     {"id": "base:loophole", "kind": "structure", "role": "window", "name": "Бойница", "rotations": ["s", "e", "n", "w"],
       "opening": {"sector": 50, "range": 20}, "cost": {"base:stone": 2, "base:plank": 1}, "durability": 2000, "material": "stone", "toughness": 0.15}
   ]

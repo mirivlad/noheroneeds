@@ -90,10 +90,15 @@ func _frame(anim: Dictionary, i: int) -> void:
 	_column = column
 	if not swinging():
 		_place_held()
+	# A thing whose frames do not cover this (a rod walking) is its picture.
+	if _held:
+		_held.visible = not swinging() and not _held_layers.any(func(l: Array) -> bool: return (l[1] as Sprite2D).visible)
 
 
 func _place_frame(s: Sprite2D, sheet: Dictionary, anim_name: String, column: int) -> void:
 	var r: Array = sheet.get("anims", {}).get(anim_name, [])
+	if r.size() > 4:  # another animation's columns, in this order
+		column = int(r[4][column]) if column < (r[4] as Array).size() else int(r[3])
 	if r.is_empty() or column >= int(r[3]):
 		s.visible = false
 		return
@@ -124,8 +129,8 @@ func _swing_step(delta: float) -> Vector2:
 	if _swing_t >= 1.0:
 		_swing_t = -1.0
 		_place_held()
-	if _held:
-		_held.visible = _swing_t < 0.0
+	if _held and _swing_t >= 0.0:
+		_held.visible = false
 	return Vector2.ZERO
 
 
@@ -136,7 +141,9 @@ func hold(picture: Texture2D, grip := GRIP, item := "") -> void:
 		_drop_held_layers()
 		_hold_layers(item)
 		_frame({}, 0)
-	super(null if _held_item != "" else picture, grip, item)
+	super(picture, grip, item)
+	if _held:
+		_held.visible = not swinging() and not _held_layers.any(func(l: Array) -> bool: return (l[1] as Sprite2D).visible)
 
 
 func _hold_layers(item: String) -> void:

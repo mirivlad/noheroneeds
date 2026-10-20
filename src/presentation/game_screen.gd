@@ -403,6 +403,22 @@ func _process(delta: float) -> void:
 		if _frames == 70:
 			game.world.grant(client.character_id, "base:log", 2)
 			client.request({"type": "build", "location": client.location, "x": way.x + 1, "y": way.y + 1, "part": "base:torch"})
+	if _opts.get("demo") == "fish" and game:  # dev only: a pond and a rod (fishing)
+		var me := Vector2i(0, 7)
+		if _frames == 40:
+			var w := game.world
+			for y in range(me.y - 1, me.y + 3):
+				for x in range(me.x + 1, me.x + 5):
+					var c := w.chunk("surface", x >> 5, y >> 5)
+					c.set_cell("ground", x & 31, y & 31, "base:water")
+					c.set_cell("cover", x & 31, y & 31, "")
+					c.set_cell("structure", x & 31, y & 31, "")
+					w._changed(ServerWorld.chunk_key("surface", x >> 5, y >> 5))
+			w.move_character(client.character_id, me * 256 + Vector2i(128, 128))
+			w.grant(client.character_id, "base:fishing_rod", 1)
+		if _frames == 50:
+			hotbar.put(0, "base:fishing_rod", -1)
+			_choose_slot(0)
 	if _opts.get("demo") == "loot" and game:  # dev only: looters by things lying about (ADR-0016)
 		var me := Vector2i(0, 7)
 		if _frames == 40:

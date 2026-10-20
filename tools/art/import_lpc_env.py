@@ -469,6 +469,9 @@ ITEMS = {
     "base:wheat": (str(FARM / "wheat.png"), 0, 0),
     "base:carrot": (str(FARM / "plants.png"), 64, 352),
     "base:bread": ("idyl/bread.png", 0, 0),
+    "base:fishing_rod": ("items1_0.png", 384, 224),
+    "base:raw_fish": ("items1_0.png", 416, 224),
+    "base:cooked_fish": ("items1_0.png", 352, 128),
 }
 # Tools drawn in the hands by LPC: the south standing frame of their layers.
 HELD_ICONS = {"base:hoe": ["tools/hoe/bg/walk.png", "tools/hoe/fg/walk.png"]}

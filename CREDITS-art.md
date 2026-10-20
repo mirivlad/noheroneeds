@@ -181,6 +181,13 @@
 - Примечание: original by bluecarrot16, color reduced by JaidynReiman
 - https://opengameart.org/content/lpc-hand-tools
 
+## tools/fishing_rod
+
+- Авторы: bluecarrot16
+- Лицензии: OGA-BY 3.0+, CC-BY 4.0+, GPL 2.0+
+- Примечание: original by bluecarrot16, color reduced by JaidynReiman
+- https://opengameart.org/content/lpc-hand-tools
+
 ## tools/hoe
 
 - Авторы: bluecarrot16, JaidynReiman, Pierre Vigier (pvigier), Johannes Sjölund (wulax), Inboxninja

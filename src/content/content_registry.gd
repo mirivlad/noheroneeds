@@ -713,10 +713,21 @@ func _check_sheet(id: String, sheet: Variant, dir: String) -> void:
 		errors.append("%s: atlas %s not found" % [id, sheet["atlas_path"]])
 	for a: String in sheet["anims"]:
 		var r: Variant = sheet["anims"][a]
-		if typeof(r) != TYPE_ARRAY or (r as Array).size() != 4:
+		if typeof(r) != TYPE_ARRAY or not (r as Array).size() in [4, 5] \
+				or (r as Array).slice(0, 4).any(func(n: Variant) -> bool: return typeof(n) not in [TYPE_INT, TYPE_FLOAT]):
 			errors.append("%s: sheet animation '%s' needs x, y, size and frames" % [id, a])
-		else:
-			sheet["anims"][a] = (r as Array).map(func(n: Variant) -> int: return int(n))
+			continue
+		var out: Array = (r as Array).slice(0, 4).map(func(n: Variant) -> int: return int(n))
+		# Columns of another animation, played in this order (LPC's own
+		# timelines: a rod's cast is the body's thrust).
+		if (r as Array).size() == 5:
+			var columns: Variant = r[4]
+			if typeof(columns) != TYPE_ARRAY or (columns as Array).is_empty() or (columns as Array).any(func(n: Variant) -> bool:
+					return typeof(n) not in [TYPE_INT, TYPE_FLOAT] or int(n) < 0 or int(n) >= out[3]):
+				errors.append("%s: sheet animation '%s' borrows columns it does not have" % [id, a])
+				continue
+			out.append((columns as Array).map(func(n: Variant) -> int: return int(n)))
+		sheet["anims"][a] = out
 	sheet["z"] = int(sheet.get("z", 0))
 
 

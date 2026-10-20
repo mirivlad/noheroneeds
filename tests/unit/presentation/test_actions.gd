@@ -123,3 +123,16 @@ func test_a_drop_is_jumped_into() -> void:
 	eq(Actions.quick(a).get("request", {}).get("dir"), "down", "stairs below: E goes down them")
 	check(_ids(a).has("jump"), "jumping is still there")
 	eq(Actions.describe(content, void_cell), "Пустота: проём или край — можно спрыгнуть")
+
+
+func test_a_rod_fishes_in_water() -> void:
+	var water := {"kind": "ground", "id": "base:water", "cell": Vector2i(5, 5), "location": "surface"}
+	var a := Actions.of(content, client, view, "base:fishing_rod", water, Vector2i.ZERO)
+	eq(Actions.primary(a).get("name"), "Ловить рыбу", "a rod fishes")
+	eq(Actions.primary(a)["request"].get("layer"), "ground", "in the ground's water")
+	a = Actions.of(content, client, view, "base:axe", water, Vector2i.ZERO)
+	var fish: Dictionary = a.filter(func(x: Dictionary) -> bool: return x["id"] == "gather")[0]
+	check(not fish.get("enabled", true) and String(fish["why"]).contains("удочка"), "an axe does not fish: " + String(fish["why"]))
+	a = Actions.of(content, client, view, "base:fishing_rod", {"kind": "ground", "id": "base:grass", "cell": Vector2i(5, 5),
+		"location": "surface"}, Vector2i.ZERO)
+	check(not _ids(a).has("gather"), "no fish in grass")

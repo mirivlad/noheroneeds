@@ -26,6 +26,10 @@
     {"id": "base:bake_bread", "kind": "recipe", "name": "Испечь хлеб", "station": "forge",
       "inputs": {"base:wheat": 3}, "outputs": {"base:bread": 1}},
     {"id": "base:cook_meat", "kind": "recipe", "name": "Пожарить мясо", "station": "fire",
-      "inputs": {"base:raw_meat": 1}, "outputs": {"base:cooked_meat": 1}}
+      "inputs": {"base:raw_meat": 1}, "outputs": {"base:cooked_meat": 1}},
+    {"id": "base:make_fishing_rod", "kind": "recipe", "name": "Удочка", "station": "workbench",
+      "inputs": {"base:plank": 1, "base:hide": 1}, "outputs": {"base:fishing_rod": 1}},
+    {"id": "base:cook_fish", "kind": "recipe", "name": "Пожарить рыбу", "station": "fire",
+      "inputs": {"base:raw_fish": 1}, "outputs": {"base:cooked_fish": 1}}
   ]
 }

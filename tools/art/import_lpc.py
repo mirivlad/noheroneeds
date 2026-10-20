@@ -28,7 +28,10 @@ FRAME = 64
 # Our name -> LPC's. Frames counted from the sources.
 ANIMS = {"idle": "idle", "walk": "walk", "run": "run", "slash": "slash", "thrust": "thrust", "shoot": "shoot"}
 # Oversize LPC animations (custom_animation in a sheet definition): our name, frame size.
-CUSTOM = {"tool_axe": ("chop", 128), "walk_128": ("walk", 128)}
+CUSTOM = {"tool_axe": ("chop", 128), "walk_128": ("walk", 128), "tool_rod": ("fish", 128)}
+# Animations a layer plays with the columns of another (LPC's custom timelines):
+# ours -> (theirs, its column for each frame). The rod's cast is the thrust.
+BORROWED = {"fish": ("thrust", [0, 1, 2, 3, 4, 5, 4, 4, 4, 5, 4, 2, 3])}
 # How each body plan is built: the LPC body type its layers are fitted to.
 PLANS = {
     "base:human_m": "male", "base:human_f": "female",
@@ -83,6 +86,7 @@ HELD = {
     "base:pickaxe": (D + "tools/tool_pickaxe.json", None),
     "base:iron_pickaxe": (D + "tools/tool_pickaxe.json", None),
     "base:hoe": (D + "tools/tool_hoe.json", None),
+    "base:fishing_rod": (D + "tools/tool_rod.json", None),
     "base:spear": (D + "weapons/polearm/weapon_polearm_spear.json", "medium"),
     "base:bow": (D + "weapons/ranged/bow/weapon_ranged_bow_normal.json", "medium"),
 }
@@ -96,8 +100,9 @@ BODY_ANIMATIONS = {
     "thrust": {"frames": [0, 1, 2, 3, 4, 5, 6, 7], "fps": 18},
     "shoot": {"frames": list(range(13)), "fps": 22},
     "chop": {"frames": [5, 5, 4, 4, 3, 1, 0, 0, 0, 0], "fps": 22},
+    "fish": {"frames": list(range(13)), "fps": 18},
 }
-SWINGS = {"chop": "chop", "thrust": "thrust", "draw": "shoot", "lunge": "slash"}
+SWINGS = {"chop": "chop", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "fish"}
 # A thing in the hands without frames for an animation: what the body does instead.
 FALLBACK = {"idle": ["walk", 0], "run": ["walk", -1], "slash": ["chop", -1]}
 
@@ -170,6 +175,9 @@ def build_sheet(defn_path, layer_key, body, variant):
     # A swing of the whole body (an axe) is the slash on layers without their own.
     if "slash" in anims and "chop" not in anims:
         anims["chop"] = anims["slash"]
+    for ours, (theirs, columns) in BORROWED.items():
+        if theirs in anims and ours not in anims:
+            anims[ours] = anims[theirs] + [columns]
     OUT.mkdir(parents=True, exist_ok=True)
     atlas.save(OUT / (name + ".png"), optimize=True)
     return {"atlas": "art/lpc/%s.png" % name, "anims": anims, "z": int(layer.get("zPos", 0))}

@@ -42,7 +42,8 @@ func test_every_layer_fits_its_atlas_and_the_body_grid() -> void:
 		for anim: String in visual["animations"]:
 			var frames: Array = visual["animations"][anim]["frames"]
 			var r: Array = visual["anims"][anim]
-			check(frames.all(func(f: int) -> bool: return f < r[3]), "%s %s: the timeline is on the sheet" % [plan, anim])
+			var count: int = (r[4] as Array).size() if r.size() > 4 else r[3]  # borrowed columns, in order
+			check(frames.all(func(f: int) -> bool: return f < count), "%s %s: the timeline is on the sheet" % [plan, anim])
 
 
 func test_four_directions_with_diagonals_seen_from_the_side() -> void:
@@ -115,7 +116,7 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 			["base:spear", "thrust", "thrust"], ["base:bow", "draw", "shoot"], ["", "lunge", "slash"]]:
 		doll.hold(view.item_picture(case[0]), view.item_grip(case[0]), case[0])
 		eq(doll._held_item, case[0], "drawn with frames of its own: " + case[0])
-		check(doll._held == null, "no picture pinned to the hand")
+		check(doll._held == null or not doll._held.visible, "no picture pinned to the hand")
 		doll.show_at(Vector2.ZERO, 0.1, true)
 		if case[0] != "":
 			check(doll._held_layers.any(func(l: Array) -> bool: return (l[1] as Sprite2D).visible),
@@ -135,7 +136,40 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 		check(seen.size() >= 3, "%s plays its frames: %s" % [case[2], str(seen.keys())])
 		eq(doll.scale, Vector2.ONE, "no lean of the whole picture")
 	doll.hold(view.item_picture("base:plank"), view.item_grip("base:plank"), "base:plank")
-	check(doll._held != null and doll._held_layers.is_empty(), "other things are their picture at the hand")
+	check(doll._held != null and doll._held.visible and doll._held_layers.is_empty(), "other things are their picture at the hand")
+	view.free()
+	await (Engine.get_main_loop() as SceneTree).process_frame
+
+
+func test_a_rod_is_cast_with_its_own_frames_and_carried_as_a_picture() -> void:
+	var content := _content()
+	var view := WorldView.new()
+	view.content = content
+	var doll := view._character("me", _look("base:human_f")) as LpcSprite
+	doll.show_at(Vector2.ZERO, 0.0, true)
+	doll.hold(view.item_picture("base:fishing_rod"), view.item_grip("base:fishing_rod"), "base:fishing_rod")
+	eq(doll._held_item, "base:fishing_rod")
+	doll.show_at(Vector2(40, 0), 0.2, true)
+	check(doll._held != null and doll._held.visible, "walking: the rod has no frames, its picture is in the hand")
+	check(not doll._held_layers.any(func(l: Array) -> bool: return (l[1] as Sprite2D).visible), "and no cast frames")
+	eq(view.swing_kind("base:fishing_rod"), "cast")
+	doll.swing(Vector2.RIGHT, "cast")
+	var body := {}
+	var rod := 0
+	var t := 0.0
+	while doll.swinging() and t < 3.0:
+		doll.show_at(Vector2(40, 0), 0.02, true)
+		t += 0.02
+		if not doll.swinging():
+			break
+		check(not doll._held.visible, "no picture while the rod is cast")
+		var s: Sprite2D = doll._layers[0][1]
+		body[int(s.region_rect.position.x)] = true
+		if doll._held_layers.any(func(l: Array) -> bool: return (l[1] as Sprite2D).visible):
+			rod += 1
+	check(t > 0.5, "a cast takes its time: %.2f s" % t)
+	eq(body.size(), 6, "the body plays the thrust's six columns")
+	check(rod > 30, "the rod is drawn through most of the cast: %d" % rod)
 	view.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame
 

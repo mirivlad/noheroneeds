@@ -8,7 +8,8 @@
     {"id": "base:forest_floor", "kind": "ground", "name": "Лесная подстилка", "tilled": "base:farmland"},
     {"id": "base:farmland", "kind": "ground", "name": "Пашня", "farmland": true},
     {"id": "base:sand", "kind": "ground", "name": "Песок"},
-    {"id": "base:water", "kind": "ground", "name": "Вода", "solid": true},
+    {"id": "base:water", "kind": "ground", "name": "Вода", "solid": true,
+      "gather": {"tool": "fishing", "verb": "Ловить рыбу", "drops": {"base:raw_fish": 1}, "work": 5}},
 
     {"id": "base:tall_grass", "kind": "plant", "name": "Высокая трава",
       "gather": {"tool": "", "verb": "Сорвать", "drops": {"base:wheat_seeds": 1}}},

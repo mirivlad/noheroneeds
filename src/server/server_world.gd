@@ -1541,17 +1541,18 @@ func _take_down(loc: String, c: Chunk, at: Array, layer: String, part: String, u
 
 
 ## Gets what a part or a plant holds (ADR-0017, ADR-0021): rock dug, a tree
-## felled — {"layer": "structure" or "cover", "item": what one holds}. The
-## thing's "gather" says which kind of tool it takes; the item held must be
-## carried and be that kind of tool. It is gone then; what it held goes to
-## the one who got it.
+## felled — {"layer": "structure", "cover" or "ground", "item": what one
+## holds}. The thing's "gather" says which kind of tool it takes; the item
+## held must be carried and be that kind of tool. A part or a plant is gone
+## then, ground stays (fish caught, the water is still there); what it held
+## goes to the one who got it.
 func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var at := _cell(r)
 	var loc: String = at[0]
 	var x := ri(r, "x", 0)
 	var y := ri(r, "y", 0)
 	var layer := rs(r, "layer", "structure")
-	if not layer in ["structure", "cover"]:
+	if not layer in ["structure", "cover", "ground"]:
 		return {"ok": false, "reason": "bad_request"}
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
@@ -1592,9 +1593,10 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 			_set_layer_props(c, layer, at[3], at[4], props)
 		_changed(chunk_key(loc, at[1], at[2]))
 		return {"ok": true, "thing": thing, "work": mini(done, work), "of": work}
-	if layer == "cover":
+	if layer != "structure":
 		_set_layer_props(c, layer, at[3], at[4], {})
-	c.set_cell(layer, at[3], at[4], "")
+	if layer != "ground":
+		c.set_cell(layer, at[3], at[4], "")
 	_changed(chunk_key(loc, at[1], at[2]))
 	var inv := inventory(actor)
 	var drops: Dictionary = g.get("drops", {})

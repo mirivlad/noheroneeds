@@ -78,17 +78,21 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 	if kind == "entity" and entity.get("kind") == "item":
 		out.append({"id": "pickup", "name": "Подобрать", "request": {"type": "pickup", "entity": target["id"]},
 			"quick": true})
+	# What a part, a plant or ground holds is got with its kind of tool (a rod
+	# fishes in water: the water stays).
+	var g: Dictionary = content.get_def(String(target.get("id", ""))).get("gather", {}) \
+		if kind in ["part", "ground"] and String(target.get("id", "")) != "" else {}
+	if not g.is_empty():
+		var tool := String(g["tool"])
+		var ok := tool == "" or tools.has(tool)
+		out.append({"id": "gather", "name": String(g["verb"]), "primary": ok, "enabled": ok,
+			"why": "нужно взять в руки: " + tool_names(content, tool),
+			"request": {"type": "gather", "location": loc, "x": cell.x, "y": cell.y,
+				"layer": String(target.get("layer", "ground")), "item": held}})
 	if kind == "part":
 		var id := String(target["id"])
 		var def := content.get_def(id)
 		var layer := String(target["layer"])
-		var g: Dictionary = def.get("gather", {})
-		if not g.is_empty():
-			var tool := String(g["tool"])
-			var ok := tool == "" or tools.has(tool)
-			out.append({"id": "gather", "name": String(g["verb"]), "primary": ok, "enabled": ok,
-				"why": "нужно взять в руки: " + tool_names(content, tool),
-				"request": {"type": "gather", "location": loc, "x": cell.x, "y": cell.y, "layer": layer, "item": held}})
 		if def.has("container") and layer == "structure":
 			out.append({"id": "open_container", "name": "Открыть", "quick": true, "local": "container",
 				"request": {"type": "look_in", "location": loc, "x": cell.x, "y": cell.y}})

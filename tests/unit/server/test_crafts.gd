@@ -132,3 +132,36 @@ func test_an_iron_axe_fells_twice_as_fast() -> void:
 	eq(fell.call("base:iron_axe", 2), 4, "power 2: half the blows")
 	check(_content.get_def("base:iron_pickaxe")["against"]["stone"] > _content.get_def("base:pickaxe")["against"]["stone"],
 		"an iron pick breaks stone sooner too")
+
+
+func test_a_rod_fishes_in_water_and_the_water_stays() -> void:
+	var a := _player("Аня")
+	var c := w.chunk("surface", 0, 0)
+	c.set_cell("ground", 4, 3, "base:water")
+	var fish := {"type": "gather", "location": "surface", "x": 4, "y": 3, "layer": "ground"}
+	eq(_req(a, fish.merged({"item": ""})).get("reason"), "no_tool", "no fish by hand")
+	eq(_req(a, {"type": "gather", "location": "surface", "x": 3, "y": 4, "layer": "ground", "item": ""}).get("reason"),
+		"nothing_to_gather", "grass holds no fish")
+	# A rod is made at a workbench of a plank and a hide.
+	w.grant(a, "base:log", 4)
+	check(_req(a, {"type": "build", "location": "surface", "x": 2, "y": 3, "part": "base:workbench"}).get("ok", false), "workbench")
+	w.grant(a, "base:plank", 1)
+	w.grant(a, "base:hide", 1)
+	eq(_req(a, {"type": "craft", "recipe": "base:make_fishing_rod", "count": 1}).get("made"), {"base:fishing_rod": 1})
+	_req(a, {"type": "hold", "item": "base:fishing_rod"})
+	var casts := 0
+	while w.inventory(a).count("base:raw_fish") == 0 and casts < 20:
+		w.tick += 40  # past the cast's cooldown
+		w.combat.step(w.tick)
+		var r := _req(a, fish.merged({"item": "base:fishing_rod"}))
+		check(r.get("ok", false), "cast %d: %s" % [casts, str(r)])
+		casts += 1
+	eq(casts, 5, "five casts to a fish")
+	eq(c.get_cell("ground", 4, 3), "base:water", "the water is still there")
+	check(not c.get_props(4, 3).has("ground"), "and the catch begins anew")
+	# Cooked at a fire, eaten.
+	w.grant(a, "base:log", 2)
+	check(_req(a, {"type": "build", "location": "surface", "x": 3, "y": 2, "part": "base:campfire"}).get("ok", false), "a fire")
+	eq(_req(a, {"type": "craft", "recipe": "base:cook_fish", "count": 1}).get("made"), {"base:cooked_fish": 1})
+	w.combat.hurt(a, 10, "")
+	eq(_req(a, {"type": "eat", "item": "base:cooked_fish"}).get("health"), 14, "four back")

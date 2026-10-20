@@ -1,0 +1,148 @@
+{
+  "at": "2026-10-20T13:19:20.470484+00:00",
+  "manifest": {
+    "schema": 1,
+    "runtime": {
+      "repository": "https://github.com/leejet/stable-diffusion.cpp",
+      "release": "master-975-95b3090",
+      "commit": "95b3090664d019fcf8fa032a44d1d4793ba244b8",
+      "asset": "sd-master-95b3090-bin-Linux-Ubuntu-24.04-x86_64-vulkan.zip",
+      "sha256": "703f547a0bbe254979940ec6142a87b4af6acbc01d34e37358f4feabb430a225",
+      "license": "MIT"
+    },
+    "base": {
+      "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+      "revision": "462165984030d82259a11f4367a4eed129e94a7b",
+      "filename": "sd_xl_base_1.0.safetensors",
+      "sha256": "31e35c80fc4829d14f90153f4c74cd59c90b779f6afe05a74cd6120b893f7e5b",
+      "bytes": 6938078334,
+      "license": "CreativeML OpenRAIL++-M"
+    },
+    "lora": {
+      "repo": "nerijs/pixel-art-xl",
+      "revision": "8bf4a4d9ea283e00a51fafda8e0539f8248ea037",
+      "filename": "pixel-art-xl.safetensors",
+      "sha256": "4234637cb80c998f41e348e6a6cb6bc20d8d038b2b0f256b6129b3b5e353eef7",
+      "bytes": 170543052,
+      "license": "CreativeML OpenRAIL-M"
+    },
+    "vae": {
+      "repo": "madebyollin/sdxl-vae-fp16-fix",
+      "revision": "207b116dae70ace3637169f1ddd2434b91b3a8cd",
+      "filename": "sdxl.vae.safetensors",
+      "sha256": "235745af8d86bf4a4c1b5b4f529868b37019a10f7c0b2e79ad0abca3a22bc6e1",
+      "bytes": 334641162,
+      "license": "MIT"
+    }
+  },
+  "mode": "txt2img",
+  "lora_used": true,
+  "lora_strength": 1.0,
+  "prompt": "pixel art, a single wooden ladder leaning upright, top-down RPG game asset, 3/4 view, two side rails and five rungs, brown wood, isolated on a plain white background, simple flat colors",
+  "actual_prompt": "pixel art, a single wooden ladder leaning upright, top-down RPG game asset, 3/4 view, two side rails and five rungs, brown wood, isolated on a plain white background, simple flat colors <lora:pixel-art-xl:1.0>",
+  "seed": 11401,
+  "steps": 20,
+  "size": [
+    1024,
+    1024
+  ],
+  "requested_weight_storage": "f16",
+  "device_has_native_fp16": false,
+  "backend": "diffusion=Vulkan0,vae=Vulkan0,te=cpu",
+  "devices": "ggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon RX 580 2048SP (RADV POLARIS10) (radv) | uma: 0 | fp16: 0 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 0 | matrix cores: none\nload_backend: loaded Vulkan backend from /home/mirivlad/git/neyropix/data/tools/sdcpp/libggml-vulkan.so\nload_backend: loaded CPU backend from /home/mirivlad/git/neyropix/data/tools/sdcpp/libggml-cpu-haswell.so\nVulkan0\tAMD Radeon RX 580 2048SP (RADV POLARIS10)\nCPU\tIntel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz\n",
+  "command": [
+    "/home/mirivlad/git/neyropix/data/tools/sdcpp/sd-cli",
+    "-m",
+    "/home/mirivlad/git/neyropix/data/models/pretrained/sdxl/sd_xl_base_1.0.safetensors",
+    "--vae",
+    "/home/mirivlad/git/neyropix/data/models/pretrained/sdxl-vae/sdxl.vae.safetensors",
+    "--backend",
+    "diffusion=Vulkan0,vae=Vulkan0,te=cpu",
+    "--type",
+    "f16",
+    "--max-vram",
+    "6.5",
+    "--batched-cfg",
+    "off",
+    "--flash-attn",
+    "auto",
+    "--vae-tiling",
+    "--vae-tile-size",
+    "512",
+    "--rng",
+    "cpu",
+    "--steps",
+    "20",
+    "--seed",
+    "11401",
+    "-W",
+    "1024",
+    "-H",
+    "1024",
+    "--sampling-method",
+    "dpm++2m",
+    "--scheduler",
+    "karras",
+    "--cfg-scale",
+    "7",
+    "--lora-model-dir",
+    "/home/mirivlad/git/neyropix/data/models/pretrained/pixel-art-xl",
+    "-p",
+    "pixel art, a single wooden ladder leaning upright, top-down RPG game asset, 3/4 view, two side rails and five rungs, brown wood, isolated on a plain white background, simple flat colors <lora:pixel-art-xl:1.0>",
+    "-n",
+    "photo, realistic, 3d render, blurry, text, watermark, multiple characters, character sheet",
+    "-o",
+    "/home/mirivlad/git/neyropix/data/results/sdxl/nhn-ladder-20261020-211856/generated.png"
+  ],
+  "reference": null,
+  "artistic_review": "pending; not admitted to the LPC library",
+  "validated": true,
+  "preflight_seconds": 23.531553195993183,
+  "returncode": 0,
+  "wall_seconds_including_model_load": 215.07034502900206,
+  "wall_seconds_including_verification": 238.60240128298756,
+  "whole_device_vram": {
+    "scope": "includes desktop and all other GPU users; 250ms polling",
+    "baseline_mib": 923.30078125,
+    "peak_mib": 6436.17578125
+  },
+  "lora_tensor_applications": [
+    [
+      2166,
+      2166
+    ]
+  ],
+  "output_sha256": "f79c6b088ada88252a07be9a38078b05f1c3188ccf0ec800b462c6bc420255d8",
+  "chroma_export": {
+    "method": "4-connected flood fill from image edges",
+    "estimated_background_rgb": [
+      247,
+      247,
+      247
+    ],
+    "tolerance_per_channel": 12,
+    "key_rgb": [
+      255,
+      0,
+      255
+    ],
+    "alpha_values": [
+      0,
+      255
+    ],
+    "size": [
+      128,
+      128
+    ],
+    "background_pixels": 14183,
+    "foreground_pixels": 2201,
+    "foreground_rgb_unchanged": true,
+    "limitations": "Uniform border required; enclosed background regions need manual review. Foreground touching or matching the background cannot be reliably separated by color.",
+    "source": "/home/mirivlad/git/neyropix/data/results/sdxl/nhn-ladder-20261020-211856/nearest-128.png",
+    "source_sha256": "f4d0f41472c25a323b95a3616bdabaa1e1e03ea12481e485cdbbdf94b0c64fa8",
+    "output_sha256": {
+      "keyed.png": "1b104e1e767e673410251c37d655db8348b6784774f3031c2e3142a894a59b88",
+      "transparent.png": "d411d8d5ed8ece8ecf5a8da4697a0bb5e7ce525e91bbf93e7639edb2810dcc0a"
+    }
+  }
+}

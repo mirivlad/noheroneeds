@@ -201,7 +201,8 @@
       "kind": "item",
       "name": "Фетровая шляпа",
       "stack": 1,
-      "equip_slot": "headwear"
+      "equip_slot": "headwear",
+      "warmth": 1
     }
   ]
 }

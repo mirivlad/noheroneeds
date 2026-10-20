@@ -50,21 +50,24 @@
       "kind": "item",
       "name": "Рубаха",
       "stack": 1,
-      "equip_slot": "torso"
+      "equip_slot": "torso",
+      "warmth": 1
     },
     {
       "id": "base:work_trousers",
       "kind": "item",
       "name": "Рабочие штаны",
       "stack": 1,
-      "equip_slot": "legs"
+      "equip_slot": "legs",
+      "warmth": 1
     },
     {
       "id": "base:boots",
       "kind": "item",
       "name": "Сапоги",
       "stack": 1,
-      "equip_slot": "feet"
+      "equip_slot": "feet",
+      "warmth": 1
     },
     {
       "id": "base:leather_armor",
@@ -72,7 +75,8 @@
       "name": "Кожаный доспех",
       "stack": 1,
       "equip_slot": "armor",
-      "armor": 2
+      "armor": 2,
+      "warmth": 2
     },
     {
       "id": "base:iron_helmet",
@@ -81,6 +85,14 @@
       "stack": 1,
       "equip_slot": "headwear",
       "armor": 1
+    },
+    {
+      "id": "base:wool_cloak",
+      "kind": "item",
+      "name": "Шерстяной плащ",
+      "stack": 1,
+      "equip_slot": "back_item",
+      "warmth": 3
     },
     {
       "id": "base:axe",

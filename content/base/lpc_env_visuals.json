@@ -1905,13 +1905,32 @@
    "variants": 1
   },
   {
+   "id": "base:visual/wool_cloak",
+   "kind": "visual",
+   "for": "base:wool_cloak",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1216,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/hoe",
    "kind": "visual",
    "for": "base:hoe",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1216,
+    1248,
     0,
     32,
     32

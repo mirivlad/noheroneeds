@@ -349,6 +349,10 @@ func test_character_window_catches_clicks_and_changes_equipment() -> void:
 	check(not g.client.own["appearance"]["worn"].has("headwear"), "mouse click unequips")
 	eq(g.client.inventory().get("base:felt_hat"), 1, "the hat is back in the bag")
 	var list := panel.bag._list
+	check(not panel.bag._ids.is_empty() and panel.bag._ids.all(panel.bag._can_wear),
+		"beside the doll only what is worn or held: %s" % str(panel.bag._ids))
+	check(g.client.inventory().has("base:plank") and not panel.bag._ids.has("base:plank"), "planks stay in the things (I)")
+	check(panel.size.y >= 430, "a tall window: %d" % panel.size.y)
 	var index := panel.bag._ids.find("base:felt_hat")
 	list.select(index)
 	list.item_selected.emit(index)

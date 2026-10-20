@@ -62,7 +62,7 @@ func setup(registry: ContentRegistry, view: WorldView) -> void:
 	var left := VBoxContainer.new()
 	left.custom_minimum_size.x = 204
 	columns.add_child(left)
-	preview.custom_minimum_size = Vector2(204, 64)
+	preview.custom_minimum_size = Vector2(204, 200)
 	preview.walking = false
 	left.add_child(preview)
 	var grid := GridContainer.new()
@@ -73,7 +73,7 @@ func setup(registry: ContentRegistry, view: WorldView) -> void:
 		b.slot = slot
 		b.panel = self
 		b.name = "Equip_" + slot
-		b.custom_minimum_size = Vector2(99, 27)
+		b.custom_minimum_size = Vector2(99, 52)
 		b.add_theme_font_size_override("font_size", 16)
 		b.clip_text = true
 		b.pressed.connect(func() -> void:
@@ -104,8 +104,9 @@ func show_for(own: Dictionary, held: String) -> void:
 	if armor > 0:
 		_title.text += " · защита %d" % armor  # off every blow (ADR-0029)
 	preview.show_look(content, look)
-	preview.doll.scale = Vector2.ONE * 1.0 / float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0))
-	preview.doll.position = Vector2(102, 64)
+	# Twice the size of the world's: a pixel of the picture is 2x2 on the screen.
+	preview.doll.scale = Vector2.ONE * 2.0 / float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0))
+	preview.doll.position = Vector2(102, 170)
 	preview.doll.hold(_view.item_picture(held), _view.item_grip(held), held)
 	var worn: Dictionary = look.get("worn", {})
 	for slot: String in _slots:

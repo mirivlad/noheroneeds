@@ -68,7 +68,7 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 	_list.panel = self
 	_title = Label.new()
 	theme = Art.theme()
-	custom_minimum_size = Vector2(232, 176) if compact else Vector2(300, 170)
+	custom_minimum_size = Vector2(232, 434) if compact else Vector2(300, 170)
 	var box := VBoxContainer.new()
 	add_child(box)
 	# The pixel font is drawn at its own size (16) or not at all readable.
@@ -76,7 +76,7 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_title.custom_minimum_size = Vector2(220 if compact else 290, 0)
 	box.add_child(_title)
-	_list.custom_minimum_size = Vector2(220 if compact else 290, 112 if compact else 130)
+	_list.custom_minimum_size = Vector2(220 if compact else 290, 364 if compact else 130)
 	_list.add_theme_font_override("font", Art.font())
 	_list.add_theme_font_size_override("font_size", 16)
 	_list.fixed_icon_size = Vector2i(32, 32)
@@ -100,7 +100,7 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 
 func _can_wear(id: String) -> bool:
 	var d := content.get_def(id)
-	return String(d.get("equip_slot", "")) != "" or d.has("tools")
+	return String(d.get("equip_slot", "")) != "" or d.has("tools") or d.has("weapon")
 
 
 ## Right click on a thing: one of it on the ground; with Shift all, with Ctrl half.
@@ -111,7 +111,7 @@ func drop_some(id: String) -> void:
 
 
 func show_for(inventory: Dictionary, _slot: int) -> void:
-	_title.text = "Инвентарь" if _compact else "Вещи. Двойной щелчок — надеть; перетащите вниз — в руки. C — персонаж. ПКМ — бросить (Shift — всё, Ctrl — половину)"
+	_title.text = "Снаряжение: надеть, взять в руки" if _compact else "Вещи. Двойной щелчок — надеть; перетащите вниз — в руки. C — персонаж. ПКМ — бросить (Shift — всё, Ctrl — половину)"
 	_have = inventory
 	_wear.disabled = true
 	_list.clear()
@@ -119,6 +119,8 @@ func show_for(inventory: Dictionary, _slot: int) -> void:
 	var ids: Array = inventory.keys()
 	ids.sort_custom(func(a: String, b: String) -> bool:
 		return String(content.get_def(a).get("name", a)) < String(content.get_def(b).get("name", b)))
+	if _compact:  # beside the doll: only what is worn or held (the rest is in the things, I)
+		ids = ids.filter(_can_wear)
 	for id: String in ids:
 		var v := content.visual_of(id)
 		var icon: Texture2D = null

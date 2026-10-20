@@ -99,6 +99,10 @@ var audio := AudioDirector.new()
 var danger := false
 ## Request id -> sound event to play when it succeeds (own pickups, drops).
 var _sound_on_ok := {}
+## Requests whose answer may say what the held thing became ("now"): rid -> the thing.
+var _swap_rids := {}
+## Crafts asked: rid -> the recipe (its station's sound).
+var _craft_rids_recipe := {}
 ## The menu is open: no controls, and a single-player world stands still.
 var paused := false
 var _reported := false
@@ -141,7 +145,7 @@ const REASONS := {
 	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
-	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "in_the_way": "мешает то, что ближе", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
+	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "in_the_way": "мешает то, что ближе", "nothing_to_fill": "здесь не набрать", "not_yours": "это не ваше", "not_yet": "ещё рано", "not_a_liquid": "выливать нечего", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
 }
 
 
@@ -192,6 +196,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	weather.setup(client, view)
+	weather.lightning.connect(func() -> void: audio.play("thunder", "", null))
 	layer.add_child(weather)  # first: under everything else on the screen
 	for l: Label in [hud, status, _info]:
 		l.add_theme_font_override("font", Art.font())
@@ -685,7 +690,7 @@ func _do(a: Dictionary) -> void:
 		return
 	match String(a["id"]):
 		"strike", "shoot", "swing", "strike_part", "gather", "till":
-			_attacks[rid] = true
+			_attacks[rid] = String(a["id"])
 			# Shown at once, but only as often as the server lets one strike.
 			var item := String(a["request"].get("item", ""))
 			var w: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
@@ -701,6 +706,20 @@ func _do(a: Dictionary) -> void:
 				hotbar.used(item)
 		"feed":
 			_feed_rids[rid] = true
+		"fill", "pour":  # ADR-0037: the container in the hands becomes full or empty
+			var item := String(a["request"].get("item", ""))
+			_sound_on_ok[rid] = [String(a["id"]), item]
+			_swap_rids[rid] = item
+		"eat":
+			var item := String(a["request"].get("item", ""))
+			var drunk: bool = content.get_def(item).has("liquid")
+			_sound_on_ok[rid] = ["drink" if drunk else "eat", item]
+			if drunk:
+				_swap_rids[rid] = item
+		"sow":
+			_sound_on_ok[rid] = ["sow", ""]
+		"sleep":
+			_sound_on_ok[rid] = ["sleep", ""]
 		"pickup":
 			_sound_on_ok[rid] = "pickup"
 		"use":
@@ -787,7 +806,9 @@ func _build_tools(layer: CanvasLayer) -> void:
 	crafts.setup(content, view, client)
 	crafts.position = Vector2(6, 40)
 	crafts.craft.connect(func(recipe: String, count: int) -> void:
-		_craft_rids[client.request({"type": "craft", "recipe": recipe, "count": count})] = true)
+		var crid := client.request({"type": "craft", "recipe": recipe, "count": count})
+		_craft_rids[crid] = true
+		_craft_rids_recipe[crid] = recipe)
 	layer.add_child(crafts)
 	inventory_panel.setup(content, view)
 	inventory_panel.position = Vector2(90, 24)  # clear of the minimap and the quick slots
@@ -804,7 +825,7 @@ func _build_tools(layer: CanvasLayer) -> void:
 		if slot == "main_hand":
 			hotbar.put(hotbar.selected, "", -1)
 		else:
-			client.request({"type": "unequip", "slot": slot}))
+			_sound_on_ok[client.request({"type": "unequip", "slot": slot})] = "equip")
 	character_panel.unslot.connect(func(slot: int) -> void: hotbar.put(slot, "", -1))
 	character_panel.drop.connect(func(item: String, n: int) -> void:
 		_sound_on_ok[client.request({"type": "drop", "item": item, "count": n})] = "drop")
@@ -843,7 +864,7 @@ func _wear_item(item: String) -> void:
 			hotbar.put(at, item, -1)
 		_choose_slot(at)
 	else:
-		client.request({"type": "equip", "item": item})
+		_sound_on_ok[client.request({"type": "equip", "item": item})] = "equip"
 
 
 ## The character's quick slots as the player left them; for one seen first,
@@ -1083,6 +1104,7 @@ func _update_hud() -> void:
 			_feed_rids.erase(rid)
 			if r.get("ok"):
 				client.results.erase(rid)
+				audio.play("feed", "", null)
 				_note = "приручено — теперь ваше" if r.get("tamed") else (
 					"поели (%d из %d)" % [int(r.get("fed", 0)), int(r.get("of", 1))] if String(r.get("owner", "")) == "" else "поели")
 				continue
@@ -1094,14 +1116,23 @@ func _update_hud() -> void:
 				for item: String in r.get("made", {}):
 					made.append("%s %d" % [String(content.get_def(item).get("name", item)).to_lower(), int(r["made"][item])])
 				_note = "сделано: " + ", ".join(made)
+				# At a fire it sizzles, at a forge it rings, else hands and tools.
+				var station := String(content.get_def(String(_craft_rids_recipe.get(rid, ""))).get("station", ""))
+				audio.play("craft", {"fire": "base:campfire", "forge": "base:forge"}.get(station, ""), null)
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			if crafts.visible:
 				crafts.refresh()
+			_craft_rids_recipe.erase(rid)
 			continue
 		if _attacks.has(rid):
+			var done := String(_attacks[rid])
 			_attacks.erase(rid)
 			client.results.erase(rid)
+			if r.get("ok") and done == "till":
+				audio.play("till", "", null)
+			elif r.get("ok") and done == "gather" and not r.has("bite"):  # the blow landed: the thing's own sound
+				audio.play("gather", String(r.get("thing", "")), null)
 			if not r.get("ok") and r.get("reason") != "not_ready":
 				_note = String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			elif r.has("work"):
@@ -1110,6 +1141,8 @@ func _update_hud() -> void:
 				var got := PackedStringArray()
 				for item: String in r.get("drops", {}):
 					got.append(String(content.get_def(item).get("name", item)).to_lower())
+				if r["bite"]:
+					audio.play("splash", "", null)
 				_note = "поймано: " + ", ".join(got) if r["bite"] else ("не клюёт" if float(r.get("chance", 0.0)) > 0.05 else "здесь выловлено — попробуйте в другом месте")
 			elif r.has("drops"):
 				_note = "готово"
@@ -1117,8 +1150,16 @@ func _update_hud() -> void:
 		_note = "готово" if r.get("ok") else "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?"))) \
 			+ (" (ещё %d мин)" % ceili(int(r["seconds"]) / 60.0) if r.has("seconds") else "")
 		if r.get("ok") and _sound_on_ok.has(rid):
-			audio.play(_sound_on_ok[rid], "", null)
+			var snd: Variant = _sound_on_ok[rid]
+			audio.play(snd[0] if snd is Array else String(snd), snd[1] if snd is Array else "", null)
 		_sound_on_ok.erase(rid)
+		if r.get("ok") and _swap_rids.has(rid) and r.has("now"):
+			var slot := hotbar.items.find(String(_swap_rids[rid]))
+			if slot >= 0 and int(client.inventory().get(_swap_rids[rid], 0)) <= 0:
+				hotbar.put(slot, String(r["now"]), -1)  # the same slot holds it, full or empty
+		_swap_rids.erase(rid)
+		if r.get("ok") and r.get("watered", false):
+			_note = "полито"
 		client.results.erase(rid)
 	var cell := Movement.cell_of(client.position)
 	var state: String = {"playing": "", "connecting": "подключение…", "joining": "вход…", "disconnected": "нет связи",

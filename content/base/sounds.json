@@ -315,6 +315,349 @@
    ]
   },
   {
+   "id": "base:sound/pour",
+   "kind": "sound",
+   "for": "*",
+   "event": "pour",
+   "files": [
+    "audio/pour_1.wav",
+    "audio/pour_2.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/fill",
+   "kind": "sound",
+   "for": "*",
+   "event": "fill",
+   "files": [
+    "audio/fill_1.wav",
+    "audio/fill_2.wav"
+   ],
+   "volume_db": -7.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/drink",
+   "kind": "sound",
+   "for": "*",
+   "event": "drink",
+   "files": [
+    "audio/drink.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/eat",
+   "kind": "sound",
+   "for": "*",
+   "event": "eat",
+   "files": [
+    "audio/eat_1.wav",
+    "audio/eat_2.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/feed",
+   "kind": "sound",
+   "for": "*",
+   "event": "feed",
+   "files": [
+    "audio/feed.wav"
+   ],
+   "volume_db": -12.0,
+   "pitch": [
+    0.75,
+    0.85
+   ]
+  },
+  {
+   "id": "base:sound/splash",
+   "kind": "sound",
+   "for": "*",
+   "event": "splash",
+   "files": [
+    "audio/splash.wav"
+   ],
+   "volume_db": -7.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/till",
+   "kind": "sound",
+   "for": "*",
+   "event": "till",
+   "files": [
+    "audio/till_1.wav",
+    "audio/till_2.wav"
+   ],
+   "volume_db": -7.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/sow",
+   "kind": "sound",
+   "for": "*",
+   "event": "sow",
+   "files": [
+    "audio/sow.wav"
+   ],
+   "volume_db": -9.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/craft",
+   "kind": "sound",
+   "for": "*",
+   "event": "craft",
+   "files": [
+    "audio/craft.wav"
+   ],
+   "volume_db": -7.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/craft_fire",
+   "kind": "sound",
+   "for": "base:campfire",
+   "event": "craft",
+   "files": [
+    "audio/craft_fire.wav"
+   ],
+   "volume_db": -9.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/craft_forge",
+   "kind": "sound",
+   "for": "base:forge",
+   "event": "craft",
+   "files": [
+    "audio/craft_forge.wav"
+   ],
+   "volume_db": -9.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/gather_rock",
+   "kind": "sound",
+   "for": "base:rock",
+   "event": "gather",
+   "files": [
+    "audio/dig_1.wav",
+    "audio/dig_2.wav",
+    "audio/dig_3.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/gather_iron_ore_rock",
+   "kind": "sound",
+   "for": "base:iron_ore_rock",
+   "event": "gather",
+   "files": [
+    "audio/dig_1.wav",
+    "audio/dig_2.wav",
+    "audio/dig_3.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/gather_copper_ore_rock",
+   "kind": "sound",
+   "for": "base:copper_ore_rock",
+   "event": "gather",
+   "files": [
+    "audio/dig_1.wav",
+    "audio/dig_2.wav",
+    "audio/dig_3.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/gather_gem_rock",
+   "kind": "sound",
+   "for": "base:gem_rock",
+   "event": "gather",
+   "files": [
+    "audio/dig_1.wav",
+    "audio/dig_2.wav",
+    "audio/dig_3.wav"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/gather_oak",
+   "kind": "sound",
+   "for": "base:oak",
+   "event": "gather",
+   "files": [
+    "audio/chop_1.wav",
+    "audio/chop_2.wav",
+    "audio/chop_3.wav"
+   ],
+   "volume_db": -7.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/gather_birch",
+   "kind": "sound",
+   "for": "base:birch",
+   "event": "gather",
+   "files": [
+    "audio/chop_1.wav",
+    "audio/chop_2.wav",
+    "audio/chop_3.wav"
+   ],
+   "volume_db": -7.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/gather_spruce",
+   "kind": "sound",
+   "for": "base:spruce",
+   "event": "gather",
+   "files": [
+    "audio/chop_1.wav",
+    "audio/chop_2.wav",
+    "audio/chop_3.wav"
+   ],
+   "volume_db": -7.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/gather",
+   "kind": "sound",
+   "for": "*",
+   "event": "gather",
+   "files": [
+    "audio/rustle_1.wav",
+    "audio/rustle_2.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/equip",
+   "kind": "sound",
+   "for": "*",
+   "event": "equip",
+   "files": [
+    "audio/equip.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/sleep",
+   "kind": "sound",
+   "for": "*",
+   "event": "sleep",
+   "files": [
+    "audio/sleep.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.94,
+    1.06
+   ]
+  },
+  {
+   "id": "base:sound/thunder",
+   "kind": "sound",
+   "for": "*",
+   "event": "thunder",
+   "files": [
+    "audio/thunder_1.wav",
+    "audio/thunder_2.wav"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.85,
+    1.1
+   ]
+  },
+  {
+   "id": "base:sound/rain",
+   "kind": "sound",
+   "for": "*",
+   "event": "rain",
+   "files": [
+    "audio/rain.wav"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "loop": true
+  },
+  {
    "id": "base:sound/amb_grass",
    "kind": "sound",
    "for": "base:grass",

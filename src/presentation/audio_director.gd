@@ -10,7 +10,11 @@ extends Node2D
 ##   ambience    — loops mixed from the ground around the player (meadow,
 ##                 forest, water), quieter under a roof;
 ##   wind        — gusts now and then with calm between, of the ground
-##                 most of around.
+##                 most of around;
+##   rain        — a loop as loud as it rains (ADR-0033), and thunder
+##                 at a storm's lightning (WeatherView);
+##   doings      — filling, pouring, eating, drinking, digging, felling,
+##                 tilling, sowing, crafting, dressing (ADR-0037).
 ## World sounds are positional (Effects bus): far ones fade, the camera
 ## hears. Ambience plays on its own bus.
 
@@ -39,6 +43,9 @@ var _wind: AudioStreamPlayer
 var _wind_wait := 0.0
 ## The wind sound of the ground most of around, chosen by _listen_around().
 var _wind_def := {}
+## Rain (ADR-0033): a loop as loud as it rains, quieter under a roof.
+var _rain: AudioStreamPlayer
+var _rain_level := 0.0
 var _rng := RandomNumberGenerator.new()
 ## Seen by MusicDirector: the share of forest around, and being indoors.
 var forest_share := 0.0
@@ -61,6 +68,9 @@ func setup(registry: ContentRegistry, game_client: GameClient, world_view: World
 	_wind.bus = &"Ambience"
 	add_child(_wind)
 	_wind_wait = _rng.randf_range(4.0, WIND_CALM.x)
+	_rain = AudioStreamPlayer.new()
+	_rain.bus = &"Ambience"
+	add_child(_rain)
 	_flat = AudioStreamPlayer.new()
 	_flat.bus = &"Effects"
 	add_child(_flat)
@@ -127,6 +137,7 @@ func _process(delta: float) -> void:
 		_amb_wait = AMB_EVERY
 		_listen_around()
 	_blow(delta)
+	_rain_on(delta)
 	for path: String in _amb:
 		var a: Array = _amb[path]
 		a[2] = move_toward(float(a[2]), float(a[3]), delta / AMB_FADE)
@@ -138,6 +149,23 @@ func _process(delta: float) -> void:
 			p.stop()
 		elif w > 0.001 and not p.playing:
 			p.play(_rng.randf_range(0.0, maxf(0.0, p.stream.get_length() - 1.0)))
+
+
+func _rain_on(delta: float) -> void:
+	var d := content.sound_of("", "rain")
+	if d.is_empty() or not client.has_time:
+		return
+	var want := Weather.rain(client.weather_seed, client.world_time) if client.z >= 0 else 0.0
+	_rain_level = move_toward(_rain_level, want, delta / AMB_FADE)
+	if _rain_level <= 0.01:
+		if _rain.playing:
+			_rain.stop()
+		return
+	if _rain.stream == null:
+		_rain.stream = Art.audio((d["paths"] as PackedStringArray)[0], true)
+	_rain.volume_db = float(d["volume_db"]) + linear_to_db(_rain_level) + (INDOORS_DB if indoors else 0.0)
+	if not _rain.playing:
+		_rain.play(_rng.randf_range(0.0, maxf(0.0, _rain.stream.get_length() - 1.0)))
 
 
 ## A gust now and then: when one has died away, calm for WIND_CALM.

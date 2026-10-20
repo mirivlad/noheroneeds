@@ -494,6 +494,14 @@ ITEMS = {
     "base:wool": ("idyl/thread.png", 0, 0),
     "base:cloth": ("idyl/cloth.png", 0, 0),
     "base:egg": ("idyl/egg.png", 0, 0),
+    "base:bucket": ("idyl/bucket.png", 0, 0),
+}
+# A picture with some of its colours changed inside a box (a recolouring, not
+# a new drawing: the bucket's dark inside as water or milk): id -> (file,
+# box x0, y0, x1, y1, {from: to}).
+RECOLOURED = {
+    "base:water_bucket": ("idyl/bucket.png", 8, 5, 25, 15, {(22, 22, 20): (52, 104, 170), (35, 28, 26): (82, 140, 196)}),
+    "base:milk_bucket": ("idyl/bucket.png", 8, 5, 25, 15, {(22, 22, 20): (232, 228, 214), (35, 28, 26): (204, 198, 184)}),
 }
 # Tools drawn in the hands by LPC: the south standing frame of their layers.
 HELD_ICONS = {"base:hoe": ["tools/hoe/bg/walk.png", "tools/hoe/fg/walk.png"]}
@@ -517,6 +525,15 @@ def build_items():
     for item, (path, x, y) in ITEMS.items():
         src = Image.open(path if path.startswith("/") else ITEMS_DIR / path).convert("RGBA")
         icons.append((item, src.crop((x, y, x + T, y + T))))
+    for item, (path, x0, y0, x1, y1, colours) in RECOLOURED.items():
+        img = Image.open(ITEMS_DIR / path).convert("RGBA").crop((0, 0, T, T))
+        px = img.load()
+        for yy in range(y0, y1):
+            for xx in range(x0, x1):
+                c = px[xx, yy]
+                if c[3] and c[:3] in colours:
+                    px[xx, yy] = colours[c[:3]] + (c[3],)
+        icons.append((item, img))
     for item, sheet in WORN_ICONS.items():
         # The south-facing standing frame (idle, row s), cut to what is drawn.
         row = WORN_ICON_ROW.get(item, 2)  # the south frame, or the north for what is on the back

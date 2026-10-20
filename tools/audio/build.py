@@ -11,7 +11,9 @@ its click, the top cut off. Ambience loops are crossfaded at the seam.
 
 sounds.json ties them to content (ADR-0009: presentation, not rules):
 {"kind": "sound", "for": <content id or "*">, "event": step | build |
-dismantle | open | close | pickup | drop | climb | click | ambience | wind,
+dismantle | open | close | pickup | drop | climb | click | ambience | wind |
+swing | hit | shoot | fill | pour | drink | eat | feed | splash | till | sow |
+craft | gather | equip | sleep | thunder | rain,
 "files": [...], "volume_db", "pitch": [lo, hi], "loop"}.
 """
 import json
@@ -460,6 +462,164 @@ def amb_cave():
     return norm(x, 0.3)
 
 
+# ------------------------------------------------------------ doings (ADR-0037)
+
+def pour(seed=3000):
+    """Water poured out of a bucket, under a second: a rushing stream that
+    swells and dies, gurgling as it goes, and its splash on the ground."""
+    sec = 0.85
+    t = t_axis(sec)
+    env = np.minimum(t / 0.06, 1.0) * np.clip((sec - t) / 0.35, 0.0, 1.0) ** 1.5
+    x = band(noise(sec, seed), 350, 3200) * env * slow_env(sec, 25, seed + 1, 0.6, 1.0) * 0.5
+    x += bubbles(sec, seed + 2, 22, 300, 900) * env * 0.7
+    x += low(band(noise(sec, seed + 3), 120, 900), 700, 2) * np.clip((t - 0.12) / 0.1, 0, 1) * env * 0.4
+    return tail_out(low(reverb(x, 0.2, 0.15, seed + 4), 4500, 2), 0.7)
+
+
+def bloop(seed=3100):
+    """Water taken up in a bucket: a full, low "bulk" - two round bubbles
+    closing upward, the second smaller."""
+    x = np.zeros(int(0.45 * SR))
+    for k, (f0, at, g) in enumerate(((170.0, 0.0, 1.0), (260.0, 0.13, 0.55))):
+        dur = 0.14
+        t = t_axis(dur)
+        f = f0 * (1 + 1.6 * (t / dur) ** 1.5)
+        b = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.05) * np.minimum(t / 0.004, 1)
+        place(x, b, at, g)
+    x += band(noise(len(x) / SR, seed), 200, 1500) * decay(len(x) / SR, 0.05, 0.005) * 0.15
+    return tail_out(low(x, 2200, 2), 0.6)
+
+
+def gulps(seed=3200):
+    """Drinking: three gulps, each a soft throat thump with a small bubble."""
+    x = np.zeros(int(0.95 * SR))
+    for k in range(3):
+        at = k * 0.28
+        place(x, thud(0.12, seed + k, 260, 0.02), at, 0.9)
+        place(x, bubbles(0.08, seed + 10 + k, 2, 200, 420), at + 0.03, 0.5)
+    return tail_out(low(x, 1800, 2), 0.8)
+
+
+def munch(seed=3300):
+    """Eating: three crunchy bites, a little chewing between."""
+    x = np.zeros(int(0.8 * SR))
+    r = rng(seed)
+    for k in range(3):
+        at = k * 0.24 + r.uniform(0, 0.03)
+        place(x, band(noise(0.07, seed + k), 900, 4200) * decay(0.07, 0.016, 0.002), at, 0.8)
+        place(x, thud(0.08, seed + 20 + k, 300, 0.012), at, 0.5)
+    return tail_out(low(x, 3800, 2), 0.8)
+
+
+def splash(seed=3400):
+    """A fish taken out of the water: a sharp slap of water and drops."""
+    sec = 0.45
+    x = band(noise(sec, seed), 400, 5000) * decay(sec, 0.05, 0.003)
+    x += bubbles(sec, seed + 1, 10, 400, 1200) * 0.5
+    r = rng(seed + 2)
+    for k in range(6):
+        place(x, drip(seed + 10 + k) * 0.4, r.uniform(0.08, 0.35), r.uniform(0.2, 0.5))
+    return tail_out(low(x, 5000, 2), 0.6)
+
+
+def till(seed=3500):
+    """A hoe into soil: a dull chop and earth falling apart."""
+    sec = 0.35
+    x = thud(sec, seed, 380, 0.03) * 1.2
+    x += band(noise(sec, seed + 1), 600, 3000) * decay(sec, 0.06, 0.01) * 0.35
+    r = rng(seed + 2)
+    for k in range(5):
+        place(x, band(noise(0.01, seed + 5 + k), 1500, 4000) * decay(0.01, 0.002), r.uniform(0.04, 0.2), 0.2)
+    return tail_out(low(x, 2800, 2), 0.6)
+
+
+def sow(seed=3600):
+    """Seeds let fall: a few small ticks on soil and a brush of the hand."""
+    x = band(noise(0.35, seed), 1500, 5000) * decay(0.35, 0.06, 0.03) * 0.25
+    r = rng(seed + 1)
+    for k in range(7):
+        place(x, band(noise(0.006, seed + 3 + k), 2500, 6500) * decay(0.006, 0.0012), r.uniform(0.05, 0.28), r.uniform(0.2, 0.45))
+    return tail_out(x, 0.7)
+
+
+def craft_hands(seed=3700):
+    """Made at a workbench: a saw stroke and two knocks of a mallet."""
+    x = np.zeros(int(0.8 * SR))
+    for k in range(2):
+        place(x, band(noise(0.16, seed + k), 1200, 5000) * np.sin(np.pi * t_axis(0.16) / 0.16) * 0.35, k * 0.17, 1.0)
+    place(x, knock(200, 0.2, seed + 5, 0.05), 0.42, 1.0)
+    place(x, knock(215, 0.2, seed + 6, 0.05), 0.6, 0.8)
+    return reverb(x, 0.2, 0.18, seed + 7)
+
+
+def sizzle(seed=3800):
+    """At a fire: food on it hisses and the wood crackles."""
+    sec = 0.9
+    t = t_axis(sec)
+    x = high(band(noise(sec, seed), 3000, 9000), 2500, 2) * np.minimum(t / 0.05, 1) * np.clip((sec - t) / 0.4, 0, 1) * 0.35
+    r = rng(seed + 1)
+    for k in range(8):
+        place(x, band(noise(0.008, seed + 2 + k), 800, 4000) * decay(0.008, 0.0015), r.uniform(0.0, 0.8), r.uniform(0.3, 0.8))
+    return tail_out(x, 0.8)
+
+
+def anvil(seed=3900):
+    """At a forge: a hammer on hot metal - a bright short ring - and a hiss."""
+    sec = 0.9
+    t = t_axis(sec)
+    x = np.zeros_like(t)
+    for f, g in ((1180.0, 1.0), (2710.0, 0.5), (4130.0, 0.3)):
+        x += np.sin(2 * np.pi * f * t) * np.exp(-t / 0.09) * g
+    x += band(noise(sec, seed), 600, 3000) * decay(sec, 0.004) * 0.6
+    place(x, high(band(noise(0.5, seed + 1), 3000, 9000), 2500, 2) * decay(0.5, 0.15, 0.05) * 0.25, 0.3, 1.0)
+    return tail_out(reverb(x, 0.25, 0.2, seed + 2), 0.8)
+
+
+def clink(seed=4000):
+    """A pick on rock: a hard click with a short metal ring and grit."""
+    sec = 0.3
+    t = t_axis(sec)
+    x = band(noise(sec, seed), 1500, 7000) * decay(sec, 0.006, 0.001)
+    x += (np.sin(2 * np.pi * 2350 * t) + 0.5 * np.sin(2 * np.pi * 3960 * t)) * np.exp(-t / 0.035) * 0.35
+    r = rng(seed + 1)
+    for k in range(5):
+        place(x, band(noise(0.01, seed + 2 + k), 2500, 7000) * decay(0.01, 0.002), r.uniform(0.03, 0.15), 0.25)
+    return tail_out(low(x, 6500, 2), 0.6)
+
+
+def chop(seed=4100):
+    """An axe into wood: a dull knock and the crack of fibres."""
+    x = knock(140, 0.3, seed, 0.05)
+    x += band(noise(0.3, seed + 1), 900, 4000) * decay(0.3, 0.012, 0.002) * 0.6
+    return tail_out(low(x, 3500, 2), 0.6)
+
+
+def rustle(seed=4200, sec=0.3):
+    """Grass or cloth: a soft brush, most of it high and quick."""
+    t = t_axis(sec)
+    x = high(low(noise(sec, seed), 5000, 1), 900, 1) * np.sin(np.pi * t / sec) ** 1.5 * slow_env(sec, 30, seed + 1, 0.4, 1.0)
+    return tail_out(x, 0.75)
+
+
+def thunder(seed=4300):
+    """Thunder: a crack and a long rumble rolling away (about 3 s)."""
+    sec = 3.2
+    t = t_axis(sec)
+    x = low(noise(sec, seed), 110, 3) * slow_env(sec, 6, seed + 1, 0.3, 1.0) * np.exp(-t / 1.1) * 3.0
+    x += band(noise(sec, seed + 2), 200, 2000) * decay(sec, 0.08, 0.005) * 0.6
+    return tail_out(reverb(x, 0.8, 0.35, seed + 3), 0.75)
+
+
+def rain_loop(seed=4400):
+    """Rain: a steady soft hiss of many drops, with near ones pattering."""
+    sec = 20.0
+    x = low(band(noise(sec, seed), 400, 7000), 5000, 2) * 0.18 * slow_env(sec, 0.4, seed + 1, 0.8, 1.0)
+    r = rng(seed + 2)
+    for k in range(int(sec * 25)):
+        place(x, band(noise(0.006, seed + 10 + k), 1500, 6000) * decay(0.006, 0.0012), r.uniform(0, sec - 0.01), r.uniform(0.05, 0.25))
+    return loopify(x, 1.0)
+
+
 # ------------------------------------------------------------ the pack
 
 def main():
@@ -494,6 +654,28 @@ def main():
     sound("drop", "*", "drop", [write("drop", drop())], -6.0)
     sound("climb", "*", "climb", [write("climb", climb())], -6.0)
     sound("click", "*", "click", [write("click", click(), 0.6)], -8.0, (0.97, 1.03))
+    sound("pour", "*", "pour", [write("pour_%d" % (k + 1), pour(3000 + k * 5)) for k in range(2)], -8.0)
+    sound("fill", "*", "fill", [write("fill_%d" % (k + 1), bloop(3100 + k * 5)) for k in range(2)], -7.0)
+    sound("drink", "*", "drink", [write("drink", gulps())], -8.0)
+    sound("eat", "*", "eat", [write("eat_%d" % (k + 1), munch(3300 + k * 5)) for k in range(2)], -8.0)
+    sound("feed", "*", "feed", [write("feed", munch(3350))], -12.0, (0.75, 0.85))
+    sound("splash", "*", "splash", [write("splash", splash())], -7.0)
+    sound("till", "*", "till", [write("till_%d" % (k + 1), till(3500 + k * 5)) for k in range(2)], -7.0)
+    sound("sow", "*", "sow", [write("sow", sow())], -9.0)
+    sound("craft", "*", "craft", [write("craft", craft_hands())], -7.0)
+    sound("craft_fire", "base:campfire", "craft", [write("craft_fire", sizzle())], -9.0)
+    sound("craft_forge", "base:forge", "craft", [write("craft_forge", anvil())], -9.0)
+    clinks = [write("dig_%d" % (k + 1), clink(4000 + k * 5)) for k in range(3)]
+    chops = [write("chop_%d" % (k + 1), chop(4100 + k * 5)) for k in range(3)]
+    for rock in ("base:rock", "base:iron_ore_rock", "base:copper_ore_rock", "base:gem_rock"):
+        sound("gather_" + rock.split(":")[1], rock, "gather", clinks, -8.0)
+    for tree in ("base:oak", "base:birch", "base:spruce"):
+        sound("gather_" + tree.split(":")[1], tree, "gather", chops, -7.0)
+    sound("gather", "*", "gather", [write("rustle_%d" % (k + 1), rustle(4200 + k * 5)) for k in range(2)], -10.0)
+    sound("equip", "*", "equip", [write("equip", rustle(4250, 0.28))], -10.0)
+    sound("sleep", "*", "sleep", [write("sleep", rustle(4260, 0.6))], -10.0)
+    sound("thunder", "*", "thunder", [write("thunder_%d" % (k + 1), thunder(4300 + k * 5)) for k in range(2)], -6.0, (0.85, 1.1))
+    sound("rain", "*", "rain", [write("rain", rain_loop(), 0.5)], -10.0, (1.0, 1.0), True)
     meadow = write("amb_meadow", amb_meadow(), gain=AMB_GAIN["amb_meadow"])
     forest = write("amb_forest", amb_forest(), gain=AMB_GAIN["amb_forest"])
     water = write("amb_water", amb_water(), gain=1.0)

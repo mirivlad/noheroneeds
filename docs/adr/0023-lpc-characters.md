@@ -1,7 +1,7 @@
 # ADR-0023 — Люди из Universal LPC
 
 **Статус:** принято автором 20.10.2026, реализовано.
-Уточняет [ADR-0022](0022-hd-visual-baseline.md) и [Visual Standard HD](../art/visual_standard_hd.md)
+Уточняет [ADR-0022](0022-hd-visual-baseline.md) и [Visual Standard HD](../art/archive/visual_standard_hd.md)
 в части людей; заменяет попытки 17.10.2026 нарисовать их кодом.
 
 ## Контекст

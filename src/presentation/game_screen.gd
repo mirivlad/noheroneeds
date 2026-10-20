@@ -264,7 +264,7 @@ func music_mood() -> String:
 ## The view and HUD parts of the player's settings.
 func apply_settings() -> void:
 	var z := float(settings.get_value("view_zoom"))
-	camera.zoom = Vector2.ONE * z * PixelDisplay.world_scale(String(_opts.get("display", PixelDisplay.DEFAULT_MODE)))
+	camera.zoom = Vector2.ONE * z * PixelDisplay.WORLD_SCALE
 
 
 ## HUD coordinates are viewport pixels, independent of the world's camera.
@@ -273,18 +273,16 @@ func _layout_hud() -> void:
 	minimap.position = Vector2(viewport_size.x - Minimap.SIZE - 4, 34)
 	hotbar.position = Vector2(floorf((viewport_size.x - hotbar.get_combined_minimum_size().x) / 2.0), viewport_size.y - 60)  # above the status line
 	status.position = Vector2(6, viewport_size.y - 18)
-	# Legacy keeps its original typography. HD uses the same font pixels with
-	# twice the space: bounded lines cannot spill across the minimap or hotbar.
-	if _opts.get("display", PixelDisplay.DEFAULT_MODE) != "legacy":
-		hud.position.y = 4
-		_info.position.y = 24
-		minimap.position.y = 48
-		for label: Label in [hud, _info, status]:
-			label.clip_text = true
-			label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-			label.custom_minimum_size.x = 0
-			label.size = Vector2(viewport_size.x - 12, 18)
-			label.add_theme_constant_override("outline_size", 2)
+	# Bounded lines: they cannot spill across the minimap or hotbar.
+	hud.position.y = 4
+	_info.position.y = 24
+	minimap.position.y = 48
+	for label: Label in [hud, _info, status]:
+		label.clip_text = true
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		label.custom_minimum_size.x = 0
+		label.size = Vector2(viewport_size.x - 12, 18)
+		label.add_theme_constant_override("outline_size", 2)
 
 
 ## Ends the game: the world is saved and closed, connections dropped.

@@ -165,3 +165,14 @@ func test_a_rod_fishes_in_water_and_the_water_stays() -> void:
 	eq(_req(a, {"type": "craft", "recipe": "base:cook_fish", "count": 1}).get("made"), {"base:cooked_fish": 1})
 	w.combat.hurt(a, 10, "")
 	eq(_req(a, {"type": "eat", "item": "base:cooked_fish"}).get("health"), 14, "four back")
+
+
+func test_a_hide_becomes_leather_and_leather_armour() -> void:
+	var a := _player("Аня")
+	w.grant(a, "base:log", 4)
+	check(_req(a, {"type": "build", "location": "surface", "x": 4, "y": 3, "part": "base:workbench"}).get("ok", false), "workbench")
+	w.grant(a, "base:hide", 4)
+	eq(_req(a, {"type": "craft", "recipe": "base:tan_leather", "count": 4}).get("made"), {"base:leather": 4})
+	eq(_req(a, {"type": "craft", "recipe": "base:make_leather_armor", "count": 1}).get("made"), {"base:leather_armor": 1})
+	check(_req(a, {"type": "equip", "item": "base:leather_armor"}).get("ok", false), "worn in its own slot")
+	eq(w.combat.armor_of(a), 2)

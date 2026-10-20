@@ -419,6 +419,10 @@ func _process(delta: float) -> void:
 		if _frames == 50:
 			hotbar.put(0, "base:fishing_rod", -1)
 			_choose_slot(0)
+	if _opts.get("demo") == "armor" and game and _frames == 40:  # dev only: leather and a helmet on (ADR-0029)
+		for item: String in ["base:leather_armor", "base:iron_helmet"]:
+			game.world.grant(client.character_id, item, 1)
+			client.request({"type": "equip", "item": item})
 	if _opts.get("demo") == "loot" and game:  # dev only: looters by things lying about (ADR-0016)
 		var me := Vector2i(0, 7)
 		if _frames == 40:
@@ -442,6 +446,8 @@ func _process(delta: float) -> void:
 				crafts.open()
 			"inventory":
 				inventory_panel.show_for(client.inventory(), hotbar.selected)
+			"character":
+				character_panel.show_for(client.own, hotbar.held(client.inventory()))
 			"pin":
 				pin_panel.open_for(Vector2i(0, 2), false)
 			"plan":  # a row of walls dragged, part of it out of reach

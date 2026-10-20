@@ -30,6 +30,12 @@
     {"id": "base:make_fishing_rod", "kind": "recipe", "name": "Удочка", "station": "workbench",
       "inputs": {"base:plank": 1, "base:hide": 1}, "outputs": {"base:fishing_rod": 1}},
     {"id": "base:cook_fish", "kind": "recipe", "name": "Пожарить рыбу", "station": "fire",
-      "inputs": {"base:raw_fish": 1}, "outputs": {"base:cooked_fish": 1}}
+      "inputs": {"base:raw_fish": 1}, "outputs": {"base:cooked_fish": 1}},
+    {"id": "base:tan_leather", "kind": "recipe", "name": "Выделать кожу", "station": "workbench",
+      "inputs": {"base:hide": 1}, "outputs": {"base:leather": 1}},
+    {"id": "base:make_leather_armor", "kind": "recipe", "name": "Кожаный доспех", "station": "workbench",
+      "inputs": {"base:leather": 4}, "outputs": {"base:leather_armor": 1}},
+    {"id": "base:forge_iron_helmet", "kind": "recipe", "name": "Железный шлем", "station": "forge",
+      "inputs": {"base:iron_ingot": 3}, "outputs": {"base:iron_helmet": 1}}
   ]
 }

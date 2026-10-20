@@ -17,7 +17,8 @@ PATHS=(
   /spritesheets/hair/messy1/ /spritesheets/hair/plain/ /spritesheets/hair/long/
   /spritesheets/hair/braid/ /spritesheets/hair/ponytail/
   /spritesheets/torso/clothes/longsleeve/longsleeve/ /spritesheets/legs/pants/
-  /spritesheets/feet/boots/basic/ /spritesheets/hat/formal/bowler/
+  /spritesheets/feet/boots/basic/ /spritesheets/hat/formal/bowler/ /spritesheets/hat/helmet/nasal/
+  /spritesheets/torso/armour/leather/
   /spritesheets/tools/axe/ /spritesheets/tools/pickaxe/ /spritesheets/tools/hoe/ /spritesheets/tools/fishing_rod/
   /spritesheets/weapon/polearm/spear/ /spritesheets/weapon/ranged/bow/normal/
 )

@@ -189,6 +189,10 @@ func _validate() -> void:
 				# A tool's power: the work a blow does (ADR-0026: iron does more).
 				if d.has("power") and (typeof(d["power"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["power"]) < 1):
 					errors.append("%s: power is the work of a blow, at least 1" % id)
+				# What worn armour takes off every blow (ADR-0029).
+				if d.has("armor") and (typeof(d["armor"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["armor"]) < 0 \
+						or String(d.get("equip_slot", "")) in ["", "main_hand", "off_hand"]):
+					errors.append("%s: armor is what a worn thing takes off a blow, 0 or more" % id)
 				# A seed (ADR-0027): the plant it sows.
 				if d.has("plants") and kind_of(String(d["plants"])) != "plant":
 					errors.append("%s: plants names a plant" % id)

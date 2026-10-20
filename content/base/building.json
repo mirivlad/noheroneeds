@@ -12,6 +12,8 @@
     {"id": "base:wood_column", "kind": "structure", "role": "column", "name": "Деревянная колонна", "cost": {"base:log": 1}, "durability": 1040, "material": "wood"},
     {"id": "base:chest", "kind": "structure", "role": "furniture", "name": "Сундук", "cost": {"base:plank": 6},
      "container": {"slots": 16}, "durability": 780, "material": "wood"},
+    {"id": "base:bed", "kind": "structure", "role": "furniture", "solid": false, "name": "Кровать", "bed": true,
+     "cost": {"base:plank": 6, "base:cloth": 2}, "durability": 600, "material": "wood"},
     {"id": "base:workbench", "kind": "structure", "role": "furniture", "name": "Верстак", "station": "workbench",
      "cost": {"base:log": 4}, "durability": 780, "material": "wood"},
     {"id": "base:forge", "kind": "structure", "role": "furniture", "name": "Печь", "station": "forge", "heat": 30,

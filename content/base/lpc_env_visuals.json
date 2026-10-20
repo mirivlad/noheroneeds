@@ -1145,6 +1145,25 @@
    "variants": 1
   },
   {
+   "id": "base:visual/bed",
+   "kind": "visual",
+   "for": "base:bed",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    787,
+    48,
+    86
+   ],
+   "origin": [
+    8,
+    82
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/forge",
    "kind": "visual",
    "for": "base:forge",
@@ -1152,7 +1171,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    787,
+    873,
     64,
     90
    ],
@@ -1171,7 +1190,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    877,
+    963,
     32,
     32
    ],

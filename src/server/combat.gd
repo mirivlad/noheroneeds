@@ -135,6 +135,7 @@ func heal(id: String, amount: int) -> void:
 ## Takes `amount` of health from `target` (a character or a creature) for
 ## `attacker`; it remembers who did it; at nothing it dies.
 func hurt(target: String, amount: int, attacker: String) -> void:
+	world.wake(target)  # a blow wakes one (ADR-0035)
 	var left := health_of(target) - amount
 	_hurt_at[target] = _tick
 	var c := world.creatures.get_creature(target)

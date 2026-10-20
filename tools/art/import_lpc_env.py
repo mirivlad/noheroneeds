@@ -386,6 +386,7 @@ PROPS = {
     "base:cave_climb": ("lpc-mine/lpc-mine/mine.png", (0, 288, 32, 96), {}),
     "base:headframe": ("lpc-mine/lpc-mine/mine.png", (0, 0, 128, 224), {}),
     "base:workbench": ("house_inside_1.png", (96, 32, 32, 64), {}),
+    "base:bed": ("house_inside_1.png", (72, 172, 48, 88), {}),
     "base:forge": ("ore_0.png", (64, 384, 64, 128), {}),
     "base:campfire": ("../lpc_items/effects_5.png", (544, 32, 32, 32), {}),
 }

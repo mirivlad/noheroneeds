@@ -180,3 +180,37 @@ func test_the_cold_burns_food_stops_healing_and_freezes_but_not_to_death() -> vo
 		w.needs.set_warmth(a, 0.0)  # it keeps freezing
 	eq(w.combat.health_of(a), 1, "freezing takes health, but not the last")
 	eq(w.needs.shown(a).get("warmth"), 0, "and the player is told")
+
+
+func test_energy_runs_down_and_a_bed_brings_it_back() -> void:
+	var a := _player()
+	var at := _clear_round(a)
+	var loc := String(w.present[a]["location"])
+	w.needs.step()
+	_hours(20.0)
+	check(absf(w.needs.energy_of(a) - 50.0) < 1.0, "half in twenty hours: %.1f" % w.needs.energy_of(a))
+	check(w.needs.may_run(a), "not tired yet")
+	w.needs.set_energy(a, 10.0)
+	check(not w.needs.may_run(a), "tired: no running")
+	var cx := floori(at.x / 32.0)
+	var cy := floori(at.y / 32.0)
+	w.chunk(loc, cx, cy).set_cell("structure", at.x + 1 - cx * 32, at.y - cy * 32, "base:bed")
+	var bed := {"type": "sleep", "location": loc, "x": at.x + 1, "y": at.y}
+	eq(_req(a, {"type": "sleep", "location": loc, "x": at.x, "y": at.y}).get("reason"), "not_a_bed")
+	check(_req(a, bed.duplicate()).get("ok", false), "into bed")
+	check(w.needs.asleep(a), "asleep")
+	eq(Movement.cell_of(w.present[a]["pos"]), Vector2i(at.x + 1, at.y), "lying on the bed")
+	var b := _player()
+	w.move_character(b, w.present[a]["pos"])
+	w.needs.set_energy(b, 10.0)
+	eq(_req(b, bed.duplicate()).get("reason"), "someone_there", "a bed sleeps one")
+	w.leave(b)
+	_hours(1.0)
+	check(w.needs.energy_of(a) > 40.0, "an hour in bed: %.1f" % w.needs.energy_of(a))
+	w.combat.hurt(a, 1, "")
+	check(not w.needs.asleep(a), "a blow wakes one")
+	check(_req(a, bed.duplicate()).get("ok", false), "back to bed")
+	_hours(3.0)  # full in about an hour and a half, then up and about
+	check(w.needs.energy_of(a) > 95.0, "rested: %.1f" % w.needs.energy_of(a))
+	check(not w.needs.asleep(a), "and up by oneself")
+	eq(_req(a, bed.duplicate()).get("reason"), "not_tired", "rested ones do not lie down")

@@ -472,6 +472,7 @@ func enter(owner: String, c: PortableCharacter) -> String:
 	present[id]["deaths"] = int(place.get("deaths", 0))
 	present[id]["satiety"] = float(place.get("satiety", Needs.FULL))
 	present[id]["warmth"] = float(place.get("warmth", Needs.FULL))
+	present[id]["energy"] = float(place.get("energy", Needs.FULL))
 	# Its floor may have gone while it was away (the author, 16.10.2026: a
 	# floor is not kept for those away — a ceiling broken, stairs opened, old
 	# stairs brought to today's way): it is put on the floor below, down to
@@ -496,7 +497,7 @@ func leave(id: String) -> void:
 	if present.has(id):
 		var p: Dictionary = present[id]
 		_left_places[id] = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
-			"health": p.get("health", 0), "deaths": p.get("deaths", 0), "satiety": p.get("satiety", Needs.FULL), "warmth": p.get("warmth", Needs.FULL)}
+			"health": p.get("health", 0), "deaths": p.get("deaths", 0), "satiety": p.get("satiety", Needs.FULL), "warmth": p.get("warmth", Needs.FULL), "energy": p.get("energy", Needs.FULL)}
 		_dirty_world_characters[id] = true
 		flush_state()  # its last position goes out with this batch
 		present.erase(id)
@@ -938,7 +939,7 @@ func flush_state(limit := -1) -> void:
 		if present.has(id):
 			var p: Dictionary = present[id]
 			b.world_characters.append([id, {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
-				"health": int(p.get("health", 0)), "deaths": int(p.get("deaths", 0)), "satiety": float(p.get("satiety", Needs.FULL)), "warmth": float(p.get("warmth", Needs.FULL))}])
+				"health": int(p.get("health", 0)), "deaths": int(p.get("deaths", 0)), "satiety": float(p.get("satiety", Needs.FULL)), "warmth": float(p.get("warmth", Needs.FULL)), "energy": float(p.get("energy", Needs.FULL))}])
 		_dirty_world_characters.erase(id)
 	for id: String in _dirty_entities.keys():
 		if limit >= 0 and b.entities.size() >= limit:
@@ -1039,6 +1040,11 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _eat(actor, r)
 		"feed":
 			return _feed(actor, r)
+		"sleep":
+			return _sleep(actor, r)
+		"wake":
+			wake(actor)
+			return {"ok": true}
 	return {"ok": false, "reason": "unknown_type"}
 
 
@@ -2216,6 +2222,35 @@ func _till(actor: String, r: Dictionary) -> Dictionary:
 	c.set_cell("ground", at[3], at[4], into)
 	_changed(chunk_key(at[0], at[1], at[2]))
 	return {"ok": true}
+
+
+## Lies down in a bed within reach (ADR-0035): one sleeps on it, energy
+## coming back, until full, until one moves or is struck. A bed sleeps one.
+func _sleep(actor: String, r: Dictionary) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var at := _cell(r)
+	var x := ri(r, "x", 0)
+	var y := ri(r, "y", 0)
+	if not _reaches(actor, at[0], x, y, USE_REACH):
+		return {"ok": false, "reason": "too_far"}
+	if not content.get_def(part_at(at[0], x, y)).get("bed", false):
+		return {"ok": false, "reason": "not_a_bed"}
+	if needs.energy_of(actor) > Needs.FULL - 10.0:
+		return {"ok": false, "reason": "not_tired"}
+	for id: String in present:
+		if id != actor and present[id].has("asleep") and present[id]["asleep"] == Vector2i(x, y) and present[id]["location"] == at[0]:
+			return {"ok": false, "reason": "someone_there"}
+	present[actor]["asleep"] = Vector2i(x, y)
+	move_character(actor, Vector2i(x, y) * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
+	return {"ok": true}
+
+
+## Up from a bed (moved, struck, rested, asked).
+func wake(id: String) -> void:
+	if present.has(id) and present[id].has("asleep"):
+		present[id].erase("asleep")
+		note_character(id)
 
 
 ## Feeds an animal what it eats, held in the hands (ADR-0030): a wild one

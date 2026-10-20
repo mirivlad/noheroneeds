@@ -975,6 +975,8 @@ func _fade_occluders() -> void:
 		if is_instance_valid(s):
 			s.modulate.a = 1.0
 	_faded.clear()
+	if client.own.get("asleep", false):
+		return  # in bed one is drawn over it: nothing hides one to see through
 	# What stands in front (south) of the player, up to a tall tree's size away.
 	var at := Vector2i(floori(me.position.x / CELL), floori((me.position.y - 1) / CELL))
 	for s: Sprite2D in _sprites_near(at, 4, 4, 0, 6):
@@ -1087,6 +1089,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		me.modulate = Color.WHITE
 		_health(client.character_id, me, client.own, delta)
 		me.hold(item_picture(own_held), item_grip(own_held), own_held)
+		_lie(me, bool(client.own.get("asleep", false)))
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
@@ -1121,6 +1124,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		sprite.show_at(target - Vector2(0, COVER_LIFT * maxi(dz, 0)), delta, false)
 		_at_level(sprite, client.z + dz)
 		_health(id, sprite, e, delta)
+		_lie(sprite, bool(e.get("asleep", false)))
 	for id: String in _characters.keys():
 		if not seen.has(id):
 			_characters[id].queue_free()
@@ -1140,6 +1144,44 @@ func _update_characters(alpha: float, delta: float) -> void:
 		if not seen.has(id):
 			_hp_seen.erase(id)
 			_flash.erase(id)
+
+
+## Asleep in a bed (ADR-0035), seen from above as such games show it: the
+## head on the pillow, facing up, the bed's own blanket over the body (the
+## lower part of the bed's picture, drawn over the sleeper); up on waking.
+const BLANKET_FROM := 28  # texels of the bed picture above the blanket: the pillows
+const LIE_UP := -3.0  # the feet this far above the middle of the bed's cell
+
+
+func _lie(sprite: CharacterSprite, asleep: bool) -> void:
+	var blanket: Sprite2D = sprite.get_node_or_null("Blanket")
+	if not asleep:
+		sprite.z_index = 0
+		if blanket:
+			blanket.queue_free()
+		return
+	var cell := Vector2i(floori(sprite.position.x / CELL), floori(sprite.position.y / CELL))
+	var v := content.visual_of(_cell_part(client.location, cell))
+	sprite.turn_to(Vector2.DOWN)
+	sprite.position = Vector2((cell.x + 0.5) * CELL, (cell.y + 0.5) * CELL + LIE_UP)
+	sprite.z_index = 1  # over the bed, under nothing else of its row
+	if v.is_empty():
+		return
+	if blanket == null:
+		blanket = Sprite2D.new()
+		blanket.name = "Blanket"
+		blanket.centered = false
+		blanket.region_enabled = true
+		blanket.z_index = 2
+		blanket.texture = texture(v["atlas_path"])
+		var r: Array = v["rect"]
+		blanket.region_rect = Rect2(r[0], r[1] + BLANKET_FROM, r[2], r[3] - BLANKET_FROM)
+		blanket.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))
+		sprite.add_child(blanket)
+	# Where the bed's picture is (as _tall_sprite places it), from the sleeper.
+	var scale := float(v.get("pixel_scale", 1.0))
+	var bed_at := Vector2(cell.x * CELL, (cell.y + 1) * CELL) - Vector2(v["origin"][0], v["origin"][1]) * scale
+	blanket.position = bed_at + Vector2(0, BLANKET_FROM * scale) - sprite.position
 
 
 ## Blows last seen struck, by id (a change: a swing to show).

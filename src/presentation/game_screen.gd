@@ -141,7 +141,7 @@ const REASONS := {
 	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
-	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
+	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
 }
 
 
@@ -326,7 +326,9 @@ func _process(delta: float) -> void:
 	client.move = _direction() if not paused and not world_map.visible else Vector2i.ZERO
 	if client.move != Vector2i.ZERO:
 		_last_dir = client.move
-	client.run = not paused and (_opts.has("run") or Input.is_physical_key_pressed(KEY_CTRL))
+	# Tired, one does not run (ADR-0035): the server would not let it, so neither does the guess.
+	client.run = not paused and (_opts.has("run") or Input.is_physical_key_pressed(KEY_CTRL)) \
+		and int(client.own.get("needs", {}).get("energy", 100)) >= int(Needs.TIRED)
 	# A single-player world stands still while the menu is open; a server
 	# others play on cannot.
 	_accum += 0.0 if paused and game else delta
@@ -444,6 +446,20 @@ func _process(delta: float) -> void:
 			i += 1
 		w.move_character(client.character_id, Vector2i(-4, 10) * 256 + Vector2i(128, 128))
 		w.grant(client.character_id, "base:wheat", 5)
+	if _opts.get("demo") == "sleep" and game:  # dev only: a bed by the house, one asleep in it (ADR-0035)
+		var bed := Vector2i(1, 7)
+		if _frames == 40:
+			var w := game.world
+			var c := w.chunk(client.location, bed.x >> 5, bed.y >> 5)
+			for y in range(bed.y - 2, bed.y + 3):  # nothing growing over it
+				for x in range(bed.x - 2, bed.x + 3):
+					c.set_cell("cover", x & 31, y & 31, "")
+			c.set_cell("structure", bed.x & 31, bed.y & 31, "base:bed")
+			w._changed(ServerWorld.chunk_key(client.location, bed.x >> 5, bed.y >> 5))
+			w.move_character(client.character_id, Vector2i(0, 7) * 256 + Vector2i(128, 128))
+			w.needs.set_energy(client.character_id, 10.0)
+		if _frames == 60:
+			client.request({"type": "sleep", "location": client.location, "x": bed.x, "y": bed.y})
 	if _opts.get("demo") == "armor" and game and _frames == 40:  # dev only: leather and a helmet on (ADR-0029)
 		for item: String in ["base:leather_armor", "base:iron_helmet"]:
 			game.world.grant(client.character_id, item, 1)
@@ -1126,6 +1142,8 @@ func _update_hud() -> void:
 		fed = "Сытость %d%s     " % [satiety, " — голод!" if satiety <= 0 else (" — голодно" if satiety < int(Needs.HUNGRY) else "")]
 		var warmth := int(client.own["needs"].get("warmth", 100))
 		fed += "Тепло %d%s     " % [warmth, " — замерзаете!" if warmth <= 0 else (" — холодно" if warmth < int(Needs.COLD) else "")]
+		var energy := int(client.own["needs"].get("energy", 100))
+		fed += "Бодрость %d%s     " % [energy, " — сон" if client.own.get("asleep", false) else (" — устали" if energy < int(Needs.TIRED) else "")]
 	hud.text = clock + level + "     " + health + fed + "  ".join(bag)
 	var info := PackedStringArray()
 	if hosted:

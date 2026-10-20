@@ -471,6 +471,7 @@ func enter(owner: String, c: PortableCharacter) -> String:
 	present[id]["health"] = int(place.get("health", combat.max_health_of(id)))
 	present[id]["deaths"] = int(place.get("deaths", 0))
 	present[id]["satiety"] = float(place.get("satiety", Needs.FULL))
+	present[id]["warmth"] = float(place.get("warmth", Needs.FULL))
 	# Its floor may have gone while it was away (the author, 16.10.2026: a
 	# floor is not kept for those away — a ceiling broken, stairs opened, old
 	# stairs brought to today's way): it is put on the floor below, down to
@@ -495,7 +496,7 @@ func leave(id: String) -> void:
 	if present.has(id):
 		var p: Dictionary = present[id]
 		_left_places[id] = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
-			"health": p.get("health", 0), "deaths": p.get("deaths", 0), "satiety": p.get("satiety", Needs.FULL)}
+			"health": p.get("health", 0), "deaths": p.get("deaths", 0), "satiety": p.get("satiety", Needs.FULL), "warmth": p.get("warmth", Needs.FULL)}
 		_dirty_world_characters[id] = true
 		flush_state()  # its last position goes out with this batch
 		present.erase(id)
@@ -937,7 +938,7 @@ func flush_state(limit := -1) -> void:
 		if present.has(id):
 			var p: Dictionary = present[id]
 			b.world_characters.append([id, {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
-				"health": int(p.get("health", 0)), "deaths": int(p.get("deaths", 0)), "satiety": float(p.get("satiety", Needs.FULL))}])
+				"health": int(p.get("health", 0)), "deaths": int(p.get("deaths", 0)), "satiety": float(p.get("satiety", Needs.FULL)), "warmth": float(p.get("warmth", Needs.FULL))}])
 		_dirty_world_characters.erase(id)
 	for id: String in _dirty_entities.keys():
 		if limit >= 0 and b.entities.size() >= limit:
@@ -1442,6 +1443,16 @@ func _set_layer_props(c: Chunk, layer: String, lx: int, ly: int, props: Dictiona
 func _layer_props(c: Chunk, layer: String, lx: int, ly: int) -> Dictionary:
 	var all := c.get_props(lx, ly)
 	return all.get(layer, {}) if layer != "structure" else all
+
+
+## Whether a roof or a ceiling is over a cell (ADR-0034: out of the rain and the night).
+func sheltered(location: String, x: int, y: int) -> bool:
+	return _part_at(location, x, y, "ceiling") != "" or _part_at(location, x, y, "roof") != ""
+
+
+## The part standing on a cell ("" none).
+func part_at(location: String, x: int, y: int) -> String:
+	return _part_at(location, x, y, "structure")
 
 
 func _ceiling_building(location: String, x: int, y: int) -> String:

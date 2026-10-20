@@ -193,6 +193,10 @@ func _validate() -> void:
 				if d.has("armor") and (typeof(d["armor"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["armor"]) < 0 \
 						or String(d.get("equip_slot", "")) in ["", "main_hand", "off_hand"]):
 					errors.append("%s: armor is what a worn thing takes off a blow, 0 or more" % id)
+				# What keeps the cold off (ADR-0034).
+				if d.has("warmth") and (typeof(d["warmth"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["warmth"]) < 0 \
+						or String(d.get("equip_slot", "")) in ["", "main_hand", "off_hand"]):
+					errors.append("%s: warmth is what a worn thing keeps off the cold, 0 or more" % id)
 				# A seed (ADR-0027): the plant it sows.
 				if d.has("plants") and kind_of(String(d["plants"])) != "plant":
 					errors.append("%s: plants names a plant" % id)
@@ -223,6 +227,8 @@ func _validate() -> void:
 				d["rotations"] = _check_rotations(id, d.get("rotations", []))
 				if d.has("light"):
 					_check_light(id, d)
+				if d.has("heat") and (typeof(d["heat"]) not in [TYPE_INT, TYPE_FLOAT] or float(d["heat"]) < 0.0):
+					errors.append("%s: heat is the warmth a part gives near it an hour, 0 or more" % id)
 				_check_height(id, d, 1.0)
 				if d.has("opening"):
 					_check_opening(id, d)

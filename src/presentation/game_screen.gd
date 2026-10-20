@@ -1124,6 +1124,8 @@ func _update_hud() -> void:
 	if client.own.has("needs"):  # ADR-0032: one's own, from the server
 		var satiety := int(client.own["needs"].get("satiety", 100))
 		fed = "Сытость %d%s     " % [satiety, " — голод!" if satiety <= 0 else (" — голодно" if satiety < int(Needs.HUNGRY) else "")]
+		var warmth := int(client.own["needs"].get("warmth", 100))
+		fed += "Тепло %d%s     " % [warmth, " — замерзаете!" if warmth <= 0 else (" — холодно" if warmth < int(Needs.COLD) else "")]
 	hud.text = clock + level + "     " + health + fed + "  ".join(bag)
 	var info := PackedStringArray()
 	if hosted:

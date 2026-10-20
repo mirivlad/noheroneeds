@@ -38,6 +38,21 @@
 - https://opengameart.org/content/lpc-jump-expanded
 - https://opengameart.org/content/lpc-character-bases
 
+## cape/solid/bg
+
+- Авторы: Nila122, JaidynReiman
+- Лицензии: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+- https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more
+- https://opengameart.org/content/lpc-roman-armor
+
+## cape/solid/fg
+
+- Авторы: bluecarrot16, JaidynReiman
+- Лицензии: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+- https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more
+- https://opengameart.org/content/lpc-roman-armor
+- http://opengameart.org/content/lpc-clothing-updates
+
 ## eyes/eyebrows/thick
 
 - Авторы: ElizaWy

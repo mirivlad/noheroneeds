@@ -488,9 +488,11 @@ WORN_ICONS = {
     "base:felt_hat": "hat_formal_bowler_adult_brown.png",
     "base:leather_armor": "torso_armour_leather_male.png",
     "base:iron_helmet": "hat_helmet_nasal_adult.png",
+    "base:wool_cloak": "cape_solid_fg.png",
 }
+WORN_ICON_ROW = {"base:wool_cloak": 0}
 # Worn things are dyed in the game (lpc_visuals.json); the icon shows that.
-WORN_DYE = {"base:work_trousers": "walnut", "base:boots": "leather"}
+WORN_DYE = {"base:work_trousers": "walnut", "base:boots": "leather", "base:wool_cloak": "gray"}
 
 
 def build_items():
@@ -501,7 +503,8 @@ def build_items():
         icons.append((item, src.crop((x, y, x + T, y + T))))
     for item, sheet in WORN_ICONS.items():
         # The south-facing standing frame (idle, row s), cut to what is drawn.
-        frame = Image.open(CHARS / sheet).convert("RGBA").crop((0, 2 * 64, 64, 3 * 64))
+        row = WORN_ICON_ROW.get(item, 2)  # the south frame, or the north for what is on the back
+        frame = Image.open(CHARS / sheet).convert("RGBA").crop((0, row * 64, 64, (row + 1) * 64))
         frame = frame.crop(frame.getbbox())
         if item in WORN_DYE:
             ramp = dict(zip([c.lower() for c in pal["ramps"][pal["base"]]], pal["ramps"][WORN_DYE[item]]))

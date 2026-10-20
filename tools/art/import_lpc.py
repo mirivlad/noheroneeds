@@ -80,6 +80,7 @@ WORN = {
     "base:felt_hat": ("headwear", D + "headwear/hats/formal/hat_formal_bowler.json", "brown", {}),
     "base:leather_armor": ("armor", D + "torso/armour/torso_armour_leather.json", None, {}),
     "base:iron_helmet": ("headwear", D + "headwear/helmets/helmets/hat_helmet_nasal.json", None, {}),
+    "base:wool_cloak": ("back_item", D + "torso/cape/cape_solid.json", None, {"cloth": "gray"}),
 }
 # Things in the hands, drawn with their own frames: item -> (sheet definition, variant).
 HELD = {
@@ -177,6 +178,9 @@ def build_sheet(defn_path, layer_key, body, variant):
     # A swing of the whole body (an axe) is the slash on layers without their own.
     if "slash" in anims and "chop" not in anims:
         anims["chop"] = anims["slash"]
+    # A layer drawn walking but not running (a cape) runs in its walk.
+    if "walk" in anims and "run" not in anims and not custom:
+        anims["run"] = anims["walk"]
     for ours, (theirs, columns) in BORROWED.items():
         if theirs in anims and ours not in anims:
             anims[ours] = anims[theirs] + [columns]

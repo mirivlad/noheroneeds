@@ -1465,13 +1465,51 @@
    "variants": 1
   },
   {
+   "id": "base:visual/iron_axe",
+   "kind": "visual",
+   "for": "base:iron_axe",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    512,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/iron_pickaxe",
+   "kind": "visual",
+   "for": "base:iron_pickaxe",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    544,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/linen_shirt",
    "kind": "visual",
    "for": "base:linen_shirt",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    512,
+    576,
     0,
     32,
     32
@@ -1490,7 +1528,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    544,
+    608,
     0,
     32,
     32
@@ -1509,7 +1547,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    576,
+    640,
     0,
     32,
     32
@@ -1528,7 +1566,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    608,
+    672,
     0,
     32,
     32

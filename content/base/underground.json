@@ -55,6 +55,9 @@
     {"id": "base:pickaxe", "kind": "item", "name": "Кирка", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"],
       "weapon": {"kind": "melee", "damage": 3, "reach": 1.0, "arc": 70, "cooldown_ms": 800, "improvised": true},
       "against": {"stone": 2.0}},
+    {"id": "base:iron_pickaxe", "kind": "item", "name": "Железная кирка", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"],
+      "power": 2, "weapon": {"kind": "melee", "damage": 4, "reach": 1.0, "arc": 70, "cooldown_ms": 750, "improvised": true},
+      "against": {"stone": 3.0}},
     {"id": "base:iron_ore", "kind": "item", "name": "Железная руда", "stack": 50},
     {"id": "base:copper_ore", "kind": "item", "name": "Медная руда", "stack": 50},
     {"id": "base:raw_gem", "kind": "item", "name": "Необработанный самоцвет", "stack": 20}

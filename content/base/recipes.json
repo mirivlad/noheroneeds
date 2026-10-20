@@ -17,6 +17,10 @@
       "inputs": {"base:iron_ore": 2, "base:log": 1}, "outputs": {"base:iron_ingot": 1}},
     {"id": "base:smelt_copper", "kind": "recipe", "name": "Выплавить медь", "station": "forge",
       "inputs": {"base:copper_ore": 2, "base:log": 1}, "outputs": {"base:copper_ingot": 1}},
+    {"id": "base:forge_iron_axe", "kind": "recipe", "name": "Железный топор", "station": "forge",
+      "inputs": {"base:plank": 1, "base:iron_ingot": 2}, "outputs": {"base:iron_axe": 1}},
+    {"id": "base:forge_iron_pickaxe", "kind": "recipe", "name": "Железная кирка", "station": "forge",
+      "inputs": {"base:plank": 1, "base:iron_ingot": 3}, "outputs": {"base:iron_pickaxe": 1}},
     {"id": "base:cook_meat", "kind": "recipe", "name": "Пожарить мясо", "station": "fire",
       "inputs": {"base:raw_meat": 1}, "outputs": {"base:cooked_meat": 1}}
   ]

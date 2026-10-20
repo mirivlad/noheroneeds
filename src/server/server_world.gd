@@ -1572,7 +1572,9 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 			return {"ok": false, "reason": "not_ready"}
 	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
 	creatures.noise(loc, Vector2i(x, y))
-	var done := int(_layer_props(c, layer, at[3], at[4]).get("work", 0)) + 1
+	# A better tool does more a blow ("power": an iron axe fells sooner).
+	var power := maxi(1, int(content.get_def(item).get("power", 1))) if item != "" else 1
+	var done := int(_layer_props(c, layer, at[3], at[4]).get("work", 0)) + power
 	if done < work:
 		var props := _layer_props(c, layer, at[3], at[4]).duplicate()
 		props["work"] = done
@@ -1581,7 +1583,7 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 		else:
 			_set_layer_props(c, layer, at[3], at[4], props)
 		_changed(chunk_key(loc, at[1], at[2]))
-		return {"ok": true, "thing": thing, "work": done, "of": work}
+		return {"ok": true, "thing": thing, "work": mini(done, work), "of": work}
 	if layer == "cover":
 		_set_layer_props(c, layer, at[3], at[4], {})
 	c.set_cell(layer, at[3], at[4], "")

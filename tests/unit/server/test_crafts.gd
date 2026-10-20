@@ -111,3 +111,24 @@ func test_malformed_recipes_and_food_are_content_errors() -> void:
 			[item.merged({"food": {"heal": 0}}, true)], [item.merged({"food": "bread"}, true)]]:
 		var defs: Array = [item if bad[0]["kind"] == "recipe" else good] + bad
 		check(not ContentRegistry.from_defs(defs).errors.is_empty(), "refused: %s" % str(bad[0]))
+
+
+func test_an_iron_axe_fells_twice_as_fast() -> void:
+	var a := _player("Аня")
+	var c := w.chunk("surface", 0, 0)
+	c.set_cell("cover", 4, 3, "base:birch")  # eight blows of a stone axe
+	c.set_cell("cover", 2, 3, "base:birch")
+	var fell := func(tool: String, x: int) -> int:
+		w.grant(a, tool, 1)
+		_req(a, {"type": "hold", "item": tool})
+		var blows := 0
+		while c.get_cell("cover", x, 3) != "" and blows < 20:
+			w.tick += 40  # past the swing's cooldown
+			w.combat.step(w.tick)
+			_req(a, {"type": "gather", "location": "surface", "x": x, "y": 3, "layer": "cover", "item": tool})
+			blows += 1
+		return blows
+	eq(fell.call("base:axe", 4), 8)
+	eq(fell.call("base:iron_axe", 2), 4, "power 2: half the blows")
+	check(_content.get_def("base:iron_pickaxe")["against"]["stone"] > _content.get_def("base:pickaxe")["against"]["stone"],
+		"an iron pick breaks stone sooner too")

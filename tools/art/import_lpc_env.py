@@ -432,6 +432,8 @@ ITEMS = {
     "base:iron_ingot": (str(ORE), 32, 352),
     "base:copper_ingot": (str(ORE), 96, 352),
     "base:cooked_meat": ("items1_0.png", 256, 192),
+    "base:iron_axe": ("items1_0.png", 192, 224),
+    "base:iron_pickaxe": ("items1_0.png", 96, 0),
 }
 WORN_ICONS = {
     "base:linen_shirt": "torso_clothes_longsleeve_longsleeve_male.png",

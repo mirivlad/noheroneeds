@@ -1078,6 +1078,11 @@ func _update_hud() -> void:
 				_note = String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			elif r.has("work"):
 				_note = "%s: %d из %d" % [content.get_def(String(r.get("thing", ""))).get("name", ""), int(r["work"]), int(r["of"])]
+			elif r.has("bite"):  # by luck (ADR-0031): a catch or nothing this time
+				var got := PackedStringArray()
+				for item: String in r.get("drops", {}):
+					got.append(String(content.get_def(item).get("name", item)).to_lower())
+				_note = "поймано: " + ", ".join(got) if r["bite"] else ("не клюёт" if float(r.get("chance", 0.0)) > 0.05 else "здесь выловлено — попробуйте в другом месте")
 			elif r.has("drops"):
 				_note = "готово"
 			continue

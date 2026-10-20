@@ -451,6 +451,17 @@ func _check_weapon(id: String, field: String, w: Variant, ranged_ok: bool) -> vo
 ## kind does it: a new tool or a new thing to gather is data only.
 func _check_gather(id: String, d: Dictionary) -> void:
 	var g: Variant = d["gather"]
+	# By luck (ADR-0031): a ground's chance a try, a pick by weight, a stock.
+	if typeof(g) == TYPE_DICTIONARY and g.has("chance"):
+		if kind_of(id) != "ground" or typeof(g.get("pick")) != TYPE_DICTIONARY or (g["pick"] as Dictionary).is_empty() \
+				or typeof(g["chance"]) not in [TYPE_INT, TYPE_FLOAT] or float(g["chance"]) <= 0.0 or float(g["chance"]) > 1.0:
+			errors.append("%s: a gather by luck is a ground's, with chance (0..1] and pick {item: weight}" % id)
+			return
+		_check_weights(id, "gather pick", g["pick"], ["item"])
+		g["stock"] = float(g.get("stock", 5))
+		g["restock_hours"] = float(g.get("restock_hours", 6))
+		if g["stock"] <= 0.0 or g["restock_hours"] <= 0.0:
+			errors.append("%s: gather stock and restock_hours must be positive" % id)
 	if typeof(g) != TYPE_DICTIONARY:
 		errors.append("%s: gather must be {tool, verb, drops}" % id)
 		return

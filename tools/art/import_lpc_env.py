@@ -148,11 +148,15 @@ WALLS = {
     "base:wood_door": {"cap": 1, "face": (512, 2176), "door": (192, 833, 48), "open": (512, 640, 52)},
     "base:wood_window": {"cap": 1, "face": (512, 2176), "window": (384, 64, 32, 32, 12)},
     "base:loophole": {"cap": 8, "face": (256, 928), "window": (608, 320, 32, 32, 18)},
-    # Rock of the underground: rough stone on top, a rock face (a terrain fill).
-    "base:rock": {"cap": 16, "fill": "Rock_Gray"},
-    "base:iron_ore_rock": {"cap": 16, "fill": "Rock_Gray", "ore": (64, 64)},
-    "base:copper_ore_rock": {"cap": 16, "fill": "Rock_Gray", "ore": (96, 32)},
-    "base:gem_rock": {"cap": 16, "fill": "Rock_Gray", "ore": (128, 256)},
+    # Rock of the underground, read from a passage outwards: a face of dark
+    # stone (in the tone of the cap's trim) at the passage's edge, then the
+    # grey stone of the rock's top (a terrain fill) inside the trim, then the
+    # dark of the mass deep in (the author, 20.10.2026: "по краю прохода —
+    # кирпич, дальше серо и темно").
+    "base:rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928)},
+    "base:iron_ore_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (64, 64)},
+    "base:copper_ore_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (96, 32)},
+    "base:gem_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (128, 256)},
 }
 ORE = SRC / "ore_0.png"
 MINE = SRC / "lpc-mine" / "lpc-mine" / "mine.png"
@@ -208,6 +212,17 @@ def wall_top(tiles, nesw):
     return img
 
 
+def without(img, colour):
+    """The picture with one colour taken out (the dark of a cap's middle)."""
+    out = img.copy()
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            if px[x, y][:3] == colour[:3]:
+                px[x, y] = (0, 0, 0, 0)
+    return out
+
+
 def wall_face(walls, fx, fy, nesw):
     """A face 64 px tall: the block's top and bottom rows; its end tiles at
     the wall's ends."""
@@ -261,15 +276,15 @@ def build_buildings():
             variants = []
             for nesw in range(16):
                 img = Image.new("RGBA", (T, T + STOREY))
-                img.alpha_composite(wall_top(tiles, nesw), (0, 0))
+                if "fill" in spec and nesw != 15:
+                    # Rock at the mass's edge: its grey top inside the trim
+                    # (the mass's colour of the trim tiles left out).
+                    img.alpha_composite(fills[spec["fill"]], (0, 0))
+                    img.alpha_composite(without(wall_top(tiles, nesw), tiles[15].getpixel((0, 0))), (0, 0))
+                else:
+                    img.alpha_composite(wall_top(tiles, nesw), (0, 0))
                 if not nesw & 4:  # the face shows where nothing stands south
-                    if "fill" in spec:
-                        face = Image.new("RGBA", (T, STOREY))
-                        face.paste(fills[spec["fill"]], (0, 0))
-                        face.paste(fills[spec["fill"]].transpose(Image.FLIP_LEFT_RIGHT), (0, T))
-                        img.alpha_composite(face, (0, T))
-                    else:
-                        img.alpha_composite(wall_face(walls, spec["face"][0], spec["face"][1], nesw), (0, T))
+                    img.alpha_composite(wall_face(walls, spec["face"][0], spec["face"][1], nesw), (0, T))
                     if "ore" in spec:
                         x, y = spec["ore"]
                         img.alpha_composite(ore.crop((x, y, x + T, y + T)), (0, T + STOREY - T - 4))

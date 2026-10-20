@@ -1,32 +1,24 @@
 class_name PixelDisplay
 extends Node
 ## Presentation only: simulation cells and WorldView's coordinates stay intact.
-## HD is the default. --display=legacy is compatibility/comparison only.
+## The logical raster is 960x540 (ADR-0022): a texel of the LPC pictures is a
+## pixel of it, a world pixel two (the camera's zoom).
 
-const DEFAULT_MODE := "hd"
-const LEGACY_SIZE := Vector2i(480, 270)
-const HD_SIZE := Vector2i(960, 540)
+const SIZE := Vector2i(960, 540)
+## World pixels to the raster's (the camera's zoom at the normal view).
+const WORLD_SCALE := 2.0
 
 var _window: Window
-var _hd := false
 var _last_size := Vector2i.ZERO
 
 
-static func world_scale(mode: String) -> float:
-	return 1.0 if mode == "legacy" else 2.0
-
-
-func setup(window: Window, mode: String) -> void:
+func setup(window: Window) -> void:
 	_window = window
-	_hd = mode != "legacy"
-	if mode not in ["legacy", "hd"]:
-		push_warning("Unknown display mode '%s'; using HD" % mode)
-	_window.content_scale_size = HD_SIZE if _hd else LEGACY_SIZE
+	_window.content_scale_size = SIZE
 	_window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	_window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	_window.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
-	_window.snap_2d_transforms_to_pixel = _hd
-	set_process(_hd)
+	_window.snap_2d_transforms_to_pixel = true
 	_fit()
 
 
@@ -37,13 +29,10 @@ func _process(_delta: float) -> void:
 		_fit()
 
 
-## Exact integer fits use integer stretch. Else HD fills the aspect-fit rect
-## with nearest sampling; fractional fits necessarily have uneven pixel widths.
-## Legacy retains the project's original integer-only policy.
+## Exact integer fits use integer stretch; else the aspect-fit rect is filled
+## with nearest sampling (fractional fits have uneven pixel widths).
 func _fit() -> void:
 	_last_size = _window.size
-	var logical := _window.content_scale_size
-	var fit := minf(float(_window.size.x) / logical.x, float(_window.size.y) / logical.y)
+	var fit := minf(float(_window.size.x) / SIZE.x, float(_window.size.y) / SIZE.y)
 	_window.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER \
-		if not _hd or (fit >= 1.0 and is_equal_approx(fit, roundf(fit))) \
-		else Window.CONTENT_SCALE_STRETCH_FRACTIONAL
+		if fit >= 1.0 and is_equal_approx(fit, roundf(fit)) else Window.CONTENT_SCALE_STRETCH_FRACTIONAL

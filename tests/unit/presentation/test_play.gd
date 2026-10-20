@@ -11,7 +11,7 @@ var w: ServerWorld
 
 func before_each() -> void:
 	app = App.new()
-	app.configure({"profile_dir": tmp_dir(), "world": "play", "time": "12", "display": options.get("display", PixelDisplay.DEFAULT_MODE)})
+	app.configure({"profile_dir": tmp_dir(), "world": "play", "time": "12"})
 	(Engine.get_main_loop() as SceneTree).root.add_child(app)
 	g = app.game
 	w = g.game.world
@@ -360,7 +360,5 @@ func test_character_window_catches_clicks_and_changes_equipment() -> void:
 		_move_mouse(g.minimap.get_global_rect().get_center())
 		var hovered := g.get_viewport().gui_get_hovered_control()
 		check(hovered != null and panel.is_ancestor_of(hovered), "equipment catches input above the minimap")
-	else:
-		check(g._opts["display"] == "hd", "HD has room for equipment beside the minimap")
 	_key(KEY_ESCAPE)
 	check(not panel.visible and app.menu == null, "Esc closes equipment before the game menu")

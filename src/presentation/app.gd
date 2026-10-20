@@ -11,7 +11,6 @@ extends Node
 ##   --server [options]   (with --headless) runs a dedicated server instead
 ##                        of the game (DedicatedServer lists the options);
 ##   --world=ID       plays a saved world (or makes it) at once;
-##   --display=legacy 480x270 compatibility; default HD is 960x540;
 ## dev runs: --demo[=outside|upstairs|behind], --walk=DX,DY,
 ## --screenshot=PATH --frames=N (saves a frame and quits) start a local game
 ## at once in the world "local"; --menu=SCREEN (start, new_game, load,
@@ -62,7 +61,7 @@ func _ready() -> void:
 		return
 	display = PixelDisplay.new()
 	add_child(display)
-	display.setup(get_window(), String(_opts.get("display", PixelDisplay.DEFAULT_MODE)))
+	display.setup(get_window())
 	content = ContentRegistry.load_packs(["res://content/base"])
 	if not content.errors.is_empty():
 		push_error("content: " + "; ".join(content.errors))

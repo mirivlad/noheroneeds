@@ -11,6 +11,13 @@
      "light": {"radius": 5, "intensity": 0.9, "color": "#ffb060"}},
     {"id": "base:wood_column", "kind": "structure", "role": "column", "name": "Деревянная колонна", "cost": {"base:log": 1}, "durability": 1040, "material": "wood"},
     {"id": "base:chest", "kind": "structure", "role": "furniture", "name": "Сундук", "cost": {"base:plank": 6},
-     "container": {"slots": 16}, "durability": 780, "material": "wood"}
+     "container": {"slots": 16}, "durability": 780, "material": "wood"},
+    {"id": "base:workbench", "kind": "structure", "role": "furniture", "name": "Верстак", "station": "workbench",
+     "cost": {"base:log": 4}, "durability": 780, "material": "wood"},
+    {"id": "base:forge", "kind": "structure", "role": "furniture", "name": "Печь", "station": "forge",
+     "cost": {"base:stone": 10}, "durability": 2400, "material": "stone", "toughness": 0.15,
+     "light": {"radius": 4, "intensity": 0.7, "color": "#ff8040"}},
+    {"id": "base:campfire", "kind": "structure", "role": "furniture", "solid": false, "name": "Костёр", "station": "fire",
+     "cost": {"base:log": 2}, "light": {"radius": 6, "intensity": 0.9, "color": "#ffa050"}}
   ]
 }

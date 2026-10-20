@@ -362,3 +362,36 @@ func test_character_window_catches_clicks_and_changes_equipment() -> void:
 		check(hovered != null and panel.is_ancestor_of(hovered), "equipment catches input above the minimap")
 	_key(KEY_ESCAPE)
 	check(not panel.visible and app.menu == null, "Esc closes equipment before the game menu")
+
+
+func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
+	var id := g.client.character_id
+	var me := _me()
+	w.grant(id, "base:log", 6)
+	g.client.request({"type": "build", "location": "surface", "x": me.x + 1, "y": me.y, "part": "base:workbench"})
+	_frames_until(func() -> bool: return _part(me + Vector2i(1, 0)) == "base:workbench")
+	_frames_until(func() -> bool: return g.crafts.station_near("workbench"))  # the client sees it too
+	_key(KEY_K)
+	check(g.crafts.visible, "K opens the crafts")
+	check(g.crafts._can[g.crafts._ids[0]], "what can be made here comes first")
+	check(not g.crafts._can["base:smelt_iron"], "no forge: no iron")
+	check(g.crafts._can["base:saw_planks"], "logs at the workbench: planks")
+	var before := int(g.client.inventory().get("base:plank", 0))
+	g.crafts.craft.emit("base:saw_planks", 2)
+	_frames_until(func() -> bool: return g._note.begins_with("сделано"))
+	eq(int(g.client.inventory().get("base:plank", 0)), before + 8, "two logs sawn")
+	check(g._note.begins_with("сделано"), "the note says what was made: " + g._note)
+	_key(KEY_K)
+	check(not g.crafts.visible, "K closes them")
+	# Food in the hands: the left button eats it, when one is hurt.
+	w.grant(id, "base:cooked_meat", 1)
+	w.combat.hurt(id, 5, "")
+	_frames(5)
+	g.hotbar.put(0, "base:cooked_meat", -1)
+	_key(KEY_1)
+	_frames(5)
+	var acts := Actions.of(g.content, g.client, g.view, "base:cooked_meat", {}, Vector2i.ZERO)
+	eq(Actions.primary(acts).get("id"), "eat", "the left button eats")
+	g._do(Actions.primary(acts))
+	_frames_until(func() -> bool: return int(w.present[id]["health"]) > 15)
+	eq(int(w.present[id]["health"]), 20, "eaten: health back")

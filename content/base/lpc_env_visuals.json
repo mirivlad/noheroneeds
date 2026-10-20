@@ -1104,6 +1104,63 @@
    "variants": 1
   },
   {
+   "id": "base:visual/workbench",
+   "kind": "visual",
+   "for": "base:workbench",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    723,
+    32,
+    64
+   ],
+   "origin": [
+    0,
+    60
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/forge",
+   "kind": "visual",
+   "for": "base:forge",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    787,
+    64,
+    90
+   ],
+   "origin": [
+    16,
+    86
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/campfire",
+   "kind": "visual",
+   "for": "base:campfire",
+   "mode": "tall",
+   "atlas": "art/lpc_env/props.png",
+   "rect": [
+    0,
+    877,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    28
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/plank",
    "kind": "visual",
    "for": "base:plank",
@@ -1351,13 +1408,70 @@
    "variants": 1
   },
   {
+   "id": "base:visual/iron_ingot",
+   "kind": "visual",
+   "for": "base:iron_ingot",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    416,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/copper_ingot",
+   "kind": "visual",
+   "for": "base:copper_ingot",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    448,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/cooked_meat",
+   "kind": "visual",
+   "for": "base:cooked_meat",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    480,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/linen_shirt",
    "kind": "visual",
    "for": "base:linen_shirt",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    416,
+    512,
     0,
     32,
     32
@@ -1376,7 +1490,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    448,
+    544,
     0,
     32,
     32
@@ -1395,7 +1509,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    480,
+    576,
     0,
     32,
     32
@@ -1414,7 +1528,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    512,
+    608,
     0,
     32,
     32

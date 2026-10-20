@@ -13,6 +13,7 @@ class_name Actions
 ##                                     broken, ADR-0016); any worn one mended;
 ##   another person                   — befriended (opens one's chests and
 ##                                     locked doors) or no longer;
+##   food in the hands ("food")       — is eaten (ADR-0026);
 ##   anything                         — may be looked at.
 ## So a scythe and crops, a rod and fish come as data: a tool kind on the
 ## item, a "gather" on what it works on.
@@ -124,6 +125,11 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 	if w.get("kind") == "melee" and not living:
 		out.append({"id": "swing", "name": "Взмахнуть", "primary": out.filter(func(a: Dictionary) -> bool:
 			return a.get("primary", false)).is_empty(), "request": {"type": "attack", "item": held, "x": aim.x, "y": aim.y}})
+	# Food in the hands is eaten, unless the left button has better to do.
+	if held != "" and not content.get_def(held).get("food", {}).is_empty():
+		out.append({"id": "eat", "name": "Съесть (%s)" % String(content.get_def(held).get("name", "")).to_lower(),
+			"request": {"type": "eat", "item": held}, "primary": out.filter(func(a: Dictionary) -> bool:
+				return a.get("primary", false)).is_empty()})
 	out.append({"id": "inspect", "name": "Осмотреть", "local": "inspect",
 		"primary": out.filter(func(a: Dictionary) -> bool: return a.get("primary", false)).is_empty()})
 	return out

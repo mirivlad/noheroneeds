@@ -39,6 +39,9 @@ var content: ContentRegistry
 ## Attack requests in flight, deaths already told (-1: none seen yet).
 var hotbar := Hotbar.new()
 var catalog := BuildCatalog.new()
+var crafts := CraftPanel.new()
+## Requests to craft: their result says what was made.
+var _craft_rids := {}
 var inventory_panel := InventoryPanel.new()
 var character_panel := CharacterPanel.new()
 var chest_panel := ChestPanel.new()
@@ -132,6 +135,7 @@ const REASONS := {
 	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят",
 	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
+	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
 }
 
 
@@ -238,7 +242,7 @@ func _exit_tree() -> void:
 func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog,
+		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog, crafts,
 				inventory_panel, character_panel, chest_panel, pin_panel, _menu]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
@@ -356,6 +360,11 @@ func _process(delta: float) -> void:
 		client.request({"type": "drop", "item": "base:stone", "count": 2})
 		for x in [-2, 2]:  # torches by the door (ADR-0014)
 			client.request({"type": "build", "location": client.location, "x": x, "y": 3, "part": "base:torch"})
+		if game:  # a yard with the stations of crafts (ADR-0026)
+			game.world.grant(client.character_id, "base:log", 12)
+			game.world.grant(client.character_id, "base:stone", 10)
+		for p: Array in [[4, 0, "base:workbench"], [5, 1, "base:forge"], [4, 2, "base:campfire"]]:
+			client.request({"type": "build", "location": client.location, "x": p[0], "y": p[1], "part": p[2]})
 	if _opts.get("demo") == "" and _frames == 30:
 		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
 	if _opts.get("demo") == "fight" and game:  # dev only: a wolf, a hurt deer, an arrow (ADR-0019)
@@ -396,6 +405,8 @@ func _process(delta: float) -> void:
 		match String(_opts["ui"]):
 			"catalog":
 				catalog.open(client.inventory())
+			"crafts":
+				crafts.open()
 			"inventory":
 				inventory_panel.show_for(client.inventory(), hotbar.selected)
 			"pin":
@@ -460,7 +471,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
-		if catalog.visible or inventory_panel.visible or character_panel.visible or chest_panel.visible or pin_panel.visible or _blueprint != "":
+		if catalog.visible or crafts.visible or inventory_panel.visible or character_panel.visible or chest_panel.visible or pin_panel.visible or _blueprint != "":
 			_close_tools()
 			return
 		menu_requested.emit()
@@ -496,7 +507,14 @@ func _key(k: int, shift: bool) -> void:
 		else:
 			inventory_panel.visible = false
 			character_panel.hide()
+			crafts.visible = false
 			catalog.open(client.inventory())
+	elif k == KEY_K:
+		if crafts.visible:
+			crafts.visible = false
+		else:
+			_close_tools()
+			crafts.open()
 	elif k == KEY_M:
 		world_map.open()
 	elif k == KEY_MINUS or k == KEY_KP_SUBTRACT:
@@ -664,6 +682,7 @@ func _drag_cells(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 
 func _close_tools() -> void:
 	catalog.visible = false
+	crafts.visible = false
 	inventory_panel.visible = false
 	character_panel.hide()
 	chest_panel.visible = false
@@ -683,6 +702,11 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_facing = 0
 		catalog.visible = false)
 	layer.add_child(catalog)
+	crafts.setup(content, view, client)
+	crafts.position = Vector2(6, 40)
+	crafts.craft.connect(func(recipe: String, count: int) -> void:
+		_craft_rids[client.request({"type": "craft", "recipe": recipe, "count": count})] = true)
+	layer.add_child(crafts)
 	inventory_panel.setup(content, view)
 	inventory_panel.position = Vector2(90, 24)  # clear of the minimap and the quick slots
 	inventory_panel.unslot.connect(func(slot: int) -> void:
@@ -973,6 +997,19 @@ func _update_hud() -> void:
 				client.results.erase(rid)
 				pin_panel.open_for(door, false)  # the code is asked for
 				continue
+		if _craft_rids.has(rid):
+			_craft_rids.erase(rid)
+			client.results.erase(rid)
+			if r.get("ok"):
+				var made := PackedStringArray()
+				for item: String in r.get("made", {}):
+					made.append("%s %d" % [String(content.get_def(item).get("name", item)).to_lower(), int(r["made"][item])])
+				_note = "сделано: " + ", ".join(made)
+			else:
+				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+			if crafts.visible:
+				crafts.refresh()
+			continue
 		if _attacks.has(rid):
 			_attacks.erase(rid)
 			client.results.erase(rid)
@@ -1012,7 +1049,7 @@ func _update_hud() -> void:
 	if settings.get_value("show_fps"):
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
-		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9/колесо — в руки, Q — оружие, I — вещи, C — персонаж, B — стройка, M — карта, Esc — меню")
+		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9/колесо — в руки, Q — оружие, I — вещи, C — персонаж, B — стройка, K — ремёсла, M — карта, Esc — меню")
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:

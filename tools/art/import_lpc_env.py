@@ -32,13 +32,19 @@ TERRAIN_DIR = SRC / "lpc-terrains" / "lpc-terrains"
 GROUNDS = {
     "base:dirt": ("Dirt_Brown", 0),
     "base:sand": ("Sand", 1),
-    "base:forest_floor": ("Dirt_Roots", 2),
-    "base:grass_dry": ("Grass_Light", 3),
-    "base:moss": ("Grass_Dark", 4),
-    "base:grass": ("Grass", 5),
-    "base:water": ("Water", 6),
+    "base:farmland": ("farm:plowed_soil", 2),
+    "base:forest_floor": ("Dirt_Roots", 3),
+    "base:grass_dry": ("Grass_Light", 4),
+    "base:moss": ("Grass_Dark", 5),
+    "base:grass": ("Grass", 6),
+    "base:water": ("Water", 7),
     "base:cave_floor": ("Dirt_Dark", -1),
 }
+FARM = SRC / "lpc-farm" / "submission_daneeklu" / "tilesets"
+# An LPC terrain block (96 x 192: a lone piece, inner corners, edges, fills)
+# as corner masks (TL 1, TR 2, BL 4, BR 8) -> (column, row) of the block.
+BLOCK_MASKS = {7: (1, 0), 11: (2, 0), 13: (1, 1), 14: (2, 1), 8: (0, 2), 12: (1, 2), 4: (2, 2),
+               10: (0, 3), 15: (1, 3), 5: (2, 3), 2: (0, 4), 3: (1, 4), 1: (2, 4)}
 # Fills that are other things (animated water, a cracked variant) are left out.
 SKIP_FILLS = {"Water": {566, 569, 572}}
 
@@ -77,10 +83,34 @@ def build_terrain():
         return sheet.crop((x, y, x + T, y + T))
 
     rows = sorted(GROUNDS.items(), key=lambda kv: kv[1][1])
-    fills_max = max(len(tiles[t][15]) for _, (t, _) in rows)
+    # Blocks of other packs (name "farm:<file>"): their tiles by mask, the
+    # diagonals made of two corner pieces laid together.
+    blocks = {}
+    for _, (name, _) in rows:
+        if name.startswith("farm:"):
+            img = Image.open(FARM / (name[5:] + ".png")).convert("RGBA")
+            cut = lambda c, r: img.crop((c * T, r * T, c * T + T, r * T + T))
+            m = {k: cut(*v) for k, v in BLOCK_MASKS.items()}
+            for diag, (a, b) in {6: (2, 4), 9: (1, 8)}.items():
+                d = m[a].copy()
+                d.alpha_composite(m[b])
+                m[diag] = d
+            blocks[name] = {"tiles": m, "fills": [cut(0, 5), cut(1, 5), cut(2, 5), cut(1, 3)]}
+    fills_max = max(len(tiles[t][15]) if t in tiles else len(blocks[t]["fills"]) for _, (t, _) in rows)
     atlas = Image.new("RGBA", ((15 + fills_max) * T, len(rows) * T))
     defs = []
     for r, (ground, (name, priority)) in enumerate(rows):
+        if name in blocks:
+            for m in range(1, 15):
+                atlas.paste(blocks[name]["tiles"][m], (m * T, r * T))
+            for k, img in enumerate(blocks[name]["fills"]):
+                atlas.paste(img, ((15 + k) * T, r * T))
+            defs.append({
+                "id": "base:visual/" + ground.split(":")[1], "kind": "visual", "for": ground, "mode": "flat",
+                "atlas": "art/lpc_env/terrain.png", "rect": [15 * T, r * T, T, T], "origin": [0, T], "pixel_scale": 0.5,
+                "terrain": {"priority": priority, "fills": len(blocks[name]["fills"])},
+            })
+            continue
         masks = tiles[name]
         missing = [m for m in range(1, 16) if m not in masks]
         if missing:
@@ -434,7 +464,14 @@ ITEMS = {
     "base:cooked_meat": ("items1_0.png", 256, 192),
     "base:iron_axe": ("items1_0.png", 192, 224),
     "base:iron_pickaxe": ("items1_0.png", 96, 0),
+    "base:wheat_seeds": (str(FARM / "farming_fishing.png"), 32, 160),
+    "base:carrot_seeds": (str(FARM / "farming_fishing.png"), 32, 192),
+    "base:wheat": (str(FARM / "wheat.png"), 0, 0),
+    "base:carrot": (str(FARM / "plants.png"), 64, 352),
+    "base:bread": ("idyl/bread.png", 0, 0),
 }
+# Tools drawn in the hands by LPC: the south standing frame of their layers.
+HELD_ICONS = {"base:hoe": ["tools/hoe/bg/walk.png", "tools/hoe/fg/walk.png"]}
 WORN_ICONS = {
     "base:linen_shirt": "torso_clothes_longsleeve_longsleeve_male.png",
     "base:work_trousers": "legs_pants_male.png",
@@ -469,6 +506,15 @@ def build_items():
         cell.alpha_composite(frame.crop((0, 0, min(T, frame.width), min(T, frame.height))),
                              ((T - min(T, frame.width)) // 2, (T - min(T, frame.height)) // 2))
         icons.append((item, cell))
+    for item, layers in HELD_ICONS.items():
+        frame = Image.new("RGBA", (64, 64))
+        for path in layers:
+            frame.alpha_composite(Image.open(ROOT / "art_src" / "lpc" / "spritesheets" / path).convert("RGBA").crop((0, 128, 64, 192)))
+        frame = frame.crop(frame.getbbox())
+        cell = Image.new("RGBA", (T, T))
+        cell.alpha_composite(frame.crop((0, 0, min(T, frame.width), min(T, frame.height))),
+                             ((T - min(T, frame.width)) // 2, (T - min(T, frame.height)) // 2))
+        icons.append((item, cell))
     atlas = Image.new("RGBA", (len(icons) * T, T))
     defs = []
     for i, (item, img) in enumerate(icons):
@@ -477,6 +523,33 @@ def build_items():
                      "atlas": "art/lpc_env/items.png", "rect": [i * T, 0, T, T], "origin": [0, T],
                      "pixel_scale": 0.5, "variants": 1})
     atlas.save(OUT / "items.png", optimize=True)
+    return defs
+
+
+# Crops (ADR-0027): a picture a stage, all on a 32 x 64 cell standing on its
+# bottom, so the stages share one origin. (file under lpc-farm tilesets, rect)
+CROPS = {
+    "base:wheat_crop": [("plants", (32, 32, 32, 32)), ("plants", (32, 96, 32, 32)),
+                        ("youngwheat", (0, 0, 32, 64)), ("wheat", (0, 0, 32, 64))],
+    "base:carrot_crop": [("plants", (64, 32, 32, 32)), ("plants", (64, 96, 32, 32)),
+                         ("plants", (64, 160, 32, 32)), ("plants", (64, 224, 32, 32))],
+}
+
+
+def build_crops():
+    rows = list(CROPS.items())
+    atlas = Image.new("RGBA", (4 * T, len(rows) * 2 * T))
+    defs = []
+    for r, (part, stages) in enumerate(rows):
+        states = {}
+        for i, (sheet, (x, y, w, h)) in enumerate(stages):
+            img = Image.open(FARM / (sheet + ".png")).convert("RGBA").crop((x, y, x + w, y + h))
+            atlas.paste(img, (i * T, r * 2 * T + 2 * T - h))
+            states["stage_%d" % i] = [i * T, r * 2 * T, T, 2 * T]
+        defs.append({"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
+                     "atlas": "art/lpc_env/crops.png", "rect": states["stage_0"], "origin": [0, 2 * T - 2],
+                     "pixel_scale": 0.5, "variants": 1, "states": states})
+    atlas.save(OUT / "crops.png", optimize=True)
     return defs
 
 
@@ -492,6 +565,7 @@ PACK_CREDITS = [
     ("[LPC] Trees", "lpc-trees/lpc-trees/CREDITS-trees.txt"),
     ("[LPC] Flowers / Plants / Fungi / Wood", "lpc-plants/lpc-flowers-plants-fungi-wood/CREDITS-plants.txt"),
     ("[LPC] Mine (копёр, верёвка)", "lpc-mine/lpc-mine/CREDITS-mine.txt"),
+    ("[LPC] Farming tilesets (пашня, посевы, урожай, семена)", "lpc-farm/submission_daneeklu/readme.txt"),
 ]
 FILE_CREDITS = [
     ("[LPC] Thatched-roof Cottage (крыша)", "bluecarrot16", "CC-BY-SA 3.0 / GPL 3.0",
@@ -534,7 +608,7 @@ def credits():
 def main():
     if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF, PLANTS_PNG, TREES_DIR, ORE, MINE]):
         sys.exit("no LPC environment sources: run tools/art/fetch_lpc_env.sh")
-    defs = build_terrain() + build_buildings() + build_plants() + build_props() + build_items()
+    defs = build_terrain() + build_buildings() + build_plants() + build_props() + build_items() + build_crops()
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     credits()
     print("%d environment visuals" % len(defs))

@@ -21,6 +21,10 @@
       "inputs": {"base:plank": 1, "base:iron_ingot": 2}, "outputs": {"base:iron_axe": 1}},
     {"id": "base:forge_iron_pickaxe", "kind": "recipe", "name": "Железная кирка", "station": "forge",
       "inputs": {"base:plank": 1, "base:iron_ingot": 3}, "outputs": {"base:iron_pickaxe": 1}},
+    {"id": "base:make_hoe", "kind": "recipe", "name": "Мотыга", "station": "workbench",
+      "inputs": {"base:plank": 2, "base:stone": 1}, "outputs": {"base:hoe": 1}},
+    {"id": "base:bake_bread", "kind": "recipe", "name": "Испечь хлеб", "station": "forge",
+      "inputs": {"base:wheat": 3}, "outputs": {"base:bread": 1}},
     {"id": "base:cook_meat", "kind": "recipe", "name": "Пожарить мясо", "station": "fire",
       "inputs": {"base:raw_meat": 1}, "outputs": {"base:cooked_meat": 1}}
   ]

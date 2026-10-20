@@ -83,7 +83,7 @@ var _swing_ready_ms := 0
 ## The left button is held: work and blows go on at their pace (a tree is
 ## felled by holding it, not by a click a blow).
 var _lmb_held := false
-const REPEATED := ["gather", "strike_part", "strike", "swing"]
+const REPEATED := ["gather", "strike_part", "strike", "swing", "till", "sow"]
 var _deaths_seen := -1
 var game: LocalGame
 var hosted: HostedGame
@@ -136,6 +136,7 @@ const REASONS := {
 	"blocked_below": "внизу что-то построено", "full": "сундук полон", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
+	"not_ripe": "ещё не созрело", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
 }
 
 
@@ -365,6 +366,15 @@ func _process(delta: float) -> void:
 			game.world.grant(client.character_id, "base:stone", 10)
 		for p: Array in [[4, 0, "base:workbench"], [5, 1, "base:forge"], [4, 2, "base:campfire"]]:
 			client.request({"type": "build", "location": client.location, "x": p[0], "y": p[1], "part": p[2]})
+		if game:  # a field by the house, sown at days apart (ADR-0027)
+			var w := game.world
+			for i in 8:
+				var at := Vector2i(-6 + i % 4, 6 + i / 4)
+				var c := w.chunk(client.location, at.x >> 5, at.y >> 5)
+				c.set_cell("ground", at.x & 31, at.y & 31, "base:farmland")
+				c.set_cell("cover", at.x & 31, at.y & 31, "base:wheat_crop" if i < 4 else "base:carrot_crop")
+				w._set_layer_props(c, "cover", at.x & 31, at.y & 31, {"planted": w.world_time - (i % 4) * 16 * Daylight.HOUR_MS})
+				w._changed(ServerWorld.chunk_key(client.location, at.x >> 5, at.y >> 5))
 	if _opts.get("demo") == "" and _frames == 30:
 		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
 	if _opts.get("demo") == "fight" and game:  # dev only: a wolf, a hurt deer, an arrow (ADR-0019)
@@ -604,7 +614,7 @@ func _do(a: Dictionary) -> void:
 		_chest_rids[rid] = Vector2i(int(a["request"]["x"]), int(a["request"]["y"]))
 		return
 	match String(a["id"]):
-		"strike", "shoot", "swing", "strike_part", "gather":
+		"strike", "shoot", "swing", "strike_part", "gather", "till":
 			_attacks[rid] = true
 			# Shown at once, but only as often as the server lets one strike.
 			var item := String(a["request"].get("item", ""))

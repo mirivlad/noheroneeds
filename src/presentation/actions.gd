@@ -66,6 +66,15 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 		out.append({"id": "jump", "name": "Спрыгнуть вниз", "quick": not stairs,
 			"enabled": absi(d.x) <= 1 and absi(d.y) <= 1 and d != Vector2i.ZERO, "why": "подойдите к краю",
 			"request": {"type": "jump", "dx": d.x, "dy": d.y}})
+	# Fields (ADR-0027): a tilling tool turns tillable ground over; a seed in
+	# the hands is sown in a field.
+	if kind == "ground" and tools.has("tilling") and content.get_def(String(target.get("id", ""))).has("tilled"):
+		out.append({"id": "till", "name": "Вспахать", "primary": true,
+			"request": {"type": "till", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
+	if kind == "ground" and held != "" and content.get_def(held).has("plants") \
+			and content.get_def(String(target.get("id", ""))).get("farmland", false):
+		out.append({"id": "sow", "name": "Посеять", "primary": true,
+			"request": {"type": "sow", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
 	if kind == "entity" and entity.get("kind") == "item":
 		out.append({"id": "pickup", "name": "Подобрать", "request": {"type": "pickup", "entity": target["id"]},
 			"quick": true})

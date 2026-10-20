@@ -33,6 +33,10 @@ var _covers := Node2D.new()
 ## cell -> Sprite2D of the ceiling or roof over it
 var _cover_sprites := {}
 var _hidden_room := {}
+## Crops drawn (cell -> [Sprite2D, visual, def, sown at]): they grow by the
+## world's clock with nothing sent, so their stage is looked at now and then.
+var _crops := {}
+var _crops_seen := 0.0
 ## Sprites made see-through because they stand in front of the player.
 var _faded: Array[Sprite2D] = []
 const FADED := 0.4
@@ -325,6 +329,23 @@ func update_view(alpha: float, delta: float) -> void:
 	_update_characters(alpha, delta)
 	_update_room()
 	_fade_occluders()
+	_crops_seen += delta
+	if _crops_seen >= 1.0:
+		_crops_seen = 0.0
+		_grow_crops()
+
+
+## The crops drawn, at the stage the world's clock has brought them to.
+func _grow_crops() -> void:
+	for cell: Vector2i in _crops.keys():
+		var c: Array = _crops[cell]
+		var s: Sprite2D = c[0]
+		if not is_instance_valid(s):
+			_crops.erase(cell)
+			continue
+		var r: Array = (c[1] as Dictionary)["states"].get("stage_%d" % Crops.stage(c[2], c[3], client.world_time), [])
+		if not r.is_empty():
+			s.region_rect = Rect2(r[0], r[1], r[2], r[3])
 
 
 func _notification(what: int) -> void:
@@ -451,6 +472,7 @@ func _paint_pending() -> void:
 ## Forgets everything drawn (the client moved to another location).
 func _clear() -> void:
 	_ground.clear()
+	_crops.clear()
 	_floor32.clear()
 	_cover32.clear()
 	_pending.clear()
@@ -714,7 +736,13 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 				continue
 			var props := c.get_props(lx, ly)
 			var state := "open" if props.get("open", false) else ""
+			var planted: Variant = (props.get("cover", {}) as Dictionary).get("planted") if layer == "cover" else null
+			var crop := content.get_def(id) if planted != null else {}
+			if planted != null and crop.has("crop"):
+				state = "stage_%d" % Crops.stage(crop, float(planted), client.world_time)
 			var s := _tall_sprite(v, cell, state, variant, String(props.get("facing", "")))
+			if planted != null and crop.has("crop"):
+				_crops[cell] = [s, v, crop, float(planted)]
 			s.set_meta("cell", cell)
 			s.set_meta("layer", layer)
 			s.set_meta("id", id)
@@ -1117,6 +1145,8 @@ var _swing_seen := {}
 
 ## How a blow with a thing looks (CharacterSprite.swing).
 func swing_kind(held: String) -> String:
+	if held != "" and content.get_def(held).has("swing"):
+		return String(content.get_def(held)["swing"])  # a tool's own motion (a hoe thrusts)
 	var w: Dictionary = content.get_def(held).get("weapon", {}) if held != "" else {}
 	if w.get("kind") == "ranged":
 		return "draw"

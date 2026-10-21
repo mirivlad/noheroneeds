@@ -74,16 +74,18 @@ func test_one_makes_what_one_knows_and_practises_it() -> void:
 	check(not w.knowledge.knows(a, "base:make_bow"), "a bow: not")
 	w.grant(a, "base:plank", 40)
 	w.grant(a, "base:hide", 10)
-	w.grant(a, "base:stone", 40)
+	w.grant(a, "base:stone", 90)
 	eq(_req(a, {"type": "craft", "recipe": "base:make_bow", "count": 1}).get("reason"), "unknown_recipe", "not known: not made")
 	eq(w.inventory(a).count("base:plank"), 40, "and nothing taken")
-	var r := _req(a, {"type": "craft", "recipe": "base:make_axe", "count": 10})
+	# Thirty attempts: the dice are real (every request rolls its own), the
+	# bounds are some four deviations wide.
+	var r := _req(a, {"type": "craft", "recipe": "base:make_axe", "count": 30})
 	check(r.get("ok", false), str(r))
 	var made := int((r["made"] as Dictionary).get("base:axe", 0))
-	eq(made + int(r["failed"]), 10, "ten attempts: %s" % str(r))
-	check(made >= 5, "a novice makes most stone axes (78%%): %d" % made)
+	eq(made + int(r["failed"]), 30, "thirty attempts: %s" % str(r))
+	check(made >= 17, "a novice makes most stone axes (78%% and more): %d" % made)
 	eq(w.inventory(a).count("base:axe"), made)
-	eq(w.inventory(a).count("base:stone"), 40 - 2 * made - int((r["lost"] as Dictionary).get("base:stone", 0)),
+	eq(w.inventory(a).count("base:stone"), 90 - 2 * made - int((r["lost"] as Dictionary).get("base:stone", 0)),
 		"what failed spoiled half its stones")
 	check(w.knowledge.mastery_level(a, "base:make_axe") > 0, "practice: mastery grew")
 	check(w.knowledge.skill_level(a, "base:toolmaking") >= 0, "and its skill")
@@ -101,9 +103,9 @@ func test_a_master_makes_better_things_and_a_failure_keeps_the_iron() -> void:
 	check(_req(a, {"type": "build", "location": "surface", "x": 2, "y": 3, "part": "base:forge"}).get("ok", false), "a forge")
 	w.grant(a, "base:plank", 30)
 	w.grant(a, "base:iron_ingot", 40)
-	var r := _req(a, {"type": "craft", "recipe": "base:forge_iron_axe", "count": 10})
+	var r := _req(a, {"type": "craft", "recipe": "base:forge_iron_axe", "count": 20})
 	var made := int((r["made"] as Dictionary).get("base:iron_axe", 0))
-	check(int(r["failed"]) >= 3, "a novice fails a hard one often: %s" % str(r))
+	check(int(r["failed"]) >= 4, "a novice fails a hard one often (some 58%%): %s" % str(r))
 	eq(w.inventory(a).count("base:iron_ingot"), 40 - 2 * made, "failures keep the iron (precious): %s" % str(r))
 	check(int((r["lost"] as Dictionary).get("base:plank", 0)) == int(r["failed"]), "but spoil the plank")
 	# A master's work.
@@ -111,7 +113,7 @@ func test_a_master_makes_better_things_and_a_failure_keeps_the_iron() -> void:
 	w.grant(a, "base:iron_ingot", 40)
 	var before := w.inventory(a).count("base:iron_axe")
 	r = _req(a, {"type": "craft", "recipe": "base:forge_iron_axe", "count": 10})
-	check(int(r["failed"]) <= 1, "a master hardly fails: %s" % str(r))
+	check(int(r["failed"]) <= 2, "a master hardly fails (1%%): %s" % str(r))
 	var states := w.inventory(a).states_of("base:iron_axe").slice(before)
 	for st: Dictionary in states:
 		eq(Wear.quality(st), 1.0, "whole")
@@ -183,7 +185,7 @@ func test_skills_grow_with_work_and_spare_the_tool() -> void:
 		if _req(a, {"type": "gather", "location": "surface", "x": 4, "y": 3, "layer": "cover", "item": "base:axe"}).get("ok", false):
 			blows += 1
 	var spent := Wear.spent(w.inventory(a).state_of("base:axe", 0))
-	check(blows == 40 and spent >= 20 and spent <= 36, "spared: %d uses for %d blows" % [spent, blows])
+	check(blows == 40 and spent >= 16 and spent <= 39, "spared (some 28 of 40): %d uses for %d blows" % [spent, blows])
 	# Kept with the character.
 	w.knowledge.learn(a, "base:make_bow")
 	w.close()

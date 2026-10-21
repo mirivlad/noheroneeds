@@ -169,6 +169,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.combat = Combat.new(world)
 	world.needs = Needs.new(world)
 	world.knowledge = Knowledge.new(world)
+	world.boats = Boats.new(world)
 	world.chronicles = Chronicles.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	world.weather_seed = absi(hash([world.world_seed, "weather"]))
@@ -251,6 +252,7 @@ func close() -> void:
 	needs.world = null
 	chronicles.world = null
 	knowledge.world = null
+	boats.world = null
 
 
 ## Stops without committing what is not yet handed to the writer (tests of crashes).
@@ -266,6 +268,7 @@ func abandon() -> void:
 	needs.world = null
 	chronicles.world = null
 	knowledge.world = null
+	boats.world = null
 
 
 # --- request fields (input from the network: any type may come) ----------------
@@ -546,6 +549,7 @@ static func shown_look(data: Dictionary) -> Dictionary:
 
 
 func leave(id: String) -> void:
+	boats.leave(id)  # out of a boat: the boat stays where it is (ADR-0052)
 	if present.has(id):
 		var p: Dictionary = present[id]
 		_left_places[id] = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y,
@@ -695,6 +699,29 @@ func touch_inventory(owner: String) -> void:
 	_touch_inventory(owner)
 
 
+## Things on the ground that moved this tick (a boat rowed, ADR-0052): id ->
+## true, taken by the server for the replicas.
+var moved_items := {}
+
+
+## A thing on the ground goes elsewhere on its location (a boat rowed).
+func move_item(id: String, pos: Vector2i) -> void:
+	var it: Dictionary = items[id]
+	var key := _item_chunk_key(it)
+	it["x"] = pos.x
+	it["y"] = pos.y
+	if _item_chunk_key(it) != key:
+		(_items_by_chunk[key] as Dictionary).erase(id)
+		_place_item(id, it)
+	_dirty_items[id] = true
+	moved_items[id] = true
+
+
+## A thing on the ground changed in itself (its wear): kept with the next batch.
+func note_item_changed(id: String) -> void:
+	_dirty_items[id] = true
+
+
 func move_character(id: String, pos: Vector2i) -> void:
 	var p: Dictionary = present[id]
 	if p["pos"] != pos:
@@ -712,8 +739,8 @@ func blocks_walker(location: String, x: int, y: int) -> bool:
 
 ## Whether a present character is swimming: the cell under it is water.
 func in_water(id: String) -> bool:
-	if not present.has(id):
-		return false
+	if not present.has(id) or boats.aboard(id) != "":
+		return false  # in a boat one is not in the water (ADR-0052)
 	var p: Dictionary = present[id]
 	var cell := Movement.cell_of(p["pos"])
 	var cx := floori(float(cell.x) / Chunk.SIZE)
@@ -962,6 +989,8 @@ var combat: Combat
 ## Satiety and what else a character needs (ADR-0032).
 var needs: Needs
 var knowledge: Knowledge
+## Boats and who is in them (ADR-0052).
+var boats: Boats
 ## Villages' chronicles and their dwellers' requests (ADR-0042).
 var chronicles: Chronicles
 ## World facts to write with the next state batch (set_meta).
@@ -1181,6 +1210,12 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _drop(actor, r)
 		"pickup":
 			return _pickup(actor, r)
+		"launch":
+			return boats.launch(actor, r)
+		"board":
+			return boats.board(actor, r)
+		"land":
+			return boats.land(actor, r)
 		"attack":
 			return combat.attack(actor, r)
 		"jump":
@@ -1433,6 +1468,8 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 		var p: Dictionary = present[actor]
 		if p["location"] != it["location"] or Vector2(p["pos"]).distance_to(Vector2(it["x"], it["y"])) > PICKUP_REACH:
 			return {"ok": false, "reason": "too_far"}
+	if boats.crews.has(id):
+		return {"ok": false, "reason": "crewed"}  # someone is in it (ADR-0052)
 	if not may_take(actor, it):
 		return {"ok": false, "reason": "kept_for_dead", "seconds": ceili(float(int(it["until"]) - tick) / Movement.TICK_RATE)}
 	var fits := mini(int(it["count"]), room_for(actor, String(it["item"])))

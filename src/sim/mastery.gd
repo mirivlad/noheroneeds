@@ -112,7 +112,7 @@ const AMOUNTS := ["damage", "yield"]
 static func crafted_alone(content: ContentRegistry, item: String) -> bool:
 	var d := content.get_def(item)
 	return int(d.get("stack", 1)) == 1 and (d.has("durability") or d.has("warmth") or d.has("armor") or d.has("weapon") or d.has("tools")
-		or d.has("places"))
+		or d.has("places") or d.has("vessel"))
 
 
 ## Enhancements that fit a thing (content kind "modifier", "fits": tool,

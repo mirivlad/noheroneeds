@@ -430,11 +430,39 @@ func _solid(x: int, y: int) -> bool:
 
 
 ## A step as the server takes it: in water one swims (ADR-0050), slowly;
-## through shallows one wades, not running (ADR-0051).
+## through shallows one wades, not running (ADR-0051); in a boat the one at
+## the helm rows it over water, the others sit (ADR-0052).
 func _step(pos: Vector2i, dx: int, dy: int, run: bool) -> Vector2i:
+	if aboard() != "":
+		if not bool(own.get("helm", false)):
+			return pos
+		var boat: Dictionary = entities.get(aboard(), {})
+		var speed := int(content.get_def(String(boat.get("item", ""))).get("vessel", {}).get("speed", Movement.WALK))
+		return Movement.step_at(pos, dx, dy, _keeps_boat_out, speed)
 	var swim := in_water(pos)
 	return Movement.step(pos, dx, dy, _solid, run and not swim and not in_shallows(pos),
 		Vector2i(Movement.HALF_X, Movement.HALF_Y), swim)
+
+
+## The boat we are in ("" — none, ADR-0052).
+func aboard() -> String:
+	return String(own.get("aboard", ""))
+
+
+## Whether a cell keeps a boat out: all but water and shallows (ADR-0052).
+func _keeps_boat_out(x: int, y: int) -> bool:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	return c != null and not Terrain.floats(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content)
+
+
+## Whether a cell of our location is water or shallows a boat goes on.
+func floats(cell: Vector2i) -> bool:
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	return c != null and Terrain.floats(c, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
 
 
 ## Whether a position (movement units) on our location is in water.

@@ -14,34 +14,50 @@ const ID := "base:surface"
 ## 4: settlements (ADR-0038).
 ## 5: settlements closer together, roads between them; biomes by climate
 ##    (warmth and wetness), taiga, grove, swamp, steppe, tundra, rocky hills.
-const VERSION := 5
+## 6: geography (ADR-0049): an endless world of regions, each a landmass in
+##    the one ocean; relief, climate from latitude, height and a west wind,
+##    rivers and lakes by drainage, biomes by climate and height, rock on the
+##    heights.
+const VERSION := 6
 var world_seed := 0
+## The land as a whole (shared, read only).
+var geography: Geography
 ## From the generator's own definition (content "base:surface").
 var _water := ""
 var _shore := ""
 var _shore_cover: Array = []
 var _shore_density := 0.0
-## Water where the water noise (-1..1) is above this; shore just below it.
-var _water_level := 0.5
-var _shore_width := 0.0
+## The rock the heights are made of (natural, dug with a pick).
+var _rock := ""
+## All dry land of one height (no geography): asked for, or no generator
+## described at all.
+var _flat := true
 ## Cells around the spawn point kept free of anything solid.
 var _clearing := 0
 var _biomes: Array = []
+## The same biomes' heights (low, high), climates and needing wet lowland,
+## packed (they are looked through for every cell).
+var _b_span := PackedVector2Array()
+var _b_climate := PackedVector2Array()
+var _b_wet := PackedByteArray()
 ## Biome ids in the order of _biomes.
 var biome_ids: Array = []
 ## Plants that block walking (from their definitions), kept out of the spawn clearing.
 var _solid := {}
-## Warmth and wetness of the land (-1..1 each, slow): a place's biome is the
-## one whose climate is nearest (so snow lies by the taiga, not by the steppe).
-var _biome_noise := FastNoiseLite.new()
-var _wet_noise := FastNoiseLite.new()
-var _water_noise := FastNoiseLite.new()
+## Small detail over the coarse land: its height's grain, the edges of biomes.
+var _grain := FastNoiseLite.new()
+var _rock_noise := FastNoiseLite.new()
+## Rivers wind: a cell is measured to a course from a place shifted by this.
+var _meander := FastNoiseLite.new()
 ## One noise field per patch slot (the n-th lesser ground of any biome uses field n).
 var _patch_noise: Array[FastNoiseLite] = []
 ## Where the ways into the underground are (null: none).
 var underground: UndergroundGenerator
 ## Where the settlements are and how they lie (ADR-0038).
 var settlements: Settlements
+## The river courses near the chunk last asked about (its key and segments).
+var _rivers_key := Vector2i(1 << 30, 0)
+var _rivers: Array = []
 
 
 func _init(seed_value: int, content: ContentRegistry) -> void:
@@ -53,9 +69,14 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	ids.sort()  # a stable order: the same content gives the same world
 	for id: String in ids:
 		var d := content.get_def(id)
+		var span: Array = d.get("elevation", [-1.0, 2.0])
 		_biomes.append({"ground": _patches(d["ground"]), "cover": _table(d.get("cover", {})),
-			"density": float(d["cover_density"]), "climate": Vector2(d["climate"][0], d["climate"][1])})
+			"density": float(d["cover_density"]), "climate": Vector2(d["climate"][0], d["climate"][1]),
+			"low": float(span[0]), "high": float(span[1]), "wet_lowland": bool(d.get("wet_lowland", false))})
 		biome_ids.append(id)
+		_b_span.append(Vector2(span[0], span[1]))
+		_b_climate.append(Vector2(d["climate"][0], d["climate"][1]))
+		_b_wet.append(1 if d.get("wet_lowland", false) else 0)
 		for plant: String in d.get("cover", {}):
 			if content.get_def(plant).get("solid", false):
 				_solid[plant] = true
@@ -66,18 +87,19 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 		_shore_cover = _table(g.get("shore_cover", {}))
 		_shore_density = g["shore_cover_density"]
 		_clearing = g["spawn_clearing"]
-		_water_level = g["water_threshold"]
-		_shore_width = g["shore_width"]
-	_biome_noise.seed = seed_value
-	_biome_noise.frequency = 0.0025
-	_biome_noise.fractal_octaves = 3
-	_wet_noise.seed = seed_value + 4241
-	_wet_noise.frequency = 0.003
-	_wet_noise.fractal_octaves = 3
-	_water_noise.seed = seed_value + 7919
-	_water_noise.frequency = 0.03
-	_water_noise.fractal_octaves = 2
-	settlements = Settlements.new(seed_value, content, is_wet, _clearing, biome_id_at)
+		_rock = String(g.get("rock", ""))
+		_flat = bool(g["flat"])
+	geography = Geography.of(seed_value) if can_generate() and not _flat else null
+	_grain.seed = seed_value + 7919
+	_grain.frequency = 0.045
+	_grain.fractal_octaves = 3
+	_rock_noise.seed = seed_value + 9137
+	_rock_noise.frequency = 0.09
+	_rock_noise.fractal_octaves = 2
+	_meander.seed = seed_value + 3571
+	_meander.frequency = 0.03
+	_meander.fractal_octaves = 2
+	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at)
 	for i in 8:
 		var n := FastNoiseLite.new()
 		n.seed = seed_value + 104729 * (i + 1)
@@ -99,17 +121,21 @@ func generate(cx: int, cy: int) -> Chunk:
 			var x := cx * Chunk.SIZE + lx
 			var y := cy * Chunk.SIZE + ly
 			var clearing := absi(x) <= _clearing and absi(y) <= _clearing
-			var water := _water_noise.get_noise_2d(x, y)
-			if water > _water_level and not clearing:
+			var land := land_at(x, y)
+			var what := String(land["what"])
+			if what == "water" and not clearing:
 				c.set_cell("ground", lx, ly, _water)
 				continue
-			if water > _water_level - _shore_width and not clearing:
+			if what == "shore" and not clearing:
 				c.set_cell("ground", lx, ly, _shore)
 				if _hash(x, y, 4) < _shore_density:
 					c.set_cell("cover", lx, ly, _pick(_shore_cover, _hash(x, y, 5)))
 				continue
-			var b: Dictionary = _biomes[_biome_at(x, y)]
+			var b: Dictionary = _biomes[int(land["biome"])]
 			c.set_cell("ground", lx, ly, _ground_at(b["ground"], x, y))
+			if what == "rock" and not clearing:
+				c.set_cell("structure", lx, ly, _rock)
+				continue
 			if _hash(x, y, 2) < float(b["density"]):
 				var plant := _pick(b["cover"], _hash(x, y, 3))
 				if plant != "" and not (clearing and _solid.has(plant)):
@@ -129,6 +155,7 @@ func generate(cx: int, cy: int) -> Chunk:
 				else:
 					c.set_cell("ground", lx, ly, on["ground"])
 				c.set_cell("cover", lx, ly, "")
+				c.set_cell("structure", lx, ly, "")  # a road is cut through rock
 	# Settlements: the cells of each whose plan falls in this chunk (the same
 	# in any order the chunks are made).
 	for plan: Dictionary in settlements.plans_touching(cx, cy):
@@ -146,6 +173,8 @@ func generate(cx: int, cy: int) -> Chunk:
 			if lx < 0 or ly < 0 or lx >= Chunk.SIZE or ly >= Chunk.SIZE:
 				continue
 			var spec: Dictionary = cells[at]
+			if not spec.has("structure") and c.get_cell("structure", lx, ly) == _rock:
+				c.set_cell("structure", lx, ly, "")  # a settlement's ground is cleared of rock
 			for layer: String in ["ground", "cover", "structure", "roof"]:
 				if spec.has(layer):
 					c.set_cell(layer, lx, ly, spec[layer])
@@ -160,9 +189,67 @@ func generate(cx: int, cy: int) -> Chunk:
 	return c
 
 
-## Whether the surface at a world cell is water or its shore (no settlement there).
+## Whether the surface at a world cell is water or its shore.
 func is_wet(x: int, y: int) -> bool:
-	return _water_noise.get_noise_2d(x, y) > _water_level - _shore_width
+	return String(land_at(x, y)["what"]) in ["water", "shore"]
+
+
+## Whether a settlement may not stand on a cell: water, shore, rock, the
+## heights.
+func is_unfit(x: int, y: int) -> bool:
+	var land := land_at(x, y)
+	return String(land["what"]) != "land" or float(land["height"]) > Geography.MOUNTAINS
+
+
+## What a world cell is (ADR-0049), from the land as a whole and a little
+## grain: {"what": "water" | "shore" | "rock" | "land", "height", "biome"
+## (an index of the biomes, for land and rock)}.
+func land_at(x: int, y: int) -> Dictionary:
+	var geo := geography
+	if geo == null:
+		return {"what": "land", "height": 0.1, "biome": _biome_at(x, y, 0.1, false)} if _flat else {"what": "water", "height": -1.0, "biome": 0}
+	var h := geo.sample(Geography.HEIGHT, x, y) + _grain.get_noise_2d(x, y) * 0.035
+	if h < Geography.SEA:
+		return {"what": "water", "height": h, "biome": 0}
+	if h < Geography.SEA + 0.012:
+		return {"what": "shore", "height": h, "biome": 0}
+	var lake := geo.lake_level_at(x, y)
+	if h < lake:
+		return {"what": "water", "height": h, "biome": 0}
+	if h < lake + 0.008:
+		return {"what": "shore", "height": h, "biome": 0}
+	var key := Vector2i(floori(x / 32.0), floori(y / 32.0))
+	if key != _rivers_key:
+		_rivers_key = key
+		# Only the courses that come within reach of the chunk (10 cells: what
+		# counts as "by the water"; and their winding).
+		_rivers = []
+		var box := Rect2(Vector2(key * Chunk.SIZE), Vector2(Chunk.SIZE, Chunk.SIZE)).grow(20.0)
+		for r: Array in geo.rivers_near(key.x, key.y):
+			var a: Vector2 = r[0]
+			var b: Vector2 = r[1]
+			if Rect2(a, Vector2.ZERO).expand(b).grow(maxf(r[2], r[3])).intersects(box):
+				_rivers.append(r)
+	var near := INF
+	var at := Vector2(x + 0.5, y + 0.5)
+	if not _rivers.is_empty():
+		at += Vector2(_meander.get_noise_2d(x, y), _meander.get_noise_2d(y + 7919.0, x)) * 9.0
+	for r: Array in _rivers:
+		var a: Vector2 = r[0]
+		var b: Vector2 = r[1]
+		var ab := b - a
+		var t := clampf((at - a).dot(ab) / maxf(ab.length_squared(), 0.001), 0.0, 1.0)
+		var half := lerpf(float(r[2]), float(r[3]), t) * 0.5
+		var d := at.distance_to(a + ab * t) - half
+		near = minf(near, d)
+	if near < 0.0:
+		return {"what": "water", "height": h, "biome": 0}
+	if near < 1.0 and _hash(x, y, 8) < 0.6:
+		return {"what": "shore", "height": h, "biome": 0}
+	var biome := _biome_at(x, y, h, near < 10.0)
+	if _rock != "" and h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06:
+		return {"what": "rock", "height": h, "biome": biome}
+	return {"what": "land", "height": h, "biome": biome}
 
 
 ## A cave mouth at a cell of a chunk, on dry ground with nothing around it.
@@ -181,20 +268,29 @@ func place_mouth(c: Chunk, lx: int, ly: int, part: String) -> void:
 
 ## The biome a cell lies in (who lives there, ADR-0018); "" on water.
 func biome_id_at(x: int, y: int) -> String:
-	if _biomes.is_empty() or _water_noise.get_noise_2d(x, y) > _water_level - _shore_width:
+	if _biomes.is_empty():
 		return ""
-	return String(biome_ids[_biome_at(x, y)])
+	var land := land_at(x, y)
+	if String(land["what"]) in ["water", "shore"]:
+		return ""
+	return String(biome_ids[int(land["biome"])])
 
 
-func _biome_at(x: int, y: int) -> int:
-	# Fractal noise keeps mostly within -0.6..0.6: stretched to the climates' range,
-	# a little jitter so the edges between biomes are ragged.
-	var here := Vector2(_biome_noise.get_noise_2d(x, y), _wet_noise.get_noise_2d(x, y)) * 1.4 \
-		+ Vector2(_hash(x, y, 6) - 0.5, _hash(x, y, 7) - 0.5) * 0.06
+## The biome of a dry cell: of those whose heights it lies in (and that
+## need wet lowland, only there), the one whose climate (warmth, rain) is
+## nearest the place's — a little jitter, so the edges are ragged.
+func _biome_at(x: int, y: int, h: float, by_water: bool) -> int:
+	var geo := geography
+	var here := (geo.climate_at(x, y) if geo else Vector2.ZERO) \
+		+ Vector2(_hash(x, y, 6) - 0.5, _hash(x, y, 7) - 0.5) * 0.08
+	var soggy := by_water and h < Geography.HILLS * 0.6 and here.y > 0.15
 	var best := 0
 	var best_d := INF
-	for i in _biomes.size():
-		var d := here.distance_squared_to(_biomes[i]["climate"])
+	for i in _b_span.size():
+		var span := _b_span[i]
+		if h < span.x or h > span.y or (_b_wet[i] and not soggy):
+			continue
+		var d := here.distance_squared_to(_b_climate[i])
 		if d < best_d:
 			best_d = d
 			best = i

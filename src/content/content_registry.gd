@@ -387,8 +387,12 @@ func _validate() -> void:
 				_check_weights(id, "shore_cover", d.get("shore_cover", {}), ["plant"], false)
 				d["shore_cover_density"] = float(d.get("shore_cover_density", 0.0))
 				d["spawn_clearing"] = int(d.get("spawn_clearing", 0))
-				d["water_threshold"] = float(d.get("water_threshold", 0.5))
-				d["shore_width"] = float(d.get("shore_width", 0.0))
+				# A flat world: all dry land of one height, no sea, rivers nor
+				# heights (worlds made for a purpose, tests).
+				d["flat"] = bool(d.get("flat", false))
+				# What the heights are made of (ADR-0049).
+				if d.has("rock") and kind_of(String(d["rock"])) != "structure":
+					errors.append("%s: rock must be a part (natural rock)" % id)
 			"visual":
 				_check_visual(id, d)
 			"sound":
@@ -409,6 +413,14 @@ func _validate() -> void:
 					errors.append("%s: climate is [warmth, wetness], each within -1..1" % id)
 					climate = [0.0, 0.0]
 				d["climate"] = [float(climate[0]), float(climate[1])]  # plain numbers: rules are CBOR (fingerprint)
+				# The heights it lies at (ADR-0049: about -1..1, the sea at 0) and
+				# whether it needs wet lowland by water (a swamp).
+				var span: Variant = d.get("elevation", [-1.0, 2.0])
+				if typeof(span) != TYPE_ARRAY or (span as Array).size() != 2 or float(span[0]) > float(span[1]):
+					errors.append("%s: elevation is [lowest, highest]" % id)
+					span = [-1.0, 2.0]
+				d["elevation"] = [float(span[0]), float(span[1])]
+				d["wet_lowland"] = bool(d.get("wet_lowland", false))
 			"creature":
 				_check_creature(id, d)
 			"settlement":

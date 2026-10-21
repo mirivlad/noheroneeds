@@ -66,17 +66,17 @@
     {
       "id": "base:surface", "kind": "generator", "name": "Поверхность",
       "water": "base:water", "shore": "base:sand", "shore_cover": {"base:reeds": 1}, "shore_cover_density": 0.35,
-      "spawn_clearing": 8, "water_threshold": 0.5, "shore_width": 0.08
+      "spawn_clearing": 8, "rock": "base:rock"
     },
     {
-      "id": "base:meadow", "kind": "biome", "name": "Луг",
+      "id": "base:meadow", "kind": "biome", "elevation": [0.0, 0.4], "name": "Луг",
       "ground": {"base:grass": 8, "base:grass_dry": 1, "base:dirt": 0.3},
       "cover": {"base:tall_grass": 10, "base:clover": 5, "base:flower_red": 1.2, "base:flower_yellow": 1.2, "base:flower_blue": 0.8, "base:bush": 0.6, "base:oak": 0.4, "base:birch": 0.3, "base:pebbles": 0.6, "base:boulder": 0.15},
       "cover_density": 0.3, "climate": [0.25, 0.0],
       "fauna": {"base:hare": 2, "base:deer": 0.6, "base:poring": 0.5, "base:sheep": 0.6, "base:cow": 0.3, "base:chicken": 0.4}, "fauna_density": 1.2
     },
     {
-      "id": "base:forest", "kind": "biome", "name": "Лес",
+      "id": "base:forest", "kind": "biome", "elevation": [0.0, 0.42], "name": "Лес",
       "ground": {"base:forest_floor": 6, "base:moss": 3, "base:grass": 1},
       "cover": {"base:fern": 6, "base:spruce": 4, "base:oak": 2, "base:birch": 2, "base:berry_bush": 1.5, "base:bush": 1, "base:tall_grass": 2,
         "base:honey_mushrooms": 0.8, "base:boletus": 0.5, "base:fly_agaric": 0.4, "base:stump": 0.4, "base:pebbles": 0.5, "base:boulder": 0.15},
@@ -85,7 +85,7 @@
         "base:bear": 0.12, "base:fox": 0.4, "base:mushroom_walker": 0.15}, "fauna_density": 1.4
     },
     {
-      "id": "base:taiga", "kind": "biome", "name": "Тайга", "climate": [-0.3, 0.3],
+      "id": "base:taiga", "kind": "biome", "elevation": [0.0, 0.5], "name": "Тайга", "climate": [-0.3, 0.3],
       "ground": {"base:forest_floor": 4, "base:moss": 4, "base:grass_dead": 1},
       "cover": {"base:fir": 4, "base:spruce": 4, "base:fern": 3, "base:berry_bush": 1, "base:honey_mushrooms": 1, "base:boletus": 0.6,
         "base:fly_agaric": 0.4, "base:stump": 0.4, "base:boulder": 0.3, "base:pebbles": 0.6},
@@ -93,7 +93,7 @@
       "fauna": {"base:deer": 0.8, "base:hare": 1, "base:fox": 0.6, "base:wolf": 0.35, "base:bear": 0.25}, "fauna_density": 1.2
     },
     {
-      "id": "base:grove", "kind": "biome", "name": "Кленовая роща", "climate": [0.3, 0.5],
+      "id": "base:grove", "kind": "biome", "elevation": [0.0, 0.38], "name": "Кленовая роща", "climate": [0.3, 0.5],
       "ground": {"base:grass": 5, "base:grass_dry": 2, "base:forest_floor": 2},
       "cover": {"base:maple": 2, "base:birch": 2, "base:oak": 0.6, "base:tall_grass": 6, "base:flower_yellow": 1, "base:flower_red": 0.6,
         "base:berry_bush": 1, "base:boletus": 0.5, "base:honey_mushrooms": 0.5, "base:pebbles": 0.5, "base:boulder": 0.15},
@@ -101,7 +101,7 @@
       "fauna": {"base:deer": 1.2, "base:hare": 1.2, "base:fox": 0.4, "base:poring": 0.3}, "fauna_density": 1.2
     },
     {
-      "id": "base:swamp", "kind": "biome", "name": "Болото", "climate": [0.1, 0.65],
+      "id": "base:swamp", "kind": "biome", "elevation": [0.0, 0.12], "wet_lowland": true, "name": "Болото", "climate": [0.1, 0.65],
       "ground": {"base:moss": 4, "base:mud": 3, "base:bog": 2.5},
       "cover": {"base:cattail": 3, "base:reeds": 2, "base:dead_tree": 1.2, "base:fern": 1, "base:fly_agaric": 0.6,
         "base:honey_mushrooms": 0.6, "base:stump": 0.5, "base:pebbles": 0.3},
@@ -109,25 +109,47 @@
       "fauna": {"base:mushroom_walker": 0.6, "base:poring": 0.5, "base:poporing": 0.3, "base:hare": 0.3}, "fauna_density": 1.0
     },
     {
-      "id": "base:steppe", "kind": "biome", "name": "Степь", "climate": [0.55, -0.45],
+      "id": "base:steppe", "kind": "biome", "elevation": [0.0, 0.4], "name": "Степь", "climate": [0.55, -0.45],
       "ground": {"base:grass_dead": 6, "base:grass_dry": 2, "base:dirt": 1},
       "cover": {"base:tall_grass": 6, "base:dry_bush": 2, "base:flower_yellow": 0.5, "base:flower_red": 0.4, "base:boulder": 0.3, "base:bush": 0.3, "base:pebbles": 0.8},
       "cover_density": 0.22,
       "fauna": {"base:hare": 1.5, "base:deer": 0.6, "base:fox": 0.5, "base:sheep": 0.3, "base:wolf": 0.15}, "fauna_density": 1.1
     },
     {
-      "id": "base:tundra", "kind": "biome", "name": "Тундра", "climate": [-0.8, 0.0],
+      "id": "base:tundra", "kind": "biome", "elevation": [0.0, 0.6], "name": "Тундра", "climate": [-0.8, 0.0],
       "ground": {"base:snow": 6, "base:gravel": 1, "base:moss": 1},
       "cover": {"base:fir": 1, "base:dead_tree": 0.4, "base:boulder": 0.5, "base:dry_bush": 0.6, "base:berry_bush": 0.3, "base:pebbles": 0.8},
       "cover_density": 0.12,
       "fauna": {"base:arctic_fox": 0.6, "base:polar_bear": 0.15, "base:hare": 0.6, "base:deer": 0.5}, "fauna_density": 0.9
     },
     {
-      "id": "base:rocky", "kind": "biome", "name": "Каменистые холмы", "climate": [0.15, -0.8],
+      "id": "base:rocky", "kind": "biome", "elevation": [0.24, 0.5], "name": "Каменистые холмы", "climate": [0.15, -0.8],
       "ground": {"base:gravel": 5, "base:dirt": 2, "base:grass_dry": 2},
       "cover": {"base:boulder": 3, "base:iron_outcrop": 0.4, "base:copper_outcrop": 0.3, "base:silver_outcrop": 0.12, "base:gold_outcrop": 0.04, "base:dry_bush": 1, "base:tall_grass": 2, "base:spruce": 0.4, "base:pebbles": 1.5},
       "cover_density": 0.2,
       "fauna": {"base:hare": 0.6, "base:wolf": 0.25, "base:deer": 0.3, "base:bear": 0.1}, "fauna_density": 0.9
+    },
+    {
+      "id": "base:desert", "kind": "biome", "name": "Пустыня", "climate": [0.85, -0.95], "elevation": [0.0, 0.4],
+      "ground": {"base:sand": 8, "base:grass_dead": 1, "base:gravel": 1},
+      "cover": {"base:dry_bush": 3, "base:boulder": 0.6, "base:pebbles": 1.2, "base:dead_tree": 0.2},
+      "cover_density": 0.06,
+      "fauna": {"base:hare": 0.3, "base:fox": 0.2}, "fauna_density": 0.3
+    },
+    {
+      "id": "base:mountains", "kind": "biome", "name": "Горы", "climate": [0.0, 0.0], "elevation": [0.42, 0.7],
+      "ground": {"base:gravel": 5, "base:dirt": 1, "base:grass_dead": 1},
+      "cover": {"base:boulder": 4, "base:iron_outcrop": 0.6, "base:copper_outcrop": 0.45, "base:silver_outcrop": 0.15,
+        "base:gold_outcrop": 0.05, "base:pebbles": 1.5, "base:fir": 0.6, "base:dry_bush": 0.6},
+      "cover_density": 0.16,
+      "fauna": {"base:wolf": 0.2, "base:hare": 0.3, "base:bear": 0.1}, "fauna_density": 0.6
+    },
+    {
+      "id": "base:peaks", "kind": "biome", "name": "Горные вершины", "climate": [-0.5, 0.0], "elevation": [0.62, 2.0],
+      "ground": {"base:snow": 6, "base:gravel": 2},
+      "cover": {"base:boulder": 2, "base:pebbles": 0.6},
+      "cover_density": 0.06,
+      "fauna": {"base:arctic_fox": 0.1}, "fauna_density": 0.2
     }
   ]
 }

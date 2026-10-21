@@ -13,6 +13,9 @@ var page := 0
 var centre := Vector2.ZERO
 var zoom := 1.0
 var _dragging := false
+## Settlements near ({"name", "x", "y"} of their fires), as the server told:
+## named on the surface's page where the character has seen them.
+var places: Array = []
 var _ask_wait := 0.0
 
 
@@ -119,9 +122,22 @@ func _draw() -> void:
 	if client.has_position and loc == client.location:
 		var me := size / 2.0 + (Vector2(client.position) / Movement.UNIT - centre) * zoom
 		draw_rect(Rect2(me - Vector2(2, 2), Vector2(4, 4)), Color(1.0, 0.9, 0.3))
+	if loc == Levels.SURFACE:
+		var seen: Dictionary = client.map_known.get(loc, {}).get("chunks", {})
+		for p: Dictionary in places:
+			var cell := Vector2i(int(p["x"]), int(p["y"]))
+			if not seen.has(Vector2i(cell.x >> 5, cell.y >> 5)):
+				continue
+			var at := (size / 2.0 + (Vector2(cell) - centre) * zoom).round()
+			draw_rect(Rect2(at - Vector2(3, 3), Vector2(6, 6)), Art.INK)
+			draw_rect(Rect2(at - Vector2(2, 2), Vector2(4, 4)), Color(0.95, 0.6, 0.25))
+			var name := String(p["name"])
+			var pos := at + Vector2(-Art.font().get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x / 2.0, -6).round()
+			draw_string_outline(Art.font(), pos, name, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, 4, Art.INK)
+			draw_string(Art.font(), pos, name, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Art.TEXT_HOT)
 	var z := int(client.map_known.get(loc, {}).get("z", 0))
 	var head := "%s   (%d/%d)" % [title_of(loc, z), page + 1, pages.size()]
 	draw_string(Art.font(), Vector2(8, 16), head, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Art.TEXT)
 	draw_string(Art.font(), Vector2(8, size.y - 6),
 		"PgUp/PgDn или Q/E — уровень   колесо, −/= — масштаб   мышь, WASD — двигать   M — закрыть",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Art.TEXT_DIM)
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Art.TEXT_DIM)

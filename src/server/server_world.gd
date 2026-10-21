@@ -1118,6 +1118,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _talk(actor, r, rs(r, "type"))
 		"journal":
 			return chronicles.journal(actor) if present.has(actor) else {"ok": false, "reason": "not_here"}
+		"places":
+			return _places(actor)
 		"trade_look":
 			return _trade_look(actor, r)
 		"trade":
@@ -1465,6 +1467,14 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	for id: String in costs:
 		inv.remove(id, int(costs[id]))
 	_touch_inventory(actor)
+	if role == "floor":
+		# The ground it lays, the land kept under it to come back when it is taken up.
+		_set_layer_props(c, "ground", at[3], at[4], {"owner": actor, "part": part, "under": c.get_cell("ground", at[3], at[4])})
+		c.set_cell("ground", at[3], at[4], String(def["ground"]))
+		c.set_cell("cover", at[3], at[4], "")  # grass and flowers go
+		_changed(chunk_key(loc, at[1], at[2]))
+		creatures.noise(loc, Vector2i(x, y))
+		return {"ok": true}
 	var props := {"owner": actor}
 	if def.has("container"):
 		props["store"] = Uuid.v4()  # its contents are an inventory of their own
@@ -1497,9 +1507,10 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 		props["building"] = building
 	c.set_cell(layer, at[3], at[4], part)
 	if layer == "structure":
-		# Keep what the ceiling or roof above this cell knows about itself.
+		# Keep what the ceiling or roof above this cell, and a floor under it,
+		# know about themselves.
 		var merged := props.duplicate()
-		for k: String in ["ceiling", "roof"]:
+		for k: String in ["ceiling", "roof", "ground", "cover"]:
 			if c.get_props(at[3], at[4]).has(k):
 				merged[k] = c.get_props(at[3], at[4])[k]
 		c.set_props(at[3], at[4], merged)
@@ -1600,10 +1611,23 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	# The layer asked for (ADR-0021: the player points at a roof, a ceiling,
 	# a wall); older clients: what stands there, else the roof, the ceiling.
 	var layer := rs(r, "layer")
-	if layer != "" and not layer in ["structure", "roof", "ceiling"]:
+	if layer != "" and not layer in ["structure", "roof", "ceiling", "ground"]:
 		return {"ok": false, "reason": "bad_request"}
 	if layer != "" and c.get_cell(layer, at[3], at[4]) == "":
 		return {"ok": false, "reason": "empty"}
+	if layer == "ground":  # a floor laid: taken up, the land under it back
+		var laid := _layer_props(c, "ground", at[3], at[4])
+		if not laid.has("part"):
+			return {"ok": false, "reason": "natural"}
+		if String(laid.get("owner", "")) != actor:
+			return {"ok": false, "reason": "not_owner"}
+		c.set_cell("ground", at[3], at[4], String(laid["under"]))
+		_set_layer_props(c, "ground", at[3], at[4], {})
+		_changed(chunk_key(loc, at[1], at[2]))
+		creatures.noise(loc, Vector2i(x, y))
+		for id: String in content.structure_cost(String(laid["part"])):
+			give(actor, id, int(content.structure_cost(String(laid["part"]))[id]))
+		return {"ok": true, "part": String(laid["part"])}
 	if layer == "":
 		for l: String in ["structure", "roof", "ceiling"]:
 			if c.get_cell(l, at[3], at[4]) != "":
@@ -1671,7 +1695,7 @@ func _take_down(loc: String, c: Chunk, at: Array, layer: String, part: String, u
 	if layer == "structure":
 		var keep := c.get_props(at[3], at[4]).duplicate()
 		for k: String in keep.keys():
-			if k != "ceiling" and k != "roof":
+			if not k in ["ceiling", "roof", "ground", "cover"]:
 				keep.erase(k)
 		c.set_props(at[3], at[4], keep)
 	else:
@@ -2286,6 +2310,22 @@ func station_near(actor: String, station: String) -> bool:
 			if part != "" and content.get_def(part).get("station") == station and _reaches(actor, loc, x, y, USE_REACH):
 				return true
 	return false
+
+
+## Settlements near one, for the map (ADR-0038): their names and where their
+## fires are; the map shows only those whose place the character has seen.
+const PLACES_RADIUS := 1600
+
+
+func _places(actor: String) -> Dictionary:
+	if not present.has(actor) or generator == null or generator.settlements == null:
+		return {"ok": true, "places": []}
+	var at := Movement.cell_of(present[actor]["pos"])
+	var out := []
+	for p: Dictionary in generator.settlements.plans_near(at, PLACES_RADIUS):
+		var fire: Vector2i = p["fire"]
+		out.append({"name": chronicles.village_name(String(p["id"])), "x": fire.x, "y": fire.y})
+	return {"ok": true, "places": out}
 
 
 ## Eats one of a food one carries: it heals, up to one's most health.

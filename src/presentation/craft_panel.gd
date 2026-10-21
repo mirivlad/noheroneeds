@@ -23,6 +23,14 @@ var station := ""
 const WIDTH := 460
 
 
+func _notification(what: int) -> void:
+	# Made up front but never added (a window never set up): freed too.
+	if what == NOTIFICATION_PREDELETE:
+		for node: Node in [_note, _title]:
+			if is_instance_valid(node) and node.get_parent() == null:
+				node.free()
+
+
 func setup(registry: ContentRegistry, world_view: WorldView, game_client: GameClient) -> void:
 	content = registry
 	view = world_view

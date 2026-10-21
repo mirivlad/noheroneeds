@@ -42,6 +42,15 @@ static func check(view: Object, content: ContentRegistry, part: String, location
 	var on_level := kind != Levels.SURFACE
 	if on_level and c.get_cell("ground", lx, ly) == "":
 		return "no_floor"  # the contour of the level below
+	if role == "floor":
+		# Laid on the land, under whatever stands there or will: not on water
+		# or under a tree, not twice.
+		if (c.get_props(lx, ly).get("ground", {}) as Dictionary).has("part") or c.get_cell("ground", lx, ly) == String(def["ground"]):
+			return "occupied"
+		if bool(content.get_def(c.get_cell("ground", lx, ly)).get("solid", false)) \
+				or bool(content.get_def(c.get_cell("cover", lx, ly)).get("solid", false)):
+			return "blocked"
+		return ""
 	if c.get_cell(Terrain.layer_for_role(role), lx, ly) != "":
 		return "occupied"
 	match role:

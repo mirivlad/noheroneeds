@@ -11,7 +11,7 @@ const DEMOLISH := "~demolish"
 const GROUPS := {"wall": "Стены и проёмы", "door": "Стены и проёмы", "window": "Стены и проёмы",
 	"fence": "Стены и проёмы", "column": "Стены и проёмы", "beam": "Стены и проёмы",
 	"ceiling": "Перекрытия и крыши", "roof": "Перекрытия и крыши",
-	"stairs": "Лестницы и ходы", "shaft": "Лестницы и ходы", "furniture": "Обстановка"}
+	"stairs": "Лестницы и ходы", "shaft": "Лестницы и ходы", "furniture": "Обстановка", "floor": "Полы"}
 var content: ContentRegistry
 var view: WorldView
 const WIDTH := 460

@@ -16,7 +16,11 @@ func step(delta: float) -> void:
 	if g._opts.has("demo") and not g._demo_done and g.client.state == "playing" and g.client.has_position:
 		g._demo_done = true
 		if g.game:
-			g.game.world.grant(g.client.character_id, "base:plank", 60)  # dev only: enough for the demo
+			g.game.world.grant(g.client.character_id, "base:plank", 120)  # dev only: enough for the demo
+		# A plank floor under the house, laid first: the walls stand on it.
+		for y in range(-4, 3):
+			for x in range(-3, 4):
+				g.client.request({"type": "build", "location": g.client.location, "x": x, "y": y, "part": "base:plank_floor"})
 		for x in range(-3, 4):
 			for y in [-4, 2]:
 				var part := "base:wood_door" if x == 0 and y == 2 else ("base:stone_wall" if y == -4 else "base:wood_wall")
@@ -167,6 +171,38 @@ func step(delta: float) -> void:
 			var to := String(g._opts["goto"]).split(",")
 			cell = Vector2i(int(to[0]), int(to[1]))
 		g.game.world.move_character(g.client.character_id, cell * 256 + Vector2i(128, 128))
+	if g._opts.get("demo") == "doors" and g.game:  # dev only: doors and walls built in either order, west of the house
+		var me := Vector2i(-16, 0)
+		var w := g.game.world
+		var build := func(x: int, y: int, part: String) -> void:
+			g.client.request({"type": "build", "location": g.client.location, "x": me.x + x, "y": me.y + y, "part": part})
+		if g._frames == 45:
+			for y in range(-14, 4):  # a clear lot
+				for x in range(-8, 14):
+					var at := me + Vector2i(x, y)
+					var c := w.chunk(g.client.location, at.x >> 5, at.y >> 5)
+					c.set_cell("cover", at.x & 31, at.y & 31, "")
+					c.set_cell("ground", at.x & 31, at.y & 31, "base:grass")
+					w._changed(ServerWorld.chunk_key(g.client.location, at.x >> 5, at.y >> 5))
+			w.grant(g.client.character_id, "base:plank", 300)
+			w.move_character(g.client.character_id, (me + Vector2i(2, 0)) * Movement.UNIT + Vector2i(128, 128))
+		if g._frames == 70:
+			build.call(0, -3, "base:wood_door")  # A: the door first, the walls after
+			for x in [-3, -2, -1, 1, 2, 3]:
+				build.call(x, -7, "base:wood_wall")  # B: the walls first, the door after
+			build.call(-6, -3, "base:wood_door")  # C: a wall put under a door past the rules
+			for x in range(1, 6):
+				build.call(x, 3, "base:wood_wall" if x != 3 else "base:wood_door")  # D: a house front, a porch roofed
+			for x in range(1, 6):
+				for y in [2, 3, 4, 5]:
+					build.call(x, y, "base:wood_ceiling")
+		if g._frames == 90:
+			for x in [-3, -2, -1, 1, 2, 3]:
+				build.call(x, -3, "base:wood_wall")
+			build.call(0, -7, "base:wood_door")
+			var at := me + Vector2i(-6, -2)
+			w.chunk(g.client.location, at.x >> 5, at.y >> 5).set_cell("structure", at.x & 31, at.y & 31, "base:wood_wall")
+			w._changed(ServerWorld.chunk_key(g.client.location, at.x >> 5, at.y >> 5))
 	if g._opts.get("demo") == "occlude" and g.game and g._frames == 40:  # dev only: a wall south and one aside, a tree south
 		var w := g.game.world
 		var me := Vector2i(0, 7)
@@ -205,8 +241,26 @@ func step(delta: float) -> void:
 		g.game.world.move_character(g.client.character_id, pos + Vector2i(int(delta * Movement.TICK_RATE * Movement.WALK * 1.5), 0))
 	if g._opts.has("swing") and g._frames == int(g._opts.get("frames", "120")) - int(g._opts["swing"]):  # dev: a blow caught midway
 		g.view.swing_own(Vector2.RIGHT)
-	if g._opts.has("open_map") and g._frames == int(g._opts.get("frames", "120")) - 8:  # dev: a picture of the map
+	if g._opts.has("hold") and g.game and g._frames == 60:  # dev: --hold=ITEM: given and in the hands
+		var item := String(g._opts["hold"])
+		g.game.world.grant(g.client.character_id, item, 3)
+		g.hotbar.put(0, item, -1)
+		g._choose_slot(0)
+	if g._opts.has("say") and g._frames == int(g._opts.get("frames", "120")) - 20:  # dev: --say=TEXT over the nearest dweller
+		var best := ""
+		for id: String in g.client.entities:
+			var e: Dictionary = g.client.entities[id]
+			if e.has("said") and (best == "" or Vector2(int(e["x"]), int(e["y"])).distance_to(Vector2(g.client.position))
+					< Vector2(int(g.client.entities[best]["x"]), int(g.client.entities[best]["y"])).distance_to(Vector2(g.client.position))):
+				best = id
+		if best != "":
+			var e: Dictionary = g.client.entities[best]
+			e["said"] = int(e["said"]) + 1
+			e["say"] = String(g._opts["say"])
+			g.view.popup_at(Vector2(int(e["x"]), int(e["y"])) / WorldView.UNITS_PER_PIXEL + Vector2(14, -20), "−3", Color(1.0, 0.45, 0.4))
+	if g._opts.has("open_map") and g._frames == int(g._opts.get("frames", "120")) - 30:  # dev: a picture of the map
 		g.world_map.open()
+		g._places_rid = g.client.request({"type": "places"})
 	if g._opts.has("ui") and g._frames == int(g._opts.get("frames", "120")) - (40 if String(g._opts["ui"]) in ["trade", "talk"] else 8):  # dev: a picture of a panel
 		match String(g._opts["ui"]):
 			"catalog":

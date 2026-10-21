@@ -62,6 +62,7 @@
     {"id": "base:smelt_silver", "kind": "recipe", "name": "Выплавить серебро", "station": "forge",
       "inputs": {"base:silver_ore": 2, "base:log": 1}, "outputs": {"base:silver_ingot": 1}},
     {"id": "base:smelt_gold", "kind": "recipe", "name": "Выплавить золото", "station": "forge",
-      "inputs": {"base:gold_ore": 2, "base:log": 1}, "outputs": {"base:gold_ingot": 1}}
+      "inputs": {"base:gold_ore": 2, "base:log": 1}, "outputs": {"base:gold_ingot": 1}},
+    {"id": "base:make_torches", "kind": "recipe", "name": "Факелы", "inputs": {"base:log": 1}, "outputs": {"base:hand_torch": 3}}
   ]
 }

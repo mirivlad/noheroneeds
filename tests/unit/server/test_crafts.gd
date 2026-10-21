@@ -302,3 +302,27 @@ func test_stew_fur_and_silver() -> void:
 	w.grant(a, "base:log", 1)
 	eq(_req(a, {"type": "craft", "recipe": "base:smelt_silver"}).get("made"), {"base:silver_ingot": 1}, "silver")
 	check(int(_content.get_def("base:smith")["trade"]["buys"].get("base:silver_ingot", 0)) > 10, "a smith pays well for it")
+
+
+## A floor laid on the land (not on water), walls stand on it, taken up it
+## gives the land and its planks back.
+func test_a_floor_laid_on_the_land_and_walls_on_it() -> void:
+	var a := _player("Аня")
+	w.grant(a, "base:plank", 10)
+	var c := w.chunk("surface", 0, 0)
+	c.set_cell("cover", 4, 4, "base:tall_grass")
+	c.set_cell("ground", 5, 4, "base:water")
+	var lay := func(x: int, y: int, part := "base:plank_floor") -> Dictionary:
+		return _req(a, {"type": "build", "location": "surface", "x": x, "y": y, "part": part})
+	check(lay.call(4, 4).get("ok", false), "a floor on grass")
+	eq(c.get_cell("ground", 4, 4), "base:wood_floor", "planks on the land")
+	eq(c.get_cell("cover", 4, 4), "", "the grass gone")
+	eq(lay.call(4, 4).get("reason"), "occupied", "not twice")
+	eq(lay.call(5, 4).get("reason"), "blocked", "not on water")
+	check(_req(a, {"type": "build", "location": "surface", "x": 4, "y": 4, "part": "base:wood_wall"}).get("ok", false), "a wall on the floor")
+	var planks := w.inventory(a).count("base:plank")
+	check(_req(a, {"type": "dismantle", "location": "surface", "x": 4, "y": 4, "layer": "ground"}).get("ok", false), "taken up")
+	eq(c.get_cell("ground", 4, 4), "base:grass", "the land back")
+	eq(c.get_cell("structure", 4, 4), "base:wood_wall", "the wall stays")
+	eq(w.inventory(a).count("base:plank"), planks + 1, "its plank back")
+	eq(_req(a, {"type": "dismantle", "location": "surface", "x": 3, "y": 3, "layer": "ground"}).get("reason"), "natural", "the land itself is not taken up")

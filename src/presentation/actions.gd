@@ -124,6 +124,13 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 		if target.has("aim"):  # the line it was reached along (Reach), for the server to check
 			out[-1]["request"]["ax"] = (target["aim"] as Vector2i).x
 			out[-1]["request"]["ay"] = (target["aim"] as Vector2i).y
+	if kind == "ground":
+		var laid: Dictionary = view.props_at(cell).get("ground", {})
+		if laid.has("part"):  # a floor laid by someone
+			var mine := String(laid.get("owner", "")) == client.character_id
+			out.append({"id": "dismantle", "name": "Разобрать пол", "enabled": mine,
+				"why": "постелено другим",
+				"request": {"type": "dismantle", "location": loc, "x": cell.x, "y": cell.y, "layer": "ground"}})
 	if kind == "part":
 		var id := String(target["id"])
 		var def := content.get_def(id)

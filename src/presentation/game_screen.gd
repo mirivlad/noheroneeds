@@ -133,6 +133,8 @@ var _note := ""
 var _opts := {}
 var _frames := 0
 var _demo_done := false
+## The request for the settlements' names on the map (ADR-0038).
+var _places_rid := ""
 ## Development runs (--demo, --goto, --ui...): none in a player's game.
 var _dev: DevRuns
 ## The blueprint's cells this frame ([cell, why not]) and their pictures.
@@ -489,6 +491,7 @@ func _key(k: int, shift: bool) -> void:
 			crafts.open()
 	elif k == KEY_M:
 		world_map.open()
+		_places_rid = client.request({"type": "places"})  # the settlements' names on it
 	elif k == KEY_L:
 		if journal_panel.visible:
 			journal_panel.visible = false
@@ -546,6 +549,9 @@ func _mouse(b: InputEventMouseButton) -> void:
 			if t.get("kind") == "part":
 				var c: Vector2i = t["cell"]
 				client.request({"type": "dismantle", "location": client.location, "x": c.x, "y": c.y, "layer": t["layer"]})
+			elif t.get("kind") == "ground" and (view.props_at(t["cell"]).get("ground", {}) as Dictionary).has("part"):
+				var c: Vector2i = t["cell"]
+				client.request({"type": "dismantle", "location": client.location, "x": c.x, "y": c.y, "layer": "ground"})
 		elif b.button_index == MOUSE_BUTTON_LEFT and b.pressed:
 			_drag_from = _build_cell()
 		elif b.button_index == MOUSE_BUTTON_LEFT and not b.pressed and _drag_from != NO_CELL:
@@ -695,7 +701,7 @@ func _snatch_weapon() -> void:
 func _drag_cells(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	var role := String(content.get_def(_blueprint).get("role", ""))
-	if role == "ceiling" or role == "roof":
+	if role == "ceiling" or role == "roof" or role == "floor":
 		for y in range(mini(a.y, b.y), maxi(a.y, b.y) + 1):
 			for x in range(mini(a.x, b.x), maxi(a.x, b.x) + 1):
 				out.append(Vector2i(x, y))
@@ -1041,6 +1047,10 @@ func _direction() -> Vector2i:
 func _update_hud() -> void:
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
+		if rid == _places_rid:
+			client.results.erase(rid)
+			world_map.places = r.get("places", [])
+			continue
 		if _talk_rids.has(rid):
 			_talk_rids.erase(rid)
 			client.results.erase(rid)

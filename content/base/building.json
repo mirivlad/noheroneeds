@@ -3,6 +3,11 @@
   "defs": [
     {"id": "base:wood_floor", "kind": "ground", "name": "Дощатый пол"},
     {"id": "base:bridge", "kind": "ground", "name": "Мост"},
+    {"id": "base:stone_floor", "kind": "ground", "name": "Каменный пол"},
+    {"id": "base:plank_floor", "kind": "structure", "role": "floor", "name": "Дощатый пол", "ground": "base:wood_floor",
+     "surface_only": true, "cost": {"base:plank": 1}, "material": "wood"},
+    {"id": "base:flagstone_floor", "kind": "structure", "role": "floor", "name": "Каменный пол", "ground": "base:stone_floor",
+     "surface_only": true, "cost": {"base:stone": 1}, "material": "stone"},
     {"id": "base:wood_ceiling", "kind": "structure", "role": "ceiling", "floor": "base:wood_floor", "name": "Деревянное перекрытие", "cost": {"base:plank": 2},
      "durability": 1040, "material": "wood"},
     {"id": "base:thatch_roof", "kind": "structure", "role": "roof", "name": "Соломенная кровля", "cost": {"base:log": 1}, "durability": 520, "material": "thatch"},

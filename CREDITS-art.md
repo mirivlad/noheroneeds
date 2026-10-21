@@ -1078,7 +1078,7 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - Лицензии: CC0
 - https://opengameart.org/content/idylwilds-inventory
 
-## Camp Fire Animation for RPGs (костёр)
+## Camp Fire Animation for RPGs (костёр; на нём же иконка игры, tools/art/make_icon.py)
 
 - Авторы: Zabin (анимация), Jetrel (костёр)
 - Лицензии: CC-BY-SA 3.0

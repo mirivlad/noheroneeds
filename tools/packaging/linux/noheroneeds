@@ -1,0 +1,3 @@
+#!/bin/sh
+# Starts No Hero Needed installed under /opt (its SQLite library beside it).
+exec /opt/noheroneeds/noheroneeds.x86_64 "$@"

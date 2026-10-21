@@ -2,6 +2,7 @@ name: tests
 on:
   push:
   pull_request:
+  workflow_call:  # the release runs them first
 jobs:
   headless:
     runs-on: ubuntu-latest

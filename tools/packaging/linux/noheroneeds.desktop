@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=No Hero Needed
+Comment=A world to live in: build, farm, hunt, trade with villages
+Comment[ru]=Мир, в котором живут: строить, пахать, охотиться, торговать с деревнями
+GenericName=Sandbox game
+GenericName[ru]=Игра-песочница
+Exec=noheroneeds
+Icon=noheroneeds
+Terminal=false
+Categories=Game;Simulation;RolePlaying;
+Keywords=sandbox;survival;pixel;rpg;building;

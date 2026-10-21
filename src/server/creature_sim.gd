@@ -299,8 +299,27 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 	if path.is_empty():
 		_go(c, "idle", Creature.NO_TARGET, false)
 		return
+	# Off the road (round a tree, pushed aside): back onto it by the cells,
+	# then on along it from where it is (not from where it meant to be).
+	var near := 0
+	var best := INF
+	for k in path.size():
+		var dist := Vector2(path[k]).distance_squared_to(Vector2(c.cell()))
+		if dist < best:
+			best = dist
+			near = k
+	if best > 2.0:
+		if c.path_to != path[near] or c.path.is_empty():
+			c.path = _route(c, path[near])
+			c.path_to = path[near]
+		while not c.path.is_empty() and c.path[0] == c.cell():
+			c.path.pop_front()
+		if not c.path.is_empty():
+			_go(c, "travel", c.path[0], false)
+			return
+	c.path.clear()
 	var step := int(c.route.get("step", 1))
-	var i := int(c.route.get("i", 0)) + step * 6
+	var i := near + step * 6
 	if i <= 0 or i >= path.size() - 1:  # at a settlement: back the other way
 		i = clampi(i, 0, path.size() - 1)
 		c.route["step"] = -step
@@ -764,7 +783,10 @@ func _looter(c: Creature, def: Dictionary) -> void:
 			var at := Vector2i(int(it["x"]), int(it["y"]))
 			if Movement.cell_of(at) == c.cell() or Vector2(c.pos).distance_to(Vector2(at)) <= Movement.UNIT:
 				world.take_item(found, null)
-				c.stomach.append({"item": String(it["item"]), "count": int(it["count"]), "at": world.world_time})
+				var e := {"item": String(it["item"]), "count": int(it["count"]), "at": world.world_time}
+				if it.has("states"):
+					e["states"] = it["states"]  # given back as they were (ADR-0046)
+				c.stomach.append(e)
 				c.changed()
 				_go(c, "eat", Creature.NO_TARGET, false)
 				return

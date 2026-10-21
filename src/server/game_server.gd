@@ -397,7 +397,7 @@ func _take_input(s: Session, m: Dictionary) -> void:
 func _acknowledged(s: Session, sent: Array) -> void:
 	var versions: Dictionary = sent[0]
 	for id: String in versions:
-		if s.shown.has(id) or id == "~inventory":
+		if s.shown.has(id) or id.begins_with("~"):  # the own private parts: inventory, needs, knowledge
 			s.known[id] = versions[id]
 	# Removed in that snapshot: the client has them no more (they are sent
 	# whole if they come back).
@@ -801,7 +801,23 @@ func _send_snapshot(s: Session) -> void:
 		if not changed.has(mine_n):
 			changed[mine_n] = {}
 		changed[mine_n]["inventory"] = world.inventory(s.character_id).stacks.duplicate()
+		# Each copy's own state (wear, ADR-0046), what one carries and wears.
+		changed[mine_n]["states"] = world.inventory(s.character_id).states.duplicate(true)
+		var worn := {}
+		var on := world.worn_of(s.character_id)
+		for slot: String in on:
+			if not (on[slot][1] as Dictionary).is_empty():
+				worn[slot] = (on[slot][1] as Dictionary).duplicate()
+		changed[mine_n]["worn_states"] = worn
 		changed[mine_n]["friends"] = world.friends_of(s.character_id).keys()
+	# What one knows and how well (ADR-0047): to oneself, when it changed.
+	var know_v := world.knowledge.version(s.character_id)
+	if s.known.get("~knowledge", -1) != know_v:
+		sent["~knowledge"] = know_v
+		var mine_n := _net_id(s, s.character_id)
+		if not changed.has(mine_n):
+			changed[mine_n] = {}
+		changed[mine_n]["knowledge"] = world.knowledge.shown(s.character_id)
 	# One's needs (ADR-0032) go only to oneself, when they changed.
 	var needs_v := world.needs.version(s.character_id)
 	if s.known.get("~needs", -1) != needs_v:

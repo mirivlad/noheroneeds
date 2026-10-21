@@ -22,7 +22,7 @@ static func start(world_path: String, content: ContentRegistry, player: PlayerId
 	g.port = listen_port
 	g.world = ServerWorld.open(world_path, content, options)
 	if g.world == null:
-		g.error = "не удалось открыть мир"
+		g.error = ServerWorld.open_error if ServerWorld.open_error != "" else "не удалось открыть мир"
 		return g
 	g._server_transport = ENetTransport.new()
 	var err := g._server_transport.start_server(listen_port, max_players)

@@ -122,17 +122,37 @@ var _encoded := {}
 ## Opens a world: a read connection here, a write connection on the writer
 ## thread, another read connection on the chunk loader thread.
 ## options: those of WorldStore.open, plus "seed" for a new world.
+## What a world's things, characters and knowledge are written as (beyond
+## the store's schema): a world of another format is not opened. 2: each
+## copy's state — wear, quality, enhancements, maker (ADR-0046, ADR-0047),
+## characters' knowledge and mastery.
+const WORLD_FORMAT := 2
+## Why the last open() failed, for people ("" — it did not).
+static var open_error := ""
+
+
 static func open(db_path: String, registry: ContentRegistry, options := {}) -> ServerWorld:
+	open_error = ""
 	var s := WorldStore.new()
 	if not s.open(db_path, options):
+		open_error = "не удалось открыть файл мира: " + s.last_error
 		push_error(s.last_error)
 		return null
 	if s.read_meta("seed") == "":
 		var seed_value := int(options.get("seed", randi()))
-		if not (s.write_meta("seed", str(seed_value)) and s.write_meta("world_id", Uuid.v4())):
+		if not (s.write_meta("seed", str(seed_value)) and s.write_meta("world_id", Uuid.v4())
+				and s.write_meta("world_format", str(WORLD_FORMAT))):
+			open_error = "не удалось записать новый мир: " + s.last_error
 			push_error(s.last_error)
 			s.close()
 			return null
+	var format := int(s.read_meta("world_format")) if s.read_meta("world_format").is_valid_int() else 1
+	if format != WORLD_FORMAT:
+		open_error = ("Этот мир сохранён старой версией игры (формат %d, нужен %d): вещи, знания и мастерство в нём " \
+			+ "записаны по-старому, и эта версия его не откроет. Начните новый мир.") % [format, WORLD_FORMAT] \
+			if format < WORLD_FORMAT else "Этот мир сохранён более новой версией игры (формат %d): обновите игру." % format
+		s.close()
+		return null
 	var w := StoreWriter.new()
 	if not w.start(db_path, options):
 		push_error(w.last_error())
@@ -145,6 +165,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.creatures = CreatureSim.new(world)
 	world.combat = Combat.new(world)
 	world.needs = Needs.new(world)
+	world.knowledge = Knowledge.new(world)
 	world.chronicles = Chronicles.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	world.weather_seed = absi(hash([world.world_seed, "weather"]))
@@ -226,6 +247,7 @@ func close() -> void:
 	combat.world = null
 	needs.world = null
 	chronicles.world = null
+	knowledge.world = null
 
 
 ## Stops without committing what is not yet handed to the writer (tests of crashes).
@@ -240,6 +262,7 @@ func abandon() -> void:
 	combat.world = null
 	needs.world = null
 	chronicles.world = null
+	knowledge.world = null
 
 
 # --- request fields (input from the network: any type may come) ----------------
@@ -327,6 +350,8 @@ func _take_items(location: String, rows: Array) -> void:
 		var d: Dictionary = Cbor.decode(row["data"]).value
 		var it := {"location": location, "x": int(d["x"]), "y": int(d["y"]),
 			"item": String(d["item"]), "count": int(d["count"])}
+		if typeof(d.get("states")) == TYPE_ARRAY:
+			it["states"] = d["states"]
 		if d.has("for"):
 			it["for"] = String(d["for"])
 			it["until"] = int(d.get("until", 0))
@@ -591,13 +616,22 @@ func note_character(id: String) -> void:
 	_dirty_world_characters[id] = true
 
 
+## A character's own data changed (its knowledge, ADR-0047): written with
+## the next batch.
+func note_character_changed(id: String) -> void:
+	if _characters.has(id):
+		_dirty_characters[id] = true
+
+
 ## Puts `n` of `item` on the ground at `pos` (movement units): what a
 ## creature leaves, what a character drops when it dies, a fallen arrow.
 ## kept_for: a character only who may take it until tick `until` (what a dead
 ## one dropped, ADR-0016).
-func place_item(location: String, pos: Vector2i, item: String, n: int, kept_for := "", until := 0) -> String:
+func place_item(location: String, pos: Vector2i, item: String, n: int, kept_for := "", until := 0, with: Array = []) -> String:
 	var id := Uuid.v4()
 	var it := {"location": location, "x": pos.x, "y": pos.y, "item": item, "count": n}
+	if with.any(func(st: Variant) -> bool: return typeof(st) == TYPE_DICTIONARY and not (st as Dictionary).is_empty()):
+		it["states"] = with.slice(0, n)  # each copy keeps its wear (ADR-0046)
 	if kept_for != "":
 		it["for"] = kept_for
 		it["until"] = until
@@ -617,7 +651,7 @@ func may_take(who: String, it: Dictionary) -> bool:
 func take_item(id: String, into: Inventory) -> Dictionary:
 	var it: Dictionary = items[id]
 	if into:
-		into.add(it["item"], it["count"])
+		into.add(it["item"], it["count"], it.get("states", []))
 	var key := _item_chunk_key(it)
 	(_items_by_chunk[key] as Dictionary).erase(id)
 	items.erase(id)
@@ -706,8 +740,8 @@ func _known_character(id: String) -> Dictionary:
 
 ## Gives items outside of any request (world setup, tests): past the bag's
 ## cells too.
-func grant(owner: String, content_id: String, n: int) -> void:
-	inventory(owner).add(content_id, n)
+func grant(owner: String, content_id: String, n: int, with: Array = []) -> void:
+	inventory(owner).add(content_id, n, with)
 	_touch_inventory(owner)
 
 
@@ -727,12 +761,12 @@ func room_for(owner: String, item: String) -> int:
 ## Gives a character what was got (dug, made, refunded): into the bag as far
 ## as it goes, the rest on the ground at its feet (ADR-0041). Returns how
 ## many went into the bag. One not in the world gets all of it.
-func give(owner: String, item: String, n: int) -> int:
+func give(owner: String, item: String, n: int, with: Array = []) -> int:
 	var fits := n if not present.has(owner) else mini(n, room_for(owner, item))
 	if fits > 0:
-		inventory(owner).add(item, fits)
+		inventory(owner).add(item, fits, with.slice(0, fits))
 	if n > fits:
-		place_item(String(present[owner]["location"]), present[owner]["pos"], item, n - fits)
+		place_item(String(present[owner]["location"]), present[owner]["pos"], item, n - fits, "", 0, with.slice(fits))
 	_touch_inventory(owner)
 	return fits
 
@@ -791,6 +825,8 @@ func commit_async(force := false) -> void:
 		var it: Dictionary = items[id]
 		var cell := Movement.cell_of(Vector2i(it["x"], it["y"]))
 		var data := {"x": it["x"], "y": it["y"], "item": it["item"], "count": it["count"]}
+		if it.has("states"):
+			data["states"] = (it["states"] as Array).duplicate(true)
 		if it.has("for"):
 			data["for"] = it["for"]
 			data["until"] = it["until"]
@@ -860,6 +896,7 @@ var creatures: CreatureSim
 var combat: Combat
 ## Satiety and what else a character needs (ADR-0032).
 var needs: Needs
+var knowledge: Knowledge
 ## Villages' chronicles and their dwellers' requests (ADR-0042).
 var chronicles: Chronicles
 ## World facts to write with the next state batch (set_meta).
@@ -1090,6 +1127,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _strike_part(actor, r)
 		"repair":
 			return _repair(actor, r)
+		"mend":
+			return _mend(actor, r)
 		"store":
 			return _move_items(actor, r, true)
 		"take":
@@ -1102,6 +1141,12 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _befriend(actor, r, false)
 		"craft":
 			return _craft(actor, r)
+		"study":
+			return _study(actor, r)
+		"draft":
+			return _draft(actor, r)
+		"learn":
+			return _learn(actor, r)
 		"till":
 			return _till(actor, r)
 		"sow":
@@ -1299,11 +1344,10 @@ func _drop(actor: String, r: Dictionary) -> Dictionary:
 	if present.has(actor):
 		var p: Dictionary = present[actor]
 		where = {"location": p["location"], "x": p["pos"].x, "y": p["pos"].y}
-	if not inventory(actor).remove(item, n):
+	var gone := inventory(actor).take(item, n, ri(r, "copy", -1))
+	if gone.is_empty():
 		return {"ok": false, "reason": "not_enough"}
-	var id := Uuid.v4()
-	_place_item(id, {"location": where["location"], "x": where["x"], "y": where["y"], "item": item, "count": n})
-	_dirty_items[id] = true
+	var id := place_item(String(where["location"]), Vector2i(int(where["x"]), int(where["y"])), item, n, "", 0, gone)
 	_touch_inventory(actor)
 	return {"ok": true, "entity": id}
 
@@ -1325,7 +1369,10 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 	if fits < int(it["count"]):  # what the bag takes; the rest stays lying
 		it["count"] = int(it["count"]) - fits
 		_dirty_items[id] = true
-		inventory(actor).add(String(it["item"]), fits)
+		var with: Array = it.get("states", [])
+		inventory(actor).add(String(it["item"]), fits, with.slice(0, fits))
+		if it.has("states"):
+			it["states"] = with.slice(fits)
 		_touch_inventory(actor)
 		return {"ok": true, "item": it["item"], "count": fits, "left": it["count"]}
 	take_item(id, inventory(actor))
@@ -1467,6 +1514,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	for id: String in costs:
 		inv.remove(id, int(costs[id]))
 	_touch_inventory(actor)
+	knowledge.practise(actor, "build")  # building is practice (ADR-0047)
 	if role == "floor":
 		# The ground it lays, the land kept under it to come back when it is taken up.
 		_set_layer_props(c, "ground", at[3], at[4], {"owner": actor, "part": part, "under": c.get_cell("ground", at[3], at[4])})
@@ -1748,19 +1796,27 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var tool := String(g["tool"])
 	if tool != "" and (item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool)):
 		return {"ok": false, "reason": "no_tool"}  # the tool must be in the hands, not in the bag
-	# Work takes blows (a tree by its size and wood), at the tool's pace; how
-	# far it has gone is kept with the thing (props of its layer).
+	if tool != "" and held_broken(actor):
+		return {"ok": false, "reason": "broken"}  # a broken tool does nothing until mended (ADR-0046)
+	# Work takes blows (a tree by its size and wood), at the tool's pace (a
+	# dull one slower); how far it has gone is kept with the thing (props of
+	# its layer).
+	# What it practises (ADR-0047): a tool's kind, crops, or bare hands.
+	var practice := ("tool:" + tool) if tool != "" else ("crop" if crop.has("crop") else "hand")
 	var work := int(g.get("work", 1))
-	if work > 1:
+	if work > 1 or g.has("chance"):
 		var pace: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
-		if not combat.ready(actor, float(pace.get("cooldown_ms", 700))):
+		if not combat.ready(actor, float(pace.get("cooldown_ms", 700)) * (held_pace(actor) if tool != "" else 1.0)
+				* knowledge.effect(actor, practice, "pace")):
 			return {"ok": false, "reason": "not_ready"}
-	if g.has("chance") and not combat.ready(actor, float((content.get_def(item).get("weapon", {}) if item != "" else {}).get("cooldown_ms", 700))):
-		return {"ok": false, "reason": "not_ready"}
 	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
 	creatures.noise(loc, Vector2i(x, y))
+	knowledge.practise(actor, practice)
+	# Every blow of a tool wears it (a cast of a rod too); a skilled hand spares it.
+	var yield_more := knowledge.effect(actor, practice, "yield") + (Wear.extra_yield(content, held_state(actor)) if tool != "" else 0.0)
+	var worn := wear_held(actor, 1, practice) if tool != "" else {}
 	if g.has("chance"):
-		return _gather_by_luck(actor, c, at, thing, g)
+		return _gather_by_luck(actor, c, at, thing, g, knowledge.effect(actor, practice, "chance")).merged(worn)
 	# A better tool does more a blow ("power": an iron axe fells sooner).
 	var power := maxi(1, int(content.get_def(item).get("power", 1))) if item != "" else 1
 	var done := int(_layer_props(c, layer, at[3], at[4]).get("work", 0)) + power
@@ -1772,27 +1828,29 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 		else:
 			_set_layer_props(c, layer, at[3], at[4], props)
 		_changed(chunk_key(loc, at[1], at[2]))
-		return {"ok": true, "thing": thing, "work": mini(done, work), "of": work}
+		return {"ok": true, "thing": thing, "work": mini(done, work), "of": work}.merged(worn)
 	if layer != "structure":
 		_set_layer_props(c, layer, at[3], at[4], {})
 	if layer != "ground":
 		c.set_cell(layer, at[3], at[4], String(g.get("becomes", "")))  # gone, or what it is after (a bush picked)
 	_changed(chunk_key(loc, at[1], at[2]))
-	var drops: Dictionary = g.get("drops", {})
-	for id: String in drops:
+	# A skilled hand (and a fruitful tool) now and then gets one more of each.
+	var drops := {}
+	for id: String in g.get("drops", {}):
+		drops[id] = knowledge.with_extra(actor, [thing, x, y, id], int(g["drops"][id]), yield_more)
 		give(actor, id, int(drops[id]))
-	return {"ok": true, "thing": thing, "drops": drops}
+	return {"ok": true, "thing": thing, "drops": drops}.merged(worn)
 
 
 ## A gather by luck (ADR-0031: fishing): every try has the ground's
 ## "chance" of a catch, better at dawn and dusk, less where much was taken
 ## lately (its "stock", back one every "restock_hours"); a catch is one of
 ## "pick" by weight. The ground stays; what was taken is in its props.
-func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dictionary) -> Dictionary:
+func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dictionary, skill := 1.0) -> Dictionary:
 	var props := _layer_props(c, "ground", at[3], at[4]).duplicate()
 	var taken := maxf(0.0, float(props.get("taken", 0.0))
 		- float(world_time - int(props.get("at", world_time))) / (float(g["restock_hours"]) * Daylight.HOUR_MS))
-	var chance := float(g["chance"]) * bite_hour(world_time) * maxf(0.0, 1.0 - taken / float(g["stock"]))
+	var chance := float(g["chance"]) * skill * bite_hour(world_time) * maxf(0.0, 1.0 - taken / float(g["stock"]))
 	if has_daylight(at[0]):
 		chance *= 1.0 + 0.3 * Weather.rain(weather_seed, world_time)  # fish bite in the rain
 	var roll := float(absi(hash([world_seed, actor, at[0], at[1], at[2], at[3], at[4], tick])) % 100003) / 100003.0
@@ -2233,7 +2291,8 @@ func _look_in(actor: String, r: Dictionary) -> Dictionary:
 	var c := _container(actor, r)
 	if c[2] != "":
 		return {"ok": false, "reason": c[2]}
-	return {"ok": true, "contents": inventory(c[0]).stacks.duplicate(), "slots": int(c[1]["slots"])}
+	return {"ok": true, "contents": inventory(c[0]).stacks.duplicate(), "states": inventory(c[0]).states.duplicate(true),
+		"slots": int(c[1]["slots"])}
 
 
 ## Puts into (store) or takes out of (take) a container {"item", "count"}.
@@ -2259,40 +2318,133 @@ func _move_items(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 		after[item] = int(after.get(item, 0)) + n
 		if Bag.used(content, after) > int(c[1]["slots"]):
 			return {"ok": false, "reason": "box_full"}
-	from.remove(item, n)
-	to.add(item, n)
+	var moved := from.take(item, n, ri(r, "copy", -1))
+	if moved.is_empty():
+		return {"ok": false, "reason": "not_enough"}
+	to.add(item, n, moved)
 	_touch_inventory(actor)
 	_touch_inventory(c[0])
-	return {"ok": true, "contents": box.stacks.duplicate(), "slots": int(c[1]["slots"])}
+	return {"ok": true, "contents": box.stacks.duplicate(), "states": box.states.duplicate(true), "slots": int(c[1]["slots"])}
 
 
 # --- crafts and food (ADR-0026) ---------------------------------------------------
 
+const BLUEPRINT := "base:blueprint"
+
+
 ## Makes a recipe `count` times, at a station of its kind within reach (none
-## for one made in the hands), from what one carries: all of it or nothing.
+## for one made in the hands), from what one carries: all of it or nothing
+## to begin with. One makes what one knows (ADR-0047); each attempt works by
+## one's mastery against its difficulty: what works takes the inputs and
+## gives the outputs — a thing of its own with the quality, enhancements and
+## maker's name of one's hand, a stackable one sometimes one more; what
+## fails spoils half of what is not precious. Either way one practises it.
+## With "blueprint" (a carried blueprint of the recipe, its copy): once,
+## sure and whole, known or not; the blueprint is used up, nothing learned.
 func _craft(actor: String, r: Dictionary) -> Dictionary:
 	var id := rs(r, "recipe")
 	var d := content.get_def(id)
 	var n := ri(r, "count", 1)
 	if d.get("kind") != "recipe" or n < 1 or n > 100:
 		return {"ok": false, "reason": "bad_request"}
+	var bag := inventory(actor)
+	var by_blueprint := r.has("blueprint")
+	var sheet := ri(r, "blueprint", -1)
+	if by_blueprint:
+		n = 1
+		if sheet < 0 or sheet >= bag.count(BLUEPRINT) or String(bag.state_of(BLUEPRINT, sheet).get("recipe", "")) != id:
+			return {"ok": false, "reason": "no_blueprint"}
+	elif not knowledge.knows(actor, id):
+		return {"ok": false, "reason": "unknown_recipe"}
 	var station := String(d.get("station", ""))
 	if station != "" and not station_near(actor, station):
 		return {"ok": false, "reason": "no_station", "station": station}
-	var bag := inventory(actor)
+	var inputs: Dictionary = d["inputs"]
 	var need := {}
-	for item: String in d["inputs"]:
-		need[item] = int(d["inputs"][item]) * n
+	for item: String in inputs:
+		need[item] = int(inputs[item]) * n
 	if not bag.has_all(need):
 		return {"ok": false, "reason": "not_enough"}
-	for item: String in need:
-		bag.remove(item, need[item])
+	if by_blueprint:
+		bag.take(BLUEPRINT, 1, sheet)
+	var skill := String(d.get("skill", ""))
+	var deed := rs(r, "request_id")  # each request rolls its own dice
 	var made := {}
-	for item: String in d["outputs"]:
-		made[item] = int(d["outputs"][item]) * n
-		give(actor, item, made[item])
+	var lost := {}
+	var failed := 0
+	for i in n:
+		var mastery := knowledge.mastery_level(actor, id)
+		var level := knowledge.skill_level(actor, skill)
+		var works := by_blueprint or knowledge.never_fail or knowledge.by_chance(actor, [id, i, "craft", deed],
+			Mastery.chance(int(d.get("difficulty", 0)), mastery, level))
+		if works:
+			for item: String in inputs:
+				bag.remove(item, int(inputs[item]))
+			for item: String in d["outputs"]:
+				var count := int(d["outputs"][item])
+				var states: Array = []
+				if Mastery.crafted_alone(content, item):
+					for k in count:
+						states.append(knowledge.made_state(actor, item, id, by_blueprint, [id, i, k, deed]))
+				elif not by_blueprint:
+					count = knowledge.with_extra(actor, [id, i, deed], count, Mastery.extra(mastery, level))
+				give(actor, item, count, states)
+				made[item] = int(made.get(item, 0)) + count
+		else:
+			failed += 1
+			var spoiled := Mastery.spoiled(content, inputs)
+			for item: String in spoiled:
+				bag.remove(item, int(spoiled[item]))
+				lost[item] = int(lost.get(item, 0)) + int(spoiled[item])
+		if not by_blueprint:
+			knowledge.practise_recipe(actor, id, Mastery.XP_SUCCESS if works else Mastery.XP_FAIL)
+			knowledge.practise_skill(actor, skill)
 	_touch_inventory(actor)
-	return {"ok": true, "made": made}
+	return {"ok": true, "made": made, "failed": failed, "lost": lost, "mastery": knowledge.mastery_level(actor, id)}
+
+
+## Studies a carried blueprint ({"copy"}): it is used up, its recipe known
+## for good (ADR-0047).
+func _study(actor: String, r: Dictionary) -> Dictionary:
+	var bag := inventory(actor)
+	var sheet := ri(r, "copy", 0)
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	if sheet < 0 or sheet >= bag.count(BLUEPRINT):
+		return {"ok": false, "reason": "no_blueprint"}
+	var recipe := String(bag.state_of(BLUEPRINT, sheet).get("recipe", ""))
+	if content.kind_of(recipe) != "recipe":
+		return {"ok": false, "reason": "bad_request"}
+	if knowledge.knows(actor, recipe):
+		return {"ok": false, "reason": "known_already"}
+	bag.take(BLUEPRINT, 1, sheet)
+	knowledge.learn(actor, recipe)
+	_touch_inventory(actor)
+	return {"ok": true, "learned": recipe}
+
+
+## Mastery one needs to put a recipe down as a blueprint for others, and
+## what it is written on (ADR-0047: players teach players).
+const DRAFT_MASTERY := 40
+const DRAFT_ON := {"base:leather": 1}
+
+
+## Puts a recipe one knows well into a blueprint ({"recipe"}), on leather.
+func _draft(actor: String, r: Dictionary) -> Dictionary:
+	var recipe := rs(r, "recipe")
+	if content.kind_of(recipe) != "recipe" or not present.has(actor):
+		return {"ok": false, "reason": "bad_request"}
+	if not knowledge.knows(actor, recipe) or bool(content.get_def(recipe).get("innate", false)):
+		return {"ok": false, "reason": "unknown_recipe"}
+	if knowledge.mastery_level(actor, recipe) < DRAFT_MASTERY:
+		return {"ok": false, "reason": "not_skilled", "need": DRAFT_MASTERY}
+	var bag := inventory(actor)
+	if not bag.has_all(DRAFT_ON):
+		return {"ok": false, "reason": "materials", "need": DRAFT_ON}
+	for m: String in DRAFT_ON:
+		bag.remove(m, int(DRAFT_ON[m]))
+	give(actor, BLUEPRINT, 1, [{"recipe": recipe, "by": String(_known_character(actor)["data"].get("name", ""))}])
+	return {"ok": true, "drafted": recipe}
 
 
 ## Whether a station of a kind ("station" of a part) stands within reach of
@@ -2372,6 +2524,8 @@ func _till(actor: String, r: Dictionary) -> Dictionary:
 	var item := held_of(actor)
 	if item == "" or not (content.get_def(item).get("tools", []) as Array).has("tilling"):
 		return {"ok": false, "reason": "no_tool"}
+	if held_broken(actor):
+		return {"ok": false, "reason": "broken"}
 	var c := chunk(at[0], at[1], at[2])
 	var into := String(content.get_def(c.get_cell("ground", at[3], at[4])).get("tilled", ""))
 	if into == "":
@@ -2381,7 +2535,8 @@ func _till(actor: String, r: Dictionary) -> Dictionary:
 	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
 	c.set_cell("ground", at[3], at[4], into)
 	_changed(chunk_key(at[0], at[1], at[2]))
-	return {"ok": true}
+	knowledge.practise(actor, "tool:tilling")
+	return {"ok": true}.merged(wear_held(actor, 1, "tool:tilling"))
 
 
 # --- trade (ADR-0040) ------------------------------------------------------------
@@ -2413,7 +2568,12 @@ func _trader(actor: String, r: Dictionary) -> Array:
 		for item: String in stock.stacks.keys():
 			stock.remove(item, int(stock.stacks[item]))
 		for item: String in trade.get("sells", {}):
-			stock.add(item, int(trade["sells"][item][0]))
+			# Its own work, as well made as its trade makes things (ADR-0047).
+			var made := Knowledge.goods_state(trade, content, item, float(absi(hash([world_seed, c.id, day, item])) % 1000) / 1000.0)
+			var copies: Array = []
+			for k in int(trade["sells"][item][0]):
+				copies.append(made)
+			stock.add(item, int(trade["sells"][item][0]), copies)
 		_touch_inventory("trade|" + c.id)
 		c.job["stocked"] = day
 		c.job["purse"] = int(trade.get("purse", 0))
@@ -2424,31 +2584,108 @@ func _trader(actor: String, r: Dictionary) -> Array:
 ## Talk with a dweller (ADR-0042): what it says and asks ("talk"), taking
 ## its request on ("promise"), telling it is done ("report").
 func _talk(actor: String, r: Dictionary, what: String) -> Dictionary:
-	if not present.has(actor) or typeof(r.get("creature")) != TYPE_STRING:
-		return {"ok": false, "reason": "bad_request"}
-	var c := creatures.get_creature(String(r["creature"]))
-	if c == null or not c.job.has("village"):
-		return {"ok": false, "reason": "nothing_there"}
-	var p: Dictionary = present[actor]
-	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
-		return {"ok": false, "reason": "too_far"}
-	if c.asleep:
-		return {"ok": false, "reason": "not_now"}
+	var found := _dweller(actor, r)
+	if found[0] == null:
+		return {"ok": false, "reason": found[1]}
+	var c: Creature = found[0]
+	var out := {}
 	match what:
 		"promise":
-			return chronicles.promise(actor, c)
+			out = chronicles.promise(actor, c)
 		"report":
-			return chronicles.report(actor, c)
-	return chronicles.talk(actor, c)
+			out = chronicles.report(actor, c)
+		_:
+			out = chronicles.talk(actor, c)
+	if out.get("ok", false) and not out.get("grudge", false):
+		out["teaches"] = _teach_terms(c, actor)
+	return out
+
+
+## The dweller one talks to, checked: [creature, ""] or [null, reason].
+func _dweller(actor: String, r: Dictionary) -> Array:
+	if not present.has(actor) or typeof(r.get("creature")) != TYPE_STRING:
+		return [null, "bad_request"]
+	var c := creatures.get_creature(String(r["creature"]))
+	if c == null or not c.job.has("village"):
+		return [null, "nothing_there"]
+	var p: Dictionary = present[actor]
+	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+		return [null, "too_far"]
+	if c.asleep:
+		return [null, "not_now"]
+	return [c, ""]
+
+
+# --- teaching (ADR-0047) ---------------------------------------------------------
+
+## What a dweller would teach one, and on what terms: [{"recipe", "price",
+## "standing" (the trust it asks of its village), "skill" ({skill: level}),
+## "why" ("" — it will now; else the reason it will not)}]. One dweller in
+## three is strict: it asks one more of trust.
+func _teach_terms(c: Creature, actor: String) -> Array:
+	var teaches: Dictionary = content.get_def(String(c.job.get("profession", ""))).get("teaches", {})
+	var strict := absi(hash([c.id, "strict"])) % 3 == 0
+	var out: Array = []
+	var ids: Array = teaches.keys()
+	ids.sort_custom(func(a: String, b: String) -> bool: return int(teaches[a].get("standing", 0)) * 1000 + int(teaches[a]["price"]) \
+		< int(teaches[b].get("standing", 0)) * 1000 + int(teaches[b]["price"]))
+	for recipe: String in ids:
+		var t: Dictionary = teaches[recipe]
+		var standing := int(t.get("standing", 0)) + (1 if strict else 0)
+		var why := ""
+		if knowledge.knows(actor, recipe):
+			why = "known_already"
+		elif chronicles.bears_grudge(c, actor):
+			why = "grudge"
+		elif chronicles.standing(c, actor) < standing:
+			why = "standing"
+		else:
+			for sk: String in t.get("skill", {}):
+				if knowledge.skill_level(actor, sk) < int(t["skill"][sk]):
+					why = "not_skilled"
+			if why == "" and inventory(actor).count(COIN) < int(t["price"]):
+				why = "no_money"
+		out.append({"recipe": recipe, "price": int(t["price"]), "standing": standing,
+			"skill": (t.get("skill", {}) as Dictionary).duplicate(), "why": why})
+	return out
+
+
+## Learns a recipe from a dweller who teaches it ({"creature", "recipe"}),
+## on its terms: coins into its purse, the recipe known for good.
+func _learn(actor: String, r: Dictionary) -> Dictionary:
+	var found := _dweller(actor, r)
+	if found[0] == null:
+		return {"ok": false, "reason": found[1]}
+	var c: Creature = found[0]
+	var recipe := rs(r, "recipe")
+	for t: Dictionary in _teach_terms(c, actor):
+		if t["recipe"] != recipe:
+			continue
+		if String(t["why"]) != "":
+			return {"ok": false, "reason": t["why"], "terms": t}
+		inventory(actor).remove(COIN, int(t["price"]))
+		c.job["purse"] = int(c.job.get("purse", 0)) + int(t["price"])
+		c.changed()
+		knowledge.learn(actor, recipe)
+		_touch_inventory(actor)
+		return {"ok": true, "learned": recipe, "creature": c.id, "teaches": _teach_terms(c, actor)}
+	return {"ok": false, "reason": "not_taught"}
+
+
+## A dweller's price of the next copy of its goods: as well made as it is.
+func _sell_price(stock: Inventory, trade: Dictionary, item: String) -> int:
+	return maxi(1, roundi(int(trade["sells"][item][1]) * Wear.worth(content, stock.state_of(item, stock.count(item) - 1))))
 
 
 func _goods(c: Creature, trade: Dictionary) -> Dictionary:
 	var stock := inventory("trade|" + c.id)
 	var sells := {}
 	for item: String in trade.get("sells", {}):
-		sells[item] = [stock.count(item), int(trade["sells"][item][1])]
+		sells[item] = [stock.count(item), _sell_price(stock, trade, item) if stock.count(item) > 0 else int(trade["sells"][item][1]),
+			stock.state_of(item, stock.count(item) - 1)]
 	return {"ok": true, "profession": String(c.job.get("profession", "")), "sells": sells,
-		"buys": (trade.get("buys", {}) as Dictionary).duplicate(), "purse": int(c.job.get("purse", 0))}
+		"buys": (trade.get("buys", {}) as Dictionary).duplicate(), "purse": int(c.job.get("purse", 0)),
+		"blueprints": (trade.get("blueprints", {}) as Dictionary).duplicate()}
 
 
 func _trade_look(actor: String, r: Dictionary) -> Dictionary:
@@ -2472,12 +2709,24 @@ func _trade(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "bad_request"}
 	var inv := inventory(actor)
 	var stock := inventory("trade|" + c.id)
-	if bool(r.get("buy", true)):
+	if r.has("blueprint"):  # a blueprint of a recipe, written for the buyer (ADR-0047)
+		var recipe := rs(r, "blueprint")
+		if not (trade.get("blueprints", {}) as Dictionary).has(recipe):
+			return {"ok": false, "reason": "not_sold"}
+		var cost := int(trade["blueprints"][recipe])
+		if inv.count(COIN) < cost:
+			return {"ok": false, "reason": "no_money"}
+		if room_for(actor, BLUEPRINT) < 1:
+			return {"ok": false, "reason": "full"}
+		inv.remove(COIN, cost)
+		inv.add(BLUEPRINT, 1, [{"recipe": recipe}])
+		c.job["purse"] = int(c.job.get("purse", 0)) + cost
+	elif bool(r.get("buy", true)):
 		if not (trade.get("sells", {}) as Dictionary).has(item):
 			return {"ok": false, "reason": "not_sold"}
-		var price := int(trade["sells"][item][1]) * n
 		if stock.count(item) < n:
 			return {"ok": false, "reason": "sold_out"}
+		var price := _sell_price(stock, trade, item) * n
 		if inv.count(COIN) < price:
 			return {"ok": false, "reason": "no_money"}
 		var after := inv.stacks.duplicate()
@@ -2487,18 +2736,23 @@ func _trade(actor: String, r: Dictionary) -> Dictionary:
 		if Bag.room_for(content, after, item) < n:
 			return {"ok": false, "reason": "full"}
 		inv.remove(COIN, price)
-		stock.remove(item, n)
-		inv.add(item, n)
+		inv.add(item, n, stock.take(item, n))
 		c.job["purse"] = int(c.job.get("purse", 0)) + price
 	else:
 		if not (trade.get("buys", {}) as Dictionary).has(item):
 			return {"ok": false, "reason": "not_bought"}
-		var price := int(trade["buys"][item]) * n
 		if inv.count(item) < n:
 			return {"ok": false, "reason": "not_carried"}
+		# A worn thing is worth what is left of it (ADR-0046).
+		var from := ri(r, "copy", inv.count(item) - n)
+		if from < 0 or from + n > inv.count(item):
+			return {"ok": false, "reason": "not_carried"}
+		var price := 0
+		for i in n:
+			price += maxi(1, roundi(int(trade["buys"][item]) * Wear.value(content, item, inv.state_of(item, from + i))))
 		if int(c.job.get("purse", 0)) < price:
 			return {"ok": false, "reason": "no_money_there"}
-		inv.remove(item, n)
+		inv.take(item, n, from)
 		give(actor, COIN, price)
 		c.job["purse"] = int(c.job.get("purse", 0)) - price
 	c.changed()
@@ -2717,8 +2971,12 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": why}
 	var item := held_of(actor)
 	var w: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
-	if w.get("kind") != "melee" or rb(r, "unarmed", false):
-		w = {}  # the free hand
+	if w.get("kind") != "melee" or rb(r, "unarmed", false) or held_broken(actor):
+		w = {}  # the free hand (a broken thing is no better)
+	if not w.is_empty():
+		w = w.duplicate()
+		w["damage"] = held_damage(actor, int(w["damage"]))
+		w["cooldown_ms"] = float(w["cooldown_ms"]) * held_pace(actor)
 	var reach := int((float(w.get("reach", 1.0)) + 0.8) * Movement.UNIT)
 	if not _reaches(actor, loc, x, y, reach):
 		return {"ok": false, "reason": "too_far"}
@@ -2739,6 +2997,7 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	combat.swung(actor, Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2))
 	var damage := float(props.get("damage", 0)) + blow_on(def, w, content.get_def(item) if item != "" else {})
 	creatures.noise(loc, Vector2i(x, y))
+	var worn := wear_held(actor) if not w.is_empty() else {}
 	if damage < durability:
 		props["damage"] = damage
 		if layer == "structure":
@@ -2746,14 +3005,13 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 		else:
 			_set_layer_props(c, layer, at[3], at[4], props)
 		_changed(chunk_key(loc, at[1], at[2]))
-		return {"ok": true, "damage": floori(damage), "durability": durability}
+		return {"ok": true, "damage": floori(damage), "durability": durability}.merged(worn)
 	# Broken: gone, half of what it cost lies there, and what a chest held.
 	var centre := Vector2i(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2)
 	if String(props.get("store", "")) != "":
 		var box := inventory("store|" + String(props["store"]))
 		for it: String in box.stacks.keys():
-			place_item(loc, centre, it, int(box.stacks[it]))
-			box.remove(it, int(box.stacks[it]))
+			place_item(loc, centre, it, int(box.stacks[it]), "", 0, box.take(it, int(box.stacks[it])))
 		_touch_inventory("store|" + String(props["store"]))
 	_take_down(loc, c, at, layer, part, above[1])
 	var cost := content.structure_cost(part)
@@ -2761,7 +3019,7 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 		var half := int(cost[m]) / 2
 		if half > 0:
 			place_item(loc, centre, m, half)
-	return {"ok": true, "broken": part}
+	return {"ok": true, "broken": part}.merged(worn)
 
 
 ## Mends a damaged part (a ceiling, a roof with "layer"), anyone's
@@ -2816,8 +3074,155 @@ func _hold(actor: String, r: Dictionary) -> Dictionary:
 	if item != "" and (content.kind_of(item) != "item" or inventory(actor).count(item) <= 0):
 		present[actor]["held"] = ""  # what it meant to take is not there: empty hands, not the old thing
 		return {"ok": false, "reason": "not_carried"}
+	# A copy named (a cell of several axes): that one is taken up (ADR-0046).
+	if item != "" and ri(r, "copy", 0) > 0 and ri(r, "copy", 0) < inventory(actor).count(item):
+		inventory(actor).to_front(item, ri(r, "copy", 0))
+		_touch_inventory(actor)
 	present[actor]["held"] = item
 	return {"ok": true}
+
+
+# --- wear (ADR-0046) ---------------------------------------------------------------
+
+## The state of the copy in the hands (the first of its kind carried).
+func held_state(actor: String) -> Dictionary:
+	var item := held_of(actor)
+	return inventory(actor).state_of(item, 0) if item != "" else {}
+
+
+## Whether what is in the hands is broken: it does nothing until mended.
+func held_broken(actor: String) -> bool:
+	return Wear.broken(content, held_of(actor), held_state(actor))
+
+
+## How much slower what is in the hands works (dull: slower).
+func held_pace(actor: String) -> float:
+	return Wear.pace(content, held_of(actor), held_state(actor))
+
+
+## A weapon's damage as the copy in the hands is now.
+func held_damage(actor: String, base: int) -> int:
+	return Wear.damage(content, held_of(actor), held_state(actor), base)
+
+
+## `n` uses of what is in the hands wear it. Broken, it stays to be mended,
+## or falls apart if it can be mended no more. {} or {"broke": id, "gone"}.
+func wear_held(actor: String, n := 1, practice := "") -> Dictionary:
+	var item := held_of(actor)
+	if not Wear.wears(content, item):
+		return {}
+	# A skilled hand spares the tool (ADR-0047): a use wears it only by chance.
+	if practice != "" and not knowledge.by_chance(actor, [item, "wear", tick], knowledge.effect(actor, practice, "wear")):
+		return {}
+	var inv := inventory(actor)
+	var s := Wear.used(inv.state_of(item, 0), n)
+	inv.set_state(item, 0, s)
+	_touch_inventory(actor)
+	if not Wear.broken(content, item, s):
+		return {}
+	if Wear.mends_left(content, item, s) > 0:
+		return {"broke": item, "gone": false}
+	inv.take(item, 1, 0)
+	_touch_inventory(actor)
+	return {"broke": item, "gone": true}
+
+
+## What a character wears, each with its state: {slot: [item, state]}.
+func worn_of(actor: String) -> Dictionary:
+	var known := _known_character(actor)
+	if known.is_empty():
+		return {}
+	var data: Dictionary = known["data"]
+	var states: Dictionary = data.get("equipment_states", {})
+	var out := {}
+	var equipment: Dictionary = data.get("equipment", {})
+	for slot: String in equipment:
+		out[slot] = [String(equipment[slot]), (states.get(slot, {}) as Dictionary)]
+	return out
+
+
+## A blow taken wears the armour that took it; broken armour that can be
+## mended no more falls apart (off the body).
+func wear_armor(actor: String) -> void:
+	var known := _known_character(actor)
+	if known.is_empty():
+		return
+	var data: Dictionary = known["data"]
+	var equipment: Dictionary = data.get("equipment", {})
+	var states: Dictionary = data.get("equipment_states", {})
+	var changed := false
+	for slot: String in equipment.keys():
+		var item := String(equipment[slot])
+		var st: Dictionary = states.get(slot, {})
+		if int(content.get_def(item).get("armor", 0)) <= 0 or not Wear.wears(content, item) or Wear.broken(content, item, st):
+			continue
+		st = Wear.used(st)
+		changed = true
+		if Wear.broken(content, item, st) and Wear.mends_left(content, item, st) <= 0:
+			equipment.erase(slot)
+			states.erase(slot)
+		else:
+			states[slot] = st
+	if not changed:
+		return
+	data["equipment"] = equipment
+	data["equipment_states"] = states
+	_dirty_characters[actor] = true
+	if present.has(actor):
+		present[actor]["appearance"] = shown_look(data)
+	_touch_inventory(actor)
+
+
+## Mends a thing one carries ({"item", "copy"}) or wears ({"slot"}) at its
+## station (none: in the hands), for materials in proportion to its wear;
+## every mend takes a share off what it lasts (Wear).
+func _mend(actor: String, r: Dictionary) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var inv := inventory(actor)
+	var item := ""
+	var state := {}
+	var slot := rs(r, "slot")
+	var copy := ri(r, "copy", 0)
+	if slot != "":
+		var on: Array = worn_of(actor).get(slot, [])
+		if on.is_empty():
+			return {"ok": false, "reason": "empty_slot"}
+		item = on[0]
+		state = on[1]
+	else:
+		item = rs(r, "item")
+		if content.kind_of(item) != "item" or copy < 0:
+			return {"ok": false, "reason": "bad_request"}
+		if copy >= inv.count(item):
+			return {"ok": false, "reason": "not_carried"}
+		state = inv.state_of(item, copy)
+	if not Wear.wears(content, item) or not content.get_def(item).has("repair"):
+		return {"ok": false, "reason": "not_mendable"}
+	if Wear.spent(state) <= 0:
+		return {"ok": false, "reason": "not_worn"}
+	if Wear.mends_left(content, item, state) <= 0:
+		return {"ok": false, "reason": "worn_out"}
+	var station := Wear.mend_station(content, item)
+	if station != "" and not station_near(actor, station):
+		return {"ok": false, "reason": "no_station", "station": station}
+	var cost := Wear.mend_cost(content, item, state)
+	if not inv.has_all(cost):
+		return {"ok": false, "reason": "materials", "need": cost}
+	for m: String in cost:
+		inv.remove(m, int(cost[m]))
+	var after := Wear.mended(state)
+	if slot != "":
+		var data: Dictionary = _known_character(actor)["data"]
+		var states: Dictionary = data.get("equipment_states", {})
+		states[slot] = after
+		data["equipment_states"] = states
+		_dirty_characters[actor] = true
+	else:
+		inv.set_state(item, copy, after)
+	_touch_inventory(actor)
+	creatures.noise(String(present[actor]["location"]), Movement.cell_of(present[actor]["pos"]))
+	return {"ok": true, "item": item, "spent": cost, "mends_left": Wear.mends_left(content, item, after)}
 
 
 ## Clothes leave the bag while worn; replacing them returns the old item.
@@ -2835,20 +3240,29 @@ func _equip(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 	if slot == "" or slot in ["main_hand", "off_hand"] or not (plan.get("slots", []) as Array).has(slot):
 		return {"ok": false, "reason": "not_wearable"}
 	var before := String(equipment.get(slot, ""))
+	var worn: Dictionary = data.get("equipment_states", {})
+	var before_state: Dictionary = worn.get(slot, {})
 	var inv := inventory(actor)
 	if putting:
-		if not inv.remove(item, 1):
+		var taken := inv.take(item, 1, ri(r, "copy", -1))
+		if taken.is_empty():
 			return {"ok": false, "reason": "not_carried"}
 		equipment[slot] = item
+		worn[slot] = taken[0]
 	else:
 		if before == "":
 			return {"ok": false, "reason": "empty_slot"}
 		if room_for(actor, before) < 1:
 			return {"ok": false, "reason": "full"}  # it stays on rather than falls
 		equipment.erase(slot)
+		worn.erase(slot)
 	if before != "":
-		give(actor, before, 1)
+		give(actor, before, 1, [before_state])
+	for s: String in worn.keys():
+		if (worn[s] as Dictionary).is_empty():
+			worn.erase(s)
 	data["equipment"] = equipment
+	data["equipment_states"] = worn
 	_dirty_characters[actor] = true
 	present[actor]["appearance"] = shown_look(data)
 	_touch_inventory(actor)
@@ -2858,9 +3272,13 @@ func _equip(actor: String, r: Dictionary, putting: bool) -> Dictionary:
 ## Worn things follow the world's existing death-drops rule too.
 func drop_equipment(actor: String, until: int) -> void:
 	var data: Dictionary = _known_character(actor)["data"]
-	for item: String in (data.get("equipment", {}) as Dictionary).values():
-		place_item(String(present[actor]["location"]), present[actor]["pos"], item, 1, actor, until)
+	var equipment: Dictionary = data.get("equipment", {})
+	var worn: Dictionary = data.get("equipment_states", {})
+	for slot: String in equipment:
+		place_item(String(present[actor]["location"]), present[actor]["pos"], String(equipment[slot]), 1, actor, until,
+			[worn.get(slot, {})])
 	data["equipment"] = {}
+	data["equipment_states"] = {}
 	present[actor]["appearance"] = shown_look(data)
 	_dirty_characters[actor] = true
 
@@ -2873,9 +3291,10 @@ func _transfer(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "bad_request"}
 	if room_for(to, item) < n:
 		return {"ok": false, "reason": "full"}
-	if not inventory(actor).remove(item, n):
+	var moved := inventory(actor).take(item, n, ri(r, "copy", -1))
+	if moved.is_empty():
 		return {"ok": false, "reason": "not_enough"}
-	inventory(to).add(item, n)
+	inventory(to).add(item, n, moved)
 	_touch_inventory(actor)
 	_touch_inventory(to)
 	return {"ok": true}

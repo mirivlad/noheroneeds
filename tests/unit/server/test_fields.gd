@@ -10,6 +10,9 @@ func before_each() -> void:
 	_content = ContentRegistry.load_packs(["res://content/base"])
 	eq(_content.errors, PackedStringArray())
 	w = ServerWorld.open(tmp_dir().path_join("world.db"), _content, {"seed": 5})
+	# What recipes make, not how well one makes them (that is test_mastery).
+	w.knowledge.all_known = true
+	w.knowledge.never_fail = true
 	var c := w.chunk("surface", 0, 0)
 	for y in 10:
 		for x in 10:
@@ -81,7 +84,8 @@ func test_seeds_from_the_wild_and_bread_from_the_field() -> void:
 	var c := w.chunk("surface", 0, 0)
 	c.set_cell("cover", 4, 3, "base:tall_grass")
 	c.set_cell("cover", 2, 3, "base:clover")
-	eq(_req(a, _at({"type": "gather", "layer": "cover"})).get("drops"), {"base:wheat_seeds": 1}, "grass gives wheat seed")
+	eq(_req(a, _at({"type": "gather", "layer": "cover"})).get("drops"), {"base:wheat_seeds": 1, "base:fiber": 1},
+		"grass gives wheat seed (and fibre, ADR-0045)")
 	eq(_req(a, _at({"type": "gather", "layer": "cover"}, 2)).get("drops"), {"base:carrot_seeds": 1}, "clover gives carrot seed")
 	w.grant(a, "base:stone", 10)
 	_req(a, _at({"type": "build", "part": "base:forge"}))

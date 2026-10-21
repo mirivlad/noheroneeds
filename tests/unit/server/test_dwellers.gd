@@ -138,7 +138,7 @@ func test_trade_with_a_dweller_coins_stock_purse_and_the_morning() -> void:
 	w.move_character(a, farmer.pos + Vector2i(Movement.UNIT, 0))
 	var g := _req(a, {"type": "trade_look", "creature": farmer.id})
 	check(g.get("ok", false), str(g))
-	eq(g["sells"]["base:bread"], [4, 6], "four loaves at six")
+	eq((g["sells"]["base:bread"] as Array).slice(0, 2), [4, 6], "four loaves at six")
 	eq(g["purse"], 60)
 	var buy := {"type": "trade", "creature": farmer.id, "item": "base:bread", "count": 1, "buy": true}
 	eq(_req(a, buy.duplicate()).get("reason"), "no_money", "no coins yet")

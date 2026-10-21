@@ -1785,6 +1785,39 @@
    "alternates": []
   },
   {
+   "id": "base:visual/pebbles",
+   "kind": "visual",
+   "for": "base:pebbles",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    2780,
+    26,
+    16
+   ],
+   "origin": [
+    2,
+    21
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      26,
+      2780,
+      26,
+      16
+     ],
+     "origin": [
+      2,
+      21
+     ]
+    }
+   ]
+  },
+  {
    "id": "base:visual/cave_mouth",
    "kind": "visual",
    "for": "base:cave_mouth",
@@ -2924,13 +2957,127 @@
    "variants": 1
   },
   {
+   "id": "base:visual/stick",
+   "kind": "visual",
+   "for": "base:stick",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1408,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/fiber",
+   "kind": "visual",
+   "for": "base:fiber",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1440,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/cord",
+   "kind": "visual",
+   "for": "base:cord",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1472,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/flint",
+   "kind": "visual",
+   "for": "base:flint",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1504,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/flint_axe",
+   "kind": "visual",
+   "for": "base:flint_axe",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1536,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/blueprint",
+   "kind": "visual",
+   "for": "base:blueprint",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1568,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/water_bucket",
    "kind": "visual",
    "for": "base:water_bucket",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1408,
+    1600,
     0,
     32,
     32
@@ -2949,7 +3096,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1440,
+    1632,
     0,
     32,
     32
@@ -2968,7 +3115,26 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1472,
+    1664,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/flint_pick",
+   "kind": "visual",
+   "for": "base:flint_pick",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1696,
     0,
     32,
     32
@@ -2987,7 +3153,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1504,
+    1728,
     0,
     32,
     32
@@ -3006,7 +3172,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1536,
+    1760,
     0,
     32,
     32
@@ -3025,7 +3191,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1568,
+    1792,
     0,
     32,
     32
@@ -3044,7 +3210,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1600,
+    1824,
     0,
     32,
     32
@@ -3063,7 +3229,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1632,
+    1856,
     0,
     32,
     32
@@ -3082,7 +3248,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1664,
+    1888,
     0,
     32,
     32
@@ -3101,7 +3267,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1696,
+    1920,
     0,
     32,
     32
@@ -3120,7 +3286,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1728,
+    1952,
     0,
     32,
     32
@@ -3139,7 +3305,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1760,
+    1984,
     0,
     32,
     32
@@ -3158,7 +3324,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1792,
+    2016,
     0,
     32,
     32

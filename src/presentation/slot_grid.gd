@@ -25,7 +25,8 @@ var accepts: Callable = func(_data: Dictionary) -> bool: return false
 var selectable := true
 var content: ContentRegistry
 var view: WorldView
-## [[id, count], ...] as shown.
+## [[id, count], ...] as shown; a thing whose copies differ (ADR-0046:
+## wear) has its copy's state and number too: [id, 1, state, copy].
 var cells: Array = []
 var selected := -1
 var _cells: Array[Cell] = []
@@ -37,6 +38,7 @@ class Cell:
 	var index := 0
 	var icon := TextureRect.new()
 	var count := Label.new()
+	var bar := WearBar.new()
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_STOP
@@ -57,9 +59,16 @@ class Cell:
 		count.position = Vector2(0, 20)
 		count.size = Vector2(SlotGrid.CELL - 3, 16)
 		add_child(count)
+		bar.position = Vector2(4, SlotGrid.CELL - 6)
+		bar.size = Vector2(SlotGrid.CELL - 8, 4)
+		add_child(bar)
 
 	func item() -> String:
 		return String(grid.cells[index][0]) if index < grid.cells.size() else ""
+
+	## Which copy of its thing the cell shows (-1: copies are alike).
+	func copy() -> int:
+		return grid.copy_at(index)
 
 	func _get_drag_data(_at: Vector2) -> Variant:
 		if item() == "":
@@ -71,7 +80,7 @@ class Cell:
 			set_drag_preview(preview)
 		else:
 			preview.free()
-		return {"item": item(), "count": int(grid.cells[index][1]), "grid": grid.tag, "cell": index}
+		return {"item": item(), "count": int(grid.cells[index][1]), "grid": grid.tag, "cell": index, "copy": copy()}
 
 	func _can_drop_data(_at: Vector2, data: Variant) -> bool:
 		if typeof(data) != TYPE_DICTIONARY:
@@ -136,10 +145,46 @@ func show_cells(what: Array) -> void:
 		var c := _cells[i]
 		var id := String(cells[i][0])
 		var n := int(cells[i][1])
+		var state := state_at(i)
 		c.icon.texture = view.item_picture(id) if id != "" else null
+		c.icon.modulate = Color(1, 1, 1, 0.45) if id != "" and Wear.broken(content, id, state) else Color.WHITE
 		c.count.text = str(n) if n > 1 else ""
-		c.tooltip_text = "%s ×%d" % [content.get_def(id).get("name", id), n] if id != "" else ""
+		c.bar.show_state(content, id, state)
+		# The card of the thing (its condition; later its other marks).
+		c.tooltip_text = ItemCard.text(content, id, state, n) if id != "" else ""
 		c.add_theme_stylebox_override("panel", _box_chosen if i == selected else _box_empty)
+
+
+## The state of the copy a cell shows ({} — plain).
+func state_at(index: int) -> Dictionary:
+	if index < 0 or index >= cells.size() or (cells[index] as Array).size() < 3 or typeof(cells[index][2]) != TYPE_DICTIONARY:
+		return {}
+	return cells[index][2]
+
+
+## Which copy of its thing a cell shows (-1: its copies are alike).
+func copy_at(index: int) -> int:
+	if index < 0 or index >= cells.size() or (cells[index] as Array).size() < 4:
+		return -1
+	return int(cells[index][3])
+
+
+## Cells as Bag.lay_out makes them, with each copy's state for things whose
+## copies differ (`states`: {id: [state, ...]}, the client's): the n-th cell
+## of a thing shows its n-th copy.
+static func with_states(content: ContentRegistry, cells: Array, states: Dictionary) -> Array:
+	var seen := {}
+	var out: Array = []
+	for cell: Array in cells:
+		var id := String(cell[0])
+		if id == "" or not (Wear.wears(content, id) or states.has(id)):  # a thing of its own: worn, made, a blueprint
+			out.append(cell)
+			continue
+		var k := int(seen.get(id, 0))
+		seen[id] = k + 1
+		var list: Array = states.get(id, [])
+		out.append([id, cell[1], (list[k] as Dictionary) if k < list.size() and typeof(list[k]) == TYPE_DICTIONARY else {}, k])
+	return out
 
 
 func select(index: int) -> void:

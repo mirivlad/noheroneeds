@@ -57,7 +57,7 @@ func start(o: Dictionary) -> String:
 		return "cannot load or create the server key"
 	_world = ServerWorld.open(world_path, content)
 	if _world == null:
-		return "cannot open the world " + world_path
+		return "cannot open the world %s: %s" % [world_path, ServerWorld.open_error]
 	_transport = ENetTransport.new()
 	var port := int(o.get("port", "24680"))
 	var err := _transport.start_server(port, int(o.get("max-players", "20")))

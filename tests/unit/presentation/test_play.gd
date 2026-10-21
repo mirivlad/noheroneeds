@@ -230,18 +230,18 @@ func test_q_against_a_wolf_and_things_in_and_out_of_a_chest() -> void:
 	_frames_until(func() -> bool: return g.chest_panel.visible)
 	check(g.chest_panel.visible, "the chest opens: %s / %s" % [g._note, Actions.quick(g.actions)])
 	var total := int(g.client.inventory().get("base:arrow", 0))
-	g.chest_panel.move.emit("base:arrow", 1, true)
+	g.chest_panel.move.emit("base:arrow", 1, true, -1)
 	_frames_until(func() -> bool: return not g.chest_panel.contents.is_empty())
 	eq(g.chest_panel.contents, {"base:arrow": 1}, "one")
 	var half := (total - 1) / 2
-	g.chest_panel.move.emit("base:arrow", half, true)
+	g.chest_panel.move.emit("base:arrow", half, true, -1)
 	_frames_until(func() -> bool: return int(g.chest_panel.contents.get("base:arrow", 0)) == 1 + half)
 	eq(g.chest_panel.contents, {"base:arrow": 1 + half}, "half of what was left")
-	g.chest_panel.move.emit("base:arrow", total - 1 - half, true)
+	g.chest_panel.move.emit("base:arrow", total - 1 - half, true, -1)
 	_frames_until(func() -> bool: return int(g.chest_panel.contents.get("base:arrow", 0)) == total)
 	eq(g.chest_panel.contents, {"base:arrow": total}, "all")
 	eq(int(g.client.inventory().get("base:arrow", 0)), 0)
-	g.chest_panel.move.emit("base:arrow", total, false)
+	g.chest_panel.move.emit("base:arrow", total, false, -1)
 	_frames_until(func() -> bool: return int(g.client.inventory().get("base:arrow", 0)) == total)
 	eq(int(g.client.inventory().get("base:arrow", 0)), total, "and back")
 
@@ -283,7 +283,7 @@ func test_things_dragged_into_slots_and_a_wall_struck_and_mended_from_the_menu()
 	var at := g.inventory_panel.order.find("base:axe")
 	check(at >= 0, "the axe is in a cell")
 	var data: Variant = bag.cell(at)._get_drag_data(Vector2.ZERO)
-	eq(data, {"item": "base:axe", "count": 1, "grid": "bag", "cell": at})
+	eq(data, {"item": "base:axe", "count": 1, "grid": "bag", "cell": at, "copy": 0}, "a cell of a thing that wears names its copy (ADR-0046)")
 	var slot: Hotbar.Slot = g.hotbar._slots[4]
 	check(slot._can_drop_data(Vector2.ZERO, data), "a slot takes it")
 	slot._drop_data(Vector2.ZERO, data)
@@ -378,6 +378,7 @@ func test_character_window_catches_clicks_and_changes_equipment() -> void:
 
 func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	var id := g.client.character_id
+	w.knowledge.never_fail = true  # the window and the chain, not a novice's dice (test_mastery)
 	var me := _me()
 	w.grant(id, "base:log", 6)
 	g.client.request({"type": "build", "location": "surface", "x": me.x + 1, "y": me.y, "part": "base:workbench"})
@@ -386,7 +387,7 @@ func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	_key(KEY_K)
 	check(g.crafts.visible, "K opens the crafts")
 	check(g.crafts._can[g.crafts._ids[0]], "what can be made here comes first")
-	check(not g.crafts._can["base:smelt_iron"], "no forge: no iron")
+	check(not g.crafts._can.get("base:smelt_iron", false), "no forge, nor knowing how: no iron")
 	check(g.crafts._can["base:saw_planks"], "logs at the workbench: planks")
 	var before := int(g.client.inventory().get("base:plank", 0))
 	g.crafts.craft.emit("base:saw_planks", 2)
@@ -562,6 +563,7 @@ func test_cave_rock_is_drawn_in_its_own_cell_not_over_the_passage() -> void:
 ## At a campfire: its action opens its recipes; "Сделать" with a count
 ## cooks so many pieces (ADR-0026).
 func test_meat_cooked_at_a_campfire_from_its_action() -> void:
+	w.knowledge.never_fail = true  # the fire's action, not a novice's dice (test_mastery)
 	var id := g.client.character_id
 	var me := _me()
 	w.grant(id, "base:log", 2)

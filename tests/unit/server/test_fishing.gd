@@ -58,6 +58,7 @@ func test_a_cast_is_luck_and_the_kinds_go_by_weight() -> void:
 		var r := _cast(5, 16)
 		check(r.get("ok", false), str(r))
 		c.set_props(5, 16, {})  # a place not fished before, every time
+		w.inventory(a).set_state("base:fishing_rod", 0, {})  # and a new rod: luck, not wear, is counted
 		casts += 1
 		if r.get("bite", false):
 			bites += 1

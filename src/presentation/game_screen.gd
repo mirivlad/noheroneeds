@@ -117,6 +117,8 @@ var _sound_on_ok := {}
 var _swap_rids := {}
 ## Crafts asked: rid -> the recipe (its station's sound).
 var _craft_rids_recipe := {}
+var _mend_rids := {}
+var _learn_rids := {}
 ## The menu is open: no controls, and a single-player world stands still.
 var paused := false
 var _reported := false
@@ -163,8 +165,45 @@ const REASONS := {
 	"blocked_below": "внизу что-то построено", "box_full": "сундук полон", "full": "сумка полна", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
+	"broken": "сломано — почините (K или у станка)", "not_mendable": "это не чинится", "not_worn": "чинить нечего",
+	"worn_out": "износилось до предела — больше не починить",
+	"unknown_recipe": "этого вы не умеете: учитесь у мастера или по чертежу", "no_blueprint": "нет такого чертежа",
+	"known_already": "это вы уже знаете", "standing": "деревня вам ещё мало доверяет: помогите её жителям",
+	"not_skilled": "не хватает умения", "not_taught": "этому здесь не учат",
 	"not_ripe": "ещё не созрело", "not_its_food": "этого не ест", "fed_already": "уже сыто", "not_a_bed": "это не кровать", "in_the_way": "мешает то, что ближе", "no_trade": "не торгует", "not_now": "сейчас не до торговли", "not_sold": "этого не продаёт", "sold_out": "больше нет", "no_money": "не хватает монет", "not_bought": "это не покупает", "no_money_there": "у него не хватает монет", "grudge": "с вами не хотят иметь дела", "no_request": "просить не о чем", "not_taken": "сначала возьмитесь", "not_done": "ещё не сделано", "nothing_to_fill": "здесь не набрать", "not_yours": "это не ваше", "not_yet": "ещё рано", "not_a_liquid": "выливать нечего", "not_tired": "спать не хочется", "not_tameable": "не приручить", "not_tillable": "здесь не вспахать", "not_a_field": "сеют на пашне", "not_a_seed": "это не сеют",
 }
+
+
+## What is said of a craft's result (ADR-0047): what came out, what failed
+## and what it spoiled; a recipe studied or a blueprint drafted.
+static func craft_note(registry: ContentRegistry, r: Dictionary) -> String:
+	var name_of := func(id: String) -> String: return String(registry.get_def(id).get("name", id)).to_lower()
+	if r.has("learned"):
+		return "изучено: " + String(name_of.call(String(r["learned"])))
+	if r.has("drafted"):
+		return "записан чертёж: " + String(name_of.call(String(r["drafted"])))
+	var parts := PackedStringArray()
+	var made := PackedStringArray()
+	for item: String in r.get("made", {}):
+		made.append("%s %d" % [name_of.call(item), int(r["made"][item])])
+	if not made.is_empty():
+		parts.append("сделано: " + ", ".join(made))
+	if int(r.get("failed", 0)) > 0:
+		var lost := PackedStringArray()
+		for item: String in r.get("lost", {}):
+			lost.append("%s %d" % [name_of.call(item), int(r["lost"][item])])
+		parts.append("не вышло: %d%s" % [int(r["failed"]), (" (испорчено: " + ", ".join(lost) + ")") if not lost.is_empty() else ""])
+	return "; ".join(parts) if not parts.is_empty() else "готово"
+
+
+## What is said when a thing in use broke: mend it where it is mended, or it
+## fell apart (flint, or mended too often).
+static func broke_note(registry: ContentRegistry, item: String, gone: bool) -> String:
+	var item_name := String(registry.get_def(item).get("name", item))
+	if gone:
+		return "%s: износ до конца, вещь развалилась" % item_name
+	var where := Wear.mend_station(registry, item)
+	return "%s: поломка — почините %s" % [item_name, String(ItemCard.STATIONS.get(where, "")) if where != "" else "в руках"]
 
 
 ## Sets the game up; "" on success, else what went wrong (for people).
@@ -193,7 +232,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 			game = LocalGame.start(String(cfg["world_path"]), content, me, server_identity, character_file,
 				{"seed": WorldLibrary.seed_of(cfg.get("rules", {}))})
 			if game == null:
-				return "не удалось открыть мир"
+				return ServerWorld.open_error if ServerWorld.open_error != "" else "не удалось открыть мир"
 			WorldLibrary.apply_rules(cfg.get("rules", {}), game.world)
 			if _opts.has("season"):  # dev only: --season=spring|summer|autumn|winter, its first day
 				game.world.world_time += maxi(0, WorldView.SEASON_KEYS.find(String(_opts["season"]))) * Seasons.SEASON_MS
@@ -468,7 +507,7 @@ func _key(k: int, shift: bool) -> void:
 		else:
 			catalog.visible = false
 			character_panel.hide()
-			inventory_panel.show_for(client.inventory(), hotbar.selected)
+			inventory_panel.show_for(client.inventory(), hotbar.selected, client.item_states())
 	elif k == KEY_C:
 		if character_panel.visible:
 			character_panel.hide()
@@ -684,7 +723,7 @@ func _open_menu() -> void:
 func _choose_slot(slot: int) -> void:
 	hotbar.choose(slot)
 	if inventory_panel.visible:
-		inventory_panel.show_for(client.inventory(), slot)
+		inventory_panel.show_for(client.inventory(), slot, client.item_states())
 
 
 ## Q: the weapon into the hands at once, and back (Hotbar.snatch).
@@ -693,7 +732,7 @@ func _snatch_weapon() -> void:
 	if note != "":
 		_note = note
 	if inventory_panel.visible:
-		inventory_panel.show_for(client.inventory(), hotbar.selected)
+		inventory_panel.show_for(client.inventory(), hotbar.selected, client.item_states())
 
 
 ## Cells a drag of the blueprint covers: an area for ceilings and roofs, a
@@ -745,13 +784,18 @@ func _build_tools(layer: CanvasLayer) -> void:
 		var crid := client.request({"type": "craft", "recipe": recipe, "count": count})
 		_craft_rids[crid] = true
 		_craft_rids_recipe[crid] = recipe)
+	crafts.mend.connect(func(r: Dictionary) -> void:
+		_mend_rids[client.request(r.merged({"type": "mend"}))] = true)
+	crafts.ask.connect(func(r: Dictionary) -> void:
+		var arid := client.request(r)
+		_craft_rids[arid] = true
+		_craft_rids_recipe[arid] = String(r.get("recipe", "")))
 	layer.add_child(crafts)
 	inventory_panel.setup(content, view)
 	inventory_panel.unslot.connect(func(slot: int) -> void:
 		hotbar.put(slot, "", -1))
 	layer.add_child(inventory_panel)
-	inventory_panel.drop.connect(func(item: String, n: int) -> void:
-		_sound_on_ok[client.request({"type": "drop", "item": item, "count": n})] = "drop")
+	inventory_panel.drop.connect(_drop_item)
 	inventory_panel.wear.connect(_wear_item)
 	inventory_panel.arranged.connect(_save_bag)
 	character_panel.setup(content, view)
@@ -762,16 +806,17 @@ func _build_tools(layer: CanvasLayer) -> void:
 		else:
 			_sound_on_ok[client.request({"type": "unequip", "slot": slot})] = "equip")
 	character_panel.unslot.connect(func(slot: int) -> void: hotbar.put(slot, "", -1))
-	character_panel.drop.connect(func(item: String, n: int) -> void:
-		_sound_on_ok[client.request({"type": "drop", "item": item, "count": n})] = "drop")
+	character_panel.drop.connect(_drop_item)
 	layer.add_child(character_panel)
 	hotbar.select_slot.connect(func(i: int) -> void: _choose_slot(i))
 	hotbar.changed.connect(_save_hotbar)
 	chest_panel.setup(content, view)
-	chest_panel.move.connect(func(item: String, n: int, putting: bool) -> void:
+	chest_panel.move.connect(func(item: String, n: int, putting: bool, copy: int) -> void:
 		var c := chest_panel.cell
-		_chest_rids[client.request({"type": "store" if putting else "take", "location": client.location,
-			"x": c.x, "y": c.y, "item": item, "count": n})] = c)
+		var r := {"type": "store" if putting else "take", "location": client.location, "x": c.x, "y": c.y, "item": item, "count": n}
+		if copy >= 0:
+			r["copy"] = copy
+		_chest_rids[client.request(r)] = c)
 	layer.add_child(chest_panel)
 	trade_panel.setup(content, view)
 	trade_panel.deal.connect(func(item: String, n: int, buying: bool) -> void:
@@ -784,6 +829,10 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_talk_rids[client.request({"type": "promise", "creature": who})] = who)
 	talk_panel.report.connect(func(who: String) -> void:
 		_talk_rids[client.request({"type": "report", "creature": who})] = who)
+	talk_panel.learn.connect(func(who: String, recipe: String) -> void:
+		_learn_rids[client.request({"type": "learn", "creature": who, "recipe": recipe})] = who)
+	trade_panel.buy_blueprint.connect(func(recipe: String) -> void:
+		_trade_rids[client.request({"type": "trade", "creature": trade_panel.creature, "blueprint": recipe})] = trade_panel.creature)
 	talk_panel.trade.connect(func(who: String) -> void:
 		talk_panel.visible = false
 		_trade_rids[client.request({"type": "trade_look", "creature": who})] = who)
@@ -803,7 +852,9 @@ func _build_tools(layer: CanvasLayer) -> void:
 	layer.add_child(_menu)
 
 
-func _wear_item(item: String) -> void:
+## Puts on or takes into the hands; `copy`: which of several alike things
+## (ADR-0046: the axe of these two that is less worn), -1: any.
+func _wear_item(item: String, copy := -1) -> void:
 	var d := content.get_def(item)
 	var slot := String(d.get("equip_slot", ""))
 	if slot in ["", "main_hand"]:
@@ -812,8 +863,22 @@ func _wear_item(item: String) -> void:
 			at = hotbar.selected
 			hotbar.put(at, item, -1)
 		_choose_slot(at)
+		if copy > 0:
+			client.hold(item)
+			client.request({"type": "hold", "item": item, "copy": copy})  # that copy first: the one in use
 	else:
-		_sound_on_ok[client.request({"type": "equip", "item": item})] = "equip"
+		var r := {"type": "equip", "item": item}
+		if copy >= 0:
+			r["copy"] = copy
+		_sound_on_ok[client.request(r)] = "equip"
+
+
+## Drops `n` of a thing; `copy`: which one of several alike (-1: any).
+func _drop_item(item: String, n: int, copy := -1) -> void:
+	var r := {"type": "drop", "item": item, "count": n}
+	if copy >= 0:
+		r["copy"] = copy
+	_sound_on_ok[client.request(r)] = "drop"
 
 
 ## The character's quick slots as the player left them; for one seen first,
@@ -1085,7 +1150,8 @@ func _update_hud() -> void:
 			client.results.erase(rid)
 			if r.get("ok"):
 				chest_panel.bag_order = inventory_panel.order
-				chest_panel.open_at(at, r.get("contents", {}), int(r.get("slots", 0)), client.inventory())
+				chest_panel.open_at(at, r.get("contents", {}), int(r.get("slots", 0)), client.inventory(), r.get("states", {}),
+					client.item_states())
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			continue
@@ -1108,18 +1174,38 @@ func _update_hud() -> void:
 			_craft_rids.erase(rid)
 			client.results.erase(rid)
 			if r.get("ok"):
-				var made := PackedStringArray()
-				for item: String in r.get("made", {}):
-					made.append("%s %d" % [String(content.get_def(item).get("name", item)).to_lower(), int(r["made"][item])])
-				_note = "сделано: " + ", ".join(made)
+				_note = craft_note(content, r)
 				# At a fire it sizzles, at a forge it rings, else hands and tools.
 				var station := String(content.get_def(String(_craft_rids_recipe.get(rid, ""))).get("station", ""))
-				audio.play("craft", {"fire": "base:campfire", "forge": "base:forge"}.get(station, ""), null)
+				if not (r.get("made", {}) as Dictionary).is_empty() or r.has("learned") or r.has("drafted"):
+					audio.play("craft", {"fire": "base:campfire", "forge": "base:forge"}.get(station, ""), null)
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			if crafts.visible:
 				crafts.refresh()
 			_craft_rids_recipe.erase(rid)
+			continue
+		if _learn_rids.has(rid):
+			_learn_rids.erase(rid)
+			client.results.erase(rid)
+			if r.get("ok"):
+				_note = craft_note(content, r)
+				audio.play("craft", "", null)
+				talk_panel.show_lessons(r.get("teaches", []))
+			else:
+				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+			continue
+		if _mend_rids.has(rid):
+			_mend_rids.erase(rid)
+			client.results.erase(rid)
+			if r.get("ok"):
+				_note = "починено: %s (починок осталось: %d)" % [String(content.get_def(String(r.get("item", ""))).get("name", "")).to_lower(),
+					int(r.get("mends_left", 0))]
+				audio.play("craft", "", null)
+			else:
+				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+			if crafts.visible:
+				crafts.refresh()
 			continue
 		if _attacks.has(rid):
 			var done := String(_attacks[rid])
@@ -1131,6 +1217,8 @@ func _update_hud() -> void:
 				audio.play("gather", String(r.get("thing", "")), null)
 			if not r.get("ok") and r.get("reason") != "not_ready":
 				_note = String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
+			elif r.has("broke"):  # the use that wore it out (ADR-0046)
+				_note = broke_note(content, String(r["broke"]), bool(r.get("gone", false)))
 			elif r.has("work"):
 				_note = "%s: %d из %d" % [content.get_def(String(r.get("thing", ""))).get("name", ""), int(r["work"]), int(r["of"])]
 			elif r.has("bite"):  # by luck (ADR-0031): a catch or nothing this time
@@ -1222,17 +1310,20 @@ func _update_hud() -> void:
 		elif what != "":
 			doing = what
 	status.text = "%s  %s   %s   %s" % [state, hands, doing, note]
-	hotbar.refresh(inv)
+	hotbar.refresh(inv, client.item_states())
 	if character_panel.visible:
 		character_panel.show_for(client.own, held)
-	if inv.hash() != _inv_seen:  # the open panels follow what one carries
-		_inv_seen = inv.hash()
+	var seen := [inv, client.item_states()].hash()  # counts, and each copy's wear
+	if seen != _inv_seen:  # the open panels follow what one carries
+		_inv_seen = seen
 		if chest_panel.visible:
-			chest_panel.refresh(inv)
+			chest_panel.refresh(inv, client.item_states())
 		if trade_panel.visible:
 			trade_panel.refresh(inv)
 		if inventory_panel.visible:
-			inventory_panel.show_for(inv, hotbar.selected)
+			inventory_panel.show_for(inv, hotbar.selected, client.item_states())
+		if crafts.visible:
+			crafts.refresh()
 
 
 ## What the cursor points at and what can be done there (each frame), and

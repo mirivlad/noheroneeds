@@ -12,6 +12,9 @@ func before_each() -> void:
 	eq(_content.errors, PackedStringArray())
 	_db = tmp_dir().path_join("world.db")
 	w = ServerWorld.open(_db, _content, {"seed": 5})
+	# What recipes make, not how well one makes them (that is test_mastery).
+	w.knowledge.all_known = true
+	w.knowledge.never_fail = true
 	var c := w.chunk("surface", 0, 0)
 	for y in 12:
 		for x in 12:

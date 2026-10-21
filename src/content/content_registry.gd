@@ -219,6 +219,18 @@ func _validate() -> void:
 				d["stack"] = int(d.get("stack", 1))
 				if d["stack"] < 1:
 					errors.append("%s: stack must be at least 1" % id)
+				# Wear (ADR-0046): uses a copy lasts; mended at a station for materials.
+				if d.has("durability") and (typeof(d["durability"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["durability"]) < 1 or d["stack"] != 1):
+					errors.append("%s: durability is the uses a thing of a stack of 1 lasts, 1 or more" % id)
+				if d.has("repair"):
+					var mend: Variant = d["repair"]
+					if typeof(mend) != TYPE_DICTIONARY or not d.has("durability") \
+							or (mend.has("station") and (typeof(mend["station"]) != TYPE_STRING or String(mend["station"]) == "")):
+						errors.append("%s: repair is {station, materials} of a thing that wears" % id)
+					else:
+						_check_amounts(id, "repair materials", mend.get("materials", {}), true)
+						if (mend.get("materials", {}) as Dictionary).has(id):
+							errors.append("%s: a thing is not mended with itself" % id)
 				# What its blows do to parts of a material (ADR-0016): a pick
 				# against stone; otherwise the part's toughness counts.
 				var against: Variant = d.get("against", {})
@@ -274,6 +286,23 @@ func _validate() -> void:
 				# Made at a kind of station (ADR-0026), or in the hands.
 				if d.has("station") and (typeof(d["station"]) != TYPE_STRING or String(d["station"]) == ""):
 					errors.append("%s: station names a kind of station" % id)
+				# Knowledge (ADR-0047): its skill, how hard it is, whether all know it.
+				d["difficulty"] = int(d.get("difficulty", 30))
+				if d["difficulty"] < 0 or d["difficulty"] > 100:
+					errors.append("%s: difficulty is 0..100" % id)
+				d["innate"] = bool(d.get("innate", false))
+				if d.has("skill") and kind_of(String(d["skill"])) != "skill":
+					errors.append("%s: skill '%s' is not a skill" % [id, d["skill"]])
+			"modifier":
+				# An enhancement a master's thing may come with (ADR-0047).
+				if typeof(d.get("fits")) != TYPE_ARRAY or (d["fits"] as Array).is_empty() \
+						or (d["fits"] as Array).any(func(k: Variant) -> bool: return not String(k) in ["tool", "weapon", "armor", "clothes"]):
+					errors.append("%s: fits lists tool, weapon, armor, clothes" % id)
+				var fx: Variant = d.get("effects", {})
+				if typeof(fx) != TYPE_DICTIONARY or (fx as Dictionary).keys().any(
+						func(k: Variant) -> bool: return not String(k) in ["durability", "pace", "damage", "armor", "warmth", "yield"]):
+					errors.append("%s: effects are durability, pace, damage, armor, warmth, yield" % id)
+				d["value"] = float(d.get("value", 1.2))
 			"body_plan":
 				d["body_size"] = BodySize.parse(id, d.get("size"), errors)
 				d["health"] = int(d.get("health", 20))
@@ -300,6 +329,12 @@ func _validate() -> void:
 				d["max_level"] = int(d.get("max_level", 0))
 				if d["max_level"] < 1:
 					errors.append("%s: max_level must be at least 1" % id)
+				# What practises it (ADR-0047) and what it gives at its height.
+				_check_strings(id, "trained_by", d.get("trained_by", []), true)
+				var fx: Variant = d.get("effects", {})
+				if typeof(fx) != TYPE_DICTIONARY or (fx as Dictionary).keys().any(
+						func(k: Variant) -> bool: return not String(k) in ["pace", "wear", "chance", "damage", "yield"]):
+					errors.append("%s: skill effects are pace, wear, chance, damage, yield" % id)
 			"attribute":
 				d["min"] = int(d.get("min", 0))
 				d["max"] = int(d.get("max", 0))
@@ -473,6 +508,26 @@ func _check_profession(id: String, d: Dictionary) -> void:
 		for item: Variant in trade.get("buys", {}):
 			if kind_of(String(item)) != "item" or typeof(trade["buys"][item]) not in [TYPE_INT, TYPE_FLOAT] or int(trade["buys"][item]) < 1:
 				errors.append("%s: buys '%s' needs an item and a price of at least 1" % [id, item])
+		# Blueprints it sells (ADR-0047): {recipe: price}; the quality of its goods.
+		for r: Variant in trade.get("blueprints", {}):
+			if kind_of(String(r)) != "recipe" or int(trade["blueprints"][r]) < 1:
+				errors.append("%s: blueprints '%s' needs a recipe and a price" % [id, r])
+		var q: Variant = trade.get("quality", [1.0, 1.0])
+		if typeof(q) != TYPE_ARRAY or (q as Array).size() != 2 or float(q[0]) < Mastery.WORST_QUALITY or float(q[1]) > 1.0 or float(q[0]) > float(q[1]):
+			errors.append("%s: quality is [from, to] within 0.5..1" % id)
+	# What it teaches (ADR-0047): {recipe: {price, standing, skill?: {skill: level}}}.
+	var teaches: Variant = d.get("teaches", {})
+	if typeof(teaches) != TYPE_DICTIONARY:
+		errors.append("%s: teaches maps a recipe to its terms" % id)
+	else:
+		for r: Variant in teaches:
+			var t: Variant = teaches[r]
+			if kind_of(String(r)) != "recipe" or typeof(t) != TYPE_DICTIONARY or int(t.get("price", -1)) < 0:
+				errors.append("%s: teaches '%s' needs a recipe and {price, standing}" % [id, r])
+				continue
+			for sk: Variant in t.get("skill", {}):
+				if kind_of(String(sk)) != "skill":
+					errors.append("%s: teaches '%s' asks for '%s', not a skill" % [id, r, sk])
 	var lines: Variant = d.get("lines", {})
 	if typeof(lines) != TYPE_DICTIONARY:
 		errors.append("%s: lines map a situation to what is said" % id)

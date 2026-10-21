@@ -1066,13 +1066,13 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - Лицензии: CC0
 - https://opengameart.org/content/modified-32x32-treasure-chest
 
-## [LPC] Ore and Forge (руда в камне, камень, слитки, печь)
+## [LPC] Ore and Forge (руда в камне, камень, кремень, россыпь камней, слитки, печь)
 
 - Авторы: bluecarrot16
 - Лицензии: CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0
 - https://opengameart.org/content/lpc-ore-and-forge
 
-## Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда)
+## Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда, ветки, волокно, бечёвка, чертёж)
 
 - Авторы: Idylwild
 - Лицензии: CC0
@@ -1084,7 +1084,7 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - Лицензии: CC-BY-SA 3.0
 - https://opengameart.org/content/camp-fire-animation-for-rpgs-finished
 
-## [LPC] Items and game effects (топор, копьё, лук, самоцвет, жареное мясо)
+## [LPC] Items and game effects (топор, кремнёвое рубило, копьё, лук, самоцвет, жареное мясо)
 
 - Авторы: Lanea Zimmerman (Sharm) и др. (LPC)
 - Лицензии: CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0

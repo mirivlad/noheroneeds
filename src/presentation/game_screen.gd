@@ -133,6 +133,8 @@ var _note := ""
 var _opts := {}
 var _frames := 0
 var _demo_done := false
+## Development runs (--demo, --goto, --ui...): none in a player's game.
+var _dev: DevRuns
 ## The blueprint's cells this frame ([cell, why not]) and their pictures.
 var _plan: Array = []
 var _ghosts: Array[Sprite2D] = []
@@ -169,6 +171,8 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	content = registry
 	settings = player_settings
 	_opts = dev
+	if not _opts.is_empty():
+		_dev = DevRuns.new(self)
 	match String(cfg.get("mode", "local")):
 		"connect":
 			var t := ENetTransport.new()
@@ -189,6 +193,8 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 			if game == null:
 				return "не удалось открыть мир"
 			WorldLibrary.apply_rules(cfg.get("rules", {}), game.world)
+			if _opts.has("season"):  # dev only: --season=spring|summer|autumn|winter, its first day
+				game.world.world_time += maxi(0, WorldView.SEASON_KEYS.find(String(_opts["season"]))) * Seasons.SEASON_MS
 			if _opts.has("time"):  # dev only: --time=HOUR sets the world's clock
 				var day_start := game.world.world_time - game.world.world_time % Daylight.DAY_MS
 				game.world.world_time = day_start + int(float(_opts["time"]) * Daylight.HOUR_MS)
@@ -395,237 +401,8 @@ func _process(delta: float) -> void:
 	if _accum > tick * 4:
 		_accum = 0.0
 	var t_sim := Time.get_ticks_usec()
-	if _opts.has("demo") and not _demo_done and client.state == "playing" and client.has_position:
-		_demo_done = true
-		if game:
-			game.world.grant(client.character_id, "base:plank", 60)  # dev only: enough for the demo
-		for x in range(-3, 4):
-			for y in [-4, 2]:
-				var part := "base:wood_door" if x == 0 and y == 2 else ("base:stone_wall" if y == -4 else "base:wood_wall")
-				var facing := ""
-				if absi(x) == 2:  # windows to the front, a loophole to the back (ADR-0015)
-					part = "base:wood_window" if y == 2 else "base:loophole"
-					facing = "s" if y == 2 else "n"
-				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": part, "facing": facing})
-		for y in range(-3, 2):
-			for x in [-3, 3]:
-				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_wall"})
-		# A ceiling over the room, thatch over its back row, stairs to the floor above.
-		for y in range(-3, 2):
-			for x in range(-2, 3):
-				var part := "base:thatch_roof" if y == -3 else "base:wood_ceiling"
-				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": part})
-		client.request({"type": "build", "location": client.location, "x": 1, "y": 0, "part": "base:wood_stairs"})
-		# Beside the house: a wall with a walk on top, stairs up to it from
-		# both ends, turned east and west (ADR-0013).
-		for x in range(-1, 2):
-			client.request({"type": "build", "location": client.location, "x": x, "y": 4, "part": "base:wood_wall"})
-			client.request({"type": "build", "location": client.location, "x": x, "y": 4, "part": "base:wood_ceiling"})
-		client.request({"type": "build", "location": client.location, "x": -2, "y": 4, "part": "base:wood_stairs", "facing": "e"})
-		client.request({"type": "build", "location": client.location, "x": 2, "y": 4, "part": "base:wood_stairs", "facing": "w"})
-		client.request({"type": "drop", "item": "base:stone", "count": 2})
-		for x in [-2, 2]:  # torches by the door (ADR-0014)
-			client.request({"type": "build", "location": client.location, "x": x, "y": 3, "part": "base:torch"})
-		if game:  # a yard with the stations of crafts (ADR-0026)
-			game.world.grant(client.character_id, "base:log", 12)
-			game.world.grant(client.character_id, "base:stone", 10)
-		for p: Array in [[4, 0, "base:workbench"], [5, 1, "base:forge"], [4, 2, "base:campfire"]]:
-			client.request({"type": "build", "location": client.location, "x": p[0], "y": p[1], "part": p[2]})
-		if game:  # a field by the house, sown at days apart (ADR-0027)
-			var w := game.world
-			for i in 8:
-				var at := Vector2i(-6 + i % 4, 6 + i / 4)
-				var c := w.chunk(client.location, at.x >> 5, at.y >> 5)
-				c.set_cell("ground", at.x & 31, at.y & 31, "base:farmland")
-				c.set_cell("cover", at.x & 31, at.y & 31, "base:wheat_crop" if i < 4 else "base:carrot_crop")
-				w._set_layer_props(c, "cover", at.x & 31, at.y & 31, {"planted": w.world_time - (i % 4) * 16 * Daylight.HOUR_MS})
-				w._changed(ServerWorld.chunk_key(client.location, at.x >> 5, at.y >> 5))
-			# fenced round, a gate in its front
-			for x in range(-7, -1):
-				for y in range(5, 9):
-					if x in [-7, -2] or y in [5, 8]:
-						var c := w.chunk(client.location, x >> 5, y >> 5)
-						c.set_cell("structure", x & 31, y & 31, "base:wood_gate" if x == -4 and y == 8 else "base:wood_fence")
-						w._changed(ServerWorld.chunk_key(client.location, x >> 5, y >> 5))
-	if _opts.get("demo") == "" and _frames == 30:
-		client.request({"type": "use", "location": client.location, "x": 0, "y": 2})
-	if _opts.get("demo") == "fight" and game:  # dev only: a wolf, a hurt deer, an arrow (ADR-0019)
-		var me := Vector2i(0, 7)
-		if _frames == 40:
-			game.world.move_character(client.character_id, me * 256 + Vector2i(128, 128))
-			var deer := game.world.creatures._spawn("base:deer", "surface", me + Vector2i(-3, 0), {}, 1)
-			game.world.combat.hurt(deer.id, 4, "")
-			game.world.creatures._spawn("base:wolf", "surface", me + Vector2i(4, -1), {}, 2)
-			game.world.combat.hurt(client.character_id, 6, "")
-		if _frames == 100:
-			client.request({"type": "attack", "item": "base:bow", "x": (me.x + 10) * 256, "y": me.y * 256 + 128})
-	if _opts.get("demo") == "cave" and game:  # dev only: down the way near the spawn point (ADR-0017)
-		var way := game.world._spawn_way()
-		if _frames == 40:
-			game.world.move_character(client.character_id, way * 256 + Vector2i(128, 128))
-		if _frames == 50:
-			client.request({"type": "climb", "location": "surface", "x": way.x, "y": way.y})
-		if _frames == 70:
-			game.world.grant(client.character_id, "base:log", 2)
-			client.request({"type": "build", "location": client.location, "x": way.x + 1, "y": way.y + 1, "part": "base:torch"})
-	if _opts.get("demo") == "fish" and game:  # dev only: a pond and a rod (fishing)
-		var me := Vector2i(0, 7)
-		if _frames == 40:
-			var w := game.world
-			for y in range(me.y - 1, me.y + 3):
-				for x in range(me.x + 1, me.x + 5):
-					var c := w.chunk("surface", x >> 5, y >> 5)
-					c.set_cell("ground", x & 31, y & 31, "base:water")
-					c.set_cell("cover", x & 31, y & 31, "")
-					c.set_cell("structure", x & 31, y & 31, "")
-					w._changed(ServerWorld.chunk_key("surface", x >> 5, y >> 5))
-			w.move_character(client.character_id, me * 256 + Vector2i(128, 128))
-			w.grant(client.character_id, "base:fishing_rod", 1)
-		if _frames == 50:
-			hotbar.put(0, "base:fishing_rod", -1)
-			_choose_slot(0)
-	if _opts.get("demo") == "farm" and game and _frames == 40:  # dev only: a herd of one's own in the pen (ADR-0030)
-		var w := game.world
-		var i := 0
-		for kind: String in ["base:sheep", "base:sheep", "base:cow", "base:chicken", "base:chicken", "base:chicken"]:
-			var c := w.creatures._spawn(kind, client.location, Vector2i(-6 + i % 4, 6 + (i / 4)), {}, i + 1)
-			c.owner = client.character_id
-			c.fed_at = w.world_time
-			c.changed()
-			i += 1
-		w.move_character(client.character_id, Vector2i(-4, 10) * 256 + Vector2i(128, 128))
-		w.grant(client.character_id, "base:wheat", 5)
-	if _opts.get("demo") == "sleep" and game:  # dev only: a bed by the house, one asleep in it (ADR-0035)
-		var bed := Vector2i(1, 7)
-		if _frames == 40:
-			var w := game.world
-			var c := w.chunk(client.location, bed.x >> 5, bed.y >> 5)
-			for y in range(bed.y - 2, bed.y + 3):  # nothing growing over it
-				for x in range(bed.x - 2, bed.x + 3):
-					c.set_cell("cover", x & 31, y & 31, "")
-			c.set_cell("structure", bed.x & 31, bed.y & 31, "base:bed")
-			w._changed(ServerWorld.chunk_key(client.location, bed.x >> 5, bed.y >> 5))
-			w.move_character(client.character_id, Vector2i(0, 7) * 256 + Vector2i(128, 128))
-			w.needs.set_energy(client.character_id, 10.0)
-		if _frames == 60:
-			client.request({"type": "sleep", "location": client.location, "x": bed.x, "y": bed.y})
-	if _opts.has("goto") and game and _frames == 40:  # dev only: --goto=X,Y (or "village") puts one at a cell
-		var cell := Vector2i.ZERO
-		if String(_opts["goto"]).begins_with("village"):  # "village" or "village,DX,DY" from its fire
-			var home := game.world.generator.settlements.home_plan()
-			var off := String(_opts["goto"]).split(",")
-			if not home.is_empty():
-				cell = (home["fire"] as Vector2i) + (Vector2i(int(off[1]), int(off[2])) if off.size() == 3 else Vector2i(2, 0))
-		elif String(_opts["goto"]).begins_with("biome:"):  # "biome:base:taiga": the nearest middle of one
-			var want := String(_opts["goto"]).trim_prefix("biome:")
-			var g := game.world.generator
-			for r in range(0, 3000, 24):
-				for k in 32:
-					var p := Vector2i(Vector2(r, 0).rotated(k * TAU / 32))
-					if [Vector2i.ZERO, Vector2i(12, 0), Vector2i(-12, 0), Vector2i(0, 12), Vector2i(0, -12)].all(func(d: Vector2i) -> bool:
-							return g.biome_id_at(p.x + d.x, p.y + d.y) == want):
-						cell = p
-						break
-				if cell != Vector2i.ZERO:
-					break
-		else:
-			var to := String(_opts["goto"]).split(",")
-			cell = Vector2i(int(to[0]), int(to[1]))
-		game.world.move_character(client.character_id, cell * 256 + Vector2i(128, 128))
-	if _opts.get("demo") == "occlude" and game and _frames == 40:  # dev only: a wall south and one aside, a tree south
-		var w := game.world
-		var me := Vector2i(0, 7)
-		var c := w.chunk(client.location, 0, 0)
-		for y in range(5, 12):
-			for x in range(-3, 4):
-				var cc := w.chunk(client.location, x >> 5, y >> 5)
-				cc.set_cell("cover", x & 31, y & 31, "")
-				cc.set_cell("structure", x & 31, y & 31, "")
-		for x in range(-1, 2):
-			c.set_cell("structure", x & 31, 8, "base:stone_wall")
-		for y in range(5, 8):
-			c.set_cell("structure", 2, y, "base:stone_wall")
-		c.set_cell("cover", (-2) & 31, 9, "base:oak")
-		if _opts.has("tree"):  # a crown over the player instead of the walls
-			for x in range(-1, 2):
-				c.set_cell("structure", x & 31, 8, "")
-			c.set_cell("cover", 0, 9, "base:oak")
-		w._changed(ServerWorld.chunk_key(client.location, 0, 0))
-		w._changed(ServerWorld.chunk_key(client.location, -1, 0))
-		w.move_character(client.character_id, me * 256 + Vector2i(128, 128))
-	if _opts.get("demo") == "armor" and game and _frames == 40:  # dev only: leather and a helmet on (ADR-0029)
-		for item: String in ["base:leather_armor", "base:iron_helmet"]:
-			game.world.grant(client.character_id, item, 1)
-			client.request({"type": "equip", "item": item})
-	if _opts.get("demo") == "loot" and game:  # dev only: looters by things lying about (ADR-0016)
-		var me := Vector2i(0, 7)
-		if _frames == 40:
-			game.world.move_character(client.character_id, me * 256 + Vector2i(128, 128))
-			game.world.creatures._spawn("base:poring", "surface", me + Vector2i(3, 0), {}, 1)
-			game.world.creatures._spawn("base:poporing", "surface", me + Vector2i(-3, 1), {}, 2)
-			game.world.place_item("surface", (me + Vector2i(5, 1)) * 256 + Vector2i(128, 128), "base:plank", 3)
-			game.world.place_item("surface", (me + Vector2i(-5, -1)) * 256 + Vector2i(128, 128), "base:stone", 2)
-	if _opts.has("glide") and game and _frames > 80 and client.has_position:  # dev: run east through anything (load spikes)
-		var pos: Vector2i = game.world.present[client.character_id]["pos"]
-		game.world.move_character(client.character_id, pos + Vector2i(int(delta * Movement.TICK_RATE * Movement.WALK * 1.5), 0))
-	if _opts.has("swing") and _frames == int(_opts.get("frames", "120")) - int(_opts["swing"]):  # dev: a blow caught midway
-		view.swing_own(Vector2.RIGHT)
-	if _opts.has("open_map") and _frames == int(_opts.get("frames", "120")) - 8:  # dev: a picture of the map
-		world_map.open()
-	if _opts.has("ui") and _frames == int(_opts.get("frames", "120")) - (40 if String(_opts["ui"]) in ["trade", "talk"] else 8):  # dev: a picture of a panel
-		match String(_opts["ui"]):
-			"catalog":
-				catalog.open(client.inventory())
-			"crafts":
-				crafts.open()
-			"inventory":
-				inventory_panel.show_for(client.inventory(), hotbar.selected)
-			"character":
-				character_panel.show_for(client.own, hotbar.held(client.inventory()))
-			"trade", "talk":  # the nearest dweller, one stepped up to it
-				var best := ""
-				for id: String in client.entities:
-					var e: Dictionary = client.entities[id]
-					if String(e.get("profession", "")) != "" and (best == "" or Vector2(int(e["x"]), int(e["y"])).distance_to(Vector2(client.position))
-							< Vector2(int(client.entities[best]["x"]), int(client.entities[best]["y"])).distance_to(Vector2(client.position))):
-						best = id
-				if best != "" and game:
-					var c := game.world.creatures.get_creature(best)
-					game.world.move_character(client.character_id, c.pos + Vector2i(Movement.UNIT, 0))
-					if String(_opts["ui"]) == "talk":
-						_talk_rids[client.request({"type": "talk", "creature": best})] = best
-					else:
-						_trade_rids[client.request({"type": "trade_look", "creature": best})] = best
-			"pin":
-				pin_panel.open_for(Vector2i(0, 2), false)
-			"menu":  # the right button's list over the door of the demo house
-				mouse_at = Vector2(0 * WorldView.CELL + 8, 2 * WorldView.CELL + 8)
-				_update_target()
-				_open_menu()
-			"plan":  # a row of walls dragged, part of it out of reach
-				var me := Movement.cell_of(client.position)
-				_blueprint = "base:wood_wall"
-				_drag_from = me + Vector2i(-4, 2)
-				mouse_at = Vector2((me.x + 9) * WorldView.CELL + 8, (me.y + 2) * WorldView.CELL + 8)
-	if _opts.get("demo") == "outside" and _frames == 40 and game:
-		game.world.move_character(client.character_id, Vector2i(128, 7 * 256 + 128))  # dev only: before the house
-	if _opts.get("demo") == "behind" and _frames == 40 and game:
-		game.world.move_character(client.character_id, Vector2i(128, -5 * 256 + 200))  # dev only: behind the back wall
-	if _opts.get("demo") in ["hole", "upstairs"] and game and _frames == 36:
-		game.world.move_character(client.character_id, Vector2i(1 * 256 + 128, 1 * 256 + 128))  # dev only: by the stairs
-	if _opts.get("demo") == "hole" and game:  # dev only: up, then the stairs gone: the opening stays
-		if _frames == 40:
-			client.request({"type": "climb", "location": client.location, "x": 1, "y": 0})
-		if _frames == 90:
-			game.world._take_down("surface", game.world.chunk("surface", 0, 0), ["surface", 0, 0, 1, 0], "structure",
-				"base:wood_stairs", "")
-	if _opts.get("demo") == "upstairs" and _frames == 40:
-		client.request({"type": "climb", "location": client.location, "x": 1, "y": 0})
-	if _opts.get("demo") == "upstairs" and _frames == 60 and client.z == 1:
-		# Part of the first level roofed over: floor and ceiling side by side.
-		for y in range(-3, 0):
-			for x in range(-2, 1):
-				client.request({"type": "build", "location": client.location, "x": x, "y": y, "part": "base:wood_ceiling"})
+	if _dev:
+		_dev.step(delta)
 	if _lmb_held and not paused and _blueprint == "" and Time.get_ticks_msec() >= _swing_ready_ms:
 		var held_on := Actions.primary(actions)
 		if String(held_on.get("id", "")) in REPEATED:
@@ -807,6 +584,19 @@ func _place_windows() -> void:
 				clampf(floorf((area.y - 60 - w.size.y) / 2.0), WINDOW_TOP, maxf(WINDOW_TOP, area.y - 60 - w.size.y)))
 
 
+## The colour of what flies off a thing worked: wood, stone, earth, green.
+func _chip_tint(id: String) -> Color:
+	var d := content.get_def(id)
+	var tool := String(d.get("gather", {}).get("tool", ""))
+	if tool == "chopping" or d.get("material") == "wood":
+		return Color(0.62, 0.43, 0.24)
+	if tool == "mining" or d.get("material") == "stone":
+		return Color(0.62, 0.62, 0.66)
+	if content.kind_of(id) == "ground":
+		return Color(0.5, 0.36, 0.22)
+	return Color(0.45, 0.72, 0.32)
+
+
 ## Does an action: sends its request, or looks (inspect).
 func _do(a: Dictionary) -> void:
 	if not a.get("enabled", true):
@@ -847,6 +637,9 @@ func _do(a: Dictionary) -> void:
 				view.swing_own(_mouse_world() - view.own_pixel_position(1.0))
 				if a["id"] != "shoot":
 					audio.play("swing", item, null)
+				if a["id"] in ["gather", "strike_part", "till"]:  # chips off what is worked
+					var at := Vector2(int(a["request"].get("x", 0)) + 0.5, int(a["request"].get("y", 0)) + 0.5) * WorldView.CELL
+					view.burst_at(at, "chips", _chip_tint(String(target.get("id", ""))))
 			if a["id"] != "gather":
 				hotbar.used(item)
 		"feed":

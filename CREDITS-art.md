@@ -119,6 +119,14 @@
 - https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
 - https://opengameart.org/content/lpc-expanded-hair
 
+## hat/cloth/hood
+
+- Авторы: Johannes Sjölund (wulax), JaidynReiman
+- Лицензии: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+- Примечание: Brown hood by Wulax, original black/white recolors by ??, mapped to idle/run/jump/revised combat by JaidynReiman, along with additional recolors.
+- https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+- https://opengameart.org/content/lpc-expanded-hats-facial-helmets
+
 ## hat/formal/bowler
 
 - Авторы: bluecarrot16

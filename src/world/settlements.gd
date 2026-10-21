@@ -34,6 +34,8 @@ const ROAD_CHANCE := 0.6
 const JUNCTION_CHANCE := 0.5
 ## Roads keep this far out of a settlement's side before turning.
 const ROAD_OUT := 3
+## Water a road crosses on a bridge (in its path's cells); longer, it breaks off.
+const BRIDGE_MAX := 16
 
 var world_seed := 0
 var content: ContentRegistry
@@ -43,16 +45,19 @@ var _kinds: Array = []
 var _clearing := 8
 ## (x, y) -> whether the surface there is water (the surface generator's).
 var _wet: Callable
+## (x, y) -> the biome there ("" water): a settlement's style by its middle.
+var _biome: Callable
 ## "kind|rx|ry" -> plan ({} none)
 var _plans := {}
 ## "kind|rx|ry|dir" -> road ({} none)
 var _roads := {}
 
 
-func _init(seed_value: int, registry: ContentRegistry, wet: Callable, clearing: int) -> void:
+func _init(seed_value: int, registry: ContentRegistry, wet: Callable, clearing: int, biome := Callable()) -> void:
 	world_seed = seed_value
 	content = registry
 	_wet = wet
+	_biome = biome
 	_clearing = clearing
 	var ids: Array = []
 	for id: String in registry.defs:
@@ -135,22 +140,45 @@ func _make(k: int, rx: int, ry: int) -> Dictionary:
 	var near_spawn: bool = d.get("near_spawn", false) and rx == 0 and ry == 0
 	if not near_spawn and (_hash(k, rx, ry, 1) >= float(d["chance"]) or (d.get("near_spawn", false) and spawn_region)):
 		return {}
-	var layout := _layout(k, rx, ry, d)
+	var home := _layout(k, rx, ry, d) if near_spawn else {}
 	for t in TRIES:
 		var centre: Vector2i
 		if near_spawn:
-			# A short walk from the spawn point, out of its clearing.
-			var east := _clearing + 4 + int(layout["half"])
+			# A short walk from the spawn point, out of its clearing (its own
+			# look: no style, the first place one sees).
+			if t >= 8:
+				break
+			var east := _clearing + 4 + int(home["half"])
 			centre = [Vector2i(east, 0), Vector2i(-east - 2, 0), Vector2i(0, east + 6), Vector2i(0, -east - 10),
 				Vector2i(east + 10, 14), Vector2i(-east - 12, -14), Vector2i(east + 20, -20), Vector2i(-east - 20, 22)][t]
+			var placed_home := _place(home, centre, "%s@%d,%d" % [_kinds[k]["id"], rx, ry], d)
+			if _dry(placed_home):
+				return placed_home
+			continue
 		else:
 			var margin := 48
 			centre = Vector2i(rx * size + margin + int(_hash(k, rx, ry, 10 + t) * (size - 2 * margin)),
 				ry * size + margin + int(_hash(k, rx, ry, 30 + t) * (size - 2 * margin)))
-		var placed := _place(layout, centre, "%s@%d,%d" % [_kinds[k]["id"], rx, ry], d)
+		var built := style_at(d, centre)
+		var layout := _layout(k, rx, ry, built)
+		var placed := _place(layout, centre, "%s@%d,%d" % [_kinds[k]["id"], rx, ry], built)
 		if _dry(placed):
 			return placed
 	return {}
+
+
+## A kind as it is built where its middle is `at`: its style for the biome
+## there, if it has one.
+func style_at(d: Dictionary, at: Vector2i) -> Dictionary:
+	if not _biome.is_valid():
+		return d
+	var here := String(_biome.call(at.x, at.y))
+	for st: Dictionary in d.get("styles", []):
+		if (st["biomes"] as Array).has(here):
+			var built := d.duplicate()
+			built.merge(st, true)
+			return built
+	return d
 
 
 ## What a settlement has, before it is put anywhere: its buildings (sizes,
@@ -314,7 +342,7 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 	var ends := [Vector2i(first.position.x - 1, first.position.y) + centre, Vector2i(first.end.x, first.position.y) + centre]
 	return {"id": id, "kind": String(d.get("id", "")), "name": String(d.get("name", "")), "centre": centre,
 		"bounds": bounds, "cells": cells, "homes": homes, "fields": fields, "pen": pen, "fire": fire,
-		"ends": ends, "half": int(layout["half"]), "road": String(d["road"])}
+		"ends": ends, "half": int(layout["half"]), "road": String(d["road"]), "bridge": String(d.get("bridge", ""))}
 
 
 ## Roads whose cells may fall in chunk (cx, cy): {"id", "bounds", "cells"}
@@ -372,14 +400,26 @@ func _road(k: int, rx: int, ry: int, dir: int) -> Dictionary:
 			path = _leg(a, _meeting(k, rx, ry + 1, a, south)) + _leg(south, _meeting(k, rx, ry + 1, a, south))
 	var cells := {}
 	var ground := String(a["road"])
+	var bridge := String(a["bridge"])
 	var bounds := Rect2i(path[0], Vector2i.ONE)
-	for p: Vector2i in path:
+	# Wet stretches of the way: short ones are bridged, long ones not crossed.
+	var dry := []
+	var run := []
+	for p: Vector2i in path + [Vector2i(1 << 30, 0)]:
+		if p.x != 1 << 30 and _wet.call(p.x, p.y):
+			run.append(p)
+			continue
+		if run.size() <= BRIDGE_MAX:
+			dry.append_array(run)
+		run.clear()
+		if p.x != 1 << 30:
+			dry.append(p)
+	for p: Vector2i in dry:
 		for d: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:  # two cells wide
 			var at := p + d
-			if not _wet.call(at.x, at.y):
-				cells[at] = {"ground": ground, "cover": ""}
-				bounds = bounds.merge(Rect2i(at, Vector2i.ONE))
-	return {"id": "road:%d,%d,%d" % [rx, ry, dir], "bounds": bounds, "cells": cells}
+			cells[at] = {"ground": ground, "cover": "", "over_water": bridge}
+			bounds = bounds.merge(Rect2i(at, Vector2i.ONE))
+	return {"id": "road:%d,%d,%d" % [rx, ry, dir], "key": [k, rx, ry, dir], "bounds": bounds, "cells": cells, "path": dry}
 
 
 ## Where a road between two settlements turns to meet itself: halfway,

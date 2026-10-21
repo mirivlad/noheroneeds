@@ -136,6 +136,8 @@ func on_chunk_ready(location: String, cx: int, cy: int, c: Chunk) -> void:
 	_populate(location, cx, cy, had)
 	if location == Levels.SURFACE and had < 4:
 		_settle(cx, cy)
+	if location == Levels.SURFACE and had < 5:
+		_travellers(cx, cy)
 	c.meta["fauna"] = FAUNA_VERSION
 	world.mark_chunk_dirty(location, cx, cy)
 
@@ -243,6 +245,68 @@ func _settle(cx: int, cy: int) -> void:
 				a.home = inside.get_center()
 				a.changed()
 				k += 1
+
+
+## Travellers on the roads (ADR-0038): a road may have one, met where its
+## way starts it off — in the chunk that holds that point, once.
+const TRAVELLER_CHANCE := 0.7
+
+
+func _travellers(cx: int, cy: int) -> void:
+	var settlements := world.generator.settlements if world.generator else null
+	if settlements == null:
+		return
+	var chunk := Rect2i(cx * Chunk.SIZE, cy * Chunk.SIZE, Chunk.SIZE, Chunk.SIZE)
+	for road: Dictionary in settlements.roads_touching(cx, cy):
+		var path: Array = road["path"]
+		var r := RandomNumberGenerator.new()
+		r.seed = hash([world.world_seed, road["id"], "traveller"])
+		if path.size() < 20 or r.randf() >= TRAVELLER_CHANCE:
+			continue
+		var i := r.randi_range(5, path.size() - 5)
+		var at: Vector2i = path[i]
+		if not chunk.has_point(at):
+			continue
+		var c := _spawn("base:villager", Levels.SURFACE, at, villager_looks(r), r.randi())
+		c.route = {"road": road["key"], "i": i, "step": 1 if r.randf() < 0.5 else -1}
+		c.changed()
+
+
+## A traveller's road path ([] if it is gone).
+func _route_path(c: Creature) -> Array:
+	var s := world.generator.settlements if world.generator else null
+	var k: Array = c.route.get("road", [])
+	if s == null or k.size() != 4:
+		return []
+	return s.road_of(int(k[0]), int(k[1]), int(k[2]), int(k[3])).get("path", [])
+
+
+## A traveller walks its road from one settlement to the other and back,
+## by day; runs from who hurts it; stands the night by the way.
+func _traveller(c: Creature, def: Dictionary) -> void:
+	var attacker := _attacker(c, 12.0)
+	if not attacker.is_empty():
+		var away := _away_from(c, attacker[0], 16.0)
+		if away != Creature.NO_TARGET:
+			_go(c, "flee", away, true)
+			return
+	if Daylight.is_night(world.world_time):
+		_go(c, "rest", Creature.NO_TARGET, false)
+		return
+	if c.target != Creature.NO_TARGET and c.state == "travel":
+		return
+	var path := _route_path(c)
+	if path.is_empty():
+		_go(c, "idle", Creature.NO_TARGET, false)
+		return
+	var step := int(c.route.get("step", 1))
+	var i := int(c.route.get("i", 0)) + step * 6
+	if i <= 0 or i >= path.size() - 1:  # at a settlement: back the other way
+		i = clampi(i, 0, path.size() - 1)
+		c.route["step"] = -step
+	c.route["i"] = i
+	c.home = path[i]  # where it is about, should it be away a while
+	_go(c, "travel", path[i], false)
 
 
 ## A crowd for load tests (server option --populate=N): n creatures within
@@ -447,7 +511,7 @@ func _think(c: Creature, tick: int) -> void:
 		_movers[c.id] = true
 	else:
 		_movers.erase(c.id)
-	var soon := c.state in ["flee", "alert", "hunt", "attack", "loot", "follow", "walk"]
+	var soon := c.state in ["flee", "alert", "hunt", "attack", "loot", "follow", "walk", "travel"]
 	_schedule(c, tick + (maxi(2, int(def["think_ticks"]) / 2) if soon else int(def["think_ticks"])))
 
 
@@ -456,7 +520,9 @@ func _behave(c: Creature, def: Dictionary) -> void:
 		"prey":
 			_prey(c, def)
 		"villager":
-			if not c.job.is_empty():
+			if not c.route.is_empty():
+				_traveller(c, def)
+			elif not c.job.is_empty():
 				_dweller(c, def)
 			else:
 				_villager(c, def)

@@ -37,6 +37,10 @@ var _hidden_room := {}
 ## world's clock with nothing sent, so their stage is looked at now and then.
 var _crops := {}
 var _crops_seen := 0.0
+## The season the trees are drawn in (Seasons index; -1 not yet): when the
+## world's turns, everything is drawn again in the new one.
+const SEASON_KEYS := ["spring", "summer", "autumn", "winter"]
+var _season_drawn := -1
 ## Things that move (a fire): [sprite, first frame's x, frames, ms a frame, phase].
 var _animated: Array = []
 ## Sprites made see-through because they stand in front of the player.
@@ -52,6 +56,13 @@ var _sorted := Node2D.new()
 var _tint := CanvasModulate.new()
 var _lights: Array[PointLight2D] = []
 static var _glow: GradientTexture2D
+## Light keeps to rooms and caves: walls, shut doors and cave rock stop it
+## (an occluder on the cell they stand on; windows let it through). The walls
+## and rock themselves are lit without shadows (their faces are drawn above
+## their cells: a room's back wall must not be darkened by its own foot).
+const LIT_UNSHADOWED := 2
+const STOPS_LIGHT := ["wall", "door"]
+static var _cell_occluder: OccluderPolygon2D
 var _chunk_nodes := {}
 ## Chunk key -> {cell: [Sprite2D]}: the tall things of a drawn chunk by the
 ## cell they stand on, so what is near a point is found without looking at
@@ -143,9 +154,18 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 		src.texture = texture(v["atlas_path"])
 		src.texture_region_size = Vector2i(TERRAIN_TILE, TERRAIN_TILE)
 		var first := Vector2i(int(v["rect"][0]) / TERRAIN_TILE, int(v["rect"][1]) / TERRAIN_TILE)
+		if _ts32.get_occlusion_layers_count() == 0:
+			_ts32.add_occlusion_layer()
+		var square := OccluderPolygon2D.new()
+		var h := TERRAIN_TILE / 2.0
+		square.polygon = PackedVector2Array([Vector2(-h, -h), Vector2(h, -h), Vector2(h, h), Vector2(-h, h)])
+		var sid := _ts32.add_source(src)  # first: its tiles then know the occlusion layer
 		for i in int(v["variants"]):
 			src.create_tile(first + Vector2i(i, 0))
-		_rock_top_tiles[target] = [_ts32.add_source(src), first]
+			var td := src.get_tile_data(first + Vector2i(i, 0), 0)
+			td.set_occluder_polygons_count(0, 1)
+			td.set_occluder_polygon(0, 0, square)  # cave rock stops light
+		_rock_top_tiles[target] = [sid, first]
 	_rock_tops.tile_set = _ts32
 	_rock_tops.scale = Vector2.ONE * float(CELL) / TERRAIN_TILE
 	_ground.tile_set = ts
@@ -167,6 +187,7 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	add_child(_cover)
 	add_child(_cover32)
 	_rock_tops.z_index = -1
+	_rock_tops.light_mask = LIT_UNSHADOWED
 	add_child(_rock_tops)
 	add_child(_sorted)
 	add_child(_covers)
@@ -323,6 +344,9 @@ func texture(path: String) -> Texture2D:
 func update_view(alpha: float, delta: float) -> void:
 	var keys := client.changed_chunks.duplicate()
 	client.changed_chunks.clear()
+	if client.has_time and Seasons.of(client.world_time) != _season_drawn:
+		_season_drawn = Seasons.of(client.world_time)
+		keys = ["*"]
 	if keys.has("*"):
 		_clear()
 		keys = client.chunks.keys()
@@ -403,6 +427,17 @@ func _animate() -> void:
 		s.flip_h = k >= n
 
 
+## What stops light on a cell (a wall, a shut door).
+func _occluder_at(cell: Vector2i) -> LightOccluder2D:
+	if _cell_occluder == null:
+		_cell_occluder = OccluderPolygon2D.new()
+		_cell_occluder.polygon = PackedVector2Array([Vector2.ZERO, Vector2(CELL, 0), Vector2(CELL, CELL), Vector2(0, CELL)])
+	var o := LightOccluder2D.new()
+	o.occluder = _cell_occluder
+	o.position = Vector2(cell * CELL)
+	return o
+
+
 ## A light source's glow: a soft round light the size of its radius.
 func _light_for(def: Dictionary, cell: Vector2i) -> PointLight2D:
 	if _glow == null:
@@ -420,7 +455,13 @@ func _light_for(def: Dictionary, cell: Vector2i) -> PointLight2D:
 	l.texture = _glow
 	l.color = Color(String(def["color"]))
 	l.texture_scale = float(def["radius"]) * CELL * 2.0 / _glow.width
-	l.position = Vector2((cell.x + 0.5) * CELL, (cell.y + 0.5) * CELL - CELL)
+	# A little above the ground, within its own cell (from inside a wall it would light nothing).
+	l.position = Vector2((cell.x + 0.5) * CELL, cell.y * CELL + 2)
+	l.shadow_enabled = true
+	l.shadow_filter = Light2D.SHADOW_FILTER_PCF5
+	l.shadow_filter_smooth = 1.5
+	l.range_item_cull_mask = 1 | LIT_UNSHADOWED
+	l.shadow_item_cull_mask = 1
 	l.set_meta("intensity", float(def["intensity"]))
 	l.set_meta("scale", l.texture_scale)
 	if def.get("flicker", false):
@@ -792,9 +833,18 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 				var of := maxf(1.0, float(content.get_def(id).get("gather", {}).get("work", 1)))
 				s.self_modulate = Color.WHITE.lerp(Color(0.75, 0.62, 0.5), clampf(work / of, 0.0, 1.0))
 			_add(ctx, cell, s)
+			if layer == "structure" and String(content.get_def(id).get("role", "")) in STOPS_LIGHT and state != "open":
+				s.light_mask = LIT_UNSHADOWED
+				_add(ctx, cell, _occluder_at(cell))
 			var light: Dictionary = content.get_def(id).get("light", {})
 			if not light.is_empty():
 				_add(ctx, cell, _light_for(light, cell))
+			var fx: Dictionary = content.get_def(id).get("effects", {})
+			for kind: String in fx:
+				var e := Effects.of(kind)
+				if e:
+					e.position = Vector2((cell.x + 0.5) * CELL, (cell.y + 1) * CELL) + Vector2(fx[kind][0], fx[kind][1])
+					_add(ctx, cell, e)
 		else:
 			_set_flat(_cover, cell, id)  # flat, or the missing-picture mark
 	if c.props.has(i):
@@ -834,6 +884,7 @@ func _set_cover(cell: Vector2i, id: String, layer := "ceiling") -> void:
 		return
 	var v := content.visual_of(id)
 	var s := Sprite2D.new()
+	s.light_mask = LIT_UNSHADOWED  # over a wall's foot: lit, not shadowed by it
 	s.centered = false
 	if v.is_empty():
 		s.texture = _tile_texture(_missing_source)
@@ -920,6 +971,9 @@ func _grid_piece(cell: Vector2i, grid: Vector2i) -> Vector2i:
 ## facing's (ADR-0013; "mirror" draws a facing as another one flipped), else
 ## its own (or an alternate, picked by the cell).
 func _tall_sprite(v: Dictionary, cell: Vector2i, state := "", variant := 0, facing := "") -> Sprite2D:
+	var season: String = SEASON_KEYS[_season_drawn] if _season_drawn >= 0 else ""
+	if v.has("seasons") and (v["seasons"] as Dictionary).has(season):  # a tree through the year
+		v = v.merged(v["seasons"][season], true)
 	var alts: Array = v.get("alternates", [])
 	if not alts.is_empty() and state == "" and variant == 0:
 		# The same picture for a cell every time and for every player.
@@ -1377,6 +1431,9 @@ func _health(id: String, sprite: Node2D, e: Dictionary, delta: float) -> void:
 	var h := int(e.get("health", top))
 	if h < int(_hp_seen.get(id, h)):
 		_flash[id] = FLASH
+		var at := to_local(sprite.global_position) + Vector2(0, -10)
+		burst_at(at, "blood")
+		popup_at(at + Vector2(0, -14), "−%d" % (int(_hp_seen[id]) - h), Color(1.0, 0.45, 0.4))
 	_hp_seen[id] = h
 	var bar: Node2D = sprite.get_node_or_null("hp")
 	if top > 0 and h < top:
@@ -1401,6 +1458,33 @@ func _health(id: String, sprite: Node2D, e: Dictionary, delta: float) -> void:
 	if f > 0.0:
 		sprite.modulate = sprite.modulate.lerp(Color(1.0, 0.3, 0.3), f / FLASH)
 		_flash[id] = f - delta
+
+
+## A short burst of something at a point of the world (Effects.burst).
+func burst_at(at: Vector2, kind: String, tint := Color.WHITE) -> void:
+	var p := Effects.burst(kind, tint)
+	if p:
+		p.position = at
+		add_child(p)
+
+
+## A word that floats up from a point and fades (a blow's damage, a find).
+func popup_at(at: Vector2, text: String, color := Art.TEXT) -> void:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_override("font", Art.font())
+	l.add_theme_font_size_override("font_size", 8)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_color_override("font_outline_color", Art.INK)
+	l.add_theme_constant_override("outline_size", 2)
+	l.z_index = 20
+	l.position = at - Vector2(8, 6)
+	add_child(l)
+	var t := l.create_tween()
+	t.set_parallel(true)
+	t.tween_property(l, "position:y", l.position.y - 12, 0.9)
+	t.tween_property(l, "modulate:a", 0.0, 0.9).set_delay(0.3)
+	t.chain().tween_callback(l.queue_free)
 
 
 ## Draws a thing of level z over the covers (above us) or dimmed with the

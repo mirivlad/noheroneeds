@@ -111,9 +111,9 @@ func test_roads_join_some_villages_and_meet_at_crossroads() -> void:
 					continue
 				joined += 1
 				var cells: Dictionary = road["cells"]
-				var ends: Array = other["ends"]
+				var ends: Array = s.plan(0, rx, ry)["ends"]
 				if dir == 1 and not (cells.has(ends[0]) or cells.has(ends[1])):
-					crossroads += 1  # it went to the eastern road instead
+					crossroads += 1  # from the southern village to the eastern road, not to this one
 	check(joined >= 6, "roads: %d" % joined)
 	check(apart >= 2, "not every pair: %d apart" % apart)
 	check(crossroads >= 1, "crossroads: %d" % crossroads)

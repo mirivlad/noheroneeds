@@ -39,6 +39,9 @@ var filled_at := -1
 ## A villager's place in its settlement (ADR-0039): {"village", "home" (its
 ## index), "profession", "water" (a fisher's spot, once found)}.
 var job := {}
+## A traveller's way (a road between settlements): {"road": [kind, rx, ry, dir],
+## "i": where on its path, "step": +1 or -1 along it}.
+var route := {}
 ## Not saved — what others see of it: the thing in its hands, its last words
 ## and how many it has said, whether it sleeps.
 var held := ""
@@ -73,7 +76,7 @@ func to_data() -> Dictionary:
 	return {"kind": kind, "x": pos.x, "y": pos.y, "hx": home.x, "hy": home.y, "state": state,
 		"tx": target.x, "ty": target.y, "run": running, "memory": mem, "last_time": last_time,
 		"looks": looks.duplicate(true), "seed": seed, "health": health, "stomach": stomach.duplicate(true),
-		"owner": owner, "fed": fed, "fed_at": fed_at, "bred_at": bred_at, "made_at": made_at, "filled_at": filled_at, "job": job.duplicate()}
+		"owner": owner, "fed": fed, "fed_at": fed_at, "bred_at": bred_at, "made_at": made_at, "filled_at": filled_at, "job": job.duplicate(), "route": route.duplicate(true)}
 
 
 static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
@@ -97,6 +100,7 @@ static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
 	c.made_at = int(d.get("made_at", -1))
 	c.filled_at = int(d.get("filled_at", -1))
 	c.job = d.get("job", {}) if d.get("job") is Dictionary else {}
+	c.route = d.get("route", {}) if d.get("route") is Dictionary else {}
 	for e: Variant in d.get("stomach", []):
 		if e is Dictionary:
 			c.stomach.append({"item": String(e.get("item", "")), "count": int(e.get("count", 0)), "at": int(e.get("at", 0))})

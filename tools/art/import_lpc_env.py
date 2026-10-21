@@ -180,6 +180,7 @@ MINE = SRC / "lpc-mine" / "lpc-mine" / "mine.png"
 # Flat things: x, y and grid of a seamless block (floors, ceilings, roofs).
 FLAT = {
     "base:wood_floor": ("floors", 192, 1152, 2, 2, "flat"),
+    "base:bridge": ("floors", 192, 1248, 2, 2, "flat"),
     "base:wood_ceiling": ("floors", 192, 1216, 2, 2, "cover"),
     "base:thatch_roof": ("roof", 192, 352, 3, 3, "cover"),
 }
@@ -411,6 +412,8 @@ PLANTS = {
     "base:boulder": ("ore", [(192, 96, 32, 32), (192, 160, 32, 32), (192, 224, 32, 32)]),
     "base:iron_outcrop": ("ore", [(64, 64, 32, 32)]),
     "base:copper_outcrop": ("ore", [(96, 32, 32, 32)]),
+    "base:silver_outcrop": ("ore", [(128, 64, 32, 32), (128, 32, 32, 32)]),
+    "base:gold_outcrop": ("ore", [(160, 64, 32, 32)]),
 }
 
 
@@ -425,14 +428,25 @@ def _base(img):
     return img.width // 2, img.height - 1
 
 
+# Trees through the year: the same rects from another colour of the trees
+# pack (its sheets share one layout) — season -> sheet; a season not listed
+# keeps the plant's own picture.
+SEASONS = {
+    "base:oak": {"autumn": "trees-orange", "winter": "trees-dead"},
+    "base:birch": {"autumn": "trees-orange", "winter": "trees-dead"},
+    "base:maple": {"spring": "trees", "summer": "trees", "winter": "trees-dead"},
+}
+
+
 def build_plants():
     sheets = {"plants": Image.open(PLANTS_PNG).convert("RGBA"),
               "trees": Image.open(TREES_DIR / "trees-green.png").convert("RGBA"),
               "ore": Image.open(ORE).convert("RGBA")}
     for colour in ["orange", "pale", "dead"]:
         sheets["trees-" + colour] = Image.open(TREES_DIR / ("trees-%s.png" % colour)).convert("RGBA")
-    pieces = []  # (id, [(img, origin)])
-    for part, (sheet, rects) in PLANTS.items():
+    pieces = []  # (id, [(img, origin)], season or "")
+
+    def cut(sheet, rects):
         pics = []
         for (x, y, w, h) in rects:
             img = sheets[sheet].crop((x, y, x + w, y + h))
@@ -440,14 +454,19 @@ def build_plants():
             bx, by = _base(img)
             # The base on the cell's middle, a little above its bottom edge.
             pics.append((img, [bx - T // 2, by + 6]))
-        pieces.append((part, pics))
+        return pics
+    for part, (sheet, rects) in PLANTS.items():
+        pieces.append((part, cut(sheet, rects), ""))
+        for season, other in SEASONS.get(part, {}).items():
+            pieces.append((part, cut(other, rects), season))
     # Shelf packing: a row per plant.
-    width = max(sum(i.width for i, _ in pics) for _, pics in pieces)
-    height = sum(max(i.height for i, _ in pics) for _, pics in pieces)
+    width = max(sum(i.width for i, _ in pics) for _, pics, _ in pieces)
+    height = sum(max(i.height for i, _ in pics) for _, pics, _ in pieces)
     atlas = Image.new("RGBA", (width, height))
     defs = []
     y = 0
-    for part, pics in pieces:
+    by_part = {}
+    for part, pics, season in pieces:
         x = 0
         rects = []
         for img, origin in pics:
@@ -456,9 +475,14 @@ def build_plants():
             x += img.width
         y += max(i.height for i, _ in pics)
         (r0, o0), alts = rects[0], rects[1:]
-        defs.append({"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
-                     "atlas": "art/lpc_env/plants.png", "rect": r0, "origin": o0, "pixel_scale": 0.5, "variants": 1,
-                     "alternates": [{"rect": r, "origin": o} for r, o in alts]})
+        if season:
+            by_part[part].setdefault("seasons", {})[season] = {
+                "rect": r0, "origin": o0, "alternates": [{"rect": r, "origin": o} for r, o in alts]}
+            continue
+        by_part[part] = {"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
+                         "atlas": "art/lpc_env/plants.png", "rect": r0, "origin": o0, "pixel_scale": 0.5, "variants": 1,
+                         "alternates": [{"rect": r, "origin": o} for r, o in alts]}
+        defs.append(by_part[part])
     atlas.save(OUT / "plants.png", optimize=True)
     return defs
 
@@ -588,7 +612,12 @@ ITEMS = {
     "base:bucket": ("idyl/bucket.png", 0, 0),
     "base:coin": (str(ROOT / "tools" / "art" / "generated" / "coin" / "coin.png"), 0, 0),  # generated (docs/art/AI_ASSETS.md)
     "base:berries": (str(ROOT / "tools" / "art" / "generated" / "berries" / "berries.png"), 0, 0),  # drawn by hand
-    "base:mushroom": ("idyl/mushroom.png", 0, 0),
+    "base:mushroom": (str(PLANTS_PNG), 32, 704),  # a boletus (the inventory pack's is a fly agaric)
+    "base:mushroom_stew": ("items1_0.png", 160, 192),
+    "base:silver_ore": ("idyl/silver_ore.png", 0, 0),
+    "base:silver_ingot": ("idyl/silver_ingot.png", 0, 0),
+    "base:gold_ore": ("idyl/gold_ore.png", 0, 0),
+    "base:gold_ingot": ("idyl/gold_ingot.png", 0, 0),
 }
 # A picture with some of its colours changed inside a box (a recolouring, not
 # a new drawing: the bucket's dark inside as water or milk): id -> (file,
@@ -596,6 +625,9 @@ ITEMS = {
 RECOLOURED = {
     "base:water_bucket": ("idyl/bucket.png", 8, 5, 25, 15, {(22, 22, 20): (52, 104, 170), (35, 28, 26): (82, 140, 196)}),
     "base:milk_bucket": ("idyl/bucket.png", 8, 5, 25, 15, {(22, 22, 20): (232, 228, 214), (35, 28, 26): (204, 198, 184)}),
+    # Fur: the hide's picture in a deeper, redder brown.
+    "base:fur": ("idyl/rawhide.png", 0, 0, 32, 32, {(142, 103, 73): (156, 96, 54), (107, 75, 48): (118, 66, 34),
+                                                   (81, 54, 30): (86, 46, 22), (60, 38, 18): (58, 30, 14)}),
 }
 # Tools drawn in the hands by LPC: the south standing frame of their layers.
 HELD_ICONS = {"base:hoe": ["tools/hoe/bg/walk.png", "tools/hoe/fg/walk.png"]}
@@ -607,10 +639,13 @@ WORN_ICONS = {
     "base:leather_armor": "torso_armour_leather_male.png",
     "base:iron_helmet": "hat_helmet_nasal_adult.png",
     "base:wool_cloak": "cape_solid_fg.png",
+    "base:fur_cloak": "cape_solid_fg.png",
+    "base:fur_hood": "hat_cloth_hood_adult.png",
 }
-WORN_ICON_ROW = {"base:wool_cloak": 0}
+WORN_ICON_ROW = {"base:wool_cloak": 0, "base:fur_cloak": 0}
 # Worn things are dyed in the game (lpc_visuals.json); the icon shows that.
-WORN_DYE = {"base:work_trousers": "walnut", "base:boots": "leather", "base:wool_cloak": "gray"}
+WORN_DYE = {"base:work_trousers": "walnut", "base:boots": "leather", "base:wool_cloak": "gray",
+            "base:fur_cloak": "brown", "base:fur_hood": "brown"}
 
 
 def build_items():

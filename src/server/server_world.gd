@@ -753,6 +753,51 @@ func in_water(id: String) -> bool:
 	return Terrain.is_water(chunk(String(p["location"]), cx, cy), cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
 
 
+## The climate of a cell (ADR-0055): Vector2(warmth, rain) of the land
+## there, zero (mild, middling) off the surface or in a world without
+## geography.
+func climate_at(location: String, cell: Vector2i) -> Vector2:
+	if location != SURFACE or generator == null or generator.geography == null:
+		return Vector2.ZERO
+	return generator.geography.climate_at(cell.x, cell.y)
+
+
+## How far one sees in the weather at a cell, a share of a clear day's
+## (ADR-0033, ADR-0055): worked out once a tick for each chunk (creatures
+## look about many times a tick).
+func sight_at(location: String, cell: Vector2i) -> float:
+	if _sight_tick != world_time:
+		_sight_tick = world_time
+		_sight.clear()
+	var key := Vector2i(cell.x >> 5, cell.y >> 5)
+	var known: Variant = _sight.get(key)
+	if known == null:
+		known = Weather.sight(weather_seed, world_time, cell, climate_at(location, cell))
+		_sight[key] = known
+	return known
+
+
+var _sight_tick := -1
+var _sight := {}
+
+
+## Rain this hard puts a fire under the open sky out (ADR-0055).
+const DOUSES := 0.3
+## Whether rain puts open fires out (a world's rule; off in tests that cook
+## outdoors at a fixed hour).
+var fires_douse := true
+
+
+## Whether a fire at a cell burns: an open one ("open_fire": a campfire, not
+## an oven) not under the open sky in hard rain; a roof over it keeps it going.
+func fire_burns(location: String, x: int, y: int) -> bool:
+	if not fires_douse or not has_daylight(location) or sheltered(location, x, y) \
+			or not content.get_def(part_at(location, x, y)).get("open_fire", false):
+		return true
+	var cell := Vector2i(x, y)
+	return Weather.rain(weather_seed, world_time, cell, climate_at(location, cell)) <= DOUSES
+
+
 ## Whether a character wades through shallows (ADR-0051).
 func in_shallows(id: String) -> bool:
 	if not present.has(id):
@@ -1930,8 +1975,9 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	var item := held_of(actor)
 	# A crop is gathered ripe only (ADR-0027).
 	var crop := content.get_def(thing)
+	var field := Vector2i(x, y)
 	if crop.has("crop") and not Crops.ripe(crop, float(_layer_props(c, layer, at[3], at[4]).get("planted", 0)), world_time,
-			weather_seed if has_daylight(loc) else -1):
+			weather_seed if has_daylight(loc) else -1, field, climate_at(loc, field)):
 		return {"ok": false, "reason": "not_ripe"}
 	var tool := String(g["tool"])
 	if tool != "" and (item == "" or not (content.get_def(item).get("tools", []) as Array).has(tool)):
@@ -1992,7 +2038,8 @@ func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dicti
 		- float(world_time - int(props.get("at", world_time))) / (float(g["restock_hours"]) * Daylight.HOUR_MS))
 	var chance := float(g["chance"]) * skill * bite_hour(world_time) * maxf(0.0, 1.0 - taken / float(g["stock"]))
 	if has_daylight(at[0]):
-		chance *= 1.0 + 0.3 * Weather.rain(weather_seed, world_time)  # fish bite in the rain
+		var water := Vector2i(int(at[1]) * Chunk.SIZE + int(at[3]), int(at[2]) * Chunk.SIZE + int(at[4]))
+		chance *= 1.0 + 0.3 * Weather.rain(weather_seed, world_time, water, climate_at(at[0], water))  # fish bite in the rain
 	var roll := float(absi(hash([world_seed, actor, at[0], at[1], at[2], at[3], at[4], tick])) % 100003) / 100003.0
 	if roll >= chance:
 		return {"ok": true, "thing": thing, "bite": false, "chance": chance}
@@ -2599,8 +2646,9 @@ func station_near(actor: String, station: String) -> bool:
 	for y in range(at.y - r, at.y + r + 1):
 		for x in range(at.x - r, at.x + r + 1):
 			var part := chunk(loc, x >> 5, y >> 5).get_cell("structure", x & 31, y & 31)
-			if part != "" and content.get_def(part).get("station") == station and _reaches(actor, loc, x, y, USE_REACH):
-				return true
+			if part != "" and content.get_def(part).get("station") == station and _reaches(actor, loc, x, y, USE_REACH) \
+					and (float(content.get_def(part).get("heat", 0.0)) <= 0.0 or fire_burns(loc, x, y)):
+				return true  # a fire put out by the rain cooks nothing (ADR-0055)
 	return false
 
 

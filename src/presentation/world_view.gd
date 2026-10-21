@@ -41,6 +41,8 @@ var _crops_seen := 0.0
 ## world's turns, everything is drawn again in the new one.
 const SEASON_KEYS := ["spring", "summer", "autumn", "winter"]
 var _season_drawn := -1
+## Whether the land was drawn wintry (it freezes where we are, ADR-0055).
+var _wintry := false
 ## Things that move (a fire): [sprite, first frame's x, frames, ms a frame, phase].
 var _animated: Array = []
 ## Sprites made see-through because they stand in front of the player.
@@ -301,7 +303,7 @@ func _ground_ranks(location: String, x0: int, y0: int, w: int, h: int) -> Packed
 			if cells.is_empty():
 				continue
 			var rank_of := PackedInt32Array()
-			var winter := _season_drawn == Seasons.WINTER and location == Levels.SURFACE
+			var winter := _wintry and location == Levels.SURFACE
 			for id: String in c.palette:
 				# In winter the land lies under snow ("winter" of a ground), roads and fields not.
 				var seen := String(content.get_def(id).get("winter", id)) if winter else id
@@ -358,8 +360,9 @@ func update_view(alpha: float, delta: float) -> void:
 		keys = ["*"]  # plants drawn again with their light
 	for l: CanvasItem in _terrain_layers + [_cover, _cover32]:
 		l.light_mask = LIT_UNSHADOWED if outdoors else 1
-	if client.has_time and Seasons.of(client.world_time) != _season_drawn:
+	if client.has_time and (Seasons.of(client.world_time) != _season_drawn or _freezing_here() != _wintry):
 		_season_drawn = Seasons.of(client.world_time)
+		_wintry = _freezing_here()
 		keys = ["*"]
 	if keys.has("*"):
 		_clear()
@@ -387,7 +390,8 @@ func _grow_crops() -> void:
 			_crops.erase(cell)
 			continue
 		var s: Sprite2D = c[0]
-		var r: Array = (c[1] as Dictionary)["states"].get("stage_%d" % Crops.stage(c[2], c[3], client.world_time, _crop_weather()), [])
+		var r: Array = (c[1] as Dictionary)["states"].get("stage_%d" % Crops.stage(c[2], c[3], client.world_time, _crop_weather(),
+			cell, client.climate_at(cell)), [])
 		if not r.is_empty():
 			s.region_rect = Rect2(r[0], r[1], r[2], r[3])
 
@@ -406,9 +410,9 @@ func _update_light() -> void:
 	# Underground (ADR-0017) no day: dark but for torches; a little to see by.
 	_tint.color = Daylight.tint(client.world_time) if client.z >= 0 else UNDERGROUND_TINT
 	if client.z >= 0:  # an overcast sky is darker and greyer (ADR-0033)
-		var dim := 1.0 - 0.25 * Weather.clouds(client.weather_seed, client.world_time)
+		var dim := 1.0 - 0.25 * Weather.clouds(client.weather_seed, client.world_time, client.weather_place(), client.climate())
 		_tint.color = Color(_tint.color.r * dim, _tint.color.g * dim, _tint.color.b * (dim * 0.5 + 0.5))
-		if Seasons.of(client.world_time) == Seasons.WINTER:  # a colder light (ADR-0036)
+		if _wintry:  # a colder light (ADR-0036), where it freezes (ADR-0055)
 			_tint.color = Color(_tint.color.r * 0.86, _tint.color.g * 0.92, _tint.color.b)
 	var dark := 1.0 - Daylight.sun(client.world_time) if client.z >= 0 else 1.0  # below, always night
 	for i in range(_lights.size() - 1, -1, -1):
@@ -417,7 +421,7 @@ func _update_light() -> void:
 			_lights.remove_at(i)
 			continue
 		l.energy = float(l.get_meta("intensity")) * dark * 1.6
-		l.visible = dark > 0.02
+		l.visible = dark > 0.02 and not (l.has_meta("fire") and client.doused(l.get_meta("fire")))
 		if l.has_meta("flicker"):  # a fire's light trembles: brighter and dimmer, a little wider and narrower
 			var t := Time.get_ticks_msec() / 1000.0 + float(l.get_meta("flicker"))
 			var f := 0.08 * sin(t * 11.0) + 0.05 * sin(t * 23.7 + 1.3) + 0.04 * sin(t * 47.1 + 0.4)
@@ -825,7 +829,7 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 	var c := ctx.chunk
 	for layer in ["cover", "structure"]:
 		var id := ctx.at(ctx.cover, i) if layer == "cover" else ctx.at(ctx.structure, i)
-		if layer == "cover" and id != "" and _season_drawn == Seasons.WINTER and ctx.location == Levels.SURFACE:
+		if layer == "cover" and id != "" and _wintry and ctx.location == Levels.SURFACE:
 			id = String(content.get_def(id).get("winter", id))  # small green things are under the snow
 		if id == "":
 			continue
@@ -849,7 +853,7 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 			var planted: Variant = (props.get("cover", {}) as Dictionary).get("planted") if layer == "cover" else null
 			var crop := content.get_def(id) if planted != null else {}
 			if planted != null and crop.has("crop"):
-				state = "stage_%d" % Crops.stage(crop, float(planted), client.world_time, _crop_weather())
+				state = "stage_%d" % Crops.stage(crop, float(planted), client.world_time, _crop_weather(), cell, client.climate_at(cell))
 			var s := _tall_sprite(v, cell, state, variant, String(props.get("facing", "")))
 			if planted != null and crop.has("crop"):
 				_crops[cell] = [s, v, crop, float(planted)]
@@ -878,7 +882,10 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 				s.light_mask = LIT_UNSHADOWED
 			var light: Dictionary = content.get_def(id).get("light", {})
 			if not light.is_empty():
-				_add(ctx, cell, _light_for(light, cell))
+				var l := _light_for(light, cell)
+				if float(content.get_def(id).get("heat", 0.0)) > 0.0 and ctx.location == Levels.SURFACE:
+					l.set_meta("fire", cell)  # a fire: out in the rain under the open sky (ADR-0055)
+				_add(ctx, cell, l)
 			var fx: Dictionary = content.get_def(id).get("effects", {})
 			for kind: String in fx:
 				var e := Effects.of(kind)
@@ -1390,6 +1397,11 @@ var _swing_seen := {}
 
 
 ## The weather crops here grow under (ADR-0033): the sky's, or none below.
+## Whether it freezes where we are now (winter drawn: snow, a colder light).
+func _freezing_here() -> bool:
+	return Seasons.freezing(client.world_time, client.climate().x)
+
+
 func _crop_weather() -> int:
 	return client.weather_seed if client.z >= 0 else -1
 

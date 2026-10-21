@@ -566,6 +566,7 @@ func test_cave_rock_is_drawn_in_its_own_cell_not_over_the_passage() -> void:
 ## cooks so many pieces (ADR-0026).
 func test_meat_cooked_at_a_campfire_from_its_action() -> void:
 	w.knowledge.never_fail = true  # the fire's action, not a novice's dice (test_mastery)
+	w.fires_douse = false  # whatever the weather at this hour (ADR-0055)
 	var id := g.client.character_id
 	var me := _me()
 	w.grant(id, "base:log", 2)

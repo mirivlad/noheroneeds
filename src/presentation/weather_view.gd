@@ -39,15 +39,17 @@ func _process(delta: float) -> void:
 	var sky := outdoors()
 	var seed := client.weather_seed
 	var now := client.world_time
-	rain = Weather.rain(seed, now) if sky else 0.0
+	var here := client.weather_place()
+	var climate := client.climate()
+	rain = Weather.rain(seed, now, here, climate) if sky else 0.0
 	if rain < 0.05:
 		rain = 0.0  # a few drops are no rain
-	fog = Weather.fog(seed, now) if sky else 0.0
-	snow = Weather.snow(seed, now) if sky else 0.0
+	fog = Weather.fog(seed, now, here, climate) if sky else 0.0
+	snow = Weather.snow(seed, now, here, climate) if sky else 0.0
 	if snow < 0.05:
 		snow = 0.0
 	# Lightning: in a storm, now and then, the same for everyone at the time.
-	if sky and Weather.storm(seed, now):
+	if sky and Weather.storm(seed, now, here, climate):
 		var beat := int(now / (Daylight.HOUR_MS / 6.0))
 		if beat != _flash_seen and absi(hash([seed, beat])) % 3 == 0 and _flash_seen >= 0:
 			flash = 0.55

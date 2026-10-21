@@ -1106,7 +1106,8 @@ func _speak(c: Creature, prof: Dictionary, phase: String) -> void:
 	var key := "greet"
 	if phase == "night":
 		key = "night"
-	elif world.has_daylight(c.location) and Weather.rain(world.weather_seed, world.world_time) > 0.2 and lines.has("rain"):
+	elif world.has_daylight(c.location) and Weather.rain(world.weather_seed, world.world_time, c.cell(),
+			world.climate_at(c.location, c.cell())) > 0.2 and lines.has("rain"):
 		key = "rain"
 	elif phase == "evening":
 		key = "evening"

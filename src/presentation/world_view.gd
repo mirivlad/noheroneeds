@@ -61,6 +61,11 @@ static var _glow: GradientTexture2D
 ## and rock themselves are lit without shadows (their faces are drawn above
 ## their cells: a room's back wall must not be darkened by its own foot).
 const LIT_UNSHADOWED := 2
+## On the surface the land, its plants and the walls' feet are not shadowed:
+## a wall's foot is all that stops light, and its shadow on the open ground
+## would fall like a post's. Light still keeps out of rooms (floors and those
+## inside are shadowed); in caves the rock's shadows lie on the floor.
+var _outdoors_unshadowed := true
 const STOPS_LIGHT := ["wall", "door"]
 static var _cell_occluder: OccluderPolygon2D
 var _chunk_nodes := {}
@@ -296,8 +301,11 @@ func _ground_ranks(location: String, x0: int, y0: int, w: int, h: int) -> Packed
 			if cells.is_empty():
 				continue
 			var rank_of := PackedInt32Array()
+			var winter := _season_drawn == Seasons.WINTER and location == Levels.SURFACE
 			for id: String in c.palette:
-				rank_of.append(_terrain_rank.get(id, -1))
+				# In winter the land lies under snow ("winter" of a ground), roads and fields not.
+				var seen := String(content.get_def(id).get("winter", id)) if winter else id
+				rank_of.append(_terrain_rank.get(seen, -1))
 			var ax := maxi(x0, cx * Chunk.SIZE)
 			var bx := mini(x0 + w, (cx + 1) * Chunk.SIZE)
 			for y in range(maxi(y0, cy * Chunk.SIZE), mini(y0 + h, (cy + 1) * Chunk.SIZE)):
@@ -344,6 +352,12 @@ func texture(path: String) -> Texture2D:
 func update_view(alpha: float, delta: float) -> void:
 	var keys := client.changed_chunks.duplicate()
 	client.changed_chunks.clear()
+	var outdoors := client.location == Levels.SURFACE
+	if outdoors != _outdoors_unshadowed:
+		_outdoors_unshadowed = outdoors
+		keys = ["*"]  # plants drawn again with their light
+	for l: CanvasItem in _terrain_layers + [_cover, _cover32]:
+		l.light_mask = LIT_UNSHADOWED if outdoors else 1
 	if client.has_time and Seasons.of(client.world_time) != _season_drawn:
 		_season_drawn = Seasons.of(client.world_time)
 		keys = ["*"]
@@ -425,6 +439,25 @@ func _animate() -> void:
 		var k := (now / int(a[3]) + int(a[4])) % (n * 2)
 		s.region_rect.position.x = float(a[1]) + (k % n) * s.region_rect.size.x
 		s.flip_h = k >= n
+
+
+## A light carried (a torch in the hands): on the one who holds it, at hand
+## height; gone when the thing is put away.
+func _held_light(sprite: Node2D, held: String) -> void:
+	var l: PointLight2D = sprite.get_node_or_null("held_light")
+	var light: Dictionary = content.get_def(held).get("light", {}) if held != "" else {}
+	if l and (light.is_empty() or l.get_meta("item") != held):
+		_lights.erase(l)
+		l.free()
+		l = null
+	if light.is_empty() or l:
+		return
+	l = _light_for(light, Vector2i.ZERO)
+	l.name = "held_light"
+	l.set_meta("item", held)
+	l.position = Vector2(0, -10)
+	sprite.add_child(l)
+	_update_light()  # lit at once, not at the next hour's light
 
 
 ## What stops light on a cell (a wall, a shut door).
@@ -792,6 +825,8 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 	var c := ctx.chunk
 	for layer in ["cover", "structure"]:
 		var id := ctx.at(ctx.cover, i) if layer == "cover" else ctx.at(ctx.structure, i)
+		if layer == "cover" and id != "" and _season_drawn == Seasons.WINTER and ctx.location == Levels.SURFACE:
+			id = String(content.get_def(id).get("winter", id))  # small green things are under the snow
 		if id == "":
 			continue
 		var v := content.visual_of(id)
@@ -833,9 +868,14 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 				var of := maxf(1.0, float(content.get_def(id).get("gather", {}).get("work", 1)))
 				s.self_modulate = Color.WHITE.lerp(Color(0.75, 0.62, 0.5), clampf(work / of, 0.0, 1.0))
 			_add(ctx, cell, s)
-			if layer == "structure" and String(content.get_def(id).get("role", "")) in STOPS_LIGHT and state != "open":
+			if own != 0 and own == _group_codes.get("wall", -1):
+				# Walls, doors (shut or open) and windows: their faces are drawn
+				# above their cells — lit, never shadowed by their neighbours' feet.
 				s.light_mask = LIT_UNSHADOWED
-				_add(ctx, cell, _occluder_at(cell))
+				if String(content.get_def(id).get("role", "")) in STOPS_LIGHT and state != "open":
+					_add(ctx, cell, _occluder_at(cell))
+			elif layer == "cover" and _outdoors_unshadowed:
+				s.light_mask = LIT_UNSHADOWED
 			var light: Dictionary = content.get_def(id).get("light", {})
 			if not light.is_empty():
 				_add(ctx, cell, _light_for(light, cell))
@@ -1191,6 +1231,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		me.modulate = Color.WHITE
 		_health(client.character_id, me, client.own, delta)
 		me.hold(item_picture(own_held), item_grip(own_held), own_held)
+		_held_light(me, own_held)
 		_lie(me, bool(client.own.get("asleep", false)))
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
@@ -1219,6 +1260,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 		var sprite := _character(id, looks)
 		var held := String(e.get("held", ""))
 		sprite.hold(item_picture(held), item_grip(held), held)
+		_held_light(sprite, held)
 		var blows := int(e.get("swing", 0))
 		if _swing_seen.has(id) and int(_swing_seen[id]) != blows:
 			sprite.swing(Vector2.RIGHT.rotated((blows & 7) * PI / 4), swing_kind(String(e.get("held", ""))))
@@ -1270,22 +1312,26 @@ func _speech(id: String, sprite: Node2D, e: Dictionary, delta: float) -> void:
 		if bubble == null:
 			bubble = Label.new()
 			bubble.name = "Speech"
-			bubble.add_theme_font_override("font", Art.font())
-			bubble.add_theme_font_size_override("font_size", 8)
-			bubble.add_theme_color_override("font_color", Color(0.1, 0.08, 0.06))
+			_world_text(bubble, Color(0.1, 0.08, 0.06))
 			var box := StyleBoxFlat.new()
 			box.bg_color = Color(0.97, 0.94, 0.86, 0.94)
-			box.set_corner_radius_all(2)
-			box.content_margin_left = 3
-			box.content_margin_right = 3
-			box.content_margin_top = 1
-			box.content_margin_bottom = 1
+			box.set_corner_radius_all(4)
+			box.content_margin_left = 6
+			box.content_margin_right = 6
+			box.content_margin_top = 2
+			box.content_margin_bottom = 2
 			bubble.add_theme_stylebox_override("normal", box)
 			bubble.z_index = 20
 			sprite.add_child(bubble)
 		bubble.text = String(e.get("say", ""))
-		bubble.reset_size()
-		bubble.position = Vector2(-bubble.size.x / 2.0, -38.0 - bubble.size.y)
+		# A long saying wraps (in the label's own pixels, twice the world's).
+		var wide := Art.font().get_string_size(bubble.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+		bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if wide > SPEECH_WIDTH else TextServer.AUTOWRAP_OFF
+		bubble.custom_minimum_size = Vector2.ZERO
+		bubble.size = Vector2(minf(wide, SPEECH_WIDTH) + 12.0, 0.0)  # its margins round the words
+		# As many lines as the words take at that width, no more.
+		bubble.size.y = bubble.get_line_count() * bubble.get_line_height() + 4.0
+		bubble.position = Vector2(-bubble.size.x * bubble.scale.x / 2.0, -38.0 - bubble.size.y * bubble.scale.y)
 		bubble.set_meta("left", SPEECH_S)
 	if bubble:
 		var left := float(bubble.get_meta("left", 0.0)) - delta
@@ -1468,15 +1514,24 @@ func burst_at(at: Vector2, kind: String, tint := Color.WHITE) -> void:
 		add_child(p)
 
 
+## Words drawn in the world as on the screen: the pixel font at its own size
+## (16) on a label half as big, which the camera's zoom brings back to 16 —
+## at half size the font's pixels would break and blur.
+const SPEECH_WIDTH := 300.0
+func _world_text(l: Label, color: Color) -> void:
+	l.add_theme_font_override("font", Art.font())
+	l.add_theme_font_size_override("font_size", 16)
+	l.add_theme_color_override("font_color", color)
+	l.scale = Vector2.ONE * 0.5
+
+
 ## A word that floats up from a point and fades (a blow's damage, a find).
 func popup_at(at: Vector2, text: String, color := Art.TEXT) -> void:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_override("font", Art.font())
-	l.add_theme_font_size_override("font_size", 8)
-	l.add_theme_color_override("font_color", color)
+	_world_text(l, color)
 	l.add_theme_color_override("font_outline_color", Art.INK)
-	l.add_theme_constant_override("outline_size", 2)
+	l.add_theme_constant_override("outline_size", 4)
 	l.z_index = 20
 	l.position = at - Vector2(8, 6)
 	add_child(l)

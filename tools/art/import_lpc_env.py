@@ -150,7 +150,7 @@ DOOR = 56
 WALLS = {
     "base:wood_wall": {"cap": 1, "face": (512, 2176)},
     "base:stone_wall": {"cap": 8, "face": (256, 928)},
-    "base:wood_door": {"cap": 1, "face": (512, 2176), "door": (192, 833, 48), "open": (512, 640, 52)},
+    "base:wood_door": {"cap": 1, "face": (512, 2176), "door": (192, 833, 48), "open": (528, 640, 52)},
     "base:wood_window": {"cap": 1, "face": (512, 2176), "window": (384, 64, 32, 32, 12)},
     "base:loophole": {"cap": 8, "face": (256, 928), "window": (608, 320, 32, 32, 18)},
     # Rock of the underground, read from a passage outwards: a face of dark
@@ -181,6 +181,10 @@ MINE = SRC / "lpc-mine" / "lpc-mine" / "mine.png"
 FLAT = {
     "base:wood_floor": ("floors", 192, 1152, 2, 2, "flat"),
     "base:bridge": ("floors", 192, 1248, 2, 2, "flat"),
+    "base:stone_floor": ("floors", 384, 1824, 2, 2, "flat"),
+    # Floors built on the ground: drawn as the ground they lay (the blueprint, the catalogue).
+    "base:plank_floor": ("floors", 192, 1152, 2, 2, "flat"),
+    "base:flagstone_floor": ("floors", 384, 1824, 2, 2, "flat"),
     "base:wood_ceiling": ("floors", 192, 1216, 2, 2, "cover"),
     "base:thatch_roof": ("roof", 192, 352, 3, 3, "cover"),
 }
@@ -614,6 +618,7 @@ ITEMS = {
     "base:berries": (str(ROOT / "tools" / "art" / "generated" / "berries" / "berries.png"), 0, 0),  # drawn by hand
     "base:mushroom": (str(PLANTS_PNG), 32, 704),  # a boletus (the inventory pack's is a fly agaric)
     "base:mushroom_stew": ("items1_0.png", 160, 192),
+    "base:hand_torch": ("idyl/torch_lit.png", 0, 0),
     "base:silver_ore": ("idyl/silver_ore.png", 0, 0),
     "base:silver_ingot": ("idyl/silver_ingot.png", 0, 0),
     "base:gold_ore": ("idyl/gold_ore.png", 0, 0),

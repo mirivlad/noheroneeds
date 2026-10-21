@@ -9,6 +9,8 @@ static func layer_for_role(role: String) -> String:
 			return "ceiling"
 		"roof":
 			return "roof"
+		"floor":
+			return "ground"  # a floor laid on the land (its ground kept under it)
 	return "structure"
 
 

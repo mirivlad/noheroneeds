@@ -110,10 +110,18 @@ func _plan(id: String) -> Dictionary:
 
 ## A village's past: its founding stories, from the seed and the world as it
 ## is round it (a story that needs a cave has one only if there is a cave).
+## A village's name: of the seed and its id, the same before its chronicle
+## is begun (the map names it without beginning one).
+func village_name(id: String) -> String:
+	if _villages.has(id):
+		return String(_villages[id]["name"])
+	var villages: Array = _names.get("villages", ["Деревня"])
+	return String(villages[absi(hash([world.world_seed, id, "chronicle"])) % villages.size()])
+
+
 func _found(id: String) -> Dictionary:
 	var h := absi(hash([world.world_seed, id, "chronicle"]))
-	var villages: Array = _names.get("villages", ["Деревня"])
-	var v := {"name": String(villages[h % villages.size()]), "entries": [], "requests": [], "season": "",
+	var v := {"name": village_name(id), "entries": [], "requests": [], "season": "",
 		"predators_at": NEVER, "grudges": {}, "dead": [], "next": 1}
 	_villages[id] = v
 	var plan := _plan(id)

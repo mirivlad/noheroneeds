@@ -15,7 +15,8 @@ const PACK_FORMAT := 1
 ## "effects": what a thing gives off on the screen ({sparks|smoke|embers: [x, y]
 ## world pixels from its cell's bottom middle}).
 ## "ambient": life over a ground or plant (fireflies, mist, drift, leaves).
-const PRESENTATION_FIELDS := ["name", "description", "effects", "ambient"]
+## "winter": the ground it is drawn as in winter (under snow).
+const PRESENTATION_FIELDS := ["name", "description", "effects", "ambient", "winter"]
 ## Fields the registry adds while loading.
 const DERIVED_FIELDS := ["pack", "atlas_path", "paths", "body_size"]
 ## Kinds that only show or sound, never rule.
@@ -25,7 +26,7 @@ const SOUND_EVENTS := ["step", "build", "dismantle", "open", "close", "pickup", 
 	"swing", "hit", "shoot", "fill", "pour", "drink", "eat", "splash", "till", "sow", "craft", "gather", "thunder",
 	"rain", "equip", "sleep", "feed"]
 ## What a structure part is for (ADR-0007). Columns and beams are decoration.
-const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture",
+const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture", "floor",
 	"rock", "shaft"]
 ## Which way a part can be turned (ADR-0013): north is up the screen. A part
 ## lists the facings it allows, the first is its default; none: it does not turn.
@@ -188,6 +189,8 @@ func _validate() -> void:
 		var d: Dictionary = defs[id]
 		match String(d.get("kind", "")):
 			"item":
+				if d.has("light"):  # carried, it lights round the one who holds it
+					_check_light(id, d)
 				if d.has("weapon"):
 					_check_weapon(id, "weapon", d["weapon"], true)
 				# A tool's power: the work a blow does (ADR-0026: iron does more).
@@ -231,6 +234,8 @@ func _validate() -> void:
 				if not STRUCTURE_ROLES.has(d["role"]):
 					errors.append("%s: unknown role '%s'" % [id, d["role"]])
 				d["openable"] = bool(d.get("openable", false))
+				if d["role"] == "floor" and kind_of(String(d.get("ground", ""))) != "ground":
+					errors.append("%s: a floor names the ground it lays" % id)
 				d["rotations"] = _check_rotations(id, d.get("rotations", []))
 				if d.has("light"):
 					_check_light(id, d)
@@ -303,6 +308,7 @@ func _validate() -> void:
 			"achievement":
 				pass
 			"ground", "plant":
+				_check_winter(id, d)
 				_check_fills(id, d)
 				d["solid"] = bool(d.get("solid", false))
 				if d.has("gather"):
@@ -663,6 +669,12 @@ func _check_weapon(id: String, field: String, w: Variant, ranged_ok: bool) -> vo
 ## felled. {"tool": the kind of tool to hold ("" bare hands), "verb": the
 ## action's name, "drops": {item: n}}. Any tool whose "tools" list has that
 ## kind does it: a new tool or a new thing to gather is data only.
+## A ground's or plant's look in winter (presentation): one of its kind, or "" — none.
+func _check_winter(id: String, d: Dictionary) -> void:
+	if d.has("winter") and String(d["winter"]) != "" and kind_of(String(d["winter"])) != kind_of(id):
+		errors.append("%s: winter '%s' is not a thing of its kind" % [id, d["winter"]])
+
+
 func _check_gather(id: String, d: Dictionary) -> void:
 	var g: Variant = d["gather"]
 	# By luck (ADR-0031): a ground's chance a try, a pick by weight, a stock.

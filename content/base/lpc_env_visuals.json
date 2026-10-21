@@ -544,6 +544,75 @@
    ]
   },
   {
+   "id": "base:visual/stone_floor",
+   "kind": "visual",
+   "for": "base:stone_floor",
+   "mode": "flat",
+   "atlas": "art/lpc_env/flat.png",
+   "rect": [
+    0,
+    192,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "grid": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "base:visual/plank_floor",
+   "kind": "visual",
+   "for": "base:plank_floor",
+   "mode": "flat",
+   "atlas": "art/lpc_env/flat.png",
+   "rect": [
+    0,
+    288,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "grid": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "base:visual/flagstone_floor",
+   "kind": "visual",
+   "for": "base:flagstone_floor",
+   "mode": "flat",
+   "atlas": "art/lpc_env/flat.png",
+   "rect": [
+    0,
+    384,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "grid": [
+    2,
+    2
+   ]
+  },
+  {
    "id": "base:visual/wood_ceiling",
    "kind": "visual",
    "for": "base:wood_ceiling",
@@ -551,7 +620,7 @@
    "atlas": "art/lpc_env/flat.png",
    "rect": [
     0,
-    192,
+    480,
     32,
     32
    ],
@@ -574,7 +643,7 @@
    "atlas": "art/lpc_env/flat.png",
    "rect": [
     0,
-    288,
+    576,
     32,
     32
    ],
@@ -2760,13 +2829,32 @@
    "variants": 1
   },
   {
+   "id": "base:visual/hand_torch",
+   "kind": "visual",
+   "for": "base:hand_torch",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1248,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/silver_ore",
    "kind": "visual",
    "for": "base:silver_ore",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1248,
+    1280,
     0,
     32,
     32
@@ -2785,7 +2873,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1280,
+    1312,
     0,
     32,
     32
@@ -2804,7 +2892,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1312,
+    1344,
     0,
     32,
     32
@@ -2823,7 +2911,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1344,
+    1376,
     0,
     32,
     32
@@ -2842,7 +2930,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1376,
+    1408,
     0,
     32,
     32
@@ -2861,7 +2949,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1408,
+    1440,
     0,
     32,
     32
@@ -2880,7 +2968,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1440,
+    1472,
     0,
     32,
     32
@@ -2899,7 +2987,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1472,
+    1504,
     0,
     32,
     32
@@ -2918,7 +3006,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1504,
+    1536,
     0,
     32,
     32
@@ -2937,7 +3025,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1536,
+    1568,
     0,
     32,
     32
@@ -2956,7 +3044,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1568,
+    1600,
     0,
     32,
     32
@@ -2975,7 +3063,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1600,
+    1632,
     0,
     32,
     32
@@ -2994,7 +3082,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1632,
+    1664,
     0,
     32,
     32
@@ -3013,7 +3101,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1664,
+    1696,
     0,
     32,
     32
@@ -3032,7 +3120,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1696,
+    1728,
     0,
     32,
     32
@@ -3051,7 +3139,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1728,
+    1760,
     0,
     32,
     32
@@ -3070,7 +3158,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1760,
+    1792,
     0,
     32,
     32

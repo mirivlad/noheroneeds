@@ -197,3 +197,15 @@ func test_autumn_asks_for_wood_and_a_struck_dweller_bears_a_grudge() -> void:
 	w.combat.hurt(farmer.id, 999, a)
 	check(_texts().contains("Погиб"), "a death written down: " + _texts())
 	check(_texts().contains("Убийца — Аня"), _texts())
+
+
+## The map names the settlements near: the same names the chronicles use,
+## asked without beginning a chronicle.
+func test_places_near_are_named_for_the_map() -> void:
+	var a := _player("Аня", null)
+	var r := _req(a, {"type": "places"})
+	check(r.get("ok", false), str(r))
+	var names := (r["places"] as Array).map(func(p: Dictionary) -> String: return String(p["name"]))
+	var home := w.chronicles.village_name(String(plan["id"]))
+	check(names.has(home), "the village by the spawn: %s in %s" % [home, names])
+	eq(w.chronicles.of(String(plan["id"]))["name"], home, "the chronicle calls it so too")

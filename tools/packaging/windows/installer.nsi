@@ -1,5 +1,5 @@
 ; The Windows installer of No Hero Needed (NSIS 3). tools/package.sh runs:
-;   makensis -DVERSION=x.y.z -DSRC=<dir with the exe and its dll> -DICON=<icon.ico> -DOUT=<setup.exe> installer.nsi
+;   makensis -DVERSION=x.y.z -DSRC=<dir with the exe and its dll> -DICON=<icon.ico> -DLICENSE=<LICENSE> -DOUT=<setup.exe> installer.nsi
 ; Installs for all users into Program Files, with Start menu and desktop
 ; shortcuts and an entry in "Apps & features" to remove it.
 Unicode true
@@ -20,13 +20,14 @@ VIAddVersionKey "ProductName" "${APP}"
 VIAddVersionKey "ProductVersion" "${VERSION}"
 VIAddVersionKey "FileVersion" "${VERSION}"
 VIAddVersionKey "FileDescription" "${APP} setup"
-VIAddVersionKey "LegalCopyright" "No Hero Needed contributors"
+VIAddVersionKey "LegalCopyright" "mirivlad, Claude (Anthropic); GNU GPL 3"
 
 !define MUI_ICON "${ICON}"
 !define MUI_UNICON "${ICON}"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${EXE}"
 !insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "${LICENSE}"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -47,7 +48,7 @@ Section "Install"
   CreateShortcut "$DESKTOP\${APP}.lnk" "$INSTDIR\${EXE}" "" "$INSTDIR\icon.ico"
   WriteRegStr HKLM "${KEY}" "DisplayName" "${APP}"
   WriteRegStr HKLM "${KEY}" "DisplayVersion" "${VERSION}"
-  WriteRegStr HKLM "${KEY}" "Publisher" "No Hero Needed contributors"
+  WriteRegStr HKLM "${KEY}" "Publisher" "mirivlad"
   WriteRegStr HKLM "${KEY}" "DisplayIcon" "$INSTDIR\icon.ico"
   WriteRegStr HKLM "${KEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKLM "${KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'

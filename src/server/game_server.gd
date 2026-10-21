@@ -250,6 +250,7 @@ func _step() -> void:
 	for s: Session in _sessions.values():
 		if s.state == "playing":
 			_apply_input(s)
+	world.boats.check()
 	_lap("movement")
 	world.creatures.step(tick)
 	_lap("creatures")
@@ -421,6 +422,14 @@ func _apply_input(s: Session) -> void:
 		if e[1] == 0 and e[2] == 0:
 			continue
 		world.wake(s.character_id)  # moving gets one up (ADR-0035)
+		# In a boat (ADR-0052) the one at the helm rows it over water; the
+		# others sit.
+		if world.boats.aboard(s.character_id) != "":
+			if world.boats.at_helm(s.character_id):
+				world.boats.row(s.character_id, Movement.step_at(p["pos"], e[1], e[2],
+					func(x: int, y: int) -> bool: return world.boats.blocks_boat(loc, x, y),
+					world.boats.speed_of(s.character_id)))
+			continue
 		# Tired, one does not run: the client knows it too and does not try.
 		var run: bool = e[3] == 1 and world.needs.may_run(s.character_id)
 		# In water one swims (ADR-0050): slowly, never running; nor through
@@ -504,10 +513,28 @@ func _update_replica() -> void:
 			r.cold["held"] = String(p.get("held", ""))  # what is in its hands, for all to see
 			r.cold_size = Cbor.encode_fast(r.cold).size()
 			r.cv += 1
+		var boat := world.boats.aboard(id)
+		var helm := world.boats.at_helm(id)
+		if String(r.cold.get("aboard", "")) != boat or bool(r.cold.get("helm", false)) != helm:
+			r.cold = r.cold.duplicate()
+			r.cold["aboard"] = boat  # sits in a boat, rows it at the helm (ADR-0052)
+			r.cold["helm"] = helm
+			r.cold_size = Cbor.encode_fast(r.cold).size()
+			r.cv += 1
 		if r.x != pos.x or r.y != pos.y:
 			r.x = pos.x
 			r.y = pos.y
 			r.hv += 1
+	# Things on the ground that moved (a boat rowed).
+	for id: String in world.moved_items:
+		var r: Replica = _replica.get(id)
+		if r != null and world.items.has(id):
+			var it: Dictionary = world.items[id]
+			if r.x != int(it["x"]) or r.y != int(it["y"]):
+				r.x = int(it["x"])
+				r.y = int(it["y"])
+				r.hv += 1
+	world.moved_items.clear()
 
 
 func _gone(id: String) -> void:

@@ -222,8 +222,17 @@ func _validate() -> void:
 				# Things of their own (ADR-0048): what is worn, held, worked with or
 				# set up is a copy of its own, never a stack.
 				if d["stack"] != 1 and (d.has("equip_slot") or d.has("tools") or d.has("weapon") or d.has("armor")
-						or d.has("warmth") or d.has("places") or d.has("liquid") or d.has("durability")):
+						or d.has("warmth") or d.has("places") or d.has("liquid") or d.has("durability") or d.has("vessel")):
 					errors.append("%s: a thing of its own (worn, held, set up) is not stacked: stack 1" % id)
+				# A boat (ADR-0052): how many sit in it, how fast it goes (units a
+				# tick: less than a cell).
+				if d.has("vessel"):
+					var v: Variant = d["vessel"]
+					if typeof(v) != TYPE_DICTIONARY or int(v.get("seats", 0)) < 1 or int(v.get("speed", 0)) < 1 \
+							or int(v.get("speed", 0)) >= Movement.UNIT:
+						errors.append("%s: a vessel has seats (1 or more) and a speed (1..%d)" % [id, Movement.UNIT - 1])
+					else:
+						d["vessel"] = {"seats": int(v["seats"]), "speed": int(v["speed"])}
 				# Furniture carried and set up (ADR-0048): the part it becomes, which costs it.
 				if d.has("places") and (kind_of(String(d["places"])) != "structure" or structure_cost(String(d["places"])).size() != 1
 						or int(structure_cost(String(d["places"])).get(id, 0)) != 1):

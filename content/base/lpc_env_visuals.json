@@ -3438,6 +3438,72 @@
    "variants": 1
   },
   {
+   "id": "base:visual/boat",
+   "kind": "visual",
+   "for": "base:boat",
+   "mode": "item",
+   "atlas": "art/lpc_env/vessels.png",
+   "rect": [
+    0,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "states": {
+    "we": [
+     32,
+     0,
+     80,
+     40
+    ],
+    "ns": [
+     112,
+     0,
+     40,
+     80
+    ]
+   }
+  },
+  {
+   "id": "base:visual/raft",
+   "kind": "visual",
+   "for": "base:raft",
+   "mode": "item",
+   "atlas": "art/lpc_env/vessels.png",
+   "rect": [
+    0,
+    80,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "states": {
+    "we": [
+     32,
+     80,
+     64,
+     48
+    ],
+    "ns": [
+     112,
+     80,
+     48,
+     64
+    ]
+   }
+  },
+  {
    "id": "base:visual/wheat_crop",
    "kind": "visual",
    "for": "base:wheat_crop",

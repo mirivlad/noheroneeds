@@ -56,6 +56,13 @@ static func is_shallow(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> 
 	return _traits(c, lx, ly, content) & _WADE != 0
 
 
+## Whether a boat goes over a cell (ADR-0052): water or shallows with nothing
+## standing on it.
+static func floats(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> bool:
+	var t := _traits(c, lx, ly, content)
+	return t & (_SWIM | _WADE) != 0 and t & _UPPER_SOLID == 0
+
+
 ## Whether a cell blocks sight (ADR-0018): a part that is not see-through
 ## (walls; a door unless open), or a solid plant (a tree, a bush).
 static func is_opaque(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> bool:

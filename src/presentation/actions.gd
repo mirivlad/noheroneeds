@@ -8,6 +8,8 @@ class_name Actions
 ##   a door         ("openable")     — opens and closes; the one who set it
 ##                                     up locks it with a code (ADR-0016);
 ##   a thing lying  (an item entity) — is picked up;
+##   a boat ("vessel")                — is put on the water, got into, left
+##                                     for the shore (ADR-0052);
 ##   a way up/down  (stairs, shafts) — is climbed;
 ##   one's own part (props "owner")  — may be taken apart (another's only
 ##                                     broken, ADR-0016); any worn one mended;
@@ -107,9 +109,23 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			and content.get_def(String(target.get("id", ""))).has("crop"):
 		out.append({"id": "pour", "name": "Полить", "primary": true,
 			"request": {"type": "pour", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
+	# Boats (ADR-0052): one held is put on the water; one lying on it is got
+	# into; from it one steps ashore.
+	var in_boat := client.aboard() != ""
+	var vessel_held: bool = held != "" and content.get_def(held).has("vessel")
+	if vessel_held and not in_boat and kind in ["ground", "part"] and client.floats(cell):
+		out.append({"id": "launch", "name": "Спустить на воду", "primary": true, "quick": true,
+			"request": {"type": "launch", "item": held, "x": cell.x, "y": cell.y}})
+	var boat: bool = kind == "entity" and entity.get("kind") == "item" and content.get_def(String(entity.get("item", ""))).has("vessel")
+	if boat and not in_boat:
+		out.append({"id": "board", "name": "Сесть в лодку" if String(entity["item"]) != "base:raft" else "Встать на плот",
+			"quick": true, "request": {"type": "board", "entity": target["id"]}})
+	if in_boat and kind in ["ground", "part"] and not client.floats(cell):
+		out.append({"id": "land", "name": "Сойти на берег", "quick": true,
+			"request": {"type": "land", "x": cell.x, "y": cell.y}})
 	if kind == "entity" and entity.get("kind") == "item":
-		out.append({"id": "pickup", "name": "Подобрать", "request": {"type": "pickup", "entity": target["id"]},
-			"quick": true})
+		out.append({"id": "pickup", "name": "Вытащить и забрать" if boat else "Подобрать",
+			"request": {"type": "pickup", "entity": target["id"]}, "quick": not boat})
 	# What a part, a plant or ground holds is got with its kind of tool (a rod
 	# fishes in water: the water stays).
 	var g: Dictionary = content.get_def(String(target.get("id", ""))).get("gather", {}) \

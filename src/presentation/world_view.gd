@@ -1227,7 +1227,7 @@ func _update_characters(alpha: float, delta: float) -> void:
 	if client.has_position:
 		seen[client.character_id] = true
 		var me := _character(client.character_id, client.own.get("appearance", {}))
-		me.submerged = client.in_water(client.position)  # swimming (ADR-0050)
+		me.submerged = client.in_water(client.position) or client.aboard() != ""  # swimming (ADR-0050), in a boat (ADR-0052)
 		me.show_at(own_pixel_position(alpha), delta, true)
 		me.modulate = Color.WHITE
 		_health(client.character_id, me, client.own, delta)
@@ -1239,7 +1239,10 @@ func _update_characters(alpha: float, delta: float) -> void:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
 			seen[id] = true
-			_at_level(_item(id, e), int(e.get("z", client.z)))
+			if content.get_def(String(e.get("item", ""))).has("vessel"):
+				_at_level(_boat(id, e, delta), int(e.get("z", client.z)))
+			else:
+				_at_level(_item(id, e), int(e.get("z", client.z)))
 			continue
 		if e.get("kind") == "projectile":
 			seen[id] = true
@@ -1260,7 +1263,8 @@ func _update_characters(alpha: float, delta: float) -> void:
 		# lies dimmed under the floor, as the surface there does.
 		var dz := int(e.get("z", client.z)) - client.z
 		var sprite := _character(id, looks)
-		sprite.submerged = kind == "character" and dz == 0 and client.in_water(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
+		sprite.submerged = kind == "character" and dz == 0 and (client.in_water(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
+			or String(e.get("aboard", "")) != "")
 		var held := "" if sprite.submerged else String(e.get("held", ""))
 		sprite.hold(item_picture(held), item_grip(held), held)
 		_held_light(sprite, held)
@@ -1576,6 +1580,34 @@ func _item(id: String, e: Dictionary) -> Sprite2D:
 	s.offset = Vector2(0, -4) / s.scale
 	_sorted.add_child(s)
 	_items[id] = s
+	return s
+
+
+## A boat (ADR-0052): its hull lying along its course, easing to where the
+## server has it; drawn just under its crew.
+func _boat(id: String, e: Dictionary, delta: float) -> Sprite2D:
+	var target := Vector2(int(e["x"]), int(e["y"])) / UNITS_PER_PIXEL
+	var v := content.visual_of(String(e.get("item", "")))
+	var s: Sprite2D = _items.get(id)
+	if s == null:
+		s = Sprite2D.new()
+		s.texture = texture(v["atlas_path"]) if not v.is_empty() else _tile_texture(_missing_source)
+		s.region_enabled = not v.is_empty()
+		s.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))
+		s.position = target - Vector2(0, 1)
+		s.set_meta("along", "we")
+		_sorted.add_child(s)
+		_items[id] = s
+	var was := s.position + Vector2(0, 1)
+	var to := was.lerp(target, minf(1.0, delta * 15.0))
+	var moved := target - was
+	if moved.length() > 0.5:
+		s.set_meta("along", "we" if absf(moved.x) >= absf(moved.y) else "ns")
+	if not v.is_empty():
+		var rect: Array = (v.get("states", {}) as Dictionary).get(String(s.get_meta("along")), v["rect"])
+		s.region_rect = Rect2(rect[0], rect[1], rect[2], rect[3])
+	s.position = to - Vector2(0, 1)  # a pixel above its crew: drawn under them
+	s.offset = Vector2(0, 5) / s.scale
 	return s
 
 

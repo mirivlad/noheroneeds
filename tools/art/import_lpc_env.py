@@ -781,6 +781,94 @@ def build_items():
     return defs
 
 
+# Vessels (ADR-0052): drawn here, of LPC's wooden floor, in its browns. A
+# row each: the icon (32 x 32), the hull lying east-west (state "we") and
+# north-south ("ns"), seen from above as the crew sits in it.
+VESSELS = {"base:boat": "boat", "base:raft": "raft"}
+VESSEL_ROW = 80
+RIM = [(58, 36, 22), (92, 58, 34), (128, 86, 50)]  # dark, middle, light wood
+
+
+def _boat_hull(planks):
+    w, h = 80, 40
+    img = Image.new("RGBA", (w, h))
+    px = img.load()
+    import math
+
+    def half(x):  # half the beam at x: pointed bow (east), blunter stern
+        t = (x + 0.5) / w
+        return (h / 2 - 2) * (math.sin(math.pi * t) ** (0.45 if t < 0.5 else 0.7))
+    for x in range(w):
+        hh = half(x)
+        for y in range(h):
+            d = abs(y + 0.5 - h / 2)
+            if d > hh:
+                continue
+            edge = hh - d
+            if edge < 1.6:
+                c = RIM[0]
+            elif edge < 3.2:
+                c = RIM[2] if y < h / 2 else RIM[1]  # the gunwale lit from above
+            else:
+                c = planks.getpixel((x % planks.width, y % planks.height))[:3]
+                if y > h / 2 + hh - 6:
+                    c = tuple(int(v * 0.8) for v in c)  # the inside of the far side in shade
+            px[x, y] = c + (255,)
+    for tx in (27, 50):  # thwarts: the seats across
+        for x in range(tx, tx + 5):
+            hh = half(x) - 2
+            for y in range(int(h / 2 - hh), int(h / 2 + hh) + 1):
+                px[x, y] = (RIM[2] if x < tx + 3 else RIM[1]) + (255,)
+    return img
+
+
+def _raft_hull():
+    w, h = 64, 48
+    img = Image.new("RGBA", (w, h))
+    px = img.load()
+    logs = 6
+    lh = h // logs
+    for i in range(logs):
+        y0 = i * lh
+        for x in range(1, w - 1):
+            for y in range(y0, y0 + lh):
+                r = (y - y0 + 0.5) / lh  # across the log: light on top, dark under
+                if (x < 3 or x > w - 4) and (r < 0.2 or r > 0.8):
+                    continue  # the ends rounded
+                c = RIM[2] if r < 0.35 else (RIM[1] if r < 0.8 else RIM[0])
+                if (x * 7 + i * 13) % 23 == 0:
+                    c = RIM[0]  # knots and cracks
+                px[x, y] = c + (255,)
+    for bx in (10, 50):  # lashings
+        for x in range(bx, bx + 3):
+            for y in range(h):
+                if px[x, y][3]:
+                    px[x, y] = ((176, 150, 100) if x == bx else (138, 112, 70)) + (255,)
+    return img
+
+
+def build_vessels():
+    floors = Image.open(FLOORS_DIR / "floors.png").convert("RGBA")
+    planks = floors.crop((192, 1152, 256, 1216))
+    atlas = Image.new("RGBA", (32 + 80 + 40, VESSEL_ROW * len(VESSELS)))
+    defs = []
+    for r, (item, kind) in enumerate(VESSELS.items()):
+        hull = _boat_hull(planks) if kind == "boat" else _raft_hull()
+        y = r * VESSEL_ROW
+        k = (T - 2) / max(hull.width, hull.height)
+        icon = hull.resize((round(hull.width * k), round(hull.height * k)), Image.BOX)
+        atlas.alpha_composite(icon, ((T - icon.width) // 2, y + (T - icon.height) // 2))
+        atlas.alpha_composite(hull, (32, y))
+        ns = hull.rotate(90, expand=True)
+        atlas.alpha_composite(ns, (32 + 80, y))
+        defs.append({"id": "base:visual/" + item.split(":")[1], "kind": "visual", "for": item, "mode": "item",
+                     "atlas": "art/lpc_env/vessels.png", "rect": [0, y, T, T], "origin": [0, T],
+                     "pixel_scale": 0.5, "variants": 1,
+                     "states": {"we": [32, y, hull.width, hull.height], "ns": [32 + 80, y, ns.width, ns.height]}})
+    atlas.save(OUT / "vessels.png", optimize=True)
+    return defs
+
+
 # Crops (ADR-0027): a picture a stage, all on a 32 x 64 cell standing on its
 # bottom, so the stages share one origin. (file under lpc-farm tilesets, rect)
 CROPS = {
@@ -922,7 +1010,7 @@ def credits():
 def main():
     if not all(d.exists() for d in [TERRAIN_DIR, WALLS_DIR, DOORS_DIR, FLOORS_DIR, ROOF, PLANTS_PNG, TREES_DIR, ORE, MINE]):
         sys.exit("no LPC environment sources: run tools/art/fetch_lpc_env.sh")
-    defs = build_terrain() + build_buildings() + build_plants() + build_props() + build_items() + build_crops() + build_fences()
+    defs = build_terrain() + build_buildings() + build_plants() + build_props() + build_items() + build_vessels() + build_crops() + build_fences()
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     credits()
     print("%d environment visuals" % len(defs))

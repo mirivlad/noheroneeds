@@ -103,7 +103,10 @@ static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
 	c.route = d.get("route", {}) if d.get("route") is Dictionary else {}
 	for e: Variant in d.get("stomach", []):
 		if e is Dictionary:
-			c.stomach.append({"item": String(e.get("item", "")), "count": int(e.get("count", 0)), "at": int(e.get("at", 0))})
+			var got := {"item": String(e.get("item", "")), "count": int(e.get("count", 0)), "at": int(e.get("at", 0))}
+			if e.get("states") is Array:
+				got["states"] = e["states"]
+			c.stomach.append(got)
 	var mem: Dictionary = d.get("memory", {})
 	for k: String in mem:
 		var m: Dictionary = mem[k]

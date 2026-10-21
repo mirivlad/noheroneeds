@@ -7,6 +7,8 @@ extends PanelContainer
 signal promise(creature: String)
 signal report(creature: String)
 signal trade(creature: String)
+## Learn a recipe from the dweller (ADR-0047).
+signal learn(creature: String, recipe: String)
 
 const WIDTH := 480
 var content: ContentRegistry
@@ -21,11 +23,15 @@ var _take := Button.new()
 var _done := Button.new()
 var _trade := Button.new()
 var _ask_news := Button.new()
+var _teach := Button.new()
+var _lessons := ItemList.new()
+var _lesson_ids: Array[String] = []
+var _lesson_ok := {}
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		for node: Node in [_title, _says, _goal, _news, _take, _done, _trade, _ask_news]:
+		for node: Node in [_title, _says, _goal, _news, _take, _done, _trade, _ask_news, _teach, _lessons]:
 			if is_instance_valid(node) and node.get_parent() == null:
 				node.free()
 
@@ -54,13 +60,52 @@ func setup(registry: ContentRegistry) -> void:
 	_trade.pressed.connect(func() -> void: trade.emit(creature))
 	_ask_news.text = "Что нового?"
 	_ask_news.pressed.connect(func() -> void: _news.visible = not _news.visible)
-	for b: Button in [_take, _done, _trade, _ask_news]:
+	_teach.text = "Учиться"
+	_teach.pressed.connect(func() -> void: _lessons.visible = not _lessons.visible)
+	for b: Button in [_take, _done, _trade, _teach, _ask_news]:
 		row.add_child(b)
+	# What it would teach, on what terms; a click asks to learn it.
+	_lessons.name = "Lessons"
+	_lessons.custom_minimum_size = Vector2(WIDTH, 150)
+	_lessons.visible = false
+	_lessons.item_clicked.connect(func(i: int, _at: Vector2, _b: int) -> void:
+		if bool(_lesson_ok.get(_lesson_ids[i], false)):
+			learn.emit(creature, _lesson_ids[i]))
+	box.add_child(_lessons)
 	var hint := Label.new()
 	hint.text = "L — журнал: что вы взялись сделать и что помнят деревни"
 	hint.add_theme_color_override("font_color", Art.TEXT_DIM)
 	box.add_child(hint)
 	visible = false
+
+
+## Why a dweller will not teach a recipe, for people.
+const NOT_TAUGHT := {"known_already": "уже знаете", "grudge": "не станет учить", "standing": "мало доверия: помогите деревне",
+	"not_skilled": "рано: не хватает умения", "no_money": "не хватает монет"}
+
+
+## What the dweller teaches ([{recipe, price, standing, skill, why}]).
+func show_lessons(lessons: Array) -> void:
+	_lessons.clear()
+	_lesson_ids.clear()
+	_lesson_ok.clear()
+	for t: Dictionary in lessons:
+		var r := String(t["recipe"])
+		var why := String(t.get("why", ""))
+		var text := "%s — %d монет" % [content.get_def(r).get("name", r), int(t.get("price", 0))]
+		if why != "":
+			text += " (%s)" % NOT_TAUGHT.get(why, why)
+		var i := _lessons.add_item(text)
+		var terms := PackedStringArray(["Доверие деревни: %d" % int(t.get("standing", 0))])
+		for sk: String in t.get("skill", {}):
+			terms.append("%s: %d" % [content.get_def(sk).get("name", sk), int(t["skill"][sk])])
+		_lessons.set_item_tooltip(i, "\n".join(terms))
+		if why != "":
+			_lessons.set_item_custom_fg_color(i, Color(Art.TEXT_DIM, 0.6))
+		_lesson_ids.append(r)
+		_lesson_ok[r] = why == ""
+	_teach.visible = not lessons.is_empty()
+	_teach.text = "Учиться (%d)" % lessons.filter(func(t: Dictionary) -> bool: return String(t.get("why", "")) == "").size()
 
 
 ## Shows what the server said ({name, profession, village, request?,
@@ -90,6 +135,7 @@ func open_for(r: Dictionary) -> void:
 	_done.disabled = state != "ready"
 	_done.text = ("Отдать" if String(req.get("kind", "")) != "hunt" else "Сделано") if state == "ready" else "Ещё не сделано"
 	_trade.visible = not content.get_def(String(r.get("profession", ""))).get("trade", {}).is_empty() and not r.get("grudge", false)
+	show_lessons(r.get("teaches", []))
 	var lines: Array = r.get("chronicle", [])
 	_news.text = "Деревня помнит:\n" + "\n".join(PackedStringArray(lines.map(func(t: Variant) -> String: return "• " + String(t))))
 	_ask_news.visible = not lines.is_empty()

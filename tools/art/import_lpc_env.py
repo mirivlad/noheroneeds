@@ -418,7 +418,40 @@ PLANTS = {
     "base:copper_outcrop": ("ore", [(96, 32, 32, 32)]),
     "base:silver_outcrop": ("ore", [(128, 64, 32, 32), (128, 32, 32, 32)]),
     "base:gold_outcrop": ("ore", [(160, 64, 32, 32)]),
+    # Loose stones with flint among them (ADR-0045): the ore pack's small
+    # stones, two to a cell (built in build_plants).
+    "base:pebbles": ("pebbles", [(0, 0, 32, 32), (32, 0, 32, 32)]),
 }
+
+
+# Flint: the ore pack's coal in the warm greys of flint (black outline kept).
+FLINT = {(16, 20, 20): (58, 54, 52), (8, 10, 10): (44, 40, 40), (28, 34, 34): (76, 70, 66),
+         (34, 40, 42): (96, 88, 82), (42, 48, 52): (124, 116, 106), (75, 68, 76): (172, 162, 150)}
+
+
+def recolour(img, colours):
+    img = img.copy()
+    px = img.load()
+    for yy in range(img.height):
+        for xx in range(img.width):
+            c = px[xx, yy]
+            if c[3] and c[:3] in colours:
+                px[xx, yy] = colours[c[:3]] + (c[3],)
+    return img
+
+
+def pebbles(ore):
+    """Two cells of loose stones: the ore pack's small grey stone and its
+    small dark one (flint), laid side by side, one way and the other."""
+    grey = ore.crop((128, 320, 160, 352))
+    dark = recolour(ore.crop((0, 320, 32, 352)), FLINT)
+    grey, dark = grey.crop(grey.getbbox()), dark.crop(dark.getbbox())
+    img = Image.new("RGBA", (2 * T, T))
+    img.alpha_composite(grey, (3, T - grey.height - 4))
+    img.alpha_composite(dark, (14, T - dark.height - 2))
+    img.alpha_composite(dark, (T + 4, T - dark.height - 5))
+    img.alpha_composite(grey, (T + 15, T - grey.height - 2))
+    return img
 
 
 def _base(img):
@@ -446,6 +479,7 @@ def build_plants():
     sheets = {"plants": Image.open(PLANTS_PNG).convert("RGBA"),
               "trees": Image.open(TREES_DIR / "trees-green.png").convert("RGBA"),
               "ore": Image.open(ORE).convert("RGBA")}
+    sheets["pebbles"] = pebbles(sheets["ore"])
     for colour in ["orange", "pale", "dead"]:
         sheets["trees-" + colour] = Image.open(TREES_DIR / ("trees-%s.png" % colour)).convert("RGBA")
     pieces = []  # (id, [(img, origin)], season or "")
@@ -623,6 +657,14 @@ ITEMS = {
     "base:silver_ingot": ("idyl/silver_ingot.png", 0, 0),
     "base:gold_ore": ("idyl/gold_ore.png", 0, 0),
     "base:gold_ingot": ("idyl/gold_ingot.png", 0, 0),
+    # The first things got by hand (ADR-0045).
+    "base:stick": ("idyl/stick.png", 0, 0),
+    "base:fiber": ("idyl/grass.png", 0, 0),
+    "base:cord": ("idyl/rope.png", 0, 0),
+    "base:flint": (str(ORE), 0, 288),
+    "base:flint_axe": ("items1_0.png", 160, 224),
+    # Knowledge on leather (ADR-0047).
+    "base:blueprint": ("idyl/parchment.png", 0, 0),
 }
 # A picture with some of its colours changed inside a box (a recolouring, not
 # a new drawing: the bucket's dark inside as water or milk): id -> (file,
@@ -633,6 +675,10 @@ RECOLOURED = {
     # Fur: the hide's picture in a deeper, redder brown.
     "base:fur": ("idyl/rawhide.png", 0, 0, 32, 32, {(142, 103, 73): (156, 96, 54), (107, 75, 48): (118, 66, 34),
                                                    (81, 54, 30): (86, 46, 22), (60, 38, 18): (58, 30, 14)}),
+    # A flint pick: the pick's iron head in the dark greys of flint.
+    "base:flint_pick": ("idyl/iron_pickaxe.png", 0, 0, 32, 32, {(215, 219, 237): (132, 124, 114), (147, 153, 170): (96, 90, 84),
+                                                             (114, 121, 135): (74, 68, 64), (80, 83, 96): (52, 48, 46),
+                                                             (48, 50, 58): (32, 30, 30)}),
 }
 # Tools drawn in the hands by LPC: the south standing frame of their layers.
 HELD_ICONS = {"base:hoe": ["tools/hoe/bg/walk.png", "tools/hoe/fg/walk.png"]}
@@ -658,7 +704,8 @@ def build_items():
     icons = []
     for item, (path, x, y) in ITEMS.items():
         src = Image.open(path if path.startswith("/") else ITEMS_DIR / path).convert("RGBA")
-        icons.append((item, src.crop((x, y, x + T, y + T))))
+        icon = src.crop((x, y, x + T, y + T))
+        icons.append((item, recolour(icon, FLINT) if item == "base:flint" else icon))
     for item, (path, x0, y0, x1, y1, colours) in RECOLOURED.items():
         img = Image.open(ITEMS_DIR / path).convert("RGBA").crop((0, 0, T, T))
         px = img.load()
@@ -813,13 +860,13 @@ FILE_CREDITS = [
      "https://opengameart.org/content/lpc-house-insides"),
     ("Modified 32x32 Treasure chest (сундук)", "Blarumyrran, правка Gaurav", "CC0",
      "https://opengameart.org/content/modified-32x32-treasure-chest"),
-    ("[LPC] Ore and Forge (руда в камне, камень, слитки, печь)", "bluecarrot16", "CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0",
+    ("[LPC] Ore and Forge (руда в камне, камень, кремень, россыпь камней, слитки, печь)", "bluecarrot16", "CC-BY 4.0 / CC-BY 3.0 / GPL 3.0 / OGA-BY 3.0",
      "https://opengameart.org/content/lpc-ore-and-forge"),
-    ("Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда)", "Idylwild", "CC0",
+    ("Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда, ветки, волокно, бечёвка, чертёж)", "Idylwild", "CC0",
      "https://opengameart.org/content/idylwilds-inventory"),
     ("Camp Fire Animation for RPGs (костёр; на нём же иконка игры, tools/art/make_icon.py)", "Zabin (анимация), Jetrel (костёр)", "CC-BY-SA 3.0",
      "https://opengameart.org/content/camp-fire-animation-for-rpgs-finished"),
-    ("[LPC] Items and game effects (топор, копьё, лук, самоцвет, жареное мясо)", "Lanea Zimmerman (Sharm) и др. (LPC)",
+    ("[LPC] Items and game effects (топор, кремнёвое рубило, копьё, лук, самоцвет, жареное мясо)", "Lanea Zimmerman (Sharm) и др. (LPC)",
      "CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0", "https://opengameart.org/content/lpc-items-and-game-effects"),
 ]
 

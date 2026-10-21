@@ -2,9 +2,9 @@ class_name CharacterPanel
 extends PanelContainer
 ## RPG equipment window (C): the doll, worn slots, and the actual inventory.
 
-signal wear(item: String)
+signal wear(item: String, copy: int)
 signal take_off(slot: String)
-signal drop(item: String, count: int)
+signal drop(item: String, count: int, copy: int)
 signal unslot(slot: int)
 
 const SLOTS := {"headwear": "Голова", "torso": "Торс", "armor": "Доспех", "legs": "Ноги", "feet": "Обувь", "back_item": "Спина", "belt": "Пояс", "main_hand": "В руках"}
@@ -21,7 +21,7 @@ class EquipmentSlot:
 		return slot == "main_hand" or panel.content.get_def(String(data["item"])).get("equip_slot", "") == slot
 
 	func _drop_data(_at: Vector2, data: Variant) -> void:
-		panel.wear.emit(String(data["item"]))
+		panel.wear.emit(String(data["item"]), int(data.get("copy", -1)))
 
 	func _get_drag_data(_at: Vector2) -> Variant:
 		return {"equipment_slot": slot, "item": item} if item != "" else null
@@ -69,15 +69,20 @@ func setup(registry: ContentRegistry, view: WorldView) -> void:
 		b.custom_minimum_size = Vector2(99, 52)
 		b.add_theme_font_size_override("font_size", 16)
 		b.clip_text = true
+		var bar := WearBar.new()
+		bar.name = "Wear"
+		bar.position = Vector2(6, 44)
+		bar.size = Vector2(87, 4)
+		b.add_child(bar)
 		b.pressed.connect(func() -> void:
 			if b.item != "":
 				take_off.emit(b.slot))
 		grid.add_child(b)
 		_slots[slot] = b
 	bag.setup(content, view, true)
-	bag.wear.connect(func(item: String) -> void: wear.emit(item))
+	bag.wear.connect(func(item: String, copy: int) -> void: wear.emit(item, copy))
 	bag.take_off.connect(func(slot: String) -> void: take_off.emit(slot))
-	bag.drop.connect(func(item: String, n: int) -> void: drop.emit(item, n))
+	bag.drop.connect(func(item: String, n: int, copy: int) -> void: drop.emit(item, n, copy))
 	bag.unslot.connect(func(slot: int) -> void: unslot.emit(slot))
 	columns.add_child(bag)
 	visible = false
@@ -85,15 +90,19 @@ func setup(registry: ContentRegistry, view: WorldView) -> void:
 
 func show_for(own: Dictionary, held: String) -> void:
 	visible = true
-	var state := [own.get("appearance", {}), own.get("inventory", {}), own.get("name", ""), held].hash()
+	var state := [own.get("appearance", {}), own.get("inventory", {}), own.get("name", ""), held,
+		own.get("states", {}), own.get("worn_states", {})].hash()
 	if state == _seen:
 		return
 	_seen = state
 	var look: Dictionary = own.get("appearance", {"body_plan": "base:human_m"})
 	_title.text = "Персонаж: " + String(own.get("name", ""))
 	var armor := 0
-	for item: Variant in (look.get("worn", {}) as Dictionary).values():
-		armor += int(content.get_def(String(item)).get("armor", 0))
+	var worn_states: Dictionary = own.get("worn_states", {})
+	for slot: String in (look.get("worn", {}) as Dictionary):
+		var item := String(look["worn"][slot])
+		if not Wear.broken(content, item, worn_states.get(slot, {})):  # broken armour keeps nothing off
+			armor += int(content.get_def(item).get("armor", 0))
 	if armor > 0:
 		_title.text += ", защита %d" % armor  # off every blow (ADR-0029)
 	preview.show_look(content, look)
@@ -105,10 +114,13 @@ func show_for(own: Dictionary, held: String) -> void:
 	for slot: String in _slots:
 		var b: EquipmentSlot = _slots[slot]
 		b.item = held if slot == "main_hand" else String(worn.get(slot, ""))
-		var item_name := String(content.get_def(b.item).get("name", ""))
-		if int(content.get_def(b.item).get("armor", 0)) > 0:
-			item_name += " (защита %d)" % int(content.get_def(b.item)["armor"])
 		b.text = SLOTS[slot] + ("" if b.item != "" else " —")
 		b.icon = _view.item_picture(b.item) if b.item != "" else null
-		b.tooltip_text = SLOTS[slot] + ": " + (item_name + " — нажать или перетащить в инвентарь, чтобы снять" if b.item != "" else "перетащите вещь из инвентаря")
-	bag.show_for(own.get("inventory", {}), 0)
+		# The copy in the hands is the first one carried; worn ones keep their own.
+		var st: Dictionary = worn_states.get(slot, {})
+		if slot == "main_hand":
+			var mine: Array = (own.get("states", {}) as Dictionary).get(held, [])
+			st = mine[0] if not mine.is_empty() else {}
+		(b.get_node("Wear") as WearBar).show_state(content, b.item, st)
+		b.tooltip_text = SLOTS[slot] + ": " + (ItemCard.text(content, b.item, st) + "\nНажать или перетащить в инвентарь, чтобы снять" if b.item != "" else "перетащите вещь из инвентаря")
+	bag.show_for(own.get("inventory", {}), 0, own.get("states", {}))

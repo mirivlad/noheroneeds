@@ -5,13 +5,16 @@ extends PanelContainer
 ## the whole stack, with Ctrl half (a stack split); a cell dragged into the
 ## other grid moves its stack. The server says what is in it after every move.
 
-## (item, count, into the container?)
-signal move(item: String, count: int, putting: bool)
+## (item, count, into the container?, which copy: -1 any — ADR-0046)
+signal move(item: String, count: int, putting: bool, copy: int)
 var content: ContentRegistry
 var view: WorldView
 ## The container's cell (on the client's location) while it is open.
 var cell := Vector2i.ZERO
 var contents := {}
+## Each copy's state of what is in it, and of what one carries.
+var contents_states := {}
+var _states := {}
 var slots := 0
 ## The bag's cells as the player arranged them (the bag window's order).
 var bag_order: Array = []
@@ -40,8 +43,10 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	mine.setup(content, view, Bag.COLUMNS, "chest_bag")
 	box.accepts = func(data: Dictionary) -> bool: return String(data.get("grid", "")) == "chest_bag"
 	mine.accepts = func(data: Dictionary) -> bool: return String(data.get("grid", "")) == "box"
-	box.taken.connect(func(data: Dictionary, _at: int) -> void: move.emit(String(data["item"]), int(data["count"]), true))
-	mine.taken.connect(func(data: Dictionary, _at: int) -> void: move.emit(String(data["item"]), int(data["count"]), false))
+	box.taken.connect(func(data: Dictionary, _at: int) -> void:
+		move.emit(String(data["item"]), int(data["count"]), true, int(data.get("copy", -1))))
+	mine.taken.connect(func(data: Dictionary, _at: int) -> void:
+		move.emit(String(data["item"]), int(data["count"]), false, int(data.get("copy", -1))))
 	for g: SlotGrid in [box, mine]:
 		g.selectable = false
 		g.clicked.connect(func(i: int, _b: int) -> void: _pick(g, i))
@@ -67,22 +72,24 @@ func _pick(g: SlotGrid, i: int) -> void:
 		n = have
 	elif Input.is_key_pressed(KEY_CTRL):
 		n = maxi(1, have / 2)
-	move.emit(g.item_at(i), n, g == mine)
+	move.emit(g.item_at(i), n, g == mine, g.copy_at(i) if n == 1 else -1)
 
 
-func open_at(at: Vector2i, what: Dictionary, room: int, inventory: Dictionary) -> void:
+func open_at(at: Vector2i, what: Dictionary, room: int, inventory: Dictionary, what_states := {}, states := {}) -> void:
 	cell = at
 	contents = what
+	contents_states = what_states
 	slots = room
-	refresh(inventory)
+	refresh(inventory, states)
 	visible = true
 
 
-func refresh(inventory: Dictionary) -> void:
+func refresh(inventory: Dictionary, states := {}) -> void:
 	_inventory = inventory
+	_states = states
 	_title.text = "Сундук: занято %d из %d" % [Bag.used(content, contents), slots]
-	box.show_cells(Bag.lay_out(content, contents, [], slots)["cells"])
+	box.show_cells(SlotGrid.with_states(content, Bag.lay_out(content, contents, [], slots)["cells"], contents_states))
 	var laid := Bag.lay_out(content, inventory, bag_order)
 	bag_order = laid["order"]
-	mine.show_cells(laid["cells"])
+	mine.show_cells(SlotGrid.with_states(content, laid["cells"], states))
 	_mine_title.text = "Ваши вещи: занято %d из %d" % [Bag.used(content, inventory), Bag.SIZE]

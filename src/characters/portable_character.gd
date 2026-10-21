@@ -115,7 +115,7 @@ static func check_structure(d: Variant) -> PackedStringArray:
 			if typeof(s.get("level")) != TYPE_INT or typeof(s.get("xp")) != TYPE_INT or int(s["level"]) < 0 or int(s["xp"]) < 0:
 				e.append("skill '%s' needs non-negative level and xp" % k)
 	var inv: Variant = d.get("inventory")
-	if typeof(inv) != TYPE_DICTIONARY or int(inv.get("format", 0)) != Inventory.FORMAT:
+	if typeof(inv) != TYPE_DICTIONARY or int(inv.get("format", 0)) < 1 or int(inv.get("format", 0)) > Inventory.FORMAT:
 		e.append("inventory missing or of unknown format")
 	else:
 		_map_of(e, "inventory.stacks", inv.get("stacks"), TYPE_INT)

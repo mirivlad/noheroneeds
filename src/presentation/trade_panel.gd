@@ -7,6 +7,8 @@ extends PanelContainer
 
 ## (item, count, buying?)
 signal deal(item: String, count: int, buying: bool)
+## A blueprint of a recipe bought (ADR-0047).
+signal buy_blueprint(recipe: String)
 const COIN := "base:coin"
 var content: ContentRegistry
 var view: WorldView
@@ -49,7 +51,10 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		l.fixed_icon_size = Vector2i(32, 32)
 		row.add_child(l)
 	_theirs.item_clicked.connect(func(i: int, _at: Vector2, _b: int) -> void:
-		deal.emit(_their_ids[i], 5 if Input.is_key_pressed(KEY_SHIFT) else 1, true))
+		if _their_ids[i].begins_with("sheet|"):
+			buy_blueprint.emit(_their_ids[i].substr(6))
+		else:
+			deal.emit(_their_ids[i], 5 if Input.is_key_pressed(KEY_SHIFT) else 1, true))
 	_mine.item_clicked.connect(func(i: int, _at: Vector2, _b: int) -> void:
 		var id := _mine_ids[i]
 		deal.emit(id, mini(int(_inventory.get(id, 0)), 5 if Input.is_key_pressed(KEY_SHIFT) else 1), false))
@@ -79,9 +84,19 @@ func refresh(inventory: Dictionary) -> void:
 	for id: String in _sorted(sells.keys()):
 		var i := _theirs.add_item("%s ×%d — %d" % [content.get_def(id).get("name", id), int(sells[id][0]), int(sells[id][1])],
 			view.item_picture(id))
+		# How well its goods are made (ADR-0047): the card of the next one.
+		var made: Dictionary = sells[id][2] if (sells[id] as Array).size() > 2 and typeof(sells[id][2]) == TYPE_DICTIONARY else {}
+		_theirs.set_item_tooltip(i, ItemCard.text(content, id, made))
 		if int(sells[id][0]) <= 0 or int(inventory.get(COIN, 0)) < int(sells[id][1]):
 			_theirs.set_item_custom_fg_color(i, Color(Art.TEXT_DIM, 0.6))
 		_their_ids.append(id)
+	var sheets: Dictionary = goods.get("blueprints", {})
+	for r: String in _sorted(sheets.keys()):
+		var i := _theirs.add_item("Чертёж: %s — %d" % [content.get_def(r).get("name", r), int(sheets[r])], view.item_picture("base:blueprint"))
+		_theirs.set_item_tooltip(i, ItemCard.text(content, "base:blueprint", {"recipe": r}))
+		if int(inventory.get(COIN, 0)) < int(sheets[r]):
+			_theirs.set_item_custom_fg_color(i, Color(Art.TEXT_DIM, 0.6))
+		_their_ids.append("sheet|" + r)
 	_mine.clear()
 	_mine_ids.clear()
 	var buys: Dictionary = goods.get("buys", {})

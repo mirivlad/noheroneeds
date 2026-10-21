@@ -163,6 +163,42 @@ func inventory() -> Dictionary:
 	return own.get("inventory", {})
 
 
+## Each carried copy's own state (ADR-0046: wear): {item id: [state, ...]}
+## for things whose copies differ; the first copy is the one in the hands.
+func item_states() -> Dictionary:
+	return own.get("states", {})
+
+
+## A carried copy's state ({} plain).
+func state_of(item: String, copy := 0) -> Dictionary:
+	var list: Array = item_states().get(item, [])
+	return list[copy] if copy >= 0 and copy < list.size() and typeof(list[copy]) == TYPE_DICTIONARY else {}
+
+
+## What the character knows and how well (ADR-0047): {"known": [recipe...],
+## "skills": {skill: {level, xp}}, "mastery": {recipe: {level, xp}}}.
+func knowledge() -> Dictionary:
+	return own.get("knowledge", {})
+
+
+## Whether the character knows a recipe (innate ones always).
+func knows(content: ContentRegistry, recipe: String) -> bool:
+	return bool(content.get_def(recipe).get("innate", false)) or (knowledge().get("known", []) as Array).has(recipe)
+
+
+func skill_level(skill: String) -> int:
+	return int(((knowledge().get("skills", {}) as Dictionary).get(skill, {}) as Dictionary).get("level", 0))
+
+
+func mastery_level(recipe: String) -> int:
+	return int(((knowledge().get("mastery", {}) as Dictionary).get(recipe, {}) as Dictionary).get("level", 0))
+
+
+## The states of what is worn: {slot: state}.
+func worn_states() -> Dictionary:
+	return own.get("worn_states", {})
+
+
 ## Characters the player has befriended (ADR-0016): they open its chests and
 ## locked doors.
 func friends() -> Array:

@@ -56,11 +56,15 @@ func _at(x: int, r: Dictionary) -> Dictionary:
 
 
 ## Strikes until it breaks or `most` blows: [blows, last result].
-func _break(actor: String, x: int, most: int) -> Array:
+## Blows until the part at x breaks (at most `most`); `fresh`: the tool is
+## kept new, to count the part's blows, not the tool's wear (ADR-0046).
+func _break(actor: String, x: int, most: int, fresh := false) -> Array:
 	var r := {}
 	for i in most:
 		w.tick += 20
 		w.combat.step(w.tick)
+		if fresh:
+			w.inventory(actor).set_state(w.held_of(actor), 0, {})
 		r = _req(actor, _at(x, {"type": "strike_part"}))
 		if r.has("broken"):
 			return [i + 1, r]
@@ -89,7 +93,7 @@ func test_anyone_breaks_and_stone_takes_long() -> void:
 	eq(_req(b, _at(5, {"type": "strike_part"})).get("damage"), 0, "an axe hardly scratches stone")
 	eq(float(w.chunk("surface", 0, 0).get_props(5, 3).get("damage")), 0.6, "a share of a blow is kept")
 	_req(b, {"type": "hold", "item": "base:pickaxe"})
-	var r := _break(b, 5, 1000)
+	var r := _break(b, 5, 1000, true)
 	eq(r[0], 400, "a pick breaks a stone wall, but in 400 blows (some five minutes)")
 	eq(r[1].get("broken"), "base:stone_wall")
 	eq(w.chunk("surface", 0, 0).get_cell("structure", 5, 3), "", "gone")

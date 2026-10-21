@@ -23,22 +23,231 @@
       "max": 20
     },
     {
-      "id": "base:carpentry",
+      "id": "base:survival",
       "kind": "skill",
-      "name": "Плотничество",
-      "max_level": 100
+      "name": "Выживание",
+      "description": "Сбор руками, первые поделки: чаще находится лишнее",
+      "trained_by": [
+        "hand"
+      ],
+      "effects": {
+        "yield": 0.3
+      },
+      "max_level": 100,
+      "order": 0
+    },
+    {
+      "id": "base:woodcutting",
+      "kind": "skill",
+      "name": "Рубка леса",
+      "description": "Деревья валятся быстрее, топор служит дольше",
+      "trained_by": [
+        "tool:chopping"
+      ],
+      "effects": {
+        "pace": 0.8,
+        "wear": 0.7
+      },
+      "max_level": 100,
+      "order": 1
+    },
+    {
+      "id": "base:mining",
+      "kind": "skill",
+      "name": "Горное дело",
+      "description": "Порода колется быстрее, кирка служит дольше",
+      "trained_by": [
+        "tool:mining"
+      ],
+      "effects": {
+        "pace": 0.8,
+        "wear": 0.7
+      },
+      "max_level": 100,
+      "order": 2
+    },
+    {
+      "id": "base:fishing",
+      "kind": "skill",
+      "name": "Рыбалка",
+      "description": "Клюёт чаще, удочка служит дольше",
+      "trained_by": [
+        "tool:fishing"
+      ],
+      "effects": {
+        "chance": 1.4,
+        "wear": 0.7
+      },
+      "max_level": 100,
+      "order": 3
     },
     {
       "id": "base:farming",
       "kind": "skill",
       "name": "Земледелие",
-      "max_level": 100
+      "description": "Урожай щедрее, мотыга служит дольше",
+      "trained_by": [
+        "tool:tilling",
+        "crop"
+      ],
+      "effects": {
+        "yield": 0.5,
+        "wear": 0.7
+      },
+      "max_level": 100,
+      "order": 4
+    },
+    {
+      "id": "base:hunting",
+      "kind": "skill",
+      "name": "Охота",
+      "description": "С добычи больше мяса и шкур",
+      "trained_by": [
+        "kill"
+      ],
+      "effects": {
+        "yield": 0.5
+      },
+      "max_level": 100,
+      "order": 5
+    },
+    {
+      "id": "base:melee",
+      "kind": "skill",
+      "name": "Ближний бой",
+      "description": "Удары сильнее и чаще",
+      "trained_by": [
+        "weapon:melee"
+      ],
+      "effects": {
+        "damage": 2,
+        "pace": 0.85
+      },
+      "max_level": 100,
+      "order": 6
     },
     {
       "id": "base:archery",
       "kind": "skill",
       "name": "Стрельба из лука",
-      "max_level": 100
+      "description": "Выстрелы сильнее и чаще",
+      "trained_by": [
+        "weapon:ranged"
+      ],
+      "effects": {
+        "damage": 2,
+        "pace": 0.85
+      },
+      "max_level": 100,
+      "order": 7
+    },
+    {
+      "id": "base:building",
+      "kind": "skill",
+      "name": "Строительство",
+      "description": "Опыт стройки: мастера учат тех, кто строил",
+      "trained_by": [
+        "build"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 8
+    },
+    {
+      "id": "base:toolmaking",
+      "kind": "skill",
+      "name": "Изготовление орудий",
+      "description": "Топоры, кирки, мотыги, удочки",
+      "trained_by": [
+        "craft"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 9
+    },
+    {
+      "id": "base:carpentry",
+      "kind": "skill",
+      "name": "Плотничество",
+      "description": "Доски, вёдра, деревянные вещи",
+      "trained_by": [
+        "craft"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 10
+    },
+    {
+      "id": "base:smithing",
+      "kind": "skill",
+      "name": "Кузнечное дело",
+      "description": "Плавка руды, железные орудия",
+      "trained_by": [
+        "craft"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 11
+    },
+    {
+      "id": "base:weaponsmithing",
+      "kind": "skill",
+      "name": "Оружейное дело",
+      "description": "Копья, луки, стрелы",
+      "trained_by": [
+        "craft"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 12
+    },
+    {
+      "id": "base:armorsmithing",
+      "kind": "skill",
+      "name": "Бронное дело",
+      "description": "Доспехи и шлемы",
+      "trained_by": [
+        "craft"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 13
+    },
+    {
+      "id": "base:tailoring",
+      "kind": "skill",
+      "name": "Шитьё",
+      "description": "Ткань, рубахи, штаны, плащи",
+      "trained_by": [
+        "craft"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 14
+    },
+    {
+      "id": "base:shoemaking",
+      "kind": "skill",
+      "name": "Сапожное дело",
+      "description": "Выделка кожи, сапоги",
+      "trained_by": [
+        "craft"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 15
+    },
+    {
+      "id": "base:cooking",
+      "kind": "skill",
+      "name": "Кулинария",
+      "description": "Жаркое, хлеб, похлёбка",
+      "trained_by": [
+        "craft"
+      ],
+      "effects": {},
+      "max_level": 100,
+      "order": 16
     },
     {
       "id": "base:first_house",
@@ -76,7 +285,14 @@
       "stack": 1,
       "equip_slot": "armor",
       "armor": 2,
-      "warmth": 2
+      "warmth": 2,
+      "durability": 300,
+      "repair": {
+        "station": "workbench",
+        "materials": {
+          "base:leather": 2
+        }
+      }
     },
     {
       "id": "base:iron_helmet",
@@ -84,7 +300,14 @@
       "name": "Железный шлем",
       "stack": 1,
       "equip_slot": "headwear",
-      "armor": 1
+      "armor": 1,
+      "durability": 800,
+      "repair": {
+        "station": "forge",
+        "materials": {
+          "base:iron_ingot": 1
+        }
+      }
     },
     {
       "id": "base:wool_cloak",
@@ -111,9 +334,27 @@
       "warmth": 2
     },
     {
+      "id": "base:flint_axe",
+      "kind": "item",
+      "name": "Кремнёвое рубило",
+      "stack": 1,
+      "equip_slot": "main_hand",
+      "tools": [
+        "chopping"
+      ],
+      "weapon": {
+        "kind": "melee",
+        "damage": 3,
+        "reach": 1.0,
+        "arc": 90,
+        "cooldown_ms": 950
+      },
+      "durability": 120
+    },
+    {
       "id": "base:axe",
       "kind": "item",
-      "name": "Топор",
+      "name": "Каменный топор",
       "stack": 1,
       "equip_slot": "main_hand",
       "tools": [
@@ -125,6 +366,14 @@
         "reach": 1.0,
         "arc": 100,
         "cooldown_ms": 700
+      },
+      "durability": 400,
+      "repair": {
+        "station": "workbench",
+        "materials": {
+          "base:plank": 1,
+          "base:stone": 1
+        }
       }
     },
     {
@@ -143,6 +392,14 @@
         "reach": 1.0,
         "arc": 100,
         "cooldown_ms": 650
+      },
+      "durability": 1200,
+      "repair": {
+        "station": "forge",
+        "materials": {
+          "base:iron_ingot": 1,
+          "base:plank": 1
+        }
       }
     },
     {
@@ -157,6 +414,14 @@
         "reach": 1.8,
         "arc": 40,
         "cooldown_ms": 900
+      },
+      "durability": 300,
+      "repair": {
+        "station": "workbench",
+        "materials": {
+          "base:plank": 1,
+          "base:stone": 1
+        }
       }
     },
     {
@@ -172,6 +437,14 @@
         "speed": 18,
         "ammo": "base:arrow",
         "cooldown_ms": 900
+      },
+      "durability": 300,
+      "repair": {
+        "station": "workbench",
+        "materials": {
+          "base:plank": 1,
+          "base:cord": 1
+        }
       }
     },
     {
@@ -179,6 +452,102 @@
       "kind": "item",
       "name": "Стрела",
       "stack": 50
+    },
+    {
+      "id": "base:sturdy",
+      "kind": "modifier",
+      "name": "Прочный",
+      "description": "служит на четверть дольше",
+      "fits": [
+        "tool",
+        "weapon",
+        "armor"
+      ],
+      "effects": {
+        "durability": 1.25
+      },
+      "value": 1.25
+    },
+    {
+      "id": "base:balanced",
+      "kind": "modifier",
+      "name": "Выверенный",
+      "description": "работает и бьёт на десятую быстрее",
+      "fits": [
+        "tool",
+        "weapon"
+      ],
+      "effects": {
+        "pace": 0.9
+      },
+      "value": 1.2
+    },
+    {
+      "id": "base:fruitful",
+      "kind": "modifier",
+      "name": "Добычливый",
+      "description": "порой даёт добычи больше",
+      "fits": [
+        "tool"
+      ],
+      "effects": {
+        "yield": 0.15
+      },
+      "value": 1.2
+    },
+    {
+      "id": "base:keen",
+      "kind": "modifier",
+      "name": "Острый",
+      "description": "урон +1",
+      "fits": [
+        "weapon"
+      ],
+      "effects": {
+        "damage": 1
+      },
+      "value": 1.25
+    },
+    {
+      "id": "base:reinforced",
+      "kind": "modifier",
+      "name": "Укреплённый",
+      "description": "защита +1",
+      "fits": [
+        "armor"
+      ],
+      "effects": {
+        "armor": 1
+      },
+      "value": 1.3
+    },
+    {
+      "id": "base:warm",
+      "kind": "modifier",
+      "name": "Тёплый",
+      "description": "тепло +1",
+      "fits": [
+        "clothes",
+        "armor"
+      ],
+      "effects": {
+        "warmth": 1
+      },
+      "value": 1.2
+    },
+    {
+      "id": "base:fine",
+      "kind": "modifier",
+      "name": "Добротный",
+      "description": "тонкая отделка: дороже",
+      "fits": [
+        "tool",
+        "weapon",
+        "armor",
+        "clothes"
+      ],
+      "effects": {},
+      "value": 1.4
     }
   ]
 }

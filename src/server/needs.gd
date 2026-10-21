@@ -128,8 +128,9 @@ func warming(id: String) -> float:
 ## What one wears against the cold: the "warmth" of each worn thing.
 func clothes_warmth(id: String) -> int:
 	var total := 0
-	for item: Variant in (world.present[id].get("appearance", {}).get("worn", {}) as Dictionary).values():
-		total += int(world.content.get_def(String(item)).get("warmth", 0))
+	var worn := world.worn_of(id)
+	for slot: String in worn:  # a warm cloak of a good tailor keeps more off (ADR-0047)
+		total += Wear.warmth(world.content, String(worn[slot][0]), worn[slot][1])
 	return total
 
 

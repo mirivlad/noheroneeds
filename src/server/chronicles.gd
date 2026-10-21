@@ -371,6 +371,8 @@ func died(c: Creature, killer: String) -> void:
 			if int(r["asker"]) == home and r["state"] == "open":
 				r["state"] = "gone"
 		var who := dweller_name(id, home)
+		if world.present.has(killer):
+			_trust(v, killer, KILL_TRUST)
 		var by := String(world.present[killer].get("name", "")) if world.present.has(killer) else ""
 		if by == "":
 			var k := world.creatures.get_creature(killer)
@@ -405,6 +407,7 @@ func struck(c: Creature, by: String) -> void:
 	if had:
 		_save(id)
 		return
+	_trust(v, by, STRIKE_TRUST)
 	var who := dweller_name(id, int(c.job.get("home", -1)))
 	var vars := _player_vars(by)
 	vars["who"] = who[0]
@@ -412,6 +415,27 @@ func struck(c: Creature, by: String) -> void:
 		if s["def"]["from"] == "dweller_hurt":
 			_happen(id, s["id"], vars, world.world_time)
 	_save(id)
+
+
+# --- standing (ADR-0047) -------------------------------------------------------------
+
+## How a village's trust in one moves: a request done, a dweller struck, killed.
+const DONE_TRUST := 1
+const STRIKE_TRUST := -1
+const KILL_TRUST := -3
+
+
+func _trust(v: Dictionary, actor: String, by: int) -> void:
+	var standing: Dictionary = v.get_or_add("standing", {})
+	standing[actor] = int(standing.get(actor, 0)) + by
+
+
+## Where one stands with a dweller's village: the requests one did for it,
+## less the harm one did there (0 — a stranger).
+func standing(c: Creature, actor: String) -> int:
+	if not c.job.has("village"):
+		return 0
+	return int((of(String(c.job["village"])).get("standing", {}) as Dictionary).get(actor, 0))
 
 
 func bears_grudge(c: Creature, actor: String) -> bool:
@@ -554,6 +578,7 @@ func report(actor: String, c: Creature) -> Dictionary:
 		world.give(actor, COIN, int(r["reward"]))
 	r["state"] = "done"
 	r["by"] = actor
+	_trust(of(id), actor, DONE_TRUST)
 	var vars: Dictionary = (r["vars"] as Dictionary).duplicate()
 	vars.merge(_player_vars(actor), true)
 	var said: Dictionary = world.content.get_def(String(r["story"]))["request"]

@@ -60,6 +60,7 @@ static func _box(fill: Color, frame: Color, width: int) -> StyleBoxFlat:
 	return b
 var _icons: Array[TextureRect] = []
 var _counts: Array[Label] = []
+var _bars: Array[WearBar] = []
 
 
 func setup(registry: ContentRegistry, world_view: WorldView) -> void:
@@ -99,6 +100,12 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		key.text = str(i + 1)
 		key.position = Vector2(29, -8)
 		slot.add_child(key)
+		# What is left of the thing (ADR-0046): the copy that is in use.
+		var bar := WearBar.new()
+		bar.position = Vector2(3, 30)
+		bar.size = Vector2(30, 4)
+		slot.add_child(bar)
+		_bars.append(bar)
 		add_child(slot)
 		_slots.append(slot)
 		_icons.append(icon)
@@ -193,7 +200,9 @@ func fill_from(inventory: Dictionary) -> void:
 			i += 1
 
 
-func refresh(inventory: Dictionary) -> void:
+## The slots as the things are now; `states`: each carried copy's state
+## (the client's item_states) — a slot shows the first copy, the one in use.
+func refresh(inventory: Dictionary, states := {}) -> void:
 	for i in SLOTS:
 		var id := items[i]
 		var v := content.visual_of(id) if id != "" else {}
@@ -205,6 +214,11 @@ func refresh(inventory: Dictionary) -> void:
 			at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
 			_icons[i].texture = at
 		var n := int(inventory.get(id, 0)) if id != "" else 0
+		var list: Array = states.get(id, []) if id != "" else []
+		var state: Dictionary = list[0] if not list.is_empty() and typeof(list[0]) == TYPE_DICTIONARY else {}
 		_counts[i].text = str(n) if n > 1 else ""
-		_icons[i].modulate = Color.WHITE if id == "" or n > 0 else Color(1, 1, 1, 0.35)
+		_icons[i].modulate = Color.WHITE if id == "" or (n > 0 and not Wear.broken(content, id, state)) else Color(1, 1, 1, 0.35)
+		_bars[i].show_state(content, id if n > 0 else "", state)
+		_slots[i].tooltip_text = ItemCard.text(content, id, state, n) if id != "" and n > 0 else \
+			(String(content.get_def(id).get("name", id)) + " — нет с собой" if id != "" else "")
 		_slots[i].add_theme_stylebox_override("panel", _chosen_box if i == selected else _slot_box)

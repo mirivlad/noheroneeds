@@ -8,11 +8,12 @@ extends PanelContainer
 ## one (Shift the cell's stack, Ctrl half of it); a double click wears.
 ## Compact, beside the doll (C): only what can be worn or held.
 
-## Drop (item, count) on the ground.
-signal drop(item: String, count: int)
+## Drop (item, count) on the ground; `copy`: which copy (-1: any).
+signal drop(item: String, count: int, copy: int)
 ## A quick slot was dragged back onto the things: it is emptied.
 signal unslot(slot: int)
-signal wear(item: String)
+## Wear or take into the hands (`copy`: which copy, -1: any).
+signal wear(item: String, copy: int)
 signal take_off(slot: String)
 ## The cells were arranged anew: the order to keep (item id or "" per cell).
 signal arranged(order: Array)
@@ -25,6 +26,8 @@ var order: Array = []
 var _title := Label.new()
 var _hint := Label.new()
 var _have := {}
+## Each carried copy's state (the client's item_states, ADR-0046).
+var _states := {}
 var _wear := Button.new()
 var _compact := false
 
@@ -62,7 +65,7 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 			_wear.disabled = not _can_wear(grid.item_at(i)))
 	grid.activated.connect(func(i: int) -> void:
 		if _can_wear(grid.item_at(i)):
-			wear.emit(grid.item_at(i)))
+			wear.emit(grid.item_at(i), grid.copy_at(i)))
 	box.add_child(grid)
 	_hint.add_theme_font_size_override("font_size", 16)
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -75,7 +78,7 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 	_wear.disabled = true
 	_wear.pressed.connect(func() -> void:
 		if _can_wear(grid.item_at(grid.selected)):
-			wear.emit(grid.item_at(grid.selected)))
+			wear.emit(grid.item_at(grid.selected), grid.copy_at(grid.selected)))
 	box.add_child(_wear)
 	visible = false
 
@@ -95,7 +98,7 @@ func drop_some(index: int) -> void:
 	if id == "" or have <= 0:
 		return
 	var n := have if Input.is_key_pressed(KEY_SHIFT) else (maxi(1, have / 2) if Input.is_key_pressed(KEY_CTRL) else 1)
-	drop.emit(id, n)
+	drop.emit(id, n, grid.copy_at(index))
 
 
 ## A cell's stack onto another cell: the two change places.
@@ -107,12 +110,13 @@ func _move(from: int, to: int) -> void:
 	var was: Variant = order[to]
 	order[to] = order[from]
 	order[from] = was
-	show_for(_have, 0)
+	show_for(_have, 0, _states)
 	arranged.emit(order)
 
 
-func show_for(inventory: Dictionary, _slot: int) -> void:
+func show_for(inventory: Dictionary, _slot: int, states := {}) -> void:
 	_have = inventory
+	_states = states
 	if _compact:  # beside the doll: only what is worn or held (the rest is in the things, I)
 		var mine := {}
 		for id: String in inventory:
@@ -123,13 +127,13 @@ func show_for(inventory: Dictionary, _slot: int) -> void:
 		while cells.size() < 30 or cells.size() % grid.columns != 0:
 			cells.append(["", 0])
 		_title.text = "Снаряжение"
-		grid.show_cells(cells)
+		grid.show_cells(SlotGrid.with_states(content, cells, states))
 	else:
 		var before := order.duplicate()
 		var laid := Bag.lay_out(content, inventory, order)
 		order = laid["order"]
 		_title.text = "Вещи: занято %d из %d" % [Bag.used(content, inventory), Bag.SIZE]
-		grid.show_cells(laid["cells"])
+		grid.show_cells(SlotGrid.with_states(content, laid["cells"], states))
 		if order != before:
 			arranged.emit(order)
 	_wear.disabled = not _can_wear(grid.item_at(grid.selected))

@@ -114,8 +114,9 @@ func _set_health(id: String, value: int) -> void:
 func armor_of(id: String) -> int:
 	if world.present.has(id):
 		var total := 0
-		for item: Variant in (world.present[id].get("appearance", {}).get("worn", {}) as Dictionary).values():
-			total += int(world.content.get_def(String(item)).get("armor", 0))
+		var worn := world.worn_of(id)
+		for slot: String in worn:  # broken keeps nothing off (ADR-0046), enhanced more (ADR-0047)
+			total += Wear.armor(world.content, String(worn[slot][0]), worn[slot][1])
 		return total
 	var c := world.creatures.get_creature(id)
 	return int(world.content.get_def(c.kind).get("armor", 0)) if c else 0
@@ -124,7 +125,12 @@ func armor_of(id: String) -> int:
 ## The health a blow of `damage` takes from `target`: less its armour, but a
 ## blow always tells (at least 1). Falls and hunger are not blows.
 func through_armor(target: String, damage: int) -> int:
-	return maxi(1, damage - armor_of(target)) if damage > 0 else 0
+	if damage <= 0:
+		return 0
+	var armor := armor_of(target)
+	if armor > 0 and world.present.has(target):
+		world.wear_armor(target)  # the blow wears what took it (ADR-0046)
+	return maxi(1, damage - armor)
 
 
 ## Gives back up to `amount` of health, never above the most one has.
@@ -154,7 +160,7 @@ func hurt(target: String, amount: int, attacker: String) -> void:
 		_character_dies(target)
 	elif c:
 		world.chronicles.died(c, attacker)
-		_creature_dies(c)
+		_creature_dies(c, attacker)
 
 
 ## {creature id: true} whose health changed (for the replicas), since last time.
@@ -189,8 +195,8 @@ func _character_dies(id: String) -> void:
 		var inv := world.inventory(id)
 		var until := world.tick + dead_keep_s * Movement.TICK_RATE
 		for item: String in inv.stacks.keys():
-			world.place_item(String(p["location"]), p["pos"], item, int(inv.stacks[item]), id, until)
-			inv.remove(item, int(inv.stacks[item]))
+			world.place_item(String(p["location"]), p["pos"], item, int(inv.stacks[item]), id, until,
+				inv.take(item, int(inv.stacks[item])))
 		world.touch_inventory(id)
 		world.drop_equipment(id, until)
 	p["location"] = world.spawn_location
@@ -203,14 +209,18 @@ func _character_dies(id: String) -> void:
 	world.note_character(id)
 
 
-func _creature_dies(c: Creature) -> void:
+func _creature_dies(c: Creature, killer := "") -> void:
 	var drops: Dictionary = world.content.get_def(c.kind).get("drops", {})
+	# A hunter's kill (ADR-0047): practice, and a skilled one gets more of it.
+	var more := world.knowledge.effect(killer, "kill", "yield") if world.present.has(killer) else 0.0
+	if world.present.has(killer) and not drops.is_empty():
+		world.knowledge.practise(killer, "kill", 3)
 	for item: String in drops:
-		world.place_item(c.location, c.pos, item, int(drops[item]))
+		world.place_item(c.location, c.pos, item, world.knowledge.with_extra(killer, [c.id, item], int(drops[item]), more))
 	# A looter gives back what it had not digested yet.
 	world.creatures.digest(c)
 	for e: Dictionary in c.stomach:
-		world.place_item(c.location, c.pos, String(e["item"]), int(e["count"]))
+		world.place_item(c.location, c.pos, String(e["item"]), int(e["count"]), "", 0, e.get("states", []))
 	c.stomach.clear()
 	swings.erase(c.id)
 	_hurt_at.erase(c.id)
@@ -240,6 +250,16 @@ func attack(actor: String, r: Dictionary) -> Dictionary:
 		w = world.content.get_def(_body_plan(p)).get("unarmed", {})  # a fist, or the free hand
 	else:
 		w = world.content.get_def(item).get("weapon", {})
+		if not w.is_empty():
+			# A broken weapon does nothing until mended; a dull one is slower
+			# and weaker (ADR-0046).
+			if world.held_broken(actor):
+				return {"ok": false, "reason": "broken"}
+			# Skill (ADR-0047): a practised hand strikes harder and oftener.
+			var practice := "weapon:" + String(w["kind"])
+			w = w.duplicate()
+			w["damage"] = world.held_damage(actor, int(w["damage"])) + roundi(world.knowledge.effect(actor, practice, "damage"))
+			w["cooldown_ms"] = float(w["cooldown_ms"]) * world.held_pace(actor) * world.knowledge.effect(actor, practice, "pace")
 	if w.is_empty():
 		return {"ok": false, "reason": "not_a_weapon"}
 	if _tick < int(_ready_at.get(actor, 0)):
@@ -247,10 +267,19 @@ func attack(actor: String, r: Dictionary) -> Dictionary:
 	_ready_at[actor] = _tick + _ticks(float(w["cooldown_ms"]))
 	var aim := Vector2i(ServerWorld.ri(r, "x", 0), ServerWorld.ri(r, "y", 0))
 	swung(actor, aim)
+	var armed := item != "" and not ServerWorld.rb(r, "unarmed", false)
 	if w["kind"] == "ranged":
-		return _shoot(actor, p, w, aim, ServerWorld.ri(r, "z", -1))
+		var shot := _shoot(actor, p, w, aim, ServerWorld.ri(r, "z", -1))
+		if not shot.get("ok", false):
+			return shot
+		world.knowledge.practise(actor, "weapon:ranged")
+		return shot.merged(world.wear_held(actor, 1, "weapon:ranged"))  # a shot wears the bow
 	var hit := _blow(actor, String(p["location"]), p["pos"], aim, w)
 	world.creatures.noise(String(p["location"]), Movement.cell_of(p["pos"]))
+	# A blow that lands wears the weapon (one into the air does not) and is practice.
+	if armed and hit != "":
+		world.knowledge.practise(actor, "weapon:melee")
+		return {"ok": true, "hit": hit}.merged(world.wear_held(actor, 1, "weapon:melee"))
 	return {"ok": true, "hit": hit}
 
 

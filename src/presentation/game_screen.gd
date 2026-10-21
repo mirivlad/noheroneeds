@@ -797,6 +797,9 @@ func _build_tools(layer: CanvasLayer) -> void:
 	layer.add_child(inventory_panel)
 	inventory_panel.drop.connect(_drop_item)
 	inventory_panel.wear.connect(_wear_item)
+	inventory_panel.blueprints.connect(func() -> void:
+		_close_tools()
+		crafts.open("", CraftPanel.SHEETS))
 	inventory_panel.arranged.connect(_save_bag)
 	character_panel.setup(content, view)
 	character_panel.wear.connect(_wear_item)
@@ -819,10 +822,12 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_chest_rids[client.request(r)] = c)
 	layer.add_child(chest_panel)
 	trade_panel.setup(content, view)
-	trade_panel.deal.connect(func(item: String, n: int, buying: bool) -> void:
+	trade_panel.deal.connect(func(item: String, n: int, buying: bool, copy: int) -> void:
 		if n > 0:
-			_trade_rids[client.request({"type": "trade", "creature": trade_panel.creature, "item": item, "count": n,
-				"buy": buying})] = trade_panel.creature)
+			var r := {"type": "trade", "creature": trade_panel.creature, "item": item, "count": n, "buy": buying}
+			if copy >= 0:
+				r["copy"] = copy
+			_trade_rids[client.request(r)] = trade_panel.creature)
 	layer.add_child(trade_panel)
 	talk_panel.setup(content)
 	talk_panel.promise.connect(func(who: String) -> void:
@@ -864,8 +869,7 @@ func _wear_item(item: String, copy := -1) -> void:
 			hotbar.put(at, item, -1)
 		_choose_slot(at)
 		if copy > 0:
-			client.hold(item)
-			client.request({"type": "hold", "item": item, "copy": copy})  # that copy first: the one in use
+			client.hold_copy(item, copy)  # that copy first: the one in use
 	else:
 		var r := {"type": "equip", "item": item}
 		if copy >= 0:
@@ -1140,7 +1144,7 @@ func _update_hud() -> void:
 			if r.get("ok"):
 				if trade_panel.visible and trade_panel.creature == who:
 					audio.play("pickup", "", null)
-				trade_panel.open_for(who, r, client.inventory())
+				trade_panel.open_for(who, r, client.inventory(), client.item_states())
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			continue
@@ -1319,7 +1323,7 @@ func _update_hud() -> void:
 		if chest_panel.visible:
 			chest_panel.refresh(inv, client.item_states())
 		if trade_panel.visible:
-			trade_panel.refresh(inv)
+			trade_panel.refresh(inv, client.item_states())
 		if inventory_panel.visible:
 			inventory_panel.show_for(inv, hotbar.selected, client.item_states())
 		if crafts.visible:

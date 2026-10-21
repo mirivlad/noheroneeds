@@ -63,6 +63,8 @@ func test_a_dweller_teaches_on_its_terms_and_its_village_trust() -> void:
 	if farmer == null:
 		return
 	var a := _player_by(farmer)
+	eq(_req(a, {"type": "talk", "creature": farmer.id}).get("standing"), 0, "a stranger to the village")
+	eq(TalkPanel.trust_word(0, false), "чужак")
 	var t := _terms(a, farmer, "base:bake_bread")
 	check(not t.is_empty(), "it would teach bread")
 	eq(t.get("price"), 15)
@@ -116,3 +118,10 @@ func test_a_smiths_goods_blueprints_and_what_it_pays_for_a_masters_axe() -> void
 	check(r.get("ok", false), str(r))
 	var master_paid := w.inventory(a).count("base:coin") - coins
 	check(master_paid >= 2 * novice_paid, "a master's axe sells for twice a novice's at least: %d vs %d" % [master_paid, novice_paid])
+	# The window says beforehand what the dweller pays for each copy.
+	var tp := TradePanel.new()
+	tp.content = _content
+	tp.goods = g
+	eq(tp.price_of("base:axe", {"quality": 1.0, "mods": ["base:fine", "base:sturdy"]}), master_paid, "the trade window's price is the one paid")
+	eq(tp.price_of("base:axe", {"quality": 0.5}), novice_paid)
+	tp.free()

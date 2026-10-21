@@ -5,8 +5,8 @@ extends PanelContainer
 ## and its purse. A click buys or sells one; with Shift five. The server
 ## says the goods again after every deal.
 
-## (item, count, buying?)
-signal deal(item: String, count: int, buying: bool)
+## (item, count, buying?, which copy one sells: -1 any — ADR-0046)
+signal deal(item: String, count: int, buying: bool, copy: int)
 ## A blueprint of a recipe bought (ADR-0047).
 signal buy_blueprint(recipe: String)
 const COIN := "base:coin"
@@ -22,6 +22,8 @@ var _money: Label
 var _their_ids: Array[String] = []
 var _mine_ids: Array[String] = []
 var _inventory := {}
+## Each carried copy's state (the client's item_states).
+var _states := {}
 
 
 func setup(registry: ContentRegistry, world_view: WorldView) -> void:
@@ -54,10 +56,14 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		if _their_ids[i].begins_with("sheet|"):
 			buy_blueprint.emit(_their_ids[i].substr(6))
 		else:
-			deal.emit(_their_ids[i], 5 if Input.is_key_pressed(KEY_SHIFT) else 1, true))
+			deal.emit(_their_ids[i], 5 if Input.is_key_pressed(KEY_SHIFT) else 1, true, -1))
 	_mine.item_clicked.connect(func(i: int, _at: Vector2, _b: int) -> void:
 		var id := _mine_ids[i]
-		deal.emit(id, mini(int(_inventory.get(id, 0)), 5 if Input.is_key_pressed(KEY_SHIFT) else 1), false))
+		if id.begins_with("copy|"):  # a thing of its own: that copy, at its own price
+			var p := id.split("|")
+			deal.emit(p[1], 1, false, int(p[2]))
+		else:
+			deal.emit(id, mini(int(_inventory.get(id, 0)), 5 if Input.is_key_pressed(KEY_SHIFT) else 1), false, -1))
 	box.add_child(_money)
 	var hint := Label.new()
 	hint.text = "щелчок — одну, Shift — пять"
@@ -66,15 +72,16 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	visible = false
 
 
-func open_for(id: String, what: Dictionary, inventory: Dictionary) -> void:
+func open_for(id: String, what: Dictionary, inventory: Dictionary, states := {}) -> void:
 	creature = id
 	goods = what
-	refresh(inventory)
+	refresh(inventory, states)
 	visible = true
 
 
-func refresh(inventory: Dictionary) -> void:
+func refresh(inventory: Dictionary, states := {}) -> void:
 	_inventory = inventory
+	_states = states
 	var trade := String(content.get_def(String(goods.get("profession", ""))).get("name", "Житель"))
 	_title.text = "Торговля — %s" % trade.to_lower()
 	_money.text = "Ваши монеты: %d     У него в кошельке: %d" % [int(inventory.get(COIN, 0)), int(goods.get("purse", 0))]
@@ -102,10 +109,28 @@ func refresh(inventory: Dictionary) -> void:
 	var buys: Dictionary = goods.get("buys", {})
 	for id: String in _sorted(buys.keys()):
 		var have := int(inventory.get(id, 0))
+		# Things of their own sell each at what it is worth (ADR-0046, ADR-0047).
+		var copies: Array = states.get(id, [])
+		if have > 0 and not copies.is_empty():
+			for k in have:
+				var st: Dictionary = copies[k] if k < copies.size() and typeof(copies[k]) == TYPE_DICTIONARY else {}
+				var price := price_of(id, st)
+				var line := "%s, %d%% — %d" % [content.get_def(id).get("name", id), roundi(Wear.condition(content, id, st) * 100.0), price]
+				var at := _mine.add_item(line, view.item_picture(id))
+				_mine.set_item_tooltip(at, ItemCard.text(content, id, st))
+				if int(goods.get("purse", 0)) < price:
+					_mine.set_item_custom_fg_color(at, Color(Art.TEXT_DIM, 0.6))
+				_mine_ids.append("copy|%s|%d" % [id, k])
+			continue
 		var i := _mine.add_item("%s ×%d — %d" % [content.get_def(id).get("name", id), have, int(buys[id])], view.item_picture(id))
 		if have <= 0 or int(goods.get("purse", 0)) < int(buys[id]):
 			_mine.set_item_custom_fg_color(i, Color(Art.TEXT_DIM, 0.6))
 		_mine_ids.append(id)
+
+
+## What the dweller pays for a copy: its price, as the copy is worth.
+func price_of(item: String, state: Dictionary) -> int:
+	return maxi(1, roundi(int((goods.get("buys", {}) as Dictionary).get(item, 0)) * Wear.value(content, item, state)))
 
 
 func _sorted(ids: Array) -> Array:

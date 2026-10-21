@@ -122,6 +122,10 @@ func show_world_form(mode: String) -> void:
 	var kit := _check("Стартовые материалы", true)
 	kit.tooltip_text = "Доски, камень и брёвна каждому новому персонажу"
 	var outfit := _check("Стартовая одежда", true)
+	var known := _check("Все рецепты известны", false)
+	known.tooltip_text = "Каждый знает каждый рецепт сразу: без учёбы у мастеров и чертежей"
+	var sure := _check("Ремесло не ошибается", false)
+	sure.tooltip_text = "Попытки сделать вещь всегда удаются; качество всё равно растёт с мастерством"
 	var port: SpinBox
 	var players: SpinBox
 	if mode == "host":
@@ -130,7 +134,8 @@ func show_world_form(mode: String) -> void:
 	_gap()
 	_button("Создать и играть", func() -> void:
 		var rules := {"seed": seed_edit.text.strip_edges(), "max_levels": int(levels.value), "day_minutes": int(day.value),
-			"starter_kit": kit.button_pressed, "starter_outfit": outfit.button_pressed}
+			"starter_kit": kit.button_pressed, "starter_outfit": outfit.button_pressed,
+			"all_recipes_known": known.button_pressed, "crafts_never_fail": sure.button_pressed}
 		var id := worlds.create(name_edit.text, rules)
 		_start_world(id, mode, int(port.value) if port else 0, int(players.value) if players else 0))
 	_button("Назад", show_new_game)

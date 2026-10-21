@@ -21,6 +21,9 @@ const RULES := {
 	"death_drops": true,
 	## Whether one may break someone else's building (ADR-0016, ADR-0021).
 	"break_others": false,
+	## An easy world (ADR-0047): everyone knows every recipe; crafts never fail.
+	"all_recipes_known": false,
+	"crafts_never_fail": false,
 }
 ## What "starter kit" and "starter outfit" give (world rules of the base game).
 const STARTER_KIT := {"base:plank": 120, "base:stone": 30, "base:log": 20, "base:axe": 1, "base:bow": 1, "base:arrow": 20, "base:pickaxe": 1, "base:felt_hat": 1, "base:coin": 30}
@@ -126,6 +129,8 @@ static func apply_rules(info: Dictionary, world: ServerWorld) -> void:
 	world.combat.pvp = "free" if String(info.get("pvp", RULES["pvp"])) == "free" else "off"
 	world.combat.death_drops = bool(info.get("death_drops", RULES["death_drops"]))
 	world.break_others = bool(info.get("break_others", RULES["break_others"]))
+	world.knowledge.all_known = bool(info.get("all_recipes_known", RULES["all_recipes_known"]))
+	world.knowledge.never_fail = bool(info.get("crafts_never_fail", RULES["crafts_never_fail"]))
 
 
 func _write(id: String, info: Dictionary) -> void:

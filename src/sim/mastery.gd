@@ -117,6 +117,9 @@ static func crafted_alone(content: ContentRegistry, item: String) -> bool:
 ## Enhancements that fit a thing (content kind "modifier", "fits": tool,
 ## weapon, armor, clothes), by id.
 static func fitting(content: ContentRegistry, item: String) -> Array[String]:
+	var key := [content.get_instance_id(), item]
+	if _fitting.has(key):
+		return (_fitting[key] as Array[String]).duplicate()
 	var d := content.get_def(item)
 	var kinds := []
 	if d.has("tools"):
@@ -134,4 +137,11 @@ static func fitting(content: ContentRegistry, item: String) -> Array[String]:
 				and (not (m.get("effects", {}) as Dictionary).has("durability") or d.has("durability")):
 			out.append(id)
 	out.sort()
+	if _fitting.size() > 512:
+		_fitting.clear()
+	_fitting[key] = out.duplicate()
 	return out
+
+
+## What fits a thing, by content and item (it does not change while loaded).
+static var _fitting := {}

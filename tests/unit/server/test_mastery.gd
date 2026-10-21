@@ -206,3 +206,17 @@ func test_a_world_of_an_older_format_is_refused_with_a_reason() -> void:
 	check(fresh != null and ServerWorld.open_error == "", "a new world opens")
 	fresh.close()
 	w = ServerWorld.open(tmp_dir().path_join("other.db"), _content, {"seed": 2})
+
+
+func test_starter_things_are_ordinary_work_and_the_easy_rules_apply() -> void:
+	w.starter_kit = {"base:axe": 1, "base:plank": 5}
+	w.starter_outfit = {"torso": "base:linen_shirt"}
+	var a := _player("Аня", 7)
+	eq(w.inventory(a).state_of("base:axe", 0), {"quality": 0.75}, "a starter axe: ordinary work")
+	eq(w.inventory(a).states_of("base:plank"), [{}, {}, {}, {}, {}], "planks are just planks")
+	eq(w.worn_of(a)["torso"], ["base:linen_shirt", {"quality": 0.75}], "and the shirt one wears")
+	WorldLibrary.apply_rules({"all_recipes_known": true, "crafts_never_fail": true}, w)
+	check(w.knowledge.knows(a, "base:forge_iron_helmet") and w.knowledge.never_fail, "an easy world's rules")
+	WorldLibrary.apply_rules({}, w)
+	check(not w.knowledge.all_known and not w.knowledge.never_fail, "off by default")
+

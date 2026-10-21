@@ -17,6 +17,8 @@ signal wear(item: String, copy: int)
 signal take_off(slot: String)
 ## The cells were arranged anew: the order to keep (item id or "" per cell).
 signal arranged(order: Array)
+## A blueprint was double-clicked: its use is in the crafts (K, ADR-0047).
+signal blueprints
 
 var content: ContentRegistry
 var view: WorldView
@@ -64,7 +66,9 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 		else:
 			_wear.disabled = not _can_wear(grid.item_at(i)))
 	grid.activated.connect(func(i: int) -> void:
-		if _can_wear(grid.item_at(i)):
+		if grid.item_at(i) == "base:blueprint":
+			blueprints.emit()
+		elif _can_wear(grid.item_at(i)):
 			wear.emit(grid.item_at(i), grid.copy_at(i)))
 	box.add_child(grid)
 	_hint.add_theme_font_size_override("font_size", 16)

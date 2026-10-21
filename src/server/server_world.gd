@@ -453,6 +453,20 @@ func inventory(owner: String) -> Inventory:
 	return inv
 
 
+## The quality starter things are made with (ADR-0047): ordinary work, not a
+## master's and not a blueprint's whole.
+var starter_quality := 0.75
+
+
+func _starter_states(item: String, n: int) -> Array:
+	if not Mastery.crafted_alone(content, item):
+		return []
+	var out: Array = []
+	for i in n:
+		out.append({"quality": starter_quality})
+	return out
+
+
 ## A character arrives. The first time, its profile becomes this world's copy
 ## (its inventory moves into the world's inventories); later the world's own
 ## copy is used and only the owner is checked. "" on success, else a reason.
@@ -470,7 +484,7 @@ func enter(owner: String, c: PortableCharacter) -> String:
 		for item: String in c.inventory.stacks:
 			grant(id, item, c.inventory.stacks[item])
 		for item: String in starter_kit:
-			grant(id, item, int(starter_kit[item]))
+			grant(id, item, int(starter_kit[item]), _starter_states(item, int(starter_kit[item])))
 	elif known["owner"] != owner:
 		return "not_owner"
 	if present.has(id):
@@ -493,6 +507,12 @@ func enter(owner: String, c: PortableCharacter) -> String:
 	if not data.get("outfit_given", false) and (not starter_outfit.is_empty() or not (data.get("equipment", {}) as Dictionary).is_empty()):
 		if (data.get("equipment", {}) as Dictionary).is_empty() and not starter_outfit.is_empty():
 			data["equipment"] = starter_outfit.duplicate()
+			var worn := {}
+			for slot: String in starter_outfit:
+				var st: Array = _starter_states(String(starter_outfit[slot]), 1)
+				if not st.is_empty():
+					worn[slot] = st[0]
+			data["equipment_states"] = worn
 		data["outfit_given"] = true
 		_dirty_characters[id] = true
 	present[id] = {"location": String(place["location"]), "pos": Vector2i(int(place["x"]), int(place["y"])),

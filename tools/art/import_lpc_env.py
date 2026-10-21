@@ -817,7 +817,7 @@ FILE_CREDITS = [
      "https://opengameart.org/content/lpc-ore-and-forge"),
     ("Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда)", "Idylwild", "CC0",
      "https://opengameart.org/content/idylwilds-inventory"),
-    ("Camp Fire Animation for RPGs (костёр)", "Zabin (анимация), Jetrel (костёр)", "CC-BY-SA 3.0",
+    ("Camp Fire Animation for RPGs (костёр; на нём же иконка игры, tools/art/make_icon.py)", "Zabin (анимация), Jetrel (костёр)", "CC-BY-SA 3.0",
      "https://opengameart.org/content/camp-fire-animation-for-rpgs-finished"),
     ("[LPC] Items and game effects (топор, копьё, лук, самоцвет, жареное мясо)", "Lanea Zimmerman (Sharm) и др. (LPC)",
      "CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0", "https://opengameart.org/content/lpc-items-and-game-effects"),

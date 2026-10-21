@@ -55,6 +55,21 @@ tools/export.sh
 
 Собирает Linux (`build/linux/noheroneeds.x86_64`) и Windows (`build/windows/noheroneeds.exe`), рядом с каждым — библиотека SQLite, и архивы `build/noheroneeds-<версия>-<коммит>-linux-x86_64.tar.gz` и `…-windows-x86_64.zip`. Только одна платформа: `tools/export.sh linux` или `tools/export.sh windows`; отладочная сборка: `--debug`. Нужны шаблоны экспорта Godot той же версии (4.7.2).
 
+### Релизы
+
+```
+tools/package.sh 0.2.0
+```
+
+Собирает в `build/release/` всё для выпуска, с иконкой игры (`assets/icon`, делает её `tools/art/make_icon.py`):
+- `noheroneeds-<версия>-linux-x86_64.tar.gz` — бинарник для Linux;
+- `noheroneeds-<версия>-windows-portable.zip` — exe для Windows без установки;
+- `noheroneeds-<версия>-windows-setup.exe` — установщик для Windows: «Пуск», рабочий стол, удаление через «Приложения» (нужен `makensis`, пакет `nsis`);
+- `noheroneeds_<версия>_amd64.deb` — для Debian и Ubuntu: игра в `/opt/noheroneeds`, запуск командой `noheroneeds`, пункт в меню и иконки;
+- `SHA256SUMS`.
+
+На GitHub это делает сам: тег `vX.Y.Z` (`git tag v0.2.0 && git push origin v0.2.0`) запускает `.github/workflows/release.yml` — тесты, сборку и релиз с этими файлами. Вручную: Actions → release → Run workflow с версией (выйдет черновик релиза).
+
 Собранная игра — она же выделенный сервер:
 
 ```bash

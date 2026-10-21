@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.mirivlad.noheroneeds</id>
+  <name>No Hero Needed</name>
+  <summary>A long-lived 2D pixel sandbox: a world to live in</summary>
+  <summary xml:lang="ru">Долгоживущая пиксельная 2D-песочница: мир, в котором живут</summary>
+  <developer id="io.github.mirivlad">
+    <name>mirivlad</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-unspecified</project_license>
+  <description>
+    <p>Build a home, plough fields, hunt and fish, trade with villages joined by roads, go down into caves; biomes, seasons and weather; play alone or together.</p>
+    <p xml:lang="ru">Стройте дом, пашите поля, охотьтесь и рыбачьте, торгуйте с деревнями, связанными дорогами, спускайтесь в пещеры; биомы, времена года и погода; одному или вместе.</p>
+  </description>
+  <launchable type="desktop-id">noheroneeds.desktop</launchable>
+  <url type="homepage">https://github.com/mirivlad/noheroneeds</url>
+  <categories>
+    <category>Game</category>
+    <category>Simulation</category>
+  </categories>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-cartoon">mild</content_attribute>
+  </content_rating>
+</component>

@@ -1,0 +1,70 @@
+name: release
+# A release of the game: tests, then the packages — the Linux binary, the
+# Windows portable .exe and installer (with the game's icon), a .deb for
+# Debian and Ubuntu (menu entry, icons) — attached to a GitHub release.
+# Started by pushing a tag vX.Y.Z, or by hand with a version.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version, X.Y.Z (a draft release v<version> is made)"
+        required: true
+permissions:
+  contents: write
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+  packages:
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GODOT_VERSION: 4.7.2-stable
+      GODOT_TEMPLATES: 4.7.2.stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        id: version
+        run: |
+          V="${{ github.event.inputs.version || github.ref_name }}"
+          V="${V#v}"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+      - name: Cache Godot, its export templates and addons
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+            addons/godot-sqlite/bin
+          key: export-${{ env.GODOT_VERSION }}-${{ hashFiles('tools/fetch_addons.sh') }}
+      - name: Install Godot and its export templates
+        run: |
+          if [ ! -x ~/godot/godot ]; then
+            mkdir -p ~/godot && cd ~/godot
+            curl -fsSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+            unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}_linux.x86_64" godot && rm godot.zip
+          fi
+          T=~/.local/share/godot/export_templates/${GODOT_TEMPLATES}
+          if [ ! -f "$T/windows_release_x86_64.exe" ]; then
+            mkdir -p "$T" && cd "$(mktemp -d)"
+            curl -fsSL -o t.tpz "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+            unzip -q t.tpz && cp -r templates/* "$T"/
+          fi
+      - name: Packaging tools
+        run: sudo apt-get update -q && sudo apt-get install -y -q nsis fakeroot zip
+      - name: Packages
+        run: GODOT=~/godot/godot tools/package.sh "${{ steps.version.outputs.version }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: noheroneeds-${{ steps.version.outputs.version }}
+          path: build/release/*
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: No Hero Needed ${{ steps.version.outputs.version }}
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          generate_release_notes: true
+          files: build/release/*

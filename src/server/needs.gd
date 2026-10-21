@@ -183,10 +183,12 @@ func step() -> void:
 		# Awake it runs down; asleep in a bed it comes back, and full one wakes.
 		var sleeping := asleep(id)
 		var swimming := world.in_water(id)
-		set_energy(id, energy_of(id) + (BED_RESTS if sleeping else (-SWIM_TIRES if swimming else -FULL / AWAKE_HOURS)) * hours)
+		# Deep water is harder (ADR-0051): it tires and chills by its effort.
+		var effort := world.swim_effort(id) if swimming else 1.0
+		set_energy(id, energy_of(id) + (BED_RESTS if sleeping else (-SWIM_TIRES * effort if swimming else -FULL / AWAKE_HOURS)) * hours)
 		if sleeping and energy_of(id) >= FULL:
 			world.wake(id)
-		var warm := warmth_of(id) + (minf(0.0, warming(id)) - WATER_CHILL if swimming else warming(id)) * hours
+		var warm := warmth_of(id) + (minf(0.0, warming(id)) - WATER_CHILL * effort if swimming else warming(id)) * hours
 		# Spent in the water, one goes under: health goes, to the very last.
 		if swimming and energy_of(id) <= 0.0:
 			var deaths := int(world.present[id].get("deaths", 0))

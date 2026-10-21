@@ -23,13 +23,15 @@ static func is_covered(c: Chunk, lx: int, ly: int) -> bool:
 const BLOCKING_LAYERS := ["ground", "cover", "structure"]
 
 ## Bits of Chunk.traits: worked out; blocks walking; blocks sight; no ground;
-## water one swims in (ADR-0050); something solid standing or growing there.
+## water one swims in (ADR-0050); something solid standing or growing there;
+## water one wades through (ADR-0051).
 const _KNOWN := 1
 const _SOLID := 2
 const _OPAQUE := 4
 const _NO_GROUND := 8
 const _SWIM := 16
 const _UPPER_SOLID := 32
+const _WADE := 64
 
 
 ## empty_ground_blocks: on building levels a cell without floor is a void.
@@ -47,6 +49,11 @@ static func is_solid(c: Chunk, lx: int, ly: int, content: ContentRegistry, empty
 ## Whether a cell is water one swims in.
 static func is_water(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> bool:
 	return _traits(c, lx, ly, content) & _SWIM != 0
+
+
+## Whether a cell is shallow water one wades through (no running, ADR-0051).
+static func is_shallow(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> bool:
+	return _traits(c, lx, ly, content) & _WADE != 0
 
 
 ## Whether a cell blocks sight (ADR-0018): a part that is not see-through
@@ -74,6 +81,8 @@ static func _traits(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> int
 		var d := content.get_def(id)
 		if layer == "ground" and bool(d.get("swim", false)):
 			t |= _SWIM
+		if layer == "ground" and bool(d.get("wade", false)):
+			t |= _WADE
 		if layer == "structure" and d.get("openable", false) and c.get_props(lx, ly).get("open", false):
 			continue  # an open door
 		if bool(d.get("solid", layer == "structure")):

@@ -186,7 +186,7 @@ func course_point(r: GeoRegion, k: int) -> Vector2:
 	return Vector2(g * STEP + Vector2i(STEP / 2, STEP / 2) - origin) + r.bend[k]
 
 
-## River segments ([from, to, width there, width here]) that may pass near a
+## River segments ([from, to, width there, width here, a ford midway]) that may pass near a
 ## chunk's cells. Rivers never reach a region's border (the sea is there), so
 ## only the chunk's own region has any.
 func rivers_near(cx: int, cy: int) -> Array:
@@ -206,7 +206,7 @@ func rivers_near(cx: int, cy: int) -> Array:
 				continue
 			var to := r.down[k]
 			# It runs on into the sea or a lake: to the middle of that point.
-			out.append([course_point(r, k), course_point(r, to), r.river[k], r.river[to] if r.river[to] > 0.0 else r.river[k]])
+			out.append([course_point(r, k), course_point(r, to), r.river[k], r.river[to] if r.river[to] > 0.0 else r.river[k], r.ford[k] == 1])
 	return out
 
 

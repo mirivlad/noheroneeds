@@ -17,6 +17,14 @@
       "gather": {"tool": "fishing", "verb": "Ловить рыбу", "drops": {}, "chance": 0.3,
         "pick": {"base:raw_fish": 6, "base:perch": 3, "base:pike": 1}, "stock": 6, "restock_hours": 4},
       "fills": {"base:bucket": "base:water_bucket"}},
+    {"id": "base:shallows", "kind": "ground", "name": "Мелководье", "wade": true,
+      "gather": {"tool": "fishing", "verb": "Ловить рыбу", "drops": {}, "chance": 0.25,
+        "pick": {"base:raw_fish": 8, "base:perch": 2}, "stock": 3, "restock_hours": 4},
+      "fills": {"base:bucket": "base:water_bucket"}},
+    {"id": "base:deep_water", "kind": "ground", "name": "Глубокая вода", "solid": true, "swim": true, "effort": 2.0,
+      "gather": {"tool": "fishing", "verb": "Ловить рыбу", "drops": {}, "chance": 0.3,
+        "pick": {"base:raw_fish": 3, "base:perch": 3, "base:pike": 3}, "stock": 8, "restock_hours": 4},
+      "fills": {"base:bucket": "base:water_bucket"}},
 
     {"id": "base:tall_grass", "kind": "plant", "winter": "", "name": "Высокая трава",
       "gather": {"tool": "", "verb": "Сорвать", "drops": {"base:wheat_seeds": 1, "base:fiber": 1}}},
@@ -65,7 +73,7 @@
 
     {
       "id": "base:surface", "kind": "generator", "name": "Поверхность",
-      "water": "base:water", "shore": "base:sand", "shore_cover": {"base:reeds": 1}, "shore_cover_density": 0.35,
+      "water": "base:water", "shallows": "base:shallows", "deep": "base:deep_water", "shore": "base:sand", "shore_cover": {"base:reeds": 1}, "shore_cover_density": 0.35,
       "spawn_clearing": 8, "rock": "base:rock"
     },
     {

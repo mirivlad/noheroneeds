@@ -101,3 +101,29 @@ func test_swimming_tires_and_chills_and_spent_one_drowns() -> void:
 	eq(int(w.present[a].get("deaths", 0)), deaths + 1, "drowned")
 	check(not w.in_water(a), "back at the spawn point, ashore")
 	check(w.needs.energy_of(a) >= 49.0, "rested a little")
+
+
+## ADR-0051: shallows are waded through — by creatures too — never running;
+## deep water tires and chills twice as fast as common water.
+func test_shallows_are_waded_and_deep_water_tires_more() -> void:
+	var c := w.chunk("surface", 0, 0)
+	for y in 16:
+		c.set_cell("ground", 6, y, "base:shallows")
+		c.set_cell("ground", 7, y, "base:shallows")
+		c.set_cell("ground", 12, y, "base:deep_water")
+		c.set_cell("ground", 13, y, "base:deep_water")
+	check(not w.is_solid("surface", 6, 4), "a creature crosses a ford")
+	check(not w.blocks_walker("surface", 7, 4), "and so does a character")
+	var a := _player()
+	w.move_character(a, Vector2i(6 * 256 + 128, 4 * 256 + 128))
+	check(w.in_shallows(a) and not w.in_water(a), "wading, not swimming")
+	eq(w.swim_effort(a), 1.0)
+	w.move_character(a, Vector2i(12 * 256 + 128, 4 * 256 + 128))
+	check(w.in_water(a), "deep water is swum")
+	eq(w.swim_effort(a), 2.0, "twice as hard")
+	w.world_time = Daylight.DAY_MS + 12 * Daylight.HOUR_MS
+	w.needs.step()
+	var energy := w.needs.energy_of(a)
+	w.world_time += Daylight.HOUR_MS
+	w.needs.step()
+	check(energy - w.needs.energy_of(a) > 55.0, "an hour in deep water: %.1f -> %.1f" % [energy, w.needs.energy_of(a)])

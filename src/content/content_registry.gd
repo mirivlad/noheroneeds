@@ -210,6 +210,9 @@ func _validate() -> void:
 				# A seed (ADR-0027): the plant it sows.
 				if d.has("plants") and kind_of(String(d["plants"])) != "plant":
 					errors.append("%s: plants names a plant" % id)
+				# A sapling to plant (ADR-0056): the plant it becomes in the ground.
+				if d.has("seedling") and kind_of(String(d["seedling"])) != "plant":
+					errors.append("%s: seedling names the plant it is planted as" % id)
 				# Food (ADR-0026): eaten, it heals.
 				# Food heals, fills (ADR-0032 satiety), or both.
 				if d.has("food") and (typeof(d["food"]) != TYPE_DICTIONARY or int(d["food"].get("heal", 0)) < 0
@@ -380,6 +383,16 @@ func _validate() -> void:
 				# Fields (ADR-0027): what a ground is tilled into; how a crop grows.
 				if d.has("tilled") and kind_of(String(d["tilled"])) != "ground":
 					errors.append("%s: tilled names a ground" % id)
+				# Plants live (ADR-0056): picked, one comes back in "regrows" hours;
+				# what "grows" turns into another plant in its hours ("@species":
+				# the tree it was sown of).
+				if d.has("regrows") and (typeof(d["regrows"]) not in [TYPE_INT, TYPE_FLOAT] or float(d["regrows"]) <= 0.0):
+					errors.append("%s: regrows is the hours a picked one takes to come back, above 0" % id)
+				if d.has("grows"):
+					var gr: Variant = d["grows"]
+					if typeof(gr) != TYPE_DICTIONARY or float(gr.get("hours", 0)) <= 0.0 \
+							or (String(gr.get("into", "")) != "@species" and kind_of(String(gr.get("into", ""))) != "plant"):
+						errors.append("%s: grows is {into: a plant or @species, hours above 0}" % id)
 				if d.has("crop") and (typeof(d["crop"]) != TYPE_DICTIONARY or int(d["crop"].get("stages", 0)) < 2
 						or float(d["crop"].get("grow_hours", 0)) <= 0.0):
 					errors.append("%s: a crop has two stages or more and grows some hours" % id)

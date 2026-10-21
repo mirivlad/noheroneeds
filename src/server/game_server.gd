@@ -255,6 +255,7 @@ func _step() -> void:
 	world.creatures.step(tick)
 	_lap("creatures")
 	world.combat.step(tick)
+	world.growth.step(tick)
 	if tick % TICK_RATE == 0:
 		world.needs.step()
 		world.chronicles.step()

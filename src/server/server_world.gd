@@ -171,6 +171,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.needs = Needs.new(world)
 	world.knowledge = Knowledge.new(world)
 	world.boats = Boats.new(world)
+	world.growth = Growth.new(world)
 	world.chronicles = Chronicles.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	world.weather_seed = absi(hash([world.world_seed, "weather"]))
@@ -258,6 +259,7 @@ func close() -> void:
 	chronicles.world = null
 	knowledge.world = null
 	boats.world = null
+	growth.world = null
 
 
 ## Stops without committing what is not yet handed to the writer (tests of crashes).
@@ -274,6 +276,7 @@ func abandon() -> void:
 	chronicles.world = null
 	knowledge.world = null
 	boats.world = null
+	growth.world = null
 
 
 # --- request fields (input from the network: any type may come) ----------------
@@ -344,6 +347,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		creatures.take_rows(location, rows)
 		creatures.on_chunk_ready(location, cx, cy, c)
 		_settle_stairs(location, cx, cy, c)
+		growth.arrived(location, cx, cy, c)  # what grew while it was away (ADR-0056)
 		chronicles.lie_lost(location, cx, cy)  # a thing lost in a cave lies there again (ADR-0042)
 		sync_loads += 1
 	return c
@@ -453,6 +457,7 @@ func poll_loaded() -> void:
 		if r[4]:
 			_dirty_chunks[key] = true
 		_settle_stairs(r[0], r[1], r[2], r[3])  # after its encoding is kept: a change makes it stale
+		growth.arrived(r[0], r[1], r[2], r[3])
 
 
 func inventory(owner: String) -> Inventory:
@@ -720,6 +725,16 @@ func move_item(id: String, pos: Vector2i) -> void:
 		_place_item(id, it)
 	_dirty_items[id] = true
 	moved_items[id] = true
+
+
+## A cell's cover props (growth, ADR-0056): set whole ({} — none).
+func set_cover_props(c: Chunk, lx: int, ly: int, props: Dictionary, _whole := true) -> void:
+	_set_layer_props(c, "cover", lx, ly, props)
+
+
+## Something grew in a chunk: kept and told.
+func note_grown(location: String, cx: int, cy: int) -> void:
+	_changed(chunk_key(location, cx, cy))
 
 
 ## A thing on the ground changed in itself (its wear): kept with the next batch.
@@ -1041,6 +1056,8 @@ var needs: Needs
 var knowledge: Knowledge
 ## Boats and who is in them (ADR-0052).
 var boats: Boats
+## Plants growing back and on (ADR-0056).
+var growth: Growth
 ## Villages' chronicles and their dwellers' requests (ADR-0042).
 var chronicles: Chronicles
 ## World facts to write with the next state batch (set_meta).
@@ -1308,6 +1325,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _till(actor, r)
 		"sow":
 			return _sow(actor, r)
+		"plant":
+			return growth.plant(actor, r)
 		"eat":
 			return _eat(actor, r)
 		"feed":
@@ -2019,6 +2038,8 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 		_set_layer_props(c, layer, at[3], at[4], {})
 	if layer != "ground":
 		c.set_cell(layer, at[3], at[4], String(g.get("becomes", "")))  # gone, or what it is after (a bush picked)
+	if layer == "cover":
+		growth.gathered(c, loc, at[1], at[2], at[3], at[4], thing, String(g.get("becomes", "")))  # it grows back (ADR-0056)
 	_changed(chunk_key(loc, at[1], at[2]))
 	# A skilled hand (and a fruitful tool) now and then gets one more of each.
 	var drops := {}

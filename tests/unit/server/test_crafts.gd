@@ -129,7 +129,7 @@ func test_an_iron_axe_fells_twice_as_fast() -> void:
 		w.grant(a, tool, 1)
 		_req(a, {"type": "hold", "item": tool})
 		var blows := 0
-		while c.get_cell("cover", x, 3) != "" and blows < 20:
+		while c.get_cell("cover", x, 3) == "base:birch" and blows < 20:  # felled: a stump left (ADR-0056)
 			w.tick += 40  # past the swing's cooldown
 			w.combat.step(w.tick)
 			_req(a, {"type": "gather", "location": "surface", "x": x, "y": 3, "layer": "cover", "item": tool})

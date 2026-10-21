@@ -35,8 +35,13 @@ var _hollow := 3
 var way_down_surface := ""
 var way_down := ""
 var way_up := ""
-## [{rock, top, bottom, single, threshold, noise}], in content id order.
+## [{rock, top, bottom, single, threshold, noise, area, presence, relief}],
+## in content id order.
 var _deposits: Array = []
+## The land above (ADR-0053): deposits are richer or poorer by its height.
+## Set by the server to the surface generator's (null: a flat world, all as
+## they are).
+var geography: Geography
 var _caves := FastNoiseLite.new()
 ## Winding passages joining the chambers: a thin ridge of another noise.
 var _passages := FastNoiseLite.new()
@@ -88,7 +93,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 		area.frequency = n.frequency / 4.0
 		_deposits.append({"rock": String(d["rock"]), "top": int(d["depths"][0]), "bottom": int(d["depths"][1]),
 			"single": String(d.get("shape", "vein")) == "single", "threshold": float(d["threshold"]), "noise": n,
-			"area": area, "presence": float(d.get("presence", 0.3))})
+			"area": area, "presence": float(d.get("presence", 0.3)), "relief": d.get("relief", [1.0, 1.0, 1.0])})
 
 
 func can_generate() -> bool:
@@ -237,18 +242,39 @@ func generate(z: int, cx: int, cy: int) -> Chunk:
 
 
 ## The rock of a cell: a deposit's, where its noise says so, else plain rock.
+## A deposit is as rich as the land above makes it (ADR-0053): its "relief"
+## [lowland, hills, mountains] multiplies how often singles come and how
+## much of the land veins run under.
 func _rock_at(x: int, y: int, z: int) -> String:
+	var above := geography.sample(Geography.HEIGHT, x, y) if geography else -INF
 	for d: Dictionary in _deposits:
 		if z > int(d["top"]) or z < int(d["bottom"]):
 			continue
+		var rich := relief_factor(d["relief"], above)
+		if rich <= 0.0:
+			continue
 		var n: FastNoiseLite = d["noise"]
 		if d["single"]:
-			if _hash3(x, y, z, 21 + _deposits.find(d)) < float(d["threshold"]):
+			if _hash3(x, y, z, 21 + _deposits.find(d)) < float(d["threshold"]) * rich:
 				return String(d["rock"])
 		elif absf(n.get_noise_3d(x, y, z * 6.0)) < float(d["threshold"]) \
-				and (d["area"] as FastNoiseLite).get_noise_3d(x, y, z * 6.0) > float(d["presence"]):
+				and (d["area"] as FastNoiseLite).get_noise_3d(x, y, z * 6.0) > float(d["presence"]) - 0.25 * (rich - 1.0):
 			return String(d["rock"])  # a vein: a ridge of the noise, running on, where veins are
 	return _rock
+
+
+## How rich a deposit is under land of a height: its relief's lowland, hills
+## and mountains values, between them by the height (-INF: no land known — 1).
+static func relief_factor(relief: Array, height: float) -> float:
+	if height == -INF:
+		return 1.0
+	var low := Geography.HILLS * 0.5
+	var mid := (Geography.HILLS + Geography.MOUNTAINS) * 0.5
+	if height <= low:
+		return float(relief[0])
+	if height <= mid:
+		return lerpf(float(relief[0]), float(relief[1]), (height - low) / (mid - low))
+	return lerpf(float(relief[1]), float(relief[2]), clampf((height - mid) / (Geography.PEAKS - mid), 0.0, 1.0))
 
 
 func _hollow_at(c: Chunk, cx: int, cy: int, at: Vector2i) -> void:

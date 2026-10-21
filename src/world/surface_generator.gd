@@ -19,7 +19,8 @@ const ID := "base:surface"
 ##    rivers and lakes by drainage, biomes by climate and height, rock on the
 ##    heights.
 ## 7: shallows at the edges of the sea and lakes, fords, deep water (ADR-0051).
-const VERSION := 7
+## 8: pebbles (flint) on shores (ADR-0053).
+const VERSION := 8
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography

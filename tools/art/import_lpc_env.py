@@ -175,6 +175,8 @@ WALLS = {
     "base:iron_ore_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (64, 64)},
     "base:copper_ore_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (96, 32)},
     "base:gem_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (128, 256)},
+    "base:silver_ore_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (128, 64)},
+    "base:gold_ore_rock": {"cap": 16, "fill": "Rock_Gray", "face": (128, 928), "ore": (160, 64)},
 }
 ORE = SRC / "ore_0.png"
 # Cave rock (the author, 20.10.2026: walls in caves look like rock, not

@@ -122,7 +122,11 @@ func _place_frame(s: Sprite2D, sheet: Dictionary, anim_name: String, column: int
 	s.flip_h = false
 	# The visual's origin is the feet in its own frames; larger frames (a
 	# tool's swing) are centred on them.
-	s.offset = -Vector2(size / 2.0, float(_visual["origin"][1]) + (size - int(_visual["rect"][3])) / 2.0)
+	var feet := float(_visual["origin"][1]) + (size - int(_visual["rect"][3])) / 2.0
+	s.offset = -Vector2(size / 2.0, feet)
+	if submerged:  # swimming (ADR-0050): sunk, only what is above the water line drawn
+		s.region_rect.size.y = maxf(1.0, feet - SINK_PX)
+		s.offset.y += SINK_PX
 
 
 func _frame_count(anim_name: String) -> int:

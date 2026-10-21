@@ -13,7 +13,7 @@
     {"id": "base:grass_dead", "kind": "ground", "winter": "base:snow", "name": "Пожухлая трава", "tilled": "base:farmland"},
     {"id": "base:snow", "kind": "ground", "name": "Снег", "ambient": "drift"},
     {"id": "base:bog", "kind": "ground", "name": "Топь", "solid": true, "ambient": "mist"},
-    {"id": "base:water", "kind": "ground", "name": "Вода", "solid": true,
+    {"id": "base:water", "kind": "ground", "name": "Вода", "solid": true, "swim": true,
       "gather": {"tool": "fishing", "verb": "Ловить рыбу", "drops": {}, "chance": 0.3,
         "pick": {"base:raw_fish": 6, "base:perch": 3, "base:pike": 1}, "stock": 6, "restock_hours": 4},
       "fills": {"base:bucket": "base:water_bucket"}},

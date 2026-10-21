@@ -18,6 +18,10 @@ signal stepped
 
 ## What it was built from, so a change of looks rebuilds it.
 var look := {}
+## In water (ADR-0050): drawn sunk to the shoulders, nothing in the hands.
+var submerged := false
+## How deep a swimmer sits: pixels of the frame below the water line.
+const SINK_PX := 22
 var _visual: Dictionary
 ## [slot, Sprite2D], the body first.
 var _layers: Array = []

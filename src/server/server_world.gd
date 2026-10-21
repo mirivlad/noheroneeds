@@ -701,6 +701,24 @@ func move_character(id: String, pos: Vector2i) -> void:
 
 
 ## Whether a cell of a location blocks walking.
+## Whether a cell keeps a character out (ADR-0050: it swims into water).
+func blocks_walker(location: String, x: int, y: int) -> bool:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	return Terrain.is_solid(chunk(location, cx, cy), x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content, location != SURFACE, true)
+
+
+## Whether a present character is swimming: the cell under it is water.
+func in_water(id: String) -> bool:
+	if not present.has(id):
+		return false
+	var p: Dictionary = present[id]
+	var cell := Movement.cell_of(p["pos"])
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	return Terrain.is_water(chunk(String(p["location"]), cx, cy), cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
+
+
 func is_solid(location: String, x: int, y: int) -> bool:
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)
@@ -1114,7 +1132,14 @@ func _is_pending(key: String) -> bool:
 	return _uncommitted.has(key)
 
 
+## What cannot be done swimming (ADR-0050): the hands are for swimming.
+const NOT_SWIMMING := ["build", "dismantle", "attack", "gather", "strike_part", "repair", "mend", "till", "sow", "craft",
+	"draft", "sleep", "climb", "jump", "lock"]
+
+
 func _apply(actor: String, r: Dictionary) -> Dictionary:
+	if rs(r, "type") in NOT_SWIMMING and in_water(actor):
+		return {"ok": false, "reason": "swimming"}
 	match rs(r, "type"):
 		"build":
 			return _build(actor, r)

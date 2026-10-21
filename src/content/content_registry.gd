@@ -358,6 +358,13 @@ func _validate() -> void:
 				_check_winter(id, d)
 				_check_fills(id, d)
 				d["solid"] = bool(d.get("solid", false))
+				# Water (ADR-0050, ADR-0051): one swims in it; wades (no running);
+				# how much harder than common water swimming in it is.
+				d["swim"] = bool(d.get("swim", false))
+				d["wade"] = bool(d.get("wade", false))
+				d["effort"] = float(d.get("effort", 1.0))
+				if d["effort"] < 1.0:
+					errors.append("%s: effort (how hard swimming in it is) is 1 or more" % id)
 				if d.has("gather"):
 					_check_gather(id, d)
 				_check_height(id, d, 1.0)
@@ -383,6 +390,10 @@ func _validate() -> void:
 			"generator":
 				for f: String in ["water", "shore"]:
 					if kind_of(String(d.get(f, ""))) != "ground":
+						errors.append("%s: '%s' must be a ground" % [id, f])
+				# Water one wades through and deep water (ADR-0051), if any.
+				for f: String in ["shallows", "deep"]:
+					if d.has(f) and kind_of(String(d[f])) != "ground":
 						errors.append("%s: '%s' must be a ground" % [id, f])
 				_check_weights(id, "shore_cover", d.get("shore_cover", {}), ["plant"], false)
 				d["shore_cover_density"] = float(d.get("shore_cover_density", 0.0))

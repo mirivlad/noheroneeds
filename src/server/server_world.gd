@@ -127,8 +127,9 @@ var _encoded := {}
 ## copy's state — wear, quality, enhancements, maker (ADR-0046, ADR-0047),
 ## characters' knowledge and mastery. 3: furniture set up from things of
 ## their own, buckets single (ADR-0048). 4: the land from geography
-## (ADR-0049) — places not yet visited would not meet the old ones.
-const WORLD_FORMAT := 4
+## (ADR-0049) — places not yet visited would not meet the old ones. 5:
+## shallows, fords and deep water (ADR-0051).
+const WORLD_FORMAT := 5
 ## Why the last open() failed, for people ("" — it did not).
 static var open_error := ""
 
@@ -718,6 +719,30 @@ func in_water(id: String) -> bool:
 	var cx := floori(float(cell.x) / Chunk.SIZE)
 	var cy := floori(float(cell.y) / Chunk.SIZE)
 	return Terrain.is_water(chunk(String(p["location"]), cx, cy), cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
+
+
+## Whether a character wades through shallows (ADR-0051).
+func in_shallows(id: String) -> bool:
+	if not present.has(id):
+		return false
+	var p: Dictionary = present[id]
+	var cell := Movement.cell_of(p["pos"])
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	return Terrain.is_shallow(chunk(String(p["location"]), cx, cy), cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
+
+
+## How hard swimming where a character is is (1: common water; deep water
+## more, ADR-0051).
+func swim_effort(id: String) -> float:
+	if not present.has(id):
+		return 1.0
+	var p: Dictionary = present[id]
+	var cell := Movement.cell_of(p["pos"])
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	var ground := chunk(String(p["location"]), cx, cy).get_cell("ground", cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE)
+	return float(content.get_def(ground).get("effort", 1.0)) if ground != "" else 1.0
 
 
 func is_solid(location: String, x: int, y: int) -> bool:

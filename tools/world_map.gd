@@ -158,6 +158,10 @@ func _colour_of(id: String) -> Color:
 	var name := id.get_slice(":", 1)
 	if name in ["water"]:
 		return SEA
+	if name in ["deep_water"]:
+		return DEEP
+	if name in ["shallows"]:
+		return Color(0.45, 0.62, 0.75)
 	if name in ["sand", "gravel"]:
 		return Color(0.85, 0.78, 0.55)
 	if name in ["snow"]:

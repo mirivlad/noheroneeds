@@ -34,6 +34,10 @@ const RIVER_FLOW := 20.0
 const HILLS := 0.2
 const MOUNTAINS := 0.45
 const PEAKS := 0.68
+## Fords (ADR-0051): on rivers this wide at most, on this share (%) of their
+## stretches.
+const FORD_WIDEST := 6.0
+const FORD_SHARE := 22
 ## A depression this deep or deeper is a lake (shallower ones are drained).
 const LAKE_DEPTH := 0.012
 
@@ -55,6 +59,8 @@ var down := PackedInt32Array()
 var flow := PackedFloat32Array()
 var river := PackedFloat32Array()
 var bend := PackedVector2Array()
+## Whether a point's stretch of river has a ford midway (1), ADR-0051.
+var ford := PackedByteArray()
 
 
 func _init(seed_value: int, at: Vector2i) -> void:
@@ -72,6 +78,7 @@ func _init(seed_value: int, at: Vector2i) -> void:
 	river.resize(cells)
 	down.resize(cells)
 	bend.resize(cells)
+	ford.resize(cells)
 	_relief()
 	_climate()
 	_drainage()
@@ -261,10 +268,6 @@ func _drainage() -> void:
 			buckets[nb].append(m)
 			if nb < b:
 				b = nb
-	# Shallow hollows are not lakes: their water runs on over the brim.
-	for k in n * n:
-		if filled[k] > height[k] and filled[k] - height[k] < LAKE_DEPTH:
-			filled[k] = height[k]
 	# What drains through a point: its rain (as water, 0..2) and all upstream.
 	for k in n * n:
 		flow[k] = (rain[k] + 1.0) if height[k] >= SEA else 0.0
@@ -293,11 +296,15 @@ func _rivers() -> void:
 		var dry := height[k] >= SEA and not is_lake(k)
 		river[k] = clampf(1.5 + sqrt(flow[k] - RIVER_FLOW) * 0.55, 1.5, 9.0) if dry and flow[k] >= RIVER_FLOW else 0.0
 		var g := first + Vector2i(k % SIZE, k / SIZE)
+		# Fords: on rivers not too wide, now and then.
+		ford[k] = 1 if river[k] > 0.0 and river[k] <= FORD_WIDEST and absi(hash([world_seed, g.x, g.y, "ford"])) % 100 < FORD_SHARE else 0
 		bend[k] = Vector2(wander.get_noise_2d(g.x * 7.0, g.y * 7.0), wander.get_noise_2d(g.y * 7.0 + 1000.0, g.x * 7.0)) * Chunk.SIZE * 0.3
 
 
+## Whether a point is under a lake: a hollow deep enough (in a shallower
+## one the water runs on over the brim).
 func is_lake(k: int) -> bool:
-	return filled[k] > height[k] and filled[k] >= SEA
+	return filled[k] - height[k] >= LAKE_DEPTH and filled[k] >= SEA
 
 
 ## How much of the region is dry land (0..1).

@@ -310,6 +310,50 @@
    }
   },
   {
+   "id": "base:visual/deep_water",
+   "kind": "visual",
+   "for": "base:deep_water",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    448,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 13,
+    "fills": 8
+   }
+  },
+  {
+   "id": "base:visual/shallows",
+   "kind": "visual",
+   "for": "base:shallows",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    480,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 14,
+    "fills": 3
+   }
+  },
+  {
    "id": "base:visual/wood_wall",
    "kind": "visual",
    "for": "base:wood_wall",

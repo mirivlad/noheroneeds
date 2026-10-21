@@ -18,12 +18,16 @@ const ID := "base:surface"
 ##    the one ocean; relief, climate from latitude, height and a west wind,
 ##    rivers and lakes by drainage, biomes by climate and height, rock on the
 ##    heights.
-const VERSION := 6
+## 7: shallows at the edges of the sea and lakes, fords, deep water (ADR-0051).
+const VERSION := 7
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
 ## From the generator's own definition (content "base:surface").
 var _water := ""
+## Water one wades through and deep water (ADR-0051; "" — none, common water).
+var _shallows := ""
+var _deep := ""
 var _shore := ""
 var _shore_cover: Array = []
 var _shore_density := 0.0
@@ -83,6 +87,8 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	var g := content.get_def(ID)
 	if g.get("kind") == "generator":
 		_water = g["water"]
+		_shallows = String(g.get("shallows", ""))
+		_deep = String(g.get("deep", ""))
 		_shore = g["shore"]
 		_shore_cover = _table(g.get("shore_cover", {}))
 		_shore_density = g["shore_cover_density"]
@@ -123,8 +129,8 @@ func generate(cx: int, cy: int) -> Chunk:
 			var clearing := absi(x) <= _clearing and absi(y) <= _clearing
 			var land := land_at(x, y)
 			var what := String(land["what"])
-			if what == "water" and not clearing:
-				c.set_cell("ground", lx, ly, _water)
+			if what in ["water", "deep", "shallows"] and not clearing:
+				c.set_cell("ground", lx, ly, _water if what == "water" else (_deep if what == "deep" else _shallows))
 				continue
 			if what == "shore" and not clearing:
 				c.set_cell("ground", lx, ly, _shore)
@@ -148,7 +154,7 @@ func generate(cx: int, cy: int) -> Chunk:
 			var ly := at.y - cy * Chunk.SIZE
 			if lx >= 0 and ly >= 0 and lx < Chunk.SIZE and ly < Chunk.SIZE:
 				var on: Dictionary = cells[at]
-				if c.get_cell("ground", lx, ly) == _water:
+				if _swum(c.get_cell("ground", lx, ly)):
 					if String(on.get("over_water", "")) == "":
 						continue
 					c.set_cell("ground", lx, ly, on["over_water"])  # a bridge
@@ -178,7 +184,7 @@ func generate(cx: int, cy: int) -> Chunk:
 			for layer: String in ["ground", "cover", "structure", "roof"]:
 				if spec.has(layer):
 					c.set_cell(layer, lx, ly, spec[layer])
-			if c.get_cell("ground", lx, ly) == _water:
+			if _wet(c.get_cell("ground", lx, ly)):
 				c.set_cell("ground", lx, ly, _shore)  # a little water at its edge is made land
 			if spec.has("props"):
 				c.set_props(lx, ly, (spec["props"] as Dictionary).duplicate(true))
@@ -191,7 +197,17 @@ func generate(cx: int, cy: int) -> Chunk:
 
 ## Whether the surface at a world cell is water or its shore.
 func is_wet(x: int, y: int) -> bool:
-	return String(land_at(x, y)["what"]) in ["water", "shore"]
+	return String(land_at(x, y)["what"]) in ["water", "deep", "shallows", "shore"]
+
+
+## Whether a ground is water one swims in (bridges go over it).
+func _swum(ground: String) -> bool:
+	return ground != "" and (ground == _water or ground == _deep)
+
+
+## Whether a ground is any of the generator's waters.
+func _wet(ground: String) -> bool:
+	return ground != "" and (ground == _water or ground == _deep or ground == _shallows)
 
 
 ## Whether a settlement may not stand on a cell: water, shore, rock, the
@@ -202,20 +218,22 @@ func is_unfit(x: int, y: int) -> bool:
 
 
 ## What a world cell is (ADR-0049), from the land as a whole and a little
-## grain: {"what": "water" | "shore" | "rock" | "land", "height", "biome"
-## (an index of the biomes, for land and rock)}.
+## grain: {"what": "water" | "deep" | "shallows" | "shore" | "rock" | "land",
+## "height", "biome" (an index of the biomes, for land and rock)}. Deep is
+## the open sea and the middle of big lakes; shallows (ADR-0051) the sea's
+## and lakes' edges and fords on rivers, where one wades.
 func land_at(x: int, y: int) -> Dictionary:
 	var geo := geography
 	if geo == null:
 		return {"what": "land", "height": 0.1, "biome": _biome_at(x, y, 0.1, false)} if _flat else {"what": "water", "height": -1.0, "biome": 0}
 	var h := geo.sample(Geography.HEIGHT, x, y) + _grain.get_noise_2d(x, y) * 0.035
 	if h < Geography.SEA:
-		return {"what": "water", "height": h, "biome": 0}
+		return {"what": _water_by_depth(Geography.SEA - h), "height": h, "biome": 0}
 	if h < Geography.SEA + 0.012:
 		return {"what": "shore", "height": h, "biome": 0}
 	var lake := geo.lake_level_at(x, y)
 	if h < lake:
-		return {"what": "water", "height": h, "biome": 0}
+		return {"what": _water_by_depth(lake - h), "height": h, "biome": 0}
 	if h < lake + 0.008:
 		return {"what": "shore", "height": h, "biome": 0}
 	var key := Vector2i(floori(x / 32.0), floori(y / 32.0))
@@ -231,6 +249,7 @@ func land_at(x: int, y: int) -> Dictionary:
 			if Rect2(a, Vector2.ZERO).expand(b).grow(maxf(r[2], r[3])).intersects(box):
 				_rivers.append(r)
 	var near := INF
+	var ford := false
 	var at := Vector2(x + 0.5, y + 0.5)
 	if not _rivers.is_empty():
 		at += Vector2(_meander.get_noise_2d(x, y), _meander.get_noise_2d(y + 7919.0, x)) * 9.0
@@ -241,15 +260,33 @@ func land_at(x: int, y: int) -> Dictionary:
 		var t := clampf((at - a).dot(ab) / maxf(ab.length_squared(), 0.001), 0.0, 1.0)
 		var half := lerpf(float(r[2]), float(r[3]), t) * 0.5
 		var d := at.distance_to(a + ab * t) - half
-		near = minf(near, d)
+		if d < near:
+			near = d
+			# A ford: across the river, in the middle of its stretch.
+			ford = r[4] and absf(t - 0.5) * ab.length() < FORD_HALF
 	if near < 0.0:
-		return {"what": "water", "height": h, "biome": 0}
+		return {"what": "shallows" if ford and _shallows != "" else "water", "height": h, "biome": 0}
 	if near < 1.0 and _hash(x, y, 8) < 0.6:
 		return {"what": "shore", "height": h, "biome": 0}
 	var biome := _biome_at(x, y, h, near < 10.0)
 	if _rock != "" and h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06:
 		return {"what": "rock", "height": h, "biome": biome}
 	return {"what": "land", "height": h, "biome": biome}
+
+
+## Cells a ford is along a river (each way from its middle).
+const FORD_HALF := 2.5
+## Depths (in heights) below which water is deep, above which it is shallow.
+const DEEP := 0.09
+const SHALLOW := 0.006
+
+
+func _water_by_depth(depth: float) -> String:
+	if depth > DEEP and _deep != "":
+		return "deep"
+	if depth < SHALLOW and _shallows != "":
+		return "shallows"
+	return "water"
 
 
 ## A cave mouth at a cell of a chunk, on dry ground with nothing around it.
@@ -261,7 +298,7 @@ func place_mouth(c: Chunk, lx: int, ly: int, part: String) -> void:
 			if x < 0 or y < 0 or x >= Chunk.SIZE or y >= Chunk.SIZE:
 				continue
 			c.set_cell("cover", x, y, "")
-			if c.get_cell("ground", x, y) == _water or c.get_cell("ground", x, y) == "":
+			if _wet(c.get_cell("ground", x, y)) or c.get_cell("ground", x, y) == "":
 				c.set_cell("ground", x, y, _shore)
 	c.set_cell("structure", lx, ly, part)
 

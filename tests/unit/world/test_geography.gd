@@ -168,3 +168,42 @@ func test_a_changed_cell_stays_changed() -> void:
 	var again := ServerWorld.open(db, _content)
 	eq(again.chunk("surface", 1, 1).get_cell("cover", 3, 4), changed, "kept, not made again")
 	again.close()
+
+
+## ADR-0051: no river runs uphill; fords on rivers, shallows at the edges of
+## lakes and the sea, deep water in the open sea.
+func test_rivers_run_down_and_have_fords() -> void:
+	for seed_value in [1, 2, 3]:
+		var r := Geography.of(seed_value).region(Vector2i.ZERO)
+		for k in GeoRegion.SIZE * GeoRegion.SIZE:
+			if r.river[k] > 0.0 and r.down[k] >= 0:
+				if not check(r.filled[r.down[k]] <= r.filled[k], "seed %d: the water's surface never rises downstream" % seed_value):
+					return
+	var gen := SurfaceGenerator.new(2, _content)
+	var geo := gen.geography
+	var fords := 0
+	var found := 0
+	var seen := {}
+	for cy in range(-12, 12, 3):
+		for cx in range(-12, 12, 3):
+			for seg: Array in geo.rivers_near(cx, cy):
+				var mid: Vector2 = (seg[0] + seg[1]) / 2.0
+				if not seg[4] or seen.has(mid):
+					continue
+				seen[mid] = true
+				fords += 1
+				if _shallows_near(gen, Vector2i(mid), 16):
+					found += 1
+	check(fords >= 3, "fords near spawn: %d" % fords)
+	check(found >= fords * 0.8, "shallows across the river at %d of %d fords" % [found, fords])
+	# The open sea, far from any land, is deep.
+	var border := Vector2i(GeoRegion.SIZE / 2, 0) * Geography.STEP - geo.origin
+	eq(gen.land_at(border.x, border.y)["what"], "deep", "deep in the open sea")
+
+
+func _shallows_near(gen: SurfaceGenerator, at: Vector2i, reach: int) -> bool:
+	for dy in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			if String(gen.land_at(at.x + dx, at.y + dy)["what"]) == "shallows":
+				return true
+	return false

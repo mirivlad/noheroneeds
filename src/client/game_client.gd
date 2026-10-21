@@ -429,10 +429,12 @@ func _solid(x: int, y: int) -> bool:
 	return Terrain.is_solid(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content, location != Levels.SURFACE, true)
 
 
-## A step as the server takes it: in water one swims (ADR-0050), slowly.
+## A step as the server takes it: in water one swims (ADR-0050), slowly;
+## through shallows one wades, not running (ADR-0051).
 func _step(pos: Vector2i, dx: int, dy: int, run: bool) -> Vector2i:
 	var swim := in_water(pos)
-	return Movement.step(pos, dx, dy, _solid, run and not swim, Vector2i(Movement.HALF_X, Movement.HALF_Y), swim)
+	return Movement.step(pos, dx, dy, _solid, run and not swim and not in_shallows(pos),
+		Vector2i(Movement.HALF_X, Movement.HALF_Y), swim)
 
 
 ## Whether a position (movement units) on our location is in water.
@@ -442,6 +444,15 @@ func in_water(pos: Vector2i) -> bool:
 	var cy := floori(float(cell.y) / Chunk.SIZE)
 	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
 	return c != null and Terrain.is_water(c, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
+
+
+## Whether a position on our location is in shallows (ADR-0051).
+func in_shallows(pos: Vector2i) -> bool:
+	var cell := Movement.cell_of(pos)
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	return c != null and Terrain.is_shallow(c, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
 
 
 func _send(channel: Transport.Channel, type: String, fields: Dictionary) -> void:

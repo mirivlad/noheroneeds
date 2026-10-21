@@ -43,6 +43,8 @@ GROUNDS = {
     "base:snow": ("Snow_1", 10),
     "base:bog": ("Water_Green", 11),
     "base:water": ("Water", 12),
+    "base:deep_water": ("Water_Deep", 13),
+    "base:shallows": ("Water_Shallows_Sand", 14),
     "base:cave_floor": ("Dirt_Dark", -1),
 }
 FARM = SRC / "lpc-farm" / "submission_daneeklu" / "tilesets"
@@ -50,6 +52,9 @@ FARM = SRC / "lpc-farm" / "submission_daneeklu" / "tilesets"
 # as corner masks (TL 1, TR 2, BL 4, BR 8) -> (column, row) of the block.
 BLOCK_MASKS = {7: (1, 0), 11: (2, 0), 13: (1, 1), 14: (2, 1), 8: (0, 2), 12: (1, 2), 4: (2, 2),
                10: (0, 3), 15: (1, 3), 5: (2, 3), 2: (0, 4), 3: (1, 4), 1: (2, 4)}
+# Waters that meet water (ADR-0051): no banks between them. Their edge
+# pieces are their fill cut to the water (not the bank) of Water's.
+SHAPE_FROM = {"Water_Shallows_Sand": "Water", "Water_Deep": "Water"}
 # Fills that are other things (animated water, a cracked variant) are left out.
 SKIP_FILLS = {"Water": {566, 569, 572}}
 
@@ -118,10 +123,18 @@ def build_terrain():
             continue
         masks = tiles[name]
         missing = [m for m in range(1, 16) if m not in masks]
-        if missing:
+        shape = SHAPE_FROM.get(name)
+        if missing and not (shape and 15 in masks):
             sys.exit("%s lacks masks %s" % (name, missing))
         for m in range(1, 15):
-            atlas.paste(tile(masks[m][0]), (m * T, r * T))
+            if not shape:
+                atlas.paste(tile(masks[m][0]), (m * T, r * T))
+                continue
+            cut = tile(masks[15][0])
+            edge = tile(tiles[shape][m][0])
+            alpha = [255 if a > 0 and b > rr + 25 else 0 for (rr, _g, b, a) in edge.getdata()]
+            cut.putalpha(Image.frombytes("L", (T, T), bytes(alpha)))
+            atlas.paste(cut, (m * T, r * T))
         # A fill must be the ground itself: whole, and like the first one
         # (some tiles marked full are other things, holes or overlays).
         first = tile(masks[15][0])

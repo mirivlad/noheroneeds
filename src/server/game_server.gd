@@ -423,10 +423,12 @@ func _apply_input(s: Session) -> void:
 		world.wake(s.character_id)  # moving gets one up (ADR-0035)
 		# Tired, one does not run: the client knows it too and does not try.
 		var run: bool = e[3] == 1 and world.needs.may_run(s.character_id)
-		# In water one swims (ADR-0050): slowly, never running.
+		# In water one swims (ADR-0050): slowly, never running; nor through
+		# shallows (ADR-0051).
 		var swim := world.in_water(s.character_id)
+		var wade := world.in_shallows(s.character_id)
 		world.move_character(s.character_id, Movement.step(p["pos"], e[1], e[2],
-			func(x: int, y: int) -> bool: return world.blocks_walker(loc, x, y), run and not swim,
+			func(x: int, y: int) -> bool: return world.blocks_walker(loc, x, y), run and not swim and not wade,
 			Vector2i(Movement.HALF_X, Movement.HALF_Y), swim))
 
 

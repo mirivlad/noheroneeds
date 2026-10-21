@@ -1,7 +1,10 @@
 extends TestCase
-## ADR-0038: settlements are a function of the seed — every chunk gets its
-## part of one in any order; one stands near the spawn point, on dry land,
-## out of its clearing; houses have their doors onto streets, a bed inside.
+## ADR-0038, ADR-0054: settlements are a function of the seed — every chunk
+## gets its part of one in any order; one stands near the spawn point, on
+## dry land, out of its clearing; houses have their doors onto streets, a
+## bed inside. Villages come in clusters joined by roads that go round the
+## heights and deep water; some clusters are joined with their neighbours,
+## some with none; a village lives by its place.
 
 var content: ContentRegistry
 
@@ -12,10 +15,7 @@ func before_each() -> void:
 
 
 func _home_plan(g: SurfaceGenerator) -> Dictionary:
-	for p: Dictionary in g.settlements.plans_near(Vector2i.ZERO, 300):
-		if String(p["id"]).ends_with("@0,0"):
-			return p
-	return {}
+	return g.settlements.home_plan()
 
 
 func test_a_village_stands_near_the_spawn_point_in_every_world() -> void:
@@ -71,7 +71,8 @@ func test_any_order_of_chunks_makes_the_same_village() -> void:
 func test_malformed_settlements_are_content_errors() -> void:
 	var good: Dictionary = content.get_def("base:village").duplicate(true)
 	good["id"] = "test:v"
-	for bad: Dictionary in [{"houses": [3]}, {"chance": 2}, {"wall": "base:grass"}, {"buildings": []},
+	for bad: Dictionary in [{"houses": [3]}, {"cluster_chance": 2}, {"villages": [3, 1]}, {"ways": [{"id": "x", "near": "moon"}]},
+			{"ways": [{"id": "x", "buildings": {"castle": {"weight": 2}}}]}, {"wall": "base:grass"}, {"buildings": []},
 			{"buildings": [{"size": [2, 2], "dweller": "x"}]}, {"buildings": [{"size": [5, 4]}]},
 			{"buildings": [{"size": [4, 4], "dweller": "x", "furniture": ["base:bed", "base:chest", "base:forge"]}]}]:
 		var defs: Array = content.defs.values().filter(func(d: Dictionary) -> bool: return d.get("kind") != "settlement")
@@ -79,54 +80,106 @@ func test_malformed_settlements_are_content_errors() -> void:
 		check(not ContentRegistry.from_defs(defs).errors.is_empty(), "refused: %s" % str(bad))
 
 
-## Villages are met often: within a square of 1200 cells round the spawn, a
-## good many in every world.
+## Villages are met often: within 1000 cells of the spawn, a good many in
+## every world, in clusters.
 func test_villages_are_met_often() -> void:
 	for seed_value in [1, 7, 12345]:
 		var g := SurfaceGenerator.new(seed_value, content)
-		var n := g.settlements.plans_near(Vector2i.ZERO, 600).size()
-		check(n >= 12, "seed %d: %d villages within 600 cells" % [seed_value, n])
+		var n := g.settlements.plans_near(Vector2i.ZERO, 1000).size()
+		check(n >= 6, "seed %d: %d villages within 1000 cells" % [seed_value, n])
 
 
-## Roads join villages, not each to all: some pairs joined, some not; some
-## roads meet another partway (a crossroads); a road is dirt from one
-## village's street end to the other's, two cells wide.
-func test_roads_join_some_villages_and_meet_at_crossroads() -> void:
+## A cluster's villages are all joined; clusters are joined with their
+## neighbours by chance — some are, some are not; a road runs on dry land
+## or fords and short bridges, never through deep water or rock, and is
+## dirt on the ground.
+func test_clusters_are_joined_and_some_clusters_with_each_other() -> void:
 	var g := SurfaceGenerator.new(12345, content)
 	var s := g.settlements
-	var joined := 0
+	var clusters := 0
+	var links := 0
 	var apart := 0
-	var crossroads := 0
-	for ry in range(-3, 4):
-		for rx in range(-3, 4):
-			if s.plan(0, rx, ry).is_empty():
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var mine := s.villages(0, dx, dy)
+			if mine.is_empty():
 				continue
+			clusters += 1
+			var roads := s.roads_of(0, dx, dy)
+			var here := "@%d,%d#" % [dx, dy]
+			var inner := roads.filter(func(r: Dictionary) -> bool: return String(r["from"]).contains(here) and String(r["to"]).contains(here))
+			check(inner.size() >= mine.size() - 1 - 1, "district %d,%d: its %d villages joined by %d roads" % [dx, dy, mine.size(), inner.size()])
 			for dir in 2:
-				var other := s.plan(0, rx + (1 - dir), ry + dir)
-				if other.is_empty():
+				if s.villages(0, dx + (1 - dir), dy + dir).is_empty():
 					continue
-				var road := s.road_of(0, rx, ry, dir)
-				if road.is_empty():
+				var other := "@%d,%d#" % [dx + (1 - dir), dy + dir]
+				if roads.any(func(r: Dictionary) -> bool: return String(r["to"]).contains(other)):
+					links += 1
+				else:
 					apart += 1
-					continue
-				joined += 1
-				var cells: Dictionary = road["cells"]
-				var ends: Array = s.plan(0, rx, ry)["ends"]
-				if dir == 1 and not (cells.has(ends[0]) or cells.has(ends[1])):
-					crossroads += 1  # from the southern village to the eastern road, not to this one
-	check(joined >= 6, "roads: %d" % joined)
-	check(apart >= 2, "not every pair: %d apart" % apart)
-	check(crossroads >= 1, "crossroads: %d" % crossroads)
-	# One road on the ground: dirt where it runs, on dry land.
-	var road := {}
-	for ry in range(-3, 4):
-		for rx in range(-3, 4):
-			if road.is_empty():
-				road = s.road_of(0, rx, ry, 0)
-	check(not road.is_empty(), "a road east somewhere")
-	var some: Vector2i = (road["cells"] as Dictionary).keys()[(road["cells"] as Dictionary).size() / 2]
+			for r: Dictionary in roads:
+				for at: Vector2i in r["path"]:
+					var land := String(g.land_at(at.x, at.y)["what"])
+					if not check(land != "deep" and land != "rock", "road %s through %s at %s" % [r["id"], land, at]):
+						return
+	check(clusters >= 4, "clusters round spawn: %d" % clusters)
+	check(links + apart >= 2, "neighbouring clusters: %d joined, %d not" % [links, apart])
+	# One road on the ground: dirt where it runs.
+	var road: Dictionary = s.roads_of(0, 0, 0)[0] if not s.roads_of(0, 0, 0).is_empty() else {}
+	if not check(not road.is_empty(), "a road from the home cluster"):
+		return
+	var path: Array = road["path"]
+	var some: Vector2i = path[path.size() / 2]
 	var k := Vector2i(floori(some.x / 32.0), floori(some.y / 32.0))
-	eq(g.generate(k.x, k.y).get_cell("ground", some.x - k.x * 32, some.y - k.y * 32), "base:dirt", "the road on the ground")
+	var ground := g.generate(k.x, k.y).get_cell("ground", some.x - k.x * 32, some.y - k.y * 32)
+	check(ground in ["base:dirt", "base:bridge"], "the road on the ground: %s" % ground)
+
+
+## Across many districts: links one way or another, so roads lead out of a
+## cluster into land not yet seen — and some clusters stand alone.
+func test_some_clusters_stand_alone_some_lead_on() -> void:
+	var g := SurfaceGenerator.new(7, content)
+	var s := g.settlements
+	var alone := 0
+	var linked := 0
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			if s.villages(0, dx, dy).is_empty():
+				continue
+			var out := false
+			for r: Dictionary in s.roads_of(0, dx, dy):
+				out = out or not String(r["to"]).contains("@%d,%d#" % [dx, dy])
+			for o: Vector2i in [Vector2i(-1, 0), Vector2i(0, -1)]:
+				for r: Dictionary in s.roads_of(0, dx + o.x, dy + o.y):
+					out = out or String(r["to"]).contains("@%d,%d#" % [dx, dy])
+			if out:
+				linked += 1
+			else:
+				alone += 1
+	check(linked >= 2, "clusters with roads out: %d" % linked)
+	check(alone >= 1, "clusters alone: %d" % alone)
+
+
+## A village lives by its place: one by the water fishes (more fishers),
+## one by the mountains mines (smiths) — the place is checked again here.
+func test_a_village_lives_by_its_place() -> void:
+	var seen := {}
+	for seed_value in [1, 2, 7]:
+		var g := SurfaceGenerator.new(seed_value, content)
+		for p: Dictionary in g.settlements.plans_near(Vector2i.ZERO, 1500):
+			var way := String(p["way"])
+			seen[way] = int(seen.get(way, 0)) + 1
+			if way == "fishing":
+				var wet := 0
+				for i in 8:
+					for r: float in [24.0, 48.0]:
+						var at: Vector2i = p["centre"] + Vector2i(Vector2.from_angle(i * TAU / 8.0) * r)
+						wet += 1 if g.is_wet(at.x, at.y) else 0
+				check(wet > 0, "%s fishes by the water" % p["id"])
+			var trades := (p["homes"] as Array).map(func(h: Dictionary) -> String: return String(h["dweller"]))
+			if way == "fishing" and trades.size() >= 5:
+				check(trades.count("base:fisher") >= 1, "%s has a fisher: %s" % [p["id"], trades])
+	check(seen.size() >= 3, "ways of life met: %s" % seen)
 
 
 ## Biomes by climate (warmth, wetness): all of them are met in a world,

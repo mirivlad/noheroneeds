@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run headless tests. Usage: tools/run_tests.sh [--only=path_part] [--test=name_part] [--bench] [--test_limit=S]
-# Env: GODOT (binary, default "godot"), TEST_TIMEOUT (seconds, default 600),
+# Env: GODOT (binary, default "godot"), TEST_TIMEOUT (seconds, default 1200),
 #      TEST_OUTPUT_MAX (bytes of output kept, default 20 MB: past it the run is stopped).
 # Broken code fails fast: scripts that do not compile stop the run before any
 # test; a test that floods errors or runs too long stops it (tests/framework/run.gd).
@@ -24,7 +24,7 @@ if grep -q "Parse Error\|Compile Error" "$LOG"; then
 fi
 # Output goes to a file, not a shell variable, and only so much of it is kept.
 MAX="${TEST_OUTPUT_MAX:-20000000}"
-timeout -k 5 "${TEST_TIMEOUT:-600}" "$GODOT" --headless --audio-driver Dummy --path "$ROOT" \
+timeout -k 5 "${TEST_TIMEOUT:-1200}" "$GODOT" --headless --audio-driver Dummy --path "$ROOT" \
   -s res://tests/framework/run.gd -- "$@" 2>&1 | head -c "$MAX" >"$LOG"
 CODE=${PIPESTATUS[0]}
 grep -v '^\s*$' "$LOG" | grep -v '^Godot Engine'

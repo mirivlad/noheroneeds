@@ -53,6 +53,9 @@ const LAKE := Color(0.22, 0.42, 0.7)
 const RIVER := Color(0.25, 0.5, 0.85)
 const ROAD := Color(0.55, 0.36, 0.2)
 const VILLAGE := Color(0.95, 0.15, 0.1)
+## Villages by their way of life (ADR-0054).
+const WAYS := {"fishing": Color(0.1, 0.9, 0.95), "mining": Color(0.3, 0.3, 0.3), "herding": Color(1.0, 0.95, 0.3),
+	"farming": Color(0.95, 0.15, 0.1)}
 const BIOME_COLOURS := {
 	"base:meadow": Color(0.55, 0.75, 0.35), "base:forest": Color(0.2, 0.5, 0.22), "base:taiga": Color(0.18, 0.4, 0.33),
 	"base:grove": Color(0.62, 0.62, 0.25), "base:swamp": Color(0.33, 0.42, 0.3), "base:steppe": Color(0.78, 0.72, 0.42),
@@ -91,8 +94,26 @@ func _overview(gen: SurfaceGenerator, geo: Geography, reach: int) -> Image:
 					img.set_pixel((ri + reach) * n + i, (rj + reach) * n + j, c)
 	var corner := Vector2i(-reach, -reach) * n  # the image's first point, in geo points
 	if gen.settlements and int(_opts.get("villages", "0")) > 0:
-		for p: Dictionary in gen.settlements.plans_near(Vector2i.ZERO, int(_opts["villages"])):
-			_dot(img, (Vector2i(p["centre"]) + geo.origin) / Geography.STEP - corner, VILLAGE)
+		var t := Time.get_ticks_msec()
+		var plans := gen.settlements.plans_near(Vector2i.ZERO, int(_opts["villages"]))
+		var shown := {}
+		for p: Dictionary in plans:
+			var at := Vector2i(p["centre"])
+			for k in gen.settlements._kinds.size():
+				var dist := gen.settlements._district_of(k, at)
+				if shown.has(dist):
+					continue
+				shown[dist] = true
+				for road: Dictionary in gen.settlements.roads_of(k, dist.x, dist.y):
+					for c: Vector2i in road["path"]:
+						var px := (c + geo.origin) / Geography.STEP - corner
+						if px.x >= 0 and px.y >= 0 and px.x < side and px.y < side:
+							img.set_pixelv(px, ROAD)
+		var ways := {}
+		for p: Dictionary in plans:
+			_dot(img, (Vector2i(p["centre"]) + geo.origin) / Geography.STEP - corner, WAYS.get(String(p.get("way", "")), VILLAGE))
+			ways[p["way"]] = int(ways.get(p["way"], 0)) + 1
+		print("  %d villages in %d districts, %s, in %d ms" % [plans.size(), shown.size(), ways, Time.get_ticks_msec() - t])
 	_dot(img, geo.origin / Geography.STEP - corner, Color.WHITE)  # spawn
 	var big := img.duplicate() as Image
 	big.resize(side * 2, side * 2, Image.INTERPOLATE_NEAREST)

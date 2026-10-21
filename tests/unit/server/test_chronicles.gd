@@ -150,6 +150,8 @@ func test_wolves_near_the_village_bring_a_hunt() -> void:
 	check(int(hunt[0]["count"]) >= 2, "as many as were seen, at most three")
 	var herder := _dweller(int(hunt[0]["asker"]))
 	eq(String(herder.job["profession"]), "base:herder", "by who keeps the pen")
+	eq((w.chronicles.of(id)["requests"] as Array).filter(func(x: Dictionary) -> bool:
+		return x["state"] == "open" and int(x["asker"]) == int(hunt[0]["asker"])).size(), 1, "who asks one thing at a time")
 	check(w.chronicles.gossip(herder, 0.1) in (_content.get_def("base:folk_names")["asks"] as Array), "it calls one over")
 	check(w.chronicles.gossip(herder, 0.9).contains("рыщут волки"), "and passes the news on: " + w.chronicles.gossip(herder, 0.9))
 	eq(w.chronicles.gossip(herder, 0.5), "", "not every time")

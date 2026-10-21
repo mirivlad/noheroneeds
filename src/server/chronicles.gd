@@ -277,19 +277,28 @@ func picked(actor: String, item: String) -> void:
 
 
 ## Which home asks: "any" (by the roll), "work:<place>" (a dweller working
-## there, else any), a profession's. -1 if nobody alive there.
+## there, else any), a profession's. -1 if nobody alive there. One asking
+## something already is asked of last: a dweller asks one thing at a time.
 func _asker(id: String, who: String, roll: int) -> int:
 	var plan := _plan(id)
 	if plan.is_empty():
 		return -1
 	var homes: Array = plan["homes"]
 	var dead: Array = _villages[id].get("dead", [])
-	var alive: Array = []
+	var busy := {}
+	for r: Dictionary in _villages[id].get("requests", []):
+		if r["state"] == "open":
+			busy[int(r["asker"])] = true
+	var free: Array = []
+	var asking: Array = []
 	for i in homes.size():
 		if not dead.has(i) and not dead.has(float(i)):
-			alive.append(i)
+			(asking if busy.has(i) else free).append(i)
+	var alive: Array = free + asking  # the free first
 	if alive.is_empty():
 		return -1
+	if who == "any" and not free.is_empty():
+		return free[roll % free.size()]
 	if who.begins_with("work:"):
 		for i: int in alive:
 			if "work:" + String(world.content.get_def(String(homes[i]["dweller"])).get("work", "")) == who:

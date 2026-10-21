@@ -28,7 +28,7 @@ func _load_round() -> void:
 
 
 func _dwellers() -> Array:
-	return w.creatures.creatures.values().filter(func(c: Creature) -> bool: return not c.job.is_empty())
+	return w.creatures.creatures.values().filter(func(c: Creature) -> bool: return String(c.job.get("village", "")) == String(plan["id"]))
 
 
 ## Lives on for `ticks` from the hour `hour` of day 2 (a jump: they catch

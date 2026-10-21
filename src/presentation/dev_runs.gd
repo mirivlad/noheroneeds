@@ -148,10 +148,10 @@ func step(delta: float) -> void:
 		elif String(g._opts["goto"]) == "bridge":  # the nearest road over water
 			var g := g.game.world.generator
 			var best := Vector2i(1 << 20, 0)
-			for ry in range(-3, 4):
-				for rx in range(-3, 4):
-					for dir in 2:
-						for at: Vector2i in (g.settlements.road_of(0, rx, ry, dir).get("cells", {}) as Dictionary):
+			for ry in range(-1, 2):
+				for rx in range(-1, 2):
+					for road: Dictionary in g.settlements.roads_of(0, rx, ry):
+						for at: Vector2i in (road["cells"] as Dictionary):
 							if g.biome_id_at(at.x, at.y) == "" and Vector2(at).length() < Vector2(best).length():
 								best = at  # "" — water under it
 			if best.x != 1 << 20:

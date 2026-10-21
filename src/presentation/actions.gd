@@ -104,6 +104,10 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 	if kind == "ground" and held != "" and content.get_def(String(target.get("id", ""))).get("fills", {}).has(held):
 		out.append({"id": "fill", "name": "Набрать", "primary": true, "quick": true,
 			"request": {"type": "fill", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
+	# A sapling in the hands is planted on open ground (ADR-0056).
+	if kind == "ground" and held != "" and content.get_def(held).has("seedling"):
+		out.append({"id": "plant", "name": "Посадить", "primary": true,
+			"request": {"type": "plant", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
 	var liquid: Dictionary = content.get_def(held).get("liquid", {}) if held != "" else {}
 	if not liquid.is_empty() and liquid.get("waters", false) and kind == "part" \
 			and content.get_def(String(target.get("id", ""))).has("crop"):

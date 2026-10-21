@@ -424,6 +424,9 @@ PLANTS = {
     "base:dead_tree": ("trees-dead", [(164, 224, 89, 128), (264, 224, 107, 128), (0, 512, 150, 200), (150, 512, 150, 200)]),
     "base:dry_bush": ("plants", [(416, 704, 32, 32), (448, 704, 32, 64)]),
     "base:stump": ("plants", [(0, 768, 32, 32), (32, 768, 32, 32)]),
+    # Forests grow back (ADR-0056): a sapling, a young tree.
+    "base:sapling": ("trees", [(64, 64, 32, 32)]),
+    "base:young_tree": ("trees", [(0, 0, 64, 64), (128, 0, 64, 64)]),
     "base:honey_mushrooms": ("plants", [(32, 576, 32, 32), (0, 576, 32, 32)]),
     "base:boletus": ("plants", [(32, 704, 32, 32)]),
     "base:fly_agaric": ("plants", [(64, 736, 32, 32), (64, 704, 32, 32)]),
@@ -680,6 +683,8 @@ ITEMS = {
     "base:flint_axe": ("items1_0.png", 160, 224),
     # Knowledge on leather (ADR-0047).
     "base:blueprint": ("idyl/parchment.png", 0, 0),
+    # A sapling dug up to be planted (ADR-0056): the trees pack's smallest.
+    "base:seedling": (str(TREES_DIR / "trees-green.png"), 64, 64),
 }
 # A picture with some of its colours changed inside a box (a recolouring, not
 # a new drawing: the bucket's dark inside as water or milk): id -> (file,

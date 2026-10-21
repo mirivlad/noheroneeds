@@ -51,6 +51,7 @@ func step(delta: float) -> void:
 		if g.game:  # a yard with the stations of g.crafts (ADR-0026)
 			g.game.world.grant(g.client.character_id, "base:log", 12)
 			g.game.world.grant(g.client.character_id, "base:stone", 10)
+			g.game.world.grant(g.client.character_id, "base:workbench_item", 1)  # set up from the bag (ADR-0048)
 		for p: Array in [[4, 0, "base:workbench"], [5, 1, "base:forge"], [4, 2, "base:campfire"]]:
 			g.client.request({"type": "build", "location": g.client.location, "x": p[0], "y": p[1], "part": p[2]})
 		if g.game:  # a field by the house, sown at days apart (ADR-0027)

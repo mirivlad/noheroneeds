@@ -177,7 +177,7 @@ static func with_states(content: ContentRegistry, cells: Array, states: Dictiona
 	var out: Array = []
 	for cell: Array in cells:
 		var id := String(cell[0])
-		if id == "" or not (Wear.wears(content, id) or states.has(id)):  # a thing of its own: worn, made, a blueprint
+		if id == "" or (Bag.stack_of(content, id) != 1 and not states.has(id)):  # things of their own: a copy a cell (ADR-0048)
 			out.append(cell)
 			continue
 		var k := int(seen.get(id, 0))
@@ -191,6 +191,15 @@ func select(index: int) -> void:
 	selected = index if index >= 0 and index < cells.size() and String(cells[index][0]) != "" else -1
 	for i in _cells.size():
 		_cells[i].add_theme_stylebox_override("panel", _box_chosen if i == selected else _box_empty)
+
+
+## How many of a thing all its cells hold (every copy of a thing of its own).
+func total_of(id: String) -> int:
+	var n := 0
+	for cell: Array in cells:
+		if String(cell[0]) == id:
+			n += int(cell[1])
+	return n
 
 
 func item_at(index: int) -> String:

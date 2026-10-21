@@ -50,7 +50,7 @@ func _req(actor: String, r: Dictionary) -> Dictionary:
 
 
 func _workbench(a: String) -> void:
-	w.grant(a, "base:log", 4)
+	w.grant(a, "base:workbench_item", 1)
 	check(_req(a, {"type": "build", "location": "surface", "x": 4, "y": 3, "part": "base:workbench"}).get("ok", false), "a workbench")
 
 

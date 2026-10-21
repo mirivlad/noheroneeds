@@ -219,6 +219,15 @@ func _validate() -> void:
 				d["stack"] = int(d.get("stack", 1))
 				if d["stack"] < 1:
 					errors.append("%s: stack must be at least 1" % id)
+				# Things of their own (ADR-0048): what is worn, held, worked with or
+				# set up is a copy of its own, never a stack.
+				if d["stack"] != 1 and (d.has("equip_slot") or d.has("tools") or d.has("weapon") or d.has("armor")
+						or d.has("warmth") or d.has("places") or d.has("liquid") or d.has("durability")):
+					errors.append("%s: a thing of its own (worn, held, set up) is not stacked: stack 1" % id)
+				# Furniture carried and set up (ADR-0048): the part it becomes, which costs it.
+				if d.has("places") and (kind_of(String(d["places"])) != "structure" or structure_cost(String(d["places"])).size() != 1
+						or int(structure_cost(String(d["places"])).get(id, 0)) != 1):
+					errors.append("%s: places a part that costs just this thing" % id)
 				# Wear (ADR-0046): uses a copy lasts; mended at a station for materials.
 				if d.has("durability") and (typeof(d["durability"]) not in [TYPE_INT, TYPE_FLOAT] or int(d["durability"]) < 1 or d["stack"] != 1):
 					errors.append("%s: durability is the uses a thing of a stack of 1 lasts, 1 or more" % id)
@@ -260,6 +269,9 @@ func _validate() -> void:
 					_check_opening(id, d)
 				if d.has("gather"):
 					_check_gather(id, d)
+				# What mending it takes when it is not what it cost (furniture set up, ADR-0048).
+				if d.has("repair_cost"):
+					_check_amounts(id, "repair_cost", d["repair_cost"], true)
 				# How much it takes before it breaks (ADR-0021); natural rock is dug, not broken.
 				d["durability"] = int(d.get("durability", 0 if d["natural"] else 30))
 				if d["durability"] < 0:
@@ -296,8 +308,8 @@ func _validate() -> void:
 			"modifier":
 				# An enhancement a master's thing may come with (ADR-0047).
 				if typeof(d.get("fits")) != TYPE_ARRAY or (d["fits"] as Array).is_empty() \
-						or (d["fits"] as Array).any(func(k: Variant) -> bool: return not String(k) in ["tool", "weapon", "armor", "clothes"]):
-					errors.append("%s: fits lists tool, weapon, armor, clothes" % id)
+						or (d["fits"] as Array).any(func(k: Variant) -> bool: return not String(k) in ["tool", "weapon", "armor", "clothes", "furniture"]):
+					errors.append("%s: fits lists tool, weapon, armor, clothes, furniture" % id)
 				var fx: Variant = d.get("effects", {})
 				if typeof(fx) != TYPE_DICTIONARY or (fx as Dictionary).keys().any(
 						func(k: Variant) -> bool: return not String(k) in ["durability", "pace", "damage", "armor", "warmth", "yield"]):

@@ -102,7 +102,7 @@ func test_anyone_breaks_and_stone_takes_long() -> void:
 func test_a_chest_opens_for_friends_and_spills_when_broken() -> void:
 	var a := _player("Аня")
 	var b := _player("Боря")
-	w.grant(a, "base:plank", 20)
+	w.grant(a, "base:chest_item", 1)
 	w.grant(a, "base:stone", 9)
 	_req(a, _at(4, {"type": "build", "part": "base:chest"}))
 	_req(a, _at(4, {"type": "store", "item": "base:stone", "count": 9}))

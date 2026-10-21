@@ -115,7 +115,7 @@ func test_mending_at_its_station_for_materials_a_few_times_then_it_is_spent() ->
 	w.grant(a, "base:axe", 1, [{"wear": 400}])
 	var mend := {"type": "mend", "item": "base:axe", "copy": 0}
 	eq(_req(a, mend.duplicate()).get("reason"), "no_station", "a stone axe is mended at a workbench")
-	w.grant(a, "base:log", 4)
+	w.grant(a, "base:workbench_item", 1)
 	check(_req(a, {"type": "build", "location": "surface", "x": 171, "y": 171, "part": "base:workbench"}).get("ok", false), "a workbench")
 	eq(_req(a, mend.duplicate()).get("reason"), "materials", "a mend takes materials")
 	w.grant(a, "base:plank", 10)
@@ -161,7 +161,7 @@ func test_a_copy_keeps_its_wear_wherever_it_goes() -> void:
 	check(_req(b, {"type": "transfer", "to": a, "item": "base:axe", "count": 1}).get("ok", false), "given back")
 	eq(w.inventory(a).states_of("base:axe"), [{}, {"wear": 100}])
 	# Into a chest and out.
-	w.grant(a, "base:plank", 6)
+	w.grant(a, "base:chest_item", 1)
 	check(_req(a, {"type": "build", "location": "surface", "x": 170, "y": 171, "part": "base:chest"}).get("ok", false), "a chest")
 	var chest := {"location": "surface", "x": 170, "y": 171}
 	check(_req(a, chest.merged({"type": "store", "item": "base:axe", "count": 1, "copy": 1})).get("ok", false), "stored")

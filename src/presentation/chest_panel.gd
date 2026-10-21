@@ -55,7 +55,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	col.add_child(_mine_title)
 	col.add_child(mine)
 	var hint := Label.new()
-	hint.text = "щелчок — одну, Shift — стопку, Ctrl — половину; тащите стопку в другую сетку"
+	hint.text = "щелчок — одну, Shift — стопку или все одинаковые изделия, Ctrl — половину; тащите стопку в другую сетку"
 	hint.add_theme_color_override("font_color", Art.TEXT_DIM)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size.x = Bag.COLUMNS * (SlotGrid.CELL + 2)
@@ -69,7 +69,8 @@ func _pick(g: SlotGrid, i: int) -> void:
 		return
 	var n := 1
 	if Input.is_key_pressed(KEY_SHIFT):
-		n = have
+		# A stack; for things of their own, every copy alike at once (ADR-0048).
+		n = g.total_of(g.item_at(i)) if Bag.stack_of(content, g.item_at(i)) == 1 else have
 	elif Input.is_key_pressed(KEY_CTRL):
 		n = maxi(1, have / 2)
 	move.emit(g.item_at(i), n, g == mine, g.copy_at(i) if n == 1 else -1)

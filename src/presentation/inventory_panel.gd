@@ -76,8 +76,14 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 	_hint.custom_minimum_size.x = grid.columns * (SlotGrid.CELL + 2)
 	_hint.add_theme_color_override("font_color", Art.TEXT_DIM)
 	_hint.text = "Двойной щелчок — надеть" if compact else \
-		"Тащите: в ячейку, на панель внизу, на куклу (C). Двойной щелчок — надеть. ПКМ — бросить (Shift — стопку, Ctrl — половину)"
+		"Тащите: в ячейку, на панель внизу, на куклу (C). Двойной щелчок — надеть. ПКМ — бросить (Shift — стопку или все одинаковые изделия, Ctrl — половину)"
 	box.add_child(_hint)
+	if not compact:  # sorted by name, the player's arrangement forgotten
+		var tidy := Button.new()
+		tidy.name = "Tidy"
+		tidy.text = "Разложить"
+		tidy.pressed.connect(tidy_up)
+		box.add_child(tidy)
 	_wear.text = "Надеть / взять в руки"
 	_wear.disabled = true
 	_wear.pressed.connect(func() -> void:
@@ -102,7 +108,17 @@ func drop_some(index: int) -> void:
 	if id == "" or have <= 0:
 		return
 	var n := have if Input.is_key_pressed(KEY_SHIFT) else (maxi(1, have / 2) if Input.is_key_pressed(KEY_CTRL) else 1)
+	if Input.is_key_pressed(KEY_SHIFT) and Bag.stack_of(content, id) == 1:
+		drop.emit(id, grid.total_of(id), -1)  # every copy alike (ADR-0048)
+		return
 	drop.emit(id, n, grid.copy_at(index))
+
+
+## Lays the bag out anew, by name (things alike side by side).
+func tidy_up() -> void:
+	order = []
+	show_for(_have, 0, _states)
+	arranged.emit(order)
 
 
 ## A cell's stack onto another cell: the two change places.

@@ -117,7 +117,7 @@ func test_the_first_tools_need_no_tools_and_no_stations_but_a_workbench() -> voi
 	for id: String in ["base:twist_cord", "base:make_flint_axe", "base:make_flint_pick"]:
 		check(not _content.get_def(id).has("station"), "%s: in the hands" % id)
 	# With the primitive recipes only: logs, stone, a workbench, the stone tools.
-	var first := _reach({"base:twist_cord": true, "base:make_flint_axe": true, "base:make_flint_pick": true,
+	var first := _reach({"base:twist_cord": true, "base:make_flint_axe": true, "base:make_flint_pick": true, "base:make_workbench": true,
 		"base:saw_planks": true, "base:make_axe": true, "base:make_pickaxe": true})
 	for id: String in ["base:log", "base:stone", "base:plank", "base:axe", "base:pickaxe"]:
 		check((first["items"] as Dictionary).has(id), "%s from nothing" % id)

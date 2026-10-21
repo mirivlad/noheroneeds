@@ -83,7 +83,7 @@ func test_what_leaves_the_bag_leaves_the_hands() -> void:
 	w.grant(a, "base:axe", 1)
 	w.grant(a, "base:bow", 1)
 	w.grant(a, "base:spear", 1)
-	w.grant(a, "base:plank", 10)
+	w.grant(a, "base:chest_item", 1)
 	_req(a, {"type": "hold", "item": "base:axe"})
 	_req(a, {"type": "drop", "item": "base:axe", "count": 1})
 	eq(w.held_of(a), "", "dropped")

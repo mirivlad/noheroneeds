@@ -699,9 +699,23 @@ WORN_DYE = {"base:work_trousers": "walnut", "base:boots": "leather", "base:wool_
             "base:fur_cloak": "brown", "base:fur_hood": "brown"}
 
 
+# Furniture carried in the bag (ADR-0048): its picture as set up, made small.
+FURNITURE_ICONS = {"base:workbench_item": "base:workbench", "base:chest_item": "base:chest", "base:bed_item": "base:bed"}
+
+
 def build_items():
     pal = json.loads((CHARS / "palettes.json").read_text())["cloth"]
     icons = []
+    for item, part in FURNITURE_ICONS.items():
+        path, (x, y, w, h), _states = PROPS[part]
+        img = Image.open(SRC / path).convert("RGBA").crop((x, y, x + w, y + h))
+        img = img.crop(img.getbbox())
+        k = min(1.0, (T - 2) / max(img.width, img.height))
+        if k < 1.0:
+            img = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.BOX)
+        cell = Image.new("RGBA", (T, T))
+        cell.alpha_composite(img, ((T - img.width) // 2, (T - img.height) // 2))
+        icons.append((item, cell))
     for item, (path, x, y) in ITEMS.items():
         src = Image.open(path if path.startswith("/") else ITEMS_DIR / path).convert("RGBA")
         icon = src.crop((x, y, x + T, y + T))

@@ -51,8 +51,11 @@ func test_a_recipe_needs_its_station_near_and_all_it_takes() -> void:
 	w.grant(a, "base:log", 10)
 	var saw := {"type": "craft", "recipe": "base:saw_planks", "count": 2}
 	eq(_req(a, saw.duplicate()).get("reason"), "no_station", "no workbench: no planks")
+	eq(_req(a, {"type": "build", "location": "surface", "x": 4, "y": 3, "part": "base:workbench"}).get("reason"), "materials",
+		"a workbench is made first (ADR-0048)")
+	check(_req(a, {"type": "craft", "recipe": "base:make_workbench", "count": 1}).get("ok", false), "a workbench of logs, in the hands")
 	check(_req(a, {"type": "build", "location": "surface", "x": 4, "y": 3, "part": "base:workbench"}).get("ok", false),
-		"a workbench of logs")
+		"set up")
 	eq(w.inventory(a).count("base:log"), 6)
 	var r := _req(a, saw.duplicate())
 	check(r.get("ok", false), "at the workbench: %s" % str(r))
@@ -71,7 +74,7 @@ func test_a_recipe_needs_its_station_near_and_all_it_takes() -> void:
 
 func test_the_same_request_makes_once_and_bad_ones_are_refused() -> void:
 	var a := _player("Аня")
-	w.grant(a, "base:log", 4)
+	w.grant(a, "base:workbench_item", 1)
 	check(_req(a, {"type": "build", "location": "surface", "x": 3, "y": 4, "part": "base:workbench"}).get("ok", false), "workbench")
 	w.grant(a, "base:log", 4)
 	var r := {"type": "craft", "recipe": "base:saw_planks", "count": 1, "request_id": "same"}
@@ -86,7 +89,7 @@ func test_the_same_request_makes_once_and_bad_ones_are_refused() -> void:
 func test_a_chain_from_ore_to_ingot_and_meat_to_health() -> void:
 	var a := _player("Аня")
 	w.grant(a, "base:stone", 10)
-	w.grant(a, "base:log", 4)
+	w.grant(a, "base:log", 2)
 	check(_req(a, {"type": "build", "location": "surface", "x": 4, "y": 3, "part": "base:forge"}).get("ok", false), "a forge")
 	check(_req(a, {"type": "build", "location": "surface", "x": 2, "y": 3, "part": "base:campfire"}).get("ok", false), "a fire")
 	w.grant(a, "base:iron_ore", 4)
@@ -146,7 +149,7 @@ func test_a_rod_fishes_in_water_and_the_water_stays() -> void:
 	eq(_req(a, {"type": "gather", "location": "surface", "x": 3, "y": 4, "layer": "ground", "item": ""}).get("reason"),
 		"nothing_to_gather", "grass holds no fish")
 	# A rod is made at a workbench of a plank and a hide.
-	w.grant(a, "base:log", 4)
+	w.grant(a, "base:workbench_item", 1)
 	check(_req(a, {"type": "build", "location": "surface", "x": 2, "y": 3, "part": "base:workbench"}).get("ok", false), "workbench")
 	w.grant(a, "base:plank", 1)
 	w.grant(a, "base:hide", 1)
@@ -174,7 +177,7 @@ func test_a_rod_fishes_in_water_and_the_water_stays() -> void:
 
 func test_a_hide_becomes_leather_and_leather_armour() -> void:
 	var a := _player("Аня")
-	w.grant(a, "base:log", 4)
+	w.grant(a, "base:workbench_item", 1)
 	check(_req(a, {"type": "build", "location": "surface", "x": 4, "y": 3, "part": "base:workbench"}).get("ok", false), "workbench")
 	w.grant(a, "base:hide", 4)
 	eq(_req(a, {"type": "craft", "recipe": "base:tan_leather", "count": 4}).get("made"), {"base:leather": 4})
@@ -214,7 +217,7 @@ func test_a_bucket_is_filled_poured_milked_and_drunk() -> void:
 	var a := _player("Аня")  # at (3, 3)
 	var c := w.chunk("surface", 0, 0)
 	c.set_cell("ground", 4, 3, "base:water")
-	w.grant(a, "base:log", 4)
+	w.grant(a, "base:workbench_item", 1)
 	check(_req(a, {"type": "build", "location": "surface", "x": 2, "y": 4, "part": "base:workbench"}).get("ok", false), "workbench")
 	w.grant(a, "base:plank", 3)
 	eq(_req(a, {"type": "craft", "recipe": "base:make_bucket", "count": 1}).get("made"), {"base:bucket": 1})
@@ -290,7 +293,8 @@ func test_ore_shut_in_rock_is_told_as_rock_until_dug_open() -> void:
 ## a workbench (warmer than wool), silver smelted at a forge — and sold.
 func test_stew_fur_and_silver() -> void:
 	var a := _player("Аня")
-	w.grant(a, "base:log", 6)
+	w.grant(a, "base:log", 2)
+	w.grant(a, "base:workbench_item", 1)
 	w.grant(a, "base:stone", 10)
 	for part: Array in [["base:campfire", 4, 3], ["base:workbench", 2, 3], ["base:forge", 3, 5]]:
 		check(_req(a, {"type": "build", "location": "surface", "x": part[1], "y": part[2], "part": part[0]}).get("ok", false), part[0])

@@ -18,6 +18,7 @@ var talk := {}
 var _title := Label.new()
 var _says := Label.new()
 var _goal := Label.new()
+var _trust := Label.new()
 var _news := Label.new()
 var _take := Button.new()
 var _done := Button.new()
@@ -31,7 +32,7 @@ var _lesson_ok := {}
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		for node: Node in [_title, _says, _goal, _news, _take, _done, _trade, _ask_news, _teach, _lessons]:
+		for node: Node in [_title, _says, _goal, _trust, _news, _take, _done, _trade, _ask_news, _teach, _lessons]:
 			if is_instance_valid(node) and node.get_parent() == null:
 				node.free()
 
@@ -43,11 +44,12 @@ func setup(registry: ContentRegistry) -> void:
 	box.add_theme_constant_override("separation", 6)
 	add_child(box)
 	box.add_child(Art.window_head(_title, "E", hide))
-	for l: Label in [_says, _goal, _news]:
+	for l: Label in [_says, _goal, _trust, _news]:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size.x = WIDTH
 		box.add_child(l)
 	_goal.add_theme_color_override("font_color", Art.TEXT_DIM)
+	_trust.add_theme_color_override("font_color", Art.TEXT_DIM)
 	_news.add_theme_color_override("font_color", Art.TEXT_DIM)
 	_news.visible = false
 	var row := HBoxContainer.new()
@@ -82,6 +84,15 @@ func setup(registry: ContentRegistry) -> void:
 ## Why a dweller will not teach a recipe, for people.
 const NOT_TAUGHT := {"known_already": "уже знаете", "grudge": "не станет учить", "standing": "мало доверия: помогите деревне",
 	"not_skilled": "рано: не хватает умения", "no_money": "не хватает монет"}
+
+
+## How a village stands with one, in a word (ADR-0047: requests done, harm).
+static func trust_word(standing: int, grudge: bool) -> String:
+	if grudge or standing < 0:
+		return "в обиде"
+	if standing == 0:
+		return "чужак"
+	return "знакомый" if standing < 3 else "свой"
 
 
 ## What the dweller teaches ([{recipe, price, standing, skill, why}]).
@@ -136,6 +147,7 @@ func open_for(r: Dictionary) -> void:
 	_done.text = ("Отдать" if String(req.get("kind", "")) != "hunt" else "Сделано") if state == "ready" else "Ещё не сделано"
 	_trade.visible = not content.get_def(String(r.get("profession", ""))).get("trade", {}).is_empty() and not r.get("grudge", false)
 	show_lessons(r.get("teaches", []))
+	_trust.text = "Деревня к вам: %s (%+d)" % [trust_word(int(r.get("standing", 0)), r.get("grudge", false)), int(r.get("standing", 0))]
 	var lines: Array = r.get("chronicle", [])
 	_news.text = "Деревня помнит:\n" + "\n".join(PackedStringArray(lines.map(func(t: Variant) -> String: return "• " + String(t))))
 	_ask_news.visible = not lines.is_empty()

@@ -22,6 +22,8 @@ extends Node
 ##   --death-drops=yes|no a character that dies leaves what it carried where it
 ##                        fell (default yes)
 ##   --break-others=yes|no  whether one may break someone else's building (no)
+##   --all-recipes-known=yes|no  everyone knows every recipe (no; ADR-0047)
+##   --crafts-never-fail=yes|no  attempts at a recipe always work (no)
 ##   --populate=N         (load tests) N more creatures around the spawn point
 ##   --stop-file=PATH     stop cleanly when this file appears (default: STOP
 ##                        next to the world database; it is removed on start)
@@ -74,6 +76,8 @@ func start(o: Dictionary) -> String:
 	_world.combat.pvp = "free" if String(o.get("pvp", "off")) == "free" else "off"
 	_world.combat.death_drops = String(o.get("death-drops", "yes")) != "no"
 	_world.break_others = String(o.get("break-others", "no")) == "yes"
+	_world.knowledge.all_known = String(o.get("all-recipes-known", "no")) == "yes"
+	_world.knowledge.never_fail = String(o.get("crafts-never-fail", "no")) == "yes"
 	for pair in String(o.get("starter-outfit", "")).split(",", false):
 		var at := pair.find(":")
 		_world.starter_outfit[pair.left(at)] = pair.substr(at + 1)

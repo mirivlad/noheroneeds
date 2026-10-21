@@ -166,10 +166,11 @@ func station_near(kind: String) -> bool:
 	return false
 
 
-## K: everything one knows; at a station (E on a workbench), its recipes.
-func open(at_station := "") -> void:
+## K: everything one knows; at a station (E on a workbench), its recipes;
+## `on`: the part on the left to show first (SHEETS for one's blueprints).
+func open(at_station := "", on := ALL) -> void:
 	station = at_station
-	chosen = ALL
+	chosen = on
 	_title.text = "Ремёсла и навыки" if station == "" else "Ремёсла — " + String(STATIONS.get(station, station))
 	count.value = 1
 	refresh()

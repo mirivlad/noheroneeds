@@ -115,6 +115,18 @@ func hold(item: String) -> void:
 		_send_hold()
 
 
+## Takes a certain copy of a thing into the hands (ADR-0046: the axe of
+## two that is less worn): it becomes the first, the one in use. Quiet.
+func hold_copy(item: String, copy: int) -> void:
+	held = item
+	if state != "playing":
+		return
+	_hold_sent_at = Time.get_ticks_msec()
+	var rid := Uuid.v4()
+	_quiet[rid] = true
+	_send(Transport.Channel.RELIABLE, Protocol.REQUEST, {"request": {"type": "hold", "item": item, "copy": copy, "request_id": rid}})
+
+
 ## If the server shows other hands than ours (it emptied them when the thing
 ## ran out, and we got another since), we tell it again, now and then.
 func _reassert_hold() -> void:

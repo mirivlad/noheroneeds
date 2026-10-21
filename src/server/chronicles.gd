@@ -499,7 +499,7 @@ func talk(actor: String, c: Creature) -> Dictionary:
 		world.note_fact("known|" + actor, ",".join(PackedStringArray((_known[actor] as Dictionary).keys())))
 	var who := dweller_name(id, int(c.job.get("home", -1)))
 	var out := {"ok": true, "creature": c.id, "name": who[0], "profession": String(c.job.get("profession", "")),
-		"village": v["name"], "chronicle": told(v)}
+		"village": v["name"], "chronicle": told(v), "standing": standing(c, actor)}
 	if bears_grudge(c, actor):
 		out["grudge"] = true
 		return out

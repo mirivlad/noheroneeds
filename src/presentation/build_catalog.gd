@@ -14,7 +14,8 @@ const GROUPS := {"wall": "Стены и проёмы", "door": "Стены и п
 	"stairs": "Лестницы и ходы", "shaft": "Лестницы и ходы", "furniture": "Обстановка"}
 var content: ContentRegistry
 var view: WorldView
-var _tabs: HBoxContainer
+const WIDTH := 460
+var _tabs: HFlowContainer
 var _list: ItemList
 var _group := ""
 var _ids: Array[String] = []
@@ -23,30 +24,36 @@ var _ids: Array[String] = []
 func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	content = registry
 	view = world_view
-	_tabs = HBoxContainer.new()
+	_tabs = HFlowContainer.new()
 	_list = ItemList.new()
 	theme = Art.theme()
-	custom_minimum_size = Vector2(240, 170)
 	var box := VBoxContainer.new()
 	add_child(box)
 	var title := Label.new()
-	title.text = "Строительство  (B — закрыть)"
-	box.add_child(title)
+	title.text = "Строительство"
+	box.add_child(Art.window_head(title, "B", hide))
 	box.add_child(_tabs)
-	_list.custom_minimum_size = Vector2(230, 110)
-	_list.add_theme_font_override("font", Art.font())
-	_list.add_theme_font_size_override("font_size", 16)
+	_list.custom_minimum_size = Vector2(WIDTH, 260)
 	_list.fixed_icon_size = Vector2i(32, 32)
-	_list.item_clicked.connect(func(i: int, _at: Vector2, _button: int) -> void: chosen.emit(_ids[i]))
+	# Only the left button chooses: the wheel scrolls (and clicks too, for an ItemList).
+	_list.item_clicked.connect(func(i: int, _at: Vector2, button: int) -> void:
+		if button == MOUSE_BUTTON_LEFT:
+			chosen.emit(_ids[i]))
 	box.add_child(_list)
 	var demolish := Button.new()
-	demolish.text = "Разобрать своё"
+	demolish.name = "Demolish"
+	demolish.text = "Разобрать своё: щёлкайте по лишнему"
 	demolish.pressed.connect(func() -> void: chosen.emit(DEMOLISH))
 	box.add_child(demolish)
+	box.add_child(Art.hint("ЛКМ — поставить, протянуть — рядом в ряд; R — повернуть; ПКМ — отменить. "
+		+ "Поставленное лишнее — «Разобрать своё» или ПКМ по детали → «Разобрать».", WIDTH))
+	var group := ButtonGroup.new()
 	for g: String in groups():
 		var b := Button.new()
 		b.text = g
-		b.add_theme_font_size_override("font_size", 8)
+		b.toggle_mode = true
+		b.button_group = group
+		b.focus_mode = Control.FOCUS_NONE
 		b.pressed.connect(func() -> void: _show(g, _inventory))
 		_tabs.add_child(b)
 	visible = false
@@ -87,6 +94,8 @@ func open(inventory: Dictionary) -> void:
 
 func _show(group: String, inventory: Dictionary) -> void:
 	_group = group
+	for b: Button in _tabs.get_children():
+		b.set_pressed_no_signal(b.text == group)
 	_list.clear()
 	_ids.clear()
 	for id: String in buildable():

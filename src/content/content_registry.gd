@@ -345,6 +345,14 @@ func _validate() -> void:
 					errors.append("%s: cover_density must be within 0..1" % id)
 				_check_weights(id, "fauna", d.get("fauna", {}), ["creature"], false)
 				d["fauna_density"] = float(d.get("fauna_density", 0.0))  # creatures a chunk, on average
+				# Where it lies: [warmth, wetness], each -1..1; a place has the
+				# biome whose climate is nearest its own (SurfaceGenerator).
+				var climate: Variant = d.get("climate", [0.0, 0.0])
+				if typeof(climate) != TYPE_ARRAY or (climate as Array).size() != 2 \
+						or absf(float(climate[0])) > 1.0 or absf(float(climate[1])) > 1.0:
+					errors.append("%s: climate is [warmth, wetness], each within -1..1" % id)
+					climate = [0.0, 0.0]
+				d["climate"] = [float(climate[0]), float(climate[1])]  # plain numbers: rules are CBOR (fingerprint)
 			"creature":
 				_check_creature(id, d)
 			"settlement":
@@ -526,6 +534,19 @@ func _check_creature(id: String, d: Dictionary) -> void:
 		_check_weapon(id, "attack", d["attack"], false)
 	elif String(d.get("behavior", "")) == "predator":
 		errors.append("%s: a predator needs an attack" % id)
+	# What it does when struck (one struck near it counts if it is of its kind
+	# and it sees who did it, "kin"): runs, or strikes back. A predator also
+	# attacks first (its behaviour).
+	var r: Variant = d.get("reaction", {})
+	if typeof(r) != TYPE_DICTIONARY:
+		errors.append("%s: reaction is {hurt, kin}" % id)
+		r = {}
+	var hurt := String(r.get("hurt", "fight" if String(d.get("behavior", "")) == "predator" else "flee"))
+	if not hurt in ["flee", "fight"]:
+		errors.append("%s: reaction hurt is flee or fight" % id)
+	elif hurt == "fight" and not d.has("attack"):
+		errors.append("%s: one that fights back needs an attack" % id)
+	d["reaction"] = {"hurt": hurt, "kin": bool(r.get("kin", false))}
 	if d.has("drops"):
 		_check_amounts(id, "drops", d["drops"], false)
 	# A looter (ADR-0016): picks up what lies about, digests it in time.
@@ -565,7 +586,8 @@ func _check_creature(id: String, d: Dictionary) -> void:
 
 
 ## A light source (ADR-0014): {"radius" cells 1..8, "intensity" 0..1,
-## "color" "#rrggbb"}. A rule: how light it is decides what creatures see.
+## "color" "#rrggbb", "flicker": true — a fire's, it trembles on the screen}.
+## A rule: how light it is decides what creatures see.
 func _check_light(id: String, d: Dictionary) -> void:
 	var l: Variant = d["light"]
 	if typeof(l) != TYPE_DICTIONARY:
@@ -643,6 +665,10 @@ func _check_gather(id: String, d: Dictionary) -> void:
 	g["work"] = int(g.get("work", 1))
 	if g["work"] < 1:
 		errors.append("%s: gather work is the blows it takes, at least 1" % id)
+	# What it is after (a berry bush picked is a bush); "" — gone.
+	g["becomes"] = String(g.get("becomes", ""))
+	if g["becomes"] != "" and kind_of(String(g["becomes"])) != kind_of(id):
+		errors.append("%s: gather becomes '%s', not a thing of its kind" % [id, g["becomes"]])
 
 
 ## The underground generator: its floor, rock, pool water, the parts at the

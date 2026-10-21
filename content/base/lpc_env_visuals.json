@@ -46,9 +46,9 @@
    }
   },
   {
-   "id": "base:visual/sand",
+   "id": "base:visual/mud",
    "kind": "visual",
-   "for": "base:sand",
+   "for": "base:mud",
    "mode": "flat",
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
@@ -64,13 +64,13 @@
    "pixel_scale": 0.5,
    "terrain": {
     "priority": 1,
-    "fills": 6
+    "fills": 4
    }
   },
   {
-   "id": "base:visual/farmland",
+   "id": "base:visual/gravel",
    "kind": "visual",
-   "for": "base:farmland",
+   "for": "base:gravel",
    "mode": "flat",
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
@@ -86,13 +86,13 @@
    "pixel_scale": 0.5,
    "terrain": {
     "priority": 2,
-    "fills": 4
+    "fills": 3
    }
   },
   {
-   "id": "base:visual/forest_floor",
+   "id": "base:visual/sand",
    "kind": "visual",
-   "for": "base:forest_floor",
+   "for": "base:sand",
    "mode": "flat",
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
@@ -108,13 +108,13 @@
    "pixel_scale": 0.5,
    "terrain": {
     "priority": 3,
-    "fills": 5
+    "fills": 6
    }
   },
   {
-   "id": "base:visual/grass_dry",
+   "id": "base:visual/farmland",
    "kind": "visual",
-   "for": "base:grass_dry",
+   "for": "base:farmland",
    "mode": "flat",
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
@@ -130,13 +130,13 @@
    "pixel_scale": 0.5,
    "terrain": {
     "priority": 4,
-    "fills": 5
+    "fills": 4
    }
   },
   {
-   "id": "base:visual/moss",
+   "id": "base:visual/forest_floor",
    "kind": "visual",
-   "for": "base:moss",
+   "for": "base:forest_floor",
    "mode": "flat",
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
@@ -152,13 +152,13 @@
    "pixel_scale": 0.5,
    "terrain": {
     "priority": 5,
-    "fills": 4
+    "fills": 5
    }
   },
   {
-   "id": "base:visual/grass",
+   "id": "base:visual/grass_dead",
    "kind": "visual",
-   "for": "base:grass",
+   "for": "base:grass_dead",
    "mode": "flat",
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
@@ -178,9 +178,9 @@
    }
   },
   {
-   "id": "base:visual/water",
+   "id": "base:visual/grass_dry",
    "kind": "visual",
-   "for": "base:water",
+   "for": "base:grass_dry",
    "mode": "flat",
    "atlas": "art/lpc_env/terrain.png",
    "rect": [
@@ -196,6 +196,116 @@
    "pixel_scale": 0.5,
    "terrain": {
     "priority": 7,
+    "fills": 5
+   }
+  },
+  {
+   "id": "base:visual/moss",
+   "kind": "visual",
+   "for": "base:moss",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    288,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 8,
+    "fills": 4
+   }
+  },
+  {
+   "id": "base:visual/grass",
+   "kind": "visual",
+   "for": "base:grass",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    320,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 9,
+    "fills": 5
+   }
+  },
+  {
+   "id": "base:visual/snow",
+   "kind": "visual",
+   "for": "base:snow",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    352,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 10,
+    "fills": 7
+   }
+  },
+  {
+   "id": "base:visual/bog",
+   "kind": "visual",
+   "for": "base:bog",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    384,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 11,
+    "fills": 4
+   }
+  },
+  {
+   "id": "base:visual/water",
+   "kind": "visual",
+   "for": "base:water",
+   "mode": "flat",
+   "atlas": "art/lpc_env/terrain.png",
+   "rect": [
+    480,
+    416,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "terrain": {
+    "priority": 12,
     "fills": 4
    }
   },
@@ -901,6 +1011,399 @@
    ]
   },
   {
+   "id": "base:visual/maple",
+   "kind": "visual",
+   "for": "base:maple",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    729,
+    170,
+    189
+   ],
+   "origin": [
+    95,
+    192
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      170,
+      729,
+      160,
+      189
+     ],
+     "origin": [
+      96,
+      190
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/fir",
+   "kind": "visual",
+   "for": "base:fir",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    918,
+    63,
+    149
+   ],
+   "origin": [
+    29,
+    152
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      63,
+      918,
+      62,
+      145
+     ],
+     "origin": [
+      16,
+      145
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/dead_tree",
+   "kind": "visual",
+   "for": "base:dead_tree",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1067,
+    83,
+    122
+   ],
+   "origin": [
+    24,
+    114
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      83,
+      1067,
+      103,
+      121
+     ],
+     "origin": [
+      38,
+      111
+     ]
+    },
+    {
+     "rect": [
+      186,
+      1067,
+      124,
+      148
+     ],
+     "origin": [
+      17,
+      153
+     ]
+    },
+    {
+     "rect": [
+      310,
+      1067,
+      150,
+      156
+     ],
+     "origin": [
+      69,
+      161
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/dry_bush",
+   "kind": "visual",
+   "for": "base:dry_bush",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1223,
+    24,
+    19
+   ],
+   "origin": [
+    -7,
+    24
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      24,
+      1223,
+      28,
+      56
+     ],
+     "origin": [
+      -2,
+      60
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/stump",
+   "kind": "visual",
+   "for": "base:stump",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1279,
+    20,
+    30
+   ],
+   "origin": [
+    -7,
+    35
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      20,
+      1279,
+      25,
+      19
+     ],
+     "origin": [
+      -3,
+      24
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/honey_mushrooms",
+   "kind": "visual",
+   "for": "base:honey_mushrooms",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1309,
+    30,
+    29
+   ],
+   "origin": [
+    3,
+    33
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      30,
+      1309,
+      29,
+      30
+     ],
+     "origin": [
+      -9,
+      35
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/boletus",
+   "kind": "visual",
+   "for": "base:boletus",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1339,
+    28,
+    29
+   ],
+   "origin": [
+    -5,
+    33
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/fly_agaric",
+   "kind": "visual",
+   "for": "base:fly_agaric",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1368,
+    28,
+    30
+   ],
+   "origin": [
+    -3,
+    33
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      28,
+      1368,
+      28,
+      29
+     ],
+     "origin": [
+      -5,
+      33
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/cattail",
+   "kind": "visual",
+   "for": "base:cattail",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1398,
+    24,
+    25
+   ],
+   "origin": [
+    -4,
+    30
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      24,
+      1398,
+      27,
+      21
+     ],
+     "origin": [
+      -3,
+      26
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/boulder",
+   "kind": "visual",
+   "for": "base:boulder",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1423,
+    28,
+    21
+   ],
+   "origin": [
+    -6,
+    26
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      28,
+      1423,
+      28,
+      27
+     ],
+     "origin": [
+      -5,
+      32
+     ]
+    },
+    {
+     "rect": [
+      56,
+      1423,
+      28,
+      28
+     ],
+     "origin": [
+      -2,
+      33
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/iron_outcrop",
+   "kind": "visual",
+   "for": "base:iron_outcrop",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1451,
+    28,
+    28
+   ],
+   "origin": [
+    -2,
+    33
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/copper_outcrop",
+   "kind": "visual",
+   "for": "base:copper_outcrop",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    1479,
+    29,
+    28
+   ],
+   "origin": [
+    -9,
+    33
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": []
+  },
+  {
    "id": "base:visual/cave_mouth",
    "kind": "visual",
    "for": "base:cave_mouth",
@@ -1134,12 +1637,12 @@
    "rect": [
     0,
     720,
-    32,
-    64
+    80,
+    52
    ],
    "origin": [
-    0,
-    60
+    24,
+    48
    ],
    "pixel_scale": 0.5,
    "variants": 1
@@ -1152,7 +1655,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    784,
+    772,
     48,
     86
    ],
@@ -1171,7 +1674,7 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    870,
+    858,
     64,
     90
    ],
@@ -1190,16 +1693,18 @@
    "atlas": "art/lpc_env/props.png",
    "rect": [
     0,
-    960,
-    32,
-    32
+    948,
+    64,
+    64
    ],
    "origin": [
-    0,
-    28
+    16,
+    60
    ],
    "pixel_scale": 0.5,
-   "variants": 1
+   "variants": 1,
+   "frames": 5,
+   "frame_ms": 160
   },
   {
    "id": "base:visual/plank",
@@ -1886,13 +2391,51 @@
    "variants": 1
   },
   {
+   "id": "base:visual/berries",
+   "kind": "visual",
+   "for": "base:berries",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1152,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/mushroom",
+   "kind": "visual",
+   "for": "base:mushroom",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1184,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/water_bucket",
    "kind": "visual",
    "for": "base:water_bucket",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1152,
+    1216,
     0,
     32,
     32
@@ -1911,7 +2454,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1184,
+    1248,
     0,
     32,
     32
@@ -1930,7 +2473,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1216,
+    1280,
     0,
     32,
     32
@@ -1949,7 +2492,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1248,
+    1312,
     0,
     32,
     32
@@ -1968,7 +2511,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1280,
+    1344,
     0,
     32,
     32
@@ -1987,7 +2530,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1312,
+    1376,
     0,
     32,
     32
@@ -2006,7 +2549,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1344,
+    1408,
     0,
     32,
     32
@@ -2025,7 +2568,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1376,
+    1440,
     0,
     32,
     32
@@ -2044,7 +2587,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1408,
+    1472,
     0,
     32,
     32
@@ -2063,7 +2606,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1440,
+    1504,
     0,
     32,
     32

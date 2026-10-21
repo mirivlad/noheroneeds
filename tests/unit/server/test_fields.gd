@@ -112,3 +112,28 @@ func test_a_fence_keeps_out_but_is_seen_over_and_a_gate_opens() -> void:
 	check(_req(a, _at({"type": "use"}, 4, 5)).get("ok", false), "the gate opens")
 	check(not w.is_solid("surface", 4, 5), "an open gate lets through")
 	check(not w.is_solid("surface", 6, 5), "beside the fence is open")
+
+
+## The wild's gifts: berries off a bush (the bush stays, picked), mushrooms
+## by hand, stone off a boulder with a pick.
+func test_berries_mushrooms_and_stone_from_the_wild() -> void:
+	var a := _player()
+	var c := w.chunk("surface", 0, 0)
+	c.set_cell("cover", 4, 3, "base:berry_bush")
+	c.set_cell("cover", 2, 3, "base:boletus")
+	c.set_cell("cover", 3, 4, "base:boulder")
+	eq(_req(a, _at({"type": "gather", "layer": "cover"})).get("drops"), {"base:berries": 3}, "berries picked")
+	eq(c.get_cell("cover", 4, 3), "base:bush", "the bush stays, picked")
+	eq(_req(a, _at({"type": "gather", "layer": "cover"}, 2)).get("drops"), {"base:mushroom": 3}, "a boletus")
+	eq(c.get_cell("cover", 2, 3), "", "taken")
+	eq(_req(a, _at({"type": "gather", "layer": "cover", "item": ""}, 3, 4)).get("reason"), "no_tool", "a boulder wants a pick")
+	w.grant(a, "base:pickaxe", 1)
+	_req(a, {"type": "hold", "item": "base:pickaxe"})
+	var r := {}
+	for i in 8:
+		w.tick += 20  # the pick's pace
+		w.combat.step(w.tick)
+		r = _req(a, _at({"type": "gather", "layer": "cover", "item": "base:pickaxe"}, 3, 4))
+		if r.has("drops"):
+			break
+	eq(r.get("drops"), {"base:stone": 2}, "stone off a boulder: " + str(r))

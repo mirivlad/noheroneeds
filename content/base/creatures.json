@@ -3,26 +3,26 @@
   "defs": [
     {
       "id": "base:hare", "kind": "creature", "size": {"half": [0.15, 0.12], "height": 0.25}, "name": "Заяц", "behavior": "prey",
-      "speed": 1.1, "run_speed": 2.4, "sight": 9, "dark_sight": 0.5, "hearing": 8,
+      "speed": 1.1, "run_speed": 1.5, "sight": 9, "dark_sight": 0.5, "hearing": 8,
       "flee_distance": 6, "home_radius": 10, "think_ticks": 8, "memory_s": 30,
       "health": 3, "drops": {"base:raw_meat": 1}
     },
     {
       "id": "base:deer", "kind": "creature", "size": {"half": [0.45, 0.25], "height": 1.0}, "name": "Олень", "behavior": "prey",
-      "speed": 0.9, "run_speed": 2.6, "sight": 12, "dark_sight": 0.4, "hearing": 10,
+      "speed": 0.9, "run_speed": 1.2, "sight": 12, "dark_sight": 0.4, "hearing": 10,
       "flee_distance": 8, "home_radius": 16, "think_ticks": 10, "memory_s": 40,
       "health": 10, "drops": {"base:raw_meat": 3, "base:hide": 1}
     },
     {
       "id": "base:sheep", "kind": "creature", "size": {"half": [0.35, 0.22], "height": 0.7}, "name": "Овца", "behavior": "prey", "fauna_since": 3,
-      "speed": 0.7, "run_speed": 1.8, "sight": 9, "dark_sight": 0.4, "hearing": 8,
+      "speed": 0.7, "run_speed": 1.1, "sight": 9, "dark_sight": 0.4, "hearing": 8,
       "flee_distance": 4, "home_radius": 10, "think_ticks": 12, "memory_s": 30,
       "health": 8, "drops": {"base:raw_meat": 2, "base:wool": 2},
       "tame": {"food": ["base:wheat"], "feeds": 2, "breed_hours": 48}, "produce": {"item": "base:wool", "hours": 24}
     },
     {
       "id": "base:cow", "kind": "creature", "size": {"half": [0.55, 0.3], "height": 1.1}, "name": "Корова", "behavior": "prey", "fauna_since": 3,
-      "speed": 0.6, "run_speed": 1.5, "sight": 9, "dark_sight": 0.4, "hearing": 8,
+      "speed": 0.6, "run_speed": 0.95, "sight": 9, "dark_sight": 0.4, "hearing": 8,
       "flee_distance": 3, "home_radius": 10, "think_ticks": 14, "memory_s": 30,
       "health": 16, "drops": {"base:raw_meat": 4, "base:hide": 2},
       "tame": {"food": ["base:wheat", "base:carrot"], "feeds": 3, "breed_hours": 72},
@@ -30,7 +30,7 @@
     },
     {
       "id": "base:chicken", "kind": "creature", "size": {"half": [0.12, 0.1], "height": 0.3}, "name": "Курица", "behavior": "prey", "fauna_since": 3,
-      "speed": 0.7, "run_speed": 1.9, "sight": 7, "dark_sight": 0.3, "hearing": 7,
+      "speed": 0.7, "run_speed": 1.2, "sight": 7, "dark_sight": 0.3, "hearing": 7,
       "flee_distance": 3, "home_radius": 8, "think_ticks": 8, "memory_s": 20,
       "health": 2, "drops": {"base:raw_meat": 1},
       "tame": {"food": ["base:wheat_seeds"], "feeds": 1, "breed_hours": 36}, "produce": {"item": "base:egg", "hours": 12}
@@ -47,19 +47,62 @@
       "speed": 1.0, "run_speed": 2.2, "sight": 11, "dark_sight": 0.8, "hearing": 12,
       "flee_distance": 0, "home_radius": 14, "think_ticks": 6, "memory_s": 25,
       "health": 14, "territory": 4, "drops": {"base:raw_meat": 2, "base:hide": 1},
-      "attack": {"kind": "melee", "damage": 3, "reach": 0.9, "arc": 120, "cooldown_ms": 1100}
+      "attack": {"kind": "melee", "damage": 3, "reach": 0.9, "arc": 120, "cooldown_ms": 1100},
+      "reaction": {"hurt": "fight", "kin": true}
     },
     {
       "id": "base:poring", "kind": "creature", "size": {"half": [0.25, 0.18], "height": 0.35}, "name": "Поринг", "behavior": "looter", "fauna_since": 2,
       "speed": 0.7, "run_speed": 1.6, "sight": 7, "dark_sight": 0.5, "hearing": 6,
       "flee_distance": 0, "home_radius": 12, "think_ticks": 10, "memory_s": 20,
-      "health": 6, "stomach": 6, "digest_s": 7200
+      "health": 6, "stomach": 6, "digest_s": 7200,
+      "attack": {"kind": "melee", "damage": 1, "reach": 0.8, "arc": 90, "cooldown_ms": 1300},
+      "reaction": {"hurt": "fight", "kin": true}
     },
     {
       "id": "base:poporing", "kind": "creature", "size": {"half": [0.3, 0.2], "height": 0.45}, "name": "Попоринг", "behavior": "looter", "fauna_since": 2,
       "speed": 0.8, "run_speed": 1.9, "sight": 9, "dark_sight": 0.6, "hearing": 8,
       "flee_distance": 0, "home_radius": 16, "think_ticks": 8, "memory_s": 25,
-      "health": 14, "stomach": 12, "digest_s": 7200
+      "health": 14, "stomach": 12, "digest_s": 7200,
+      "attack": {"kind": "melee", "damage": 2, "reach": 0.9, "arc": 90, "cooldown_ms": 1200},
+      "reaction": {"hurt": "fight", "kin": true}
+    },
+    {
+      "id": "base:bear", "kind": "creature", "size": {"half": [0.55, 0.35], "height": 1.2}, "name": "Медведь", "many": "медведи",
+      "behavior": "prey", "fauna_since": 5,
+      "speed": 0.8, "run_speed": 1.4, "sight": 9, "dark_sight": 0.5, "hearing": 9,
+      "flee_distance": 0, "home_radius": 16, "think_ticks": 10, "memory_s": 40,
+      "health": 30, "drops": {"base:raw_meat": 5, "base:hide": 2},
+      "attack": {"kind": "melee", "damage": 5, "reach": 1.0, "arc": 100, "cooldown_ms": 1300},
+      "reaction": {"hurt": "fight", "kin": false}
+    },
+    {
+      "id": "base:polar_bear", "kind": "creature", "size": {"half": [0.55, 0.35], "height": 1.2}, "name": "Белый медведь", "many": "белые медведи",
+      "behavior": "predator", "fauna_since": 5,
+      "speed": 0.8, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
+      "flee_distance": 0, "home_radius": 18, "think_ticks": 8, "memory_s": 30,
+      "health": 34, "territory": 5, "drops": {"base:raw_meat": 5, "base:hide": 2},
+      "attack": {"kind": "melee", "damage": 6, "reach": 1.0, "arc": 100, "cooldown_ms": 1300}
+    },
+    {
+      "id": "base:fox", "kind": "creature", "size": {"half": [0.3, 0.15], "height": 0.4}, "name": "Лиса", "behavior": "prey", "fauna_since": 5,
+      "speed": 1.0, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
+      "flee_distance": 6, "home_radius": 14, "think_ticks": 8, "memory_s": 30,
+      "health": 4, "drops": {"base:raw_meat": 1, "base:hide": 1}
+    },
+    {
+      "id": "base:arctic_fox", "kind": "creature", "size": {"half": [0.3, 0.15], "height": 0.4}, "name": "Песец", "behavior": "prey", "fauna_since": 5,
+      "speed": 1.0, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
+      "flee_distance": 6, "home_radius": 14, "think_ticks": 8, "memory_s": 30,
+      "health": 4, "drops": {"base:raw_meat": 1, "base:hide": 1}
+    },
+    {
+      "id": "base:mushroom_walker", "kind": "creature", "size": {"half": [0.18, 0.12], "height": 0.45}, "name": "Грибовик", "many": "грибовики",
+      "behavior": "prey", "fauna_since": 5,
+      "speed": 0.6, "run_speed": 1.0, "sight": 6, "dark_sight": 0.6, "hearing": 6,
+      "flee_distance": 0, "home_radius": 10, "think_ticks": 12, "memory_s": 20,
+      "health": 8, "drops": {"base:mushroom": 2},
+      "attack": {"kind": "melee", "damage": 2, "reach": 0.8, "arc": 90, "cooldown_ms": 1300},
+      "reaction": {"hurt": "fight", "kin": true}
     }
   ]
 }

@@ -317,3 +317,33 @@ func test_armour_takes_off_every_blow_but_a_blow_always_tells() -> void:
 		"armour on what is not worn: a content error")
 	check(not ContentRegistry.from_defs([{"id": "test:x", "kind": "item", "equip_slot": "torso", "armor": -1}]).errors.is_empty(),
 		"negative armour: a content error")
+
+
+## What a creature does when struck is data ("reaction"): a hare runs; a
+## poring strikes back, and another poring that sees it joins in; one too far
+## to see stays as it was.
+func test_struck_ones_run_or_strike_back_and_kin_stand_up_for_them() -> void:
+	var p := _player("Аня", Vector2i(170, 170))
+	w.world_time = 12 * Daylight.HOUR_MS
+	var hare := w.creatures._spawn("base:hare", "surface", Vector2i(171, 170), {}, 1)
+	var poring := w.creatures._spawn("base:poring", "surface", Vector2i(170, 172), {}, 2)
+	var kin := w.creatures._spawn("base:poring", "surface", Vector2i(174, 172), {}, 3)
+	var far := w.creatures._spawn("base:poring", "surface", Vector2i(192, 190), {}, 4)
+	for c: Creature in [hare, poring, kin, far]:
+		c.last_time = w.world_time
+	w.combat.hurt(hare.id, 1, p)
+	w.combat.hurt(poring.id, 1, p)
+	_ticks(4)
+	eq(hare.state, "flee", "a hare runs")
+	check(poring.state in ["hunt", "attack"], "a poring goes for who struck it: " + poring.state)
+	check(kin.state in ["hunt", "attack"], "its kin that saw it too: " + kin.state)
+	check(not far.state in ["hunt", "attack"], "one that did not see it, not: " + far.state)
+	_ticks(80)
+	check(w.combat.health_of(p) < 20, "and they bite: %d" % w.combat.health_of(p))
+
+
+## Game runs slower than a running character: a hunter with a spear can catch up.
+func test_game_is_slower_than_a_running_hunter() -> void:
+	for kind: String in ["base:hare", "base:deer", "base:sheep", "base:cow", "base:chicken"]:
+		var d := _content.get_def(kind)
+		check(float(d["run_speed"]) * Movement.WALK < Movement.RUN, "%s runs slower than a character" % kind)

@@ -77,3 +77,70 @@ func test_malformed_settlements_are_content_errors() -> void:
 		var defs: Array = content.defs.values().filter(func(d: Dictionary) -> bool: return d.get("kind") != "settlement")
 		defs.append(good.merged(bad, true))
 		check(not ContentRegistry.from_defs(defs).errors.is_empty(), "refused: %s" % str(bad))
+
+
+## Villages are met often: within a square of 1200 cells round the spawn, a
+## good many in every world.
+func test_villages_are_met_often() -> void:
+	for seed_value in [1, 7, 12345]:
+		var g := SurfaceGenerator.new(seed_value, content)
+		var n := g.settlements.plans_near(Vector2i.ZERO, 600).size()
+		check(n >= 12, "seed %d: %d villages within 600 cells" % [seed_value, n])
+
+
+## Roads join villages, not each to all: some pairs joined, some not; some
+## roads meet another partway (a crossroads); a road is dirt from one
+## village's street end to the other's, two cells wide.
+func test_roads_join_some_villages_and_meet_at_crossroads() -> void:
+	var g := SurfaceGenerator.new(12345, content)
+	var s := g.settlements
+	var joined := 0
+	var apart := 0
+	var crossroads := 0
+	for ry in range(-3, 4):
+		for rx in range(-3, 4):
+			if s.plan(0, rx, ry).is_empty():
+				continue
+			for dir in 2:
+				var other := s.plan(0, rx + (1 - dir), ry + dir)
+				if other.is_empty():
+					continue
+				var road := s.road_of(0, rx, ry, dir)
+				if road.is_empty():
+					apart += 1
+					continue
+				joined += 1
+				var cells: Dictionary = road["cells"]
+				var ends: Array = other["ends"]
+				if dir == 1 and not (cells.has(ends[0]) or cells.has(ends[1])):
+					crossroads += 1  # it went to the eastern road instead
+	check(joined >= 6, "roads: %d" % joined)
+	check(apart >= 2, "not every pair: %d apart" % apart)
+	check(crossroads >= 1, "crossroads: %d" % crossroads)
+	# One road on the ground: dirt where it runs, on dry land.
+	var road := {}
+	for ry in range(-3, 4):
+		for rx in range(-3, 4):
+			if road.is_empty():
+				road = s.road_of(0, rx, ry, 0)
+	check(not road.is_empty(), "a road east somewhere")
+	var some: Vector2i = (road["cells"] as Dictionary).keys()[(road["cells"] as Dictionary).size() / 2]
+	var k := Vector2i(floori(some.x / 32.0), floori(some.y / 32.0))
+	eq(g.generate(k.x, k.y).get_cell("ground", some.x - k.x * 32, some.y - k.y * 32), "base:dirt", "the road on the ground")
+
+
+## Biomes by climate (warmth, wetness): all of them are met in a world,
+## the snow of the tundra never next to the steppe.
+func test_every_biome_is_met_and_cold_keeps_from_the_steppe() -> void:
+	var g := SurfaceGenerator.new(12345, content)
+	var seen := {}
+	var touching := 0
+	for y in range(-1500, 1500, 24):
+		for x in range(-1500, 1500, 24):
+			var b := g.biome_id_at(x, y)
+			seen[b] = true
+			if b == "base:tundra" and "base:steppe" in [g.biome_id_at(x + 24, y), g.biome_id_at(x, y + 24)]:
+				touching += 1
+	for b: String in ["base:meadow", "base:forest", "base:taiga", "base:grove", "base:swamp", "base:steppe", "base:tundra", "base:rocky"]:
+		check(seen.has(b), "%s is met" % b)
+	eq(touching, 0, "tundra and steppe apart")

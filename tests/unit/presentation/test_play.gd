@@ -409,7 +409,7 @@ func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	_frames_until(func() -> bool: return int(w.present[id]["health"]) > 15)
 	eq(int(w.present[id]["health"]), 20, "eaten: health back")
 	_frames_until(func() -> bool: return int(g.client.own.get("needs", {}).get("satiety", 0)) >= 75)
-	check(g.hud.text.contains("Сытость 75"), "the screen shows one's own satiety: " + g.hud.text)
+	check(g.needs_box.row_text("satiety").begins_with("Сытость 75"), "the screen shows one's own satiety: " + g.needs_box.row_text("satiety"))
 
 
 func test_a_field_grows_on_the_screen_and_a_hoe_ploughs() -> void:
@@ -444,7 +444,7 @@ func test_a_bed_is_slept_in_seen_lying_and_left_by_walking() -> void:
 	w._changed(ServerWorld.chunk_key("surface", floori(cell.x / 32.0), floori(cell.y / 32.0)))
 	w.needs.set_energy(id, 15.0)
 	_frames_until(func() -> bool: return int(g.client.own.get("needs", {}).get("energy", 100)) <= 15)
-	check(g.hud.text.contains("устали"), "the screen says one is tired: " + g.hud.text)
+	check(g.needs_box.row_text("energy").begins_with("Устали"), "the screen says one is tired: " + g.needs_box.row_text("energy"))
 	var acts := Actions.of(g.content, g.client, g.view, "", {"kind": "part", "id": "base:bed", "layer": "structure",
 		"cell": cell, "location": "surface"}, Vector2i.ZERO)
 	eq(Actions.quick(acts).get("id"), "sleep", "E on a bed: to sleep")
@@ -475,7 +475,8 @@ func test_the_weather_on_the_screen_follows_the_sky() -> void:
 	_frames(30)
 	eq(g.weather.rain, 0.0, "no rain on the screen when it does not rain")
 	eq(g.weather.snow, 0.0)
-	check(g.hud.text.begins_with("Весна, день"), "the season in the clock line: " + g.hud.text)
+	check(g.clock_box.day.text.begins_with("Весна, день"), "the season in the clock box: " + g.clock_box.day.text)
+	eq(g.clock_box.season_icon.texture, HudBoxes.icon("spring"), "and its picture")
 
 
 func test_a_pick_aims_at_the_nearest_rock_toward_the_cursor() -> void:
@@ -556,3 +557,35 @@ func test_cave_rock_is_drawn_in_its_own_cell_not_over_the_passage() -> void:
 	eq(g.view._rock_tops.get_cell_source_id(rock - Vector2i(0, 2)), -1, "nor two cells up")
 	eq(g.view.pick_target(Vector2((rock.x + 0.5) * WorldView.CELL, (rock.y + 0.5) * WorldView.CELL)).get("cell"), rock,
 		"pointed at where it is drawn, it is the rock")
+
+
+## At a campfire: its action opens its recipes; "Сделать" with a count
+## cooks so many pieces (ADR-0026).
+func test_meat_cooked_at_a_campfire_from_its_action() -> void:
+	var id := g.client.character_id
+	var me := _me()
+	w.grant(id, "base:log", 2)
+	w.grant(id, "base:raw_meat", 3)
+	g.client.request({"type": "build", "location": "surface", "x": me.x + 1, "y": me.y, "part": "base:campfire"})
+	_frames_until(func() -> bool: return _part(me + Vector2i(1, 0)) == "base:campfire")
+	var fire := {"kind": "part", "id": "base:campfire", "layer": "structure", "cell": me + Vector2i(1, 0), "location": "surface"}
+	var acts := Actions.of(g.content, g.client, g.view, "", fire, Vector2i.ZERO)
+	var at: Array = acts.filter(func(a: Dictionary) -> bool: return a["id"] == "craft_at")
+	eq(at.size(), 1, "a campfire is worked at")
+	g._do(at[0])
+	check(g.crafts.visible, "its crafts open")
+	eq(g.crafts.station, "fire")
+	_frames_until(func() -> bool: return g.crafts.station_near("fire"))
+	g.crafts.refresh()
+	eq(g.crafts.why_not("base:make_axe"), "нужен рядом: верстак", "says what is missing")
+	eq(g.crafts.why_not("base:cook_fish"), "не хватает: плотва 1")
+	var row := g.crafts._ids.find("base:cook_meat")
+	check(row >= 0, "meat is cooked at a fire: " + str(g.crafts._ids))
+	g.crafts._list.select(row)
+	g.crafts._buttons()
+	check(not g.crafts._make.disabled, "it can be done: " + g.crafts._note.text)
+	g.crafts.count.value = 2
+	g.crafts._make.pressed.emit()
+	_frames_until(func() -> bool: return int(g.client.inventory().get("base:cooked_meat", 0)) >= 2)
+	eq(int(g.client.inventory().get("base:cooked_meat", 0)), 2, "two pieces cooked: " + g._note)
+	eq(int(g.client.inventory().get("base:raw_meat", 0)), 1, "one left raw")

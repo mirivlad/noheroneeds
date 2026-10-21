@@ -22,9 +22,18 @@ const MARGIN := 1
 ## Cells round the whole settlement kept free of trees and bushes.
 const TREE_FREE := 3
 ## Tries of a place for a settlement in its region.
-const TRIES := 8
-## Of a plan's cells, at most this share may be water for it to stand there.
-const WET_SHARE := 0.03
+const TRIES := 24
+## Of a plan's cells, at most this share may be water for it to stand there
+## (a pond in a village is let be; under its own cells water becomes land).
+const WET_SHARE := 0.12
+## Roads (ADR-0038): a settlement is joined with the one of its kind in the
+## region east of it, and the one south of it, each by this chance; when it
+## is joined both ways, the southern road may instead (JUNCTION_CHANCE) meet
+## the eastern one partway, at a crossroads — not every village to every other.
+const ROAD_CHANCE := 0.6
+const JUNCTION_CHANCE := 0.5
+## Roads keep this far out of a settlement's side before turning.
+const ROAD_OUT := 3
 
 var world_seed := 0
 var content: ContentRegistry
@@ -36,6 +45,8 @@ var _clearing := 8
 var _wet: Callable
 ## "kind|rx|ry" -> plan ({} none)
 var _plans := {}
+## "kind|rx|ry|dir" -> road ({} none)
+var _roads := {}
 
 
 func _init(seed_value: int, registry: ContentRegistry, wet: Callable, clearing: int) -> void:
@@ -77,6 +88,14 @@ func plan(k: int, rx: int, ry: int) -> Dictionary:
 		_plans.clear()
 	_plans[key] = made
 	return made
+
+
+## The settlement by the spawn point (of the first kind marked "near_spawn"); {} none.
+func home_plan() -> Dictionary:
+	for k in _kinds.size():
+		if _kinds[k]["def"].get("near_spawn", false):
+			return plan(k, 0, 0)
+	return {}
 
 
 ## A settlement's plan by its id ("kind@rx,ry"); {} if there is none.
@@ -289,8 +308,112 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 				else:
 					put.call(at, "structure", "")
 		pen = {"rect": r, "gate": gate, "animals": p["animals"]}
+	# Where roads come in: either end of the first street, and how far out
+	# its fields and pen reach on each side (a road turns beyond them).
+	var first: Rect2i = layout["streets"][0]
+	var ends := [Vector2i(first.position.x - 1, first.position.y) + centre, Vector2i(first.end.x, first.position.y) + centre]
 	return {"id": id, "kind": String(d.get("id", "")), "name": String(d.get("name", "")), "centre": centre,
-		"bounds": bounds, "cells": cells, "homes": homes, "fields": fields, "pen": pen, "fire": fire}
+		"bounds": bounds, "cells": cells, "homes": homes, "fields": fields, "pen": pen, "fire": fire,
+		"ends": ends, "half": int(layout["half"]), "road": String(d["road"])}
+
+
+## Roads whose cells may fall in chunk (cx, cy): {"id", "bounds", "cells"}
+## like a plan's ({cell: {"ground", "cover"}}), water left as it is.
+func roads_touching(cx: int, cy: int) -> Array:
+	var out := []
+	var chunk := Rect2i(cx * Chunk.SIZE, cy * Chunk.SIZE, Chunk.SIZE, Chunk.SIZE)
+	for k in _kinds.size():
+		var size := int(_kinds[k]["def"]["region_chunks"]) * Chunk.SIZE
+		var r := Vector2i(floori(float(chunk.position.x) / size), floori(float(chunk.position.y) / size))
+		for dy in range(-2, 2):
+			for dx in range(-2, 2):
+				for dir in 2:
+					var road := road_of(k, r.x + dx, r.y + dy, dir)
+					if not road.is_empty() and (road["bounds"] as Rect2i).intersects(chunk):
+						out.append(road)
+	return out
+
+
+## The road from a region's settlement east (dir 0) or south (dir 1); {} none.
+func road_of(k: int, rx: int, ry: int, dir: int) -> Dictionary:
+	var key := "%d|%d|%d|%d" % [k, rx, ry, dir]
+	if _roads.has(key):
+		return _roads[key]
+	var made := _road(k, rx, ry, dir)
+	if _roads.size() > 1024:
+		_roads.clear()
+	_roads[key] = made
+	return made
+
+
+func _road(k: int, rx: int, ry: int, dir: int) -> Dictionary:
+	var a := plan(k, rx, ry)
+	if a.is_empty():
+		return {}
+	var east := plan(k, rx + 1, ry)
+	var east_road := not east.is_empty() and _hash(k, rx, ry, 500) < ROAD_CHANCE
+	var path: Array[Vector2i] = []
+	if dir == 0:
+		if not east_road:
+			return {}
+		var meet := _meeting(k, rx, ry, a, east)
+		path = _leg(a, meet) + _leg(east, meet)
+	else:
+		var south := plan(k, rx, ry + 1)
+		if south.is_empty() or _hash(k, rx, ry, 501) >= ROAD_CHANCE:
+			return {}
+		if east_road and _hash(k, rx, ry, 502) < JUNCTION_CHANCE:
+			# A crossroads: partway along the eastern road's first stretch.
+			var meet := _meeting(k, rx, ry, a, east)
+			var leg := _leg(a, meet)
+			var at := leg[int(leg.size() * (0.4 + 0.3 * _hash(k, rx, ry, 503)))]
+			path = _leg(south, at)
+		else:
+			path = _leg(a, _meeting(k, rx, ry + 1, a, south)) + _leg(south, _meeting(k, rx, ry + 1, a, south))
+	var cells := {}
+	var ground := String(a["road"])
+	var bounds := Rect2i(path[0], Vector2i.ONE)
+	for p: Vector2i in path:
+		for d: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:  # two cells wide
+			var at := p + d
+			if not _wet.call(at.x, at.y):
+				cells[at] = {"ground": ground, "cover": ""}
+				bounds = bounds.merge(Rect2i(at, Vector2i.ONE))
+	return {"id": "road:%d,%d,%d" % [rx, ry, dir], "bounds": bounds, "cells": cells}
+
+
+## Where a road between two settlements turns to meet itself: halfway,
+## a little off the middle.
+func _meeting(k: int, rx: int, ry: int, a: Dictionary, b: Dictionary) -> Vector2i:
+	var mid := (Vector2(a["centre"]) + Vector2(b["centre"])) * 0.5
+	var off := Vector2(_hash(k, rx, ry, 510) - 0.5, _hash(k, rx, ry, 511) - 0.5) * 16.0
+	return Vector2i(mid + off)
+
+
+## A road's cells from a settlement's street end out to `to`: along the
+## street's line out past its fields, then straight across, then along.
+func _leg(p: Dictionary, to: Vector2i) -> Array[Vector2i]:
+	var ends: Array = p["ends"]
+	var centre: Vector2i = p["centre"]
+	var side := 1 if to.x >= centre.x else -1
+	var from: Vector2i = ends[1] if side > 0 else ends[0]
+	var turn := centre.x + side * (int(p["half"]) + ROAD_OUT)
+	if (to.x - turn) * side > 0:
+		turn = to.x
+	var out: Array[Vector2i] = []
+	_line(out, from, Vector2i(turn, from.y))
+	_line(out, Vector2i(turn, from.y), Vector2i(turn, to.y))
+	_line(out, Vector2i(turn, to.y), to)
+	return out
+
+
+static func _line(out: Array[Vector2i], a: Vector2i, b: Vector2i) -> void:
+	var step := Vector2i(signi(b.x - a.x), signi(b.y - a.y))
+	var at := a
+	out.append(at)
+	while at != b:
+		at += step
+		out.append(at)
 
 
 ## Whether a placed plan stands on dry land (a little water at its edge is

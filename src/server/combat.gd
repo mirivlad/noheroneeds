@@ -144,6 +144,7 @@ func hurt(target: String, amount: int, attacker: String) -> void:
 		var at := _position(attacker)
 		if at != NO_POS:
 			c.memory[who] = {"pos": Movement.cell_of(at), "time": world.world_time, "what": "attacker"}
+			world.creatures.kin_struck(c, who, Movement.cell_of(at))
 		world.creatures.alarm(c)
 	if left > 0:
 		_set_health(target, left)

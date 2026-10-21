@@ -14,7 +14,13 @@ var _list: ItemList
 var _ids: Array[String] = []
 var _can := {}
 var _make: Button
-var _make_all: Button
+## How many to make: so many as asked, or as many as the things allow.
+var count: SpinBox
+var _note := Label.new()
+var _title := Label.new()
+## The kind of station the window was opened at ("" — K: every recipe).
+var station := ""
+const WIDTH := 460
 
 
 func setup(registry: ContentRegistry, world_view: WorldView, game_client: GameClient) -> void:
@@ -22,30 +28,37 @@ func setup(registry: ContentRegistry, world_view: WorldView, game_client: GameCl
 	view = world_view
 	client = game_client
 	theme = Art.theme()
-	custom_minimum_size = Vector2(460, 230)
 	var box := VBoxContainer.new()
 	add_child(box)
-	var title := Label.new()
-	title.text = "Ремёсла  (K — закрыть)"
-	box.add_child(title)
+	box.add_child(Art.window_head(_title, "K", hide))
 	_list = ItemList.new()
 	_list.name = "Recipes"
-	_list.custom_minimum_size = Vector2(450, 180)
-	_list.add_theme_font_override("font", Art.font())
-	_list.add_theme_font_size_override("font_size", 16)
+	_list.custom_minimum_size = Vector2(WIDTH, 260)
 	_list.fixed_icon_size = Vector2i(32, 32)
 	_list.item_selected.connect(func(_i: int) -> void: _buttons())
+	_list.item_activated.connect(func(_i: int) -> void: _ask(how_many()))
 	box.add_child(_list)
 	var row := HBoxContainer.new()
 	box.add_child(row)
+	var label := Label.new()
+	label.text = "Сколько:"
+	row.add_child(label)
+	count = SpinBox.new()
+	count.name = "Count"
+	count.min_value = 1
+	count.max_value = 999
+	count.value = 1
+	count.custom_minimum_size.x = 90
+	count.get_line_edit().text_submitted.connect(func(_t: String) -> void: _ask(how_many()))
+	count.value_changed.connect(func(_v: float) -> void: _buttons())
+	row.add_child(count)
 	_make = Button.new()
+	_make.name = "Make"
 	_make.text = "Сделать"
-	_make.pressed.connect(func() -> void: _ask(1))
+	_make.pressed.connect(func() -> void: _ask(how_many()))
 	row.add_child(_make)
-	_make_all = Button.new()
-	_make_all.text = "Сделать все"
-	_make_all.pressed.connect(func() -> void: _ask(times(selected(), client.inventory())))
-	row.add_child(_make_all)
+	_note.add_theme_color_override("font_color", Art.TEXT_DIM)
+	row.add_child(_note)
 	visible = false
 
 
@@ -89,7 +102,11 @@ func station_near(station: String) -> bool:
 	return false
 
 
-func open() -> void:
+## K: every recipe; at a station (E on a workbench), its recipes.
+func open(at_station := "") -> void:
+	station = at_station
+	_title.text = "Ремёсла" if station == "" else "Ремёсла — " + String(STATIONS.get(station, station))
+	count.value = 1
 	refresh()
 	visible = true
 
@@ -102,6 +119,8 @@ func refresh() -> void:
 	_ids.clear()
 	_can.clear()
 	var order := recipes()
+	if station != "":
+		order = order.filter(func(id: String) -> bool: return String(content.get_def(id).get("station", "")) == station)
 	for id: String in order:
 		_can[id] = times(id, inventory) > 0 and station_near(String(content.get_def(id).get("station", "")))
 	order = order.filter(func(id: String) -> bool: return _can[id]) + order.filter(func(id: String) -> bool: return not _can[id])
@@ -138,14 +157,36 @@ func _buttons() -> void:
 	var id := selected()
 	var ok: bool = id != "" and bool(_can.get(id, false))
 	_make.disabled = not ok
-	_make_all.disabled = not ok
-	_make_all.text = "Сделать все (%d)" % times(id, client.inventory()) if ok else "Сделать все"
+	var can := times(id, client.inventory())
+	_note.text = "хватит на %d" % can if ok else why_not(id)
 
 
-func _ask(count: int) -> void:
+## Why a recipe cannot be made here and now ("" — it can).
+func why_not(id: String) -> String:
+	if id == "":
+		return ""
+	var d := content.get_def(id)
+	var station := String(d.get("station", ""))
+	if not station_near(station):
+		return "нужен рядом: " + String(STATIONS.get(station, station))
+	var inventory := client.inventory()
+	var short := PackedStringArray()
+	for item: String in d["inputs"]:
+		var lack := int(d["inputs"][item]) - int(inventory.get(item, 0))
+		if lack > 0:
+			short.append("%s %d" % [_name(item), lack])
+	return "не хватает: " + ", ".join(short) if not short.is_empty() else ""
+
+
+## So many as asked, as many as the things allow.
+func how_many() -> int:
+	return mini(int(count.value), times(selected(), client.inventory()))
+
+
+func _ask(n: int) -> void:
 	var id := selected()
-	if id != "" and count > 0:
-		craft.emit(id, count)
+	if id != "" and n > 0 and bool(_can.get(id, false)):
+		craft.emit(id, n)
 
 
 func _name(item: String) -> String:

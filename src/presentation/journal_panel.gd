@@ -19,16 +19,9 @@ func setup() -> void:
 	theme = Art.theme()
 	var box := VBoxContainer.new()
 	add_child(box)
-	var header := HBoxContainer.new()
-	box.add_child(header)
 	var title := Label.new()
 	title.text = "Журнал"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(title)
-	var close := Button.new()
-	close.text = "Закрыть (L)"
-	close.pressed.connect(func() -> void: hide())
-	header.add_child(close)
+	box.add_child(Art.window_head(title, "L", hide))
 	_scroll.custom_minimum_size = Vector2(WIDTH, 360)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(_scroll)

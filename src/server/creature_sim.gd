@@ -24,7 +24,7 @@ const THINKS_PER_TICK := 48
 ## Raised when kinds come to the fauna; a creature's "fauna_since" says from
 ## which: chunks populated before get those kinds only (old worlds meet the
 ## looters too, without a second crowd of hares).
-const FAUNA_VERSION := 4  # 4: settlements' dwellers and their animals (ADR-0039)
+const FAUNA_VERSION := 5  # 4: settlements' dwellers and their animals (ADR-0039); 5: bears, foxes, mushroom walkers
 ## A creature away longer than this (real seconds) catches up on return.
 const CATCH_UP_S := 20.0
 ## Active: its chunk was needed by a player within this many ticks.
@@ -325,6 +325,28 @@ func alarm(c: Creature) -> void:
 	_schedule(c, _tick + 1)
 
 
+## One of its kind was struck by `who` at `at`: those that stand up for their
+## kin and see who did it take that one for their own attacker.
+func kin_struck(c: Creature, who: String, at: Vector2i) -> void:
+	var cx := c.cell().x >> 5
+	var cy := c.cell().y >> 5
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			for oid: String in in_chunk(c.location, cx + dx, cy + dy):
+				var o := get_creature(oid)
+				if o == null or o == c or o.kind != c.kind or o.health == 0:
+					continue
+				var def := world.content.get_def(o.kind)
+				if not def.get("reaction", {}).get("kin", false):
+					continue
+				var me := o.cell()
+				if absi(at.x - me.x) > def["sight"] or absi(at.y - me.y) > def["sight"]:
+					continue
+				if Perception.sees(world, o.location, me, def, at, o.location):
+					o.memory[who] = {"pos": at, "time": world.world_time, "what": "attacker"}
+					alarm(o)
+
+
 ## The chunk leaves memory: so do its creatures (they are saved).
 func drop_chunk(key: String) -> void:
 	for id: String in (_by_chunk.get(key, {}) as Dictionary):
@@ -415,7 +437,9 @@ func _think(c: Creature, tick: int) -> void:
 		_catch_up(c, def)
 	c.last_time = now
 	_perceive(c, def)
-	if c.owner != "" and def.has("tame"):
+	if _fight_back(c, def):
+		pass
+	elif c.owner != "" and def.has("tame"):
 		_tame(c, def)
 	else:
 		_behave(c, def)
@@ -565,6 +589,28 @@ func _prey(c: Creature, def: Dictionary) -> void:
 			_go(c, "wander", spot, false)
 			return
 	_go(c, "graze", Creature.NO_TARGET, false)
+
+
+## One that fights back (reaction "hurt": "fight") goes for who hurt it (or
+## its kin) lately, running, and strikes within reach; badly hurt, it runs.
+## A predator hunts in its own way (it attacks first too). True if it did.
+func _fight_back(c: Creature, def: Dictionary) -> bool:
+	if def["reaction"]["hurt"] != "fight" or String(def["behavior"]) == "predator":
+		return false
+	var attacker := _attacker(c, float(def["sight"]) * 1.5)
+	if attacker.is_empty() or not world.present.has(attacker[2]):
+		return false
+	if c.health * 10 < int(def["health"]) * 3:
+		var away := _away_from(c, attacker[0], 12.0)
+		if away != Creature.NO_TARGET:
+			_go(c, "flee", away, true)
+			return true
+	if world.combat.creature_attack(c, attacker[2]):
+		_go(c, "attack", Creature.NO_TARGET, false)
+	else:
+		var p: Dictionary = world.present[attacker[2]]
+		_go(c, "hunt", Movement.cell_of(p["pos"]), true)  # it sees where it is now
+	return true
 
 
 ## Villagers: go about near home by day, stop to look at someone who comes

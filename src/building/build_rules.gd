@@ -12,6 +12,8 @@ class_name BuildRules
 ## only the server sees (the depth below a shaft) stays with the server.
 
 const NO_CELL := Vector2i(1 << 30, 1 << 30)
+## Parts a wall is made of: a door stands only between them left and right.
+const WALL_LIKE := ["wall", "door", "window", "fence", "column"]
 
 
 ## "" if `part` may stand at (x, y) of `location` turned to `facing`, else
@@ -70,6 +72,13 @@ static func check(view: Object, content: ContentRegistry, part: String, location
 		_:
 			if Terrain.is_solid(c, lx, ly, content, on_level):
 				return "blocked"  # water, a tree...
+			# A door shows only in a wall that runs across the screen: in a
+			# side one (walls above and below it) it would not be seen at all.
+			if role == "door" and (_role_at(view, content, location, x, y - 1) in WALL_LIKE
+					or _role_at(view, content, location, x, y + 1) in WALL_LIKE):
+				return "side_wall"
+			if role in WALL_LIKE and "door" in [_role_at(view, content, location, x, y - 1), _role_at(view, content, location, x, y + 1)]:
+				return "door_beside"  # that would put the door into a side wall
 			if view.build_someone_on(location, x, y):
 				return "someone_there"
 	return ""
@@ -110,3 +119,10 @@ static func stairs_arrival(view: Object, location: String, x: int, y: int, facin
 static func _ceiling_at(view: Object, location: String, x: int, y: int) -> bool:
 	var c: Chunk = view.build_chunk(location, x >> 5, y >> 5)
 	return c != null and c.get_cell("ceiling", x & 31, y & 31) != ""
+
+
+## The role of the part on a cell's structure layer ("" — none or not known here).
+static func _role_at(view: Object, content: ContentRegistry, location: String, x: int, y: int) -> String:
+	var c: Chunk = view.build_chunk(location, x >> 5, y >> 5)
+	var part := c.get_cell("structure", x & 31, y & 31) if c != null else ""
+	return String(content.get_def(part).get("role", "")) if part != "" else ""

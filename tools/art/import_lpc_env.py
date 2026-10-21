@@ -31,13 +31,18 @@ TERRAIN_DIR = SRC / "lpc-terrains" / "lpc-terrains"
 # drawn over a lower one (grass over dirt, water with its bank over all).
 GROUNDS = {
     "base:dirt": ("Dirt_Brown", 0),
-    "base:sand": ("Sand", 1),
-    "base:farmland": ("farm:plowed_soil", 2),
-    "base:forest_floor": ("Dirt_Roots", 3),
-    "base:grass_dry": ("Grass_Light", 4),
-    "base:moss": ("Grass_Dark", 5),
-    "base:grass": ("Grass", 6),
-    "base:water": ("Water", 7),
+    "base:mud": ("Mud_Brown", 1),
+    "base:gravel": ("Gravel_1", 2),
+    "base:sand": ("Sand", 3),
+    "base:farmland": ("farm:plowed_soil", 4),
+    "base:forest_floor": ("Dirt_Roots", 5),
+    "base:grass_dead": ("Grass_Dead", 6),
+    "base:grass_dry": ("Grass_Light", 7),
+    "base:moss": ("Grass_Dark", 8),
+    "base:grass": ("Grass", 9),
+    "base:snow": ("Snow_1", 10),
+    "base:bog": ("Water_Green", 11),
+    "base:water": ("Water", 12),
     "base:cave_floor": ("Dirt_Dark", -1),
 }
 FARM = SRC / "lpc-farm" / "submission_daneeklu" / "tilesets"
@@ -393,6 +398,19 @@ PLANTS = {
     "base:oak": ("trees", [(301, 512, 165, 200), (491, 512, 170, 200), (672, 512, 160, 200), (835, 512, 155, 200)]),
     "base:birch": ("trees", [(164, 224, 89, 128), (264, 224, 107, 128)]),
     "base:spruce": ("trees", [(64, 352, 63, 160), (0, 352, 62, 160)]),
+    # The same trees in other leaves (the trees pack's colours share one layout).
+    "base:maple": ("trees-orange", [(491, 512, 170, 200), (672, 512, 160, 200)]),
+    "base:fir": ("trees-pale", [(64, 352, 63, 160), (0, 352, 62, 160)]),
+    "base:dead_tree": ("trees-dead", [(164, 224, 89, 128), (264, 224, 107, 128), (0, 512, 150, 200), (150, 512, 150, 200)]),
+    "base:dry_bush": ("plants", [(416, 704, 32, 32), (448, 704, 32, 64)]),
+    "base:stump": ("plants", [(0, 768, 32, 32), (32, 768, 32, 32)]),
+    "base:honey_mushrooms": ("plants", [(32, 576, 32, 32), (0, 576, 32, 32)]),
+    "base:boletus": ("plants", [(32, 704, 32, 32)]),
+    "base:fly_agaric": ("plants", [(64, 736, 32, 32), (64, 704, 32, 32)]),
+    "base:cattail": ("plants", [(32, 416, 32, 32), (96, 416, 32, 32)]),
+    "base:boulder": ("ore", [(192, 96, 32, 32), (192, 160, 32, 32), (192, 224, 32, 32)]),
+    "base:iron_outcrop": ("ore", [(64, 64, 32, 32)]),
+    "base:copper_outcrop": ("ore", [(96, 32, 32, 32)]),
 }
 
 
@@ -409,7 +427,10 @@ def _base(img):
 
 def build_plants():
     sheets = {"plants": Image.open(PLANTS_PNG).convert("RGBA"),
-              "trees": Image.open(TREES_DIR / "trees-green.png").convert("RGBA")}
+              "trees": Image.open(TREES_DIR / "trees-green.png").convert("RGBA"),
+              "ore": Image.open(ORE).convert("RGBA")}
+    for colour in ["orange", "pale", "dead"]:
+        sheets["trees-" + colour] = Image.open(TREES_DIR / ("trees-%s.png" % colour)).convert("RGBA")
     pieces = []  # (id, [(img, origin)])
     for part, (sheet, rects) in PLANTS.items():
         pics = []
@@ -452,11 +473,14 @@ PROPS = {
     # A ladder out of a cave: generated (docs/art/AI_ASSETS.md), LPC wood colours.
     "base:cave_climb": (str(ROOT / "tools" / "art" / "generated" / "cave_ladder" / "cave_ladder.png"), (0, 0, 32, 74), {}),
     "base:headframe": ("lpc-mine/lpc-mine/mine.png", (0, 0, 128, 224), {}),
-    "base:workbench": ("house_inside_1.png", (96, 32, 32, 64), {}),
+    "base:workbench": ("lpc-woodshop/lpc-woodshop/woodshop.png", (14, 0, 80, 64), {}),  # the bench with a vise
     "base:bed": ("house_inside_1.png", (72, 172, 48, 88), {}),
     "base:forge": ("ore_0.png", (64, 384, 64, 128), {}),
-    "base:campfire": ("../lpc_items/effects_5.png", (544, 32, 32, 32), {}),
+    "base:campfire": ("CampFireFinished.png", (0, 0, 64, 64), {}),
 }
+# Props that move: frames in a row from the first one's rect, and how long each
+# is shown (the game also shows them mirrored, for a longer, less even round).
+FRAMES = {"base:campfire": (5, 160)}
 # Openings in the ground, a cell each: an LPC terrain's lone piece (a pit).
 HOLES = {
     "base:cave_mouth": "Hole_Black",
@@ -485,6 +509,13 @@ def build_props():
             img = src.crop((x, y, x + w, y + h))
             box = img.getbbox()
             cuts[name] = img.crop((0, box[1], w, box[3]))
+        if part in FRAMES:  # every frame cut to the same rows, side by side
+            x, y, w, h = rect
+            n = FRAMES[part][0]
+            strip = src.crop((x, y, x + w * n, y + h))
+            top = min(src.crop((x + i * w, y, x + i * w + w, y + h)).getbbox()[1] for i in range(n))
+            bottom = max(src.crop((x + i * w, y, x + i * w + w, y + h)).getbbox()[3] for i in range(n))
+            cuts[""] = strip.crop((0, top, w * n, bottom))
         pics.append((part, cuts))
     width = max(sum(c.width for c in cuts.values()) for _, cuts in pics)
     atlas = Image.new("RGBA", (width, sum(max(c.height for c in cuts.values()) for _, cuts in pics)))
@@ -502,6 +533,12 @@ def build_props():
         d = {"id": "base:visual/" + part.split(":")[1], "kind": "visual", "for": part, "mode": "tall",
              "atlas": "art/lpc_env/props.png", "rect": rects[""],
              "origin": [(rects[""][2] - T) // 2, rects[""][3] - 4], "pixel_scale": 0.5, "variants": 1}
+        if part in FRAMES:
+            n, ms = FRAMES[part]
+            d["rect"] = [rects[""][0], rects[""][1], rects[""][2] // n, rects[""][3]]
+            d["origin"] = [(d["rect"][2] - T) // 2, d["rect"][3] - 4]
+            d["frames"] = n
+            d["frame_ms"] = ms
         if len(rects) > 1:
             d["states"] = {k: v for k, v in rects.items() if k}
         defs.append(d)
@@ -550,6 +587,8 @@ ITEMS = {
     "base:egg": ("idyl/egg.png", 0, 0),
     "base:bucket": ("idyl/bucket.png", 0, 0),
     "base:coin": (str(ROOT / "tools" / "art" / "generated" / "coin" / "coin.png"), 0, 0),  # generated (docs/art/AI_ASSETS.md)
+    "base:berries": (str(ROOT / "tools" / "art" / "generated" / "berries" / "berries.png"), 0, 0),  # drawn by hand
+    "base:mushroom": ("idyl/mushroom.png", 0, 0),
 }
 # A picture with some of its colours changed inside a box (a recolouring, not
 # a new drawing: the bucket's dark inside as water or milk): id -> (file,
@@ -716,8 +755,11 @@ PACK_CREDITS = [
     ("[LPC] Flowers / Plants / Fungi / Wood", "lpc-plants/lpc-flowers-plants-fungi-wood/CREDITS-plants.txt"),
     ("[LPC] Mine (копёр, верёвка)", "lpc-mine/lpc-mine/CREDITS-mine.txt"),
     ("[LPC] Farming tilesets (пашня, посевы, урожай, семена)", "lpc-farm/submission_daneeklu/readme.txt"),
+    ("[LPC] Woodshop (верстак)", "lpc-woodshop/lpc-woodshop/CREDITS-woodshop.txt"),
 ]
 FILE_CREDITS = [
+    ("Ягоды — нарисованы вручную (tools/art/generated/berries/make.py)", "проект No Hero Needed", "как у игры",
+     "tools/art/generated/berries/make.py"),
     ("Монета — сгенерирована (tools/art/generated/coin)",
      "модели: Stability AI SDXL Base 1.0, nerijs Pixel Art XL, madebyollin SDXL VAE fp16-fix; палитра золота Idylwild's Inventory",
      "CreativeML OpenRAIL++-M / CreativeML OpenRAIL-M (модели)", "https://huggingface.co/nerijs/pixel-art-xl"),
@@ -727,7 +769,7 @@ FILE_CREDITS = [
     ("[LPC] Thatched-roof Cottage (крыша)", "bluecarrot16", "CC-BY-SA 3.0 / GPL 3.0",
      "https://opengameart.org/content/lpc-thatched-roof-cottage"),
     ("[LPC] Wooden Stairs (лестница)", "Nyom", "CC-BY-SA 4.0", "https://opengameart.org/content/lpc-wooden-stairs"),
-    ("[LPC] House Insides (факел, верстак)", "Lanea Zimmerman (Sharm), репак", "CC-BY-SA 3.0 / GPL 3.0",
+    ("[LPC] House Insides (факел)", "Lanea Zimmerman (Sharm), репак", "CC-BY-SA 3.0 / GPL 3.0",
      "https://opengameart.org/content/lpc-house-insides"),
     ("Modified 32x32 Treasure chest (сундук)", "Blarumyrran, правка Gaurav", "CC0",
      "https://opengameart.org/content/modified-32x32-treasure-chest"),
@@ -735,7 +777,9 @@ FILE_CREDITS = [
      "https://opengameart.org/content/lpc-ore-and-forge"),
     ("Idylwild's Inventory (доски, бревно, мясо, шкура, стрела, кирка, руда)", "Idylwild", "CC0",
      "https://opengameart.org/content/idylwilds-inventory"),
-    ("[LPC] Items and game effects (топор, копьё, лук, самоцвет, жареное мясо, пламя костра)", "Lanea Zimmerman (Sharm) и др. (LPC)",
+    ("Camp Fire Animation for RPGs (костёр)", "Zabin (анимация), Jetrel (костёр)", "CC-BY-SA 3.0",
+     "https://opengameart.org/content/camp-fire-animation-for-rpgs-finished"),
+    ("[LPC] Items and game effects (топор, копьё, лук, самоцвет, жареное мясо)", "Lanea Zimmerman (Sharm) и др. (LPC)",
      "CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0", "https://opengameart.org/content/lpc-items-and-game-effects"),
 ]
 

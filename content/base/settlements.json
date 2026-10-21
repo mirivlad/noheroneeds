@@ -3,7 +3,7 @@
   "defs": [
     {
       "id": "base:village", "kind": "settlement", "name": "Деревня",
-      "region_chunks": 12, "chance": 0.45, "near_spawn": true,
+      "region_chunks": 6, "chance": 0.6, "near_spawn": true,
       "houses": [4, 7],
       "road": "base:dirt", "floor": "base:wood_floor", "wall": "base:wood_wall", "door": "base:wood_door",
       "window": "base:wood_window", "roof": "base:thatch_roof", "square": "base:campfire",

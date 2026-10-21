@@ -1010,6 +1010,18 @@ those base assets can be found at:
 http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 ```
 
+## [LPC] Woodshop (верстак)
+
+```
+"[LPC] Woodshop" by bluecarrot16. OGA-BY 3.0+ / CC-BY-3.0+ / GPL v2.0+.
+```
+
+## Ягоды — нарисованы вручную (tools/art/generated/berries/make.py)
+
+- Авторы: проект No Hero Needed
+- Лицензии: как у игры
+- tools/art/generated/berries/make.py
+
 ## Монета — сгенерирована (tools/art/generated/coin)
 
 - Авторы: модели: Stability AI SDXL Base 1.0, nerijs Pixel Art XL, madebyollin SDXL VAE fp16-fix; палитра золота Idylwild's Inventory
@@ -1034,7 +1046,7 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - Лицензии: CC-BY-SA 4.0
 - https://opengameart.org/content/lpc-wooden-stairs
 
-## [LPC] House Insides (факел, верстак)
+## [LPC] House Insides (факел)
 
 - Авторы: Lanea Zimmerman (Sharm), репак
 - Лицензии: CC-BY-SA 3.0 / GPL 3.0
@@ -1058,7 +1070,13 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - Лицензии: CC0
 - https://opengameart.org/content/idylwilds-inventory
 
-## [LPC] Items and game effects (топор, копьё, лук, самоцвет, жареное мясо, пламя костра)
+## Camp Fire Animation for RPGs (костёр)
+
+- Авторы: Zabin (анимация), Jetrel (костёр)
+- Лицензии: CC-BY-SA 3.0
+- https://opengameart.org/content/camp-fire-animation-for-rpgs-finished
+
+## [LPC] Items and game effects (топор, копьё, лук, самоцвет, жареное мясо)
 
 - Авторы: Lanea Zimmerman (Sharm) и др. (LPC)
 - Лицензии: CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0
@@ -1070,13 +1088,13 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 Звери и чудища — из наборов LPC на OpenGameArt, собраны в листы игры
 `tools/art/import_lpc_animals.py` (кадры переложены, рисунок не менялся; поринг — перекрашенный слизень).
 
-## [LPC] bears, deer, lions and more (олень)
+## [LPC] bears, deer, lions and more (олень, медведи, лиса, песец)
 
 - Авторы: tapatilorenzo
 - Лицензии: CC-BY 4.0
 - https://opengameart.org/content/lpc-bears-deer-lions-and-more
 
-## Giant rat (пещерная крыса), из того же набора
+## Giant rat, mushroom walker (пещерная крыса, грибовик), из того же набора
 
 - Авторы: Sevarihk
 - Лицензии: CC-BY 4.0

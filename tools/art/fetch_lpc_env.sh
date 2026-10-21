@@ -20,6 +20,7 @@ PACKS=(
   "lpc-farm $F/submission_daneeklu.zip 4fd2b459b0105bf750dd9766ec36c3d00c54b42b8b67f1a3696341ac8491d0a3"
   "lpc-mine $F/lpc-mine.zip 069b39efefeff64dbcebb6a95c6ff36289541e505fabdc17a807a950eae0d6d0"
   "lpc-mountains $F/mountains.zip e241bad1b239a2286ebbb81639943f2f57e7092a738afe84fca7d8fb11354c0c"
+  "lpc-woodshop $F/lpc-woodshop.zip 9d56cee7ee8c4d92bd297e804bc018795dd932fdbf4925d7a315c0e39891fdb7"
 )
 # Single pictures.
 FILES=(
@@ -28,6 +29,7 @@ FILES=(
   "house_inside_1.png $F/house_inside_1.png d703c86057bf32420bc52db28061e7d990a024d5090ed88195eed97dd97a48d2"
   "chest2.png $F/chest2.png b2e0c5bb594fcf9ff8fe427922fe22aaf4b4ac85928a84be1d032040beb31ca1"
   "ore_0.png $F/ore_0.png a0d0940be01d92f6b04fdfcb8070cebd2233de3dad4e40e5559eca4464280272"
+  "CampFireFinished.png $F/CampFireFinished.png 9ea8166688ca27b3cd0e4eb2735f7e9158971dfb85f21ab2e946d2e00066cdf7"
 )
 get() {  # file url sha256
   if [[ ! -f "$1" ]] || ! echo "$3  $1" | sha256sum -c --quiet - 2>/dev/null; then

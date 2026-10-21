@@ -12,7 +12,7 @@ func before_each() -> void:
 	_content = ContentRegistry.load_packs(["res://content/base"])
 	eq(_content.errors, PackedStringArray())
 	w = ServerWorld.open(tmp_dir().path_join("world.db"), _content, {"seed": 12345})
-	plan = w.generator.settlements.plans_near(Vector2i.ZERO, 300)[0]
+	plan = w.generator.settlements.home_plan()
 	_load_round()
 
 
@@ -99,7 +99,7 @@ func test_a_day_at_work_an_evening_by_the_fire_a_night_in_bed() -> void:
 
 func test_one_near_is_spoken_to_by_trade() -> void:
 	_live(10.0, 1600)
-	var c: Creature = _dwellers()[0]
+	var c: Creature = _dwellers().filter(func(d: Creature) -> bool: return d.job["village"] == plan["id"])[0]
 	var pc := PortableCharacter.create("Аня", "base:human_m")
 	pc.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	w.enter("k-" + pc.character_id, pc)
@@ -110,7 +110,10 @@ func test_one_near_is_spoken_to_by_trade() -> void:
 	var all := []
 	for k: String in lines:
 		all.append_array(lines[k])
-	check(all.has(c.say), "a line of its trade")
+	all.append_array(w.chronicles._names.get("asks", []))  # or of what it asks (ADR-0042)
+	var news: bool = (w.chronicles._names.get("news", []) as Array).any(func(f: String) -> bool:
+		return c.say.begins_with(f.get_slice("{news}", 0)))
+	check(all.has(c.say) or news, "a line of its trade (or the village's news): " + c.say)
 
 
 func _req(actor: String, r: Dictionary) -> Dictionary:

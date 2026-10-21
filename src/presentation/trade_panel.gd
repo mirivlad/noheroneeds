@@ -32,7 +32,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	_money = Label.new()
 	var box := VBoxContainer.new()
 	add_child(box)
-	box.add_child(_title)
+	box.add_child(Art.window_head(_title, "E", hide))
 	var heads := HBoxContainer.new()
 	box.add_child(heads)
 	for t: String in ["Купить", "Продать"]:
@@ -55,8 +55,8 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 		deal.emit(id, mini(int(_inventory.get(id, 0)), 5 if Input.is_key_pressed(KEY_SHIFT) else 1), false))
 	box.add_child(_money)
 	var hint := Label.new()
-	hint.text = "щелчок — одну, Shift — пять; E или Esc — закрыть"
-	hint.add_theme_font_size_override("font_size", 8)
+	hint.text = "щелчок — одну, Shift — пять"
+	hint.add_theme_color_override("font_color", Art.TEXT_DIM)
 	box.add_child(hint)
 	visible = false
 

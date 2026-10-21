@@ -45,7 +45,7 @@ func setup(registry: ContentRegistry, world_view: WorldView, compact := false) -
 	add_child(box)
 	# The pixel font is drawn at its own size (16) or not at all readable.
 	_title.add_theme_font_size_override("font_size", 16)
-	box.add_child(_title)
+	box.add_child(_title if compact else Art.window_head(_title, "I", hide))
 	grid.setup(content, view, 5 if compact else Bag.COLUMNS, "worn_bag" if compact else "bag")
 	grid.accepts = func(data: Dictionary) -> bool:
 		return int(data.get("from_slot", -1)) >= 0 or data.has("equipment_slot")
@@ -120,7 +120,7 @@ func show_for(inventory: Dictionary, _slot: int) -> void:
 				mine[id] = inventory[id]
 		var laid := Bag.lay_out(content, mine, [], 0)
 		var cells: Array = laid["cells"]
-		while cells.size() < 40 or cells.size() % grid.columns != 0:
+		while cells.size() < 30 or cells.size() % grid.columns != 0:
 			cells.append(["", 0])
 		_title.text = "Снаряжение"
 		grid.show_cells(cells)

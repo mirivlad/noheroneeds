@@ -19,7 +19,7 @@ func before_each() -> void:
 	eq(_content.errors, PackedStringArray())
 	_db = tmp_dir().path_join("world.db")
 	w = ServerWorld.open(_db, _content, {"seed": 12345})
-	plan = w.generator.settlements.plans_near(Vector2i.ZERO, 300)[0]
+	plan = w.generator.settlements.home_plan()
 	id = String(plan["id"])
 	var r: Rect2i = (plan["bounds"] as Rect2i).grow(80)
 	for cy in range(floori(r.position.y / 32.0), floori(r.end.y / 32.0) + 1):

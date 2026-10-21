@@ -35,7 +35,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	theme = Art.theme()
 	var col := VBoxContainer.new()
 	add_child(col)
-	col.add_child(_title)
+	col.add_child(Art.window_head(_title, "E", hide))
 	box.setup(content, view, Bag.COLUMNS, "box")
 	mine.setup(content, view, Bag.COLUMNS, "chest_bag")
 	box.accepts = func(data: Dictionary) -> bool: return String(data.get("grid", "")) == "chest_bag"
@@ -50,7 +50,7 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	col.add_child(_mine_title)
 	col.add_child(mine)
 	var hint := Label.new()
-	hint.text = "щелчок — одну, Shift — стопку, Ctrl — половину; тащите стопку в другую сетку; E или Esc — закрыть"
+	hint.text = "щелчок — одну, Shift — стопку, Ctrl — половину; тащите стопку в другую сетку"
 	hint.add_theme_color_override("font_color", Art.TEXT_DIM)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size.x = Bag.COLUMNS * (SlotGrid.CELL + 2)

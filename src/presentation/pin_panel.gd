@@ -16,7 +16,7 @@ func setup() -> void:
 	var box := VBoxContainer.new()
 	add_child(box)
 	_title = Label.new()
-	box.add_child(_title)
+	box.add_child(Art.window_head(_title, "Esc", hide))
 	_code = LineEdit.new()
 	_code.max_length = 4
 	_code.secret = true
@@ -33,8 +33,8 @@ func setup() -> void:
 	_code.text_submitted.connect(func(t: String) -> void: submit(t))
 	box.add_child(_code)
 	var hint := Label.new()
-	hint.text = "четыре цифры; Enter — готово, Esc — отмена"
-	hint.add_theme_font_size_override("font_size", 8)
+	hint.text = "четыре цифры; Enter — готово"
+	hint.add_theme_color_override("font_color", Art.TEXT_DIM)
 	box.add_child(hint)
 	visible = false
 

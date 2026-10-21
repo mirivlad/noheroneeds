@@ -36,7 +36,7 @@ func setup(registry: ContentRegistry) -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	add_child(box)
-	box.add_child(_title)
+	box.add_child(Art.window_head(_title, "E", hide))
 	for l: Label in [_says, _goal, _news]:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size.x = WIDTH
@@ -54,10 +54,7 @@ func setup(registry: ContentRegistry) -> void:
 	_trade.pressed.connect(func() -> void: trade.emit(creature))
 	_ask_news.text = "Что нового?"
 	_ask_news.pressed.connect(func() -> void: _news.visible = not _news.visible)
-	var close := Button.new()
-	close.text = "Закрыть (E)"
-	close.pressed.connect(func() -> void: hide())
-	for b: Button in [_take, _done, _trade, _ask_news, close]:
+	for b: Button in [_take, _done, _trade, _ask_news]:
 		row.add_child(b)
 	var hint := Label.new()
 	hint.text = "L — журнал: что вы взялись сделать и что помнят деревни"

@@ -12,7 +12,9 @@ const ID := "base:surface"
 ## 2: ground lies in patches instead of per-cell noise.
 ## 3: cave mouths where the underground has a way up (ADR-0017).
 ## 4: settlements (ADR-0038).
-const VERSION := 4
+## 5: settlements closer together, roads between them; biomes by climate
+##    (warmth and wetness), taiga, grove, swamp, steppe, tundra, rocky hills.
+const VERSION := 5
 var world_seed := 0
 ## From the generator's own definition (content "base:surface").
 var _water := ""
@@ -29,7 +31,10 @@ var _biomes: Array = []
 var biome_ids: Array = []
 ## Plants that block walking (from their definitions), kept out of the spawn clearing.
 var _solid := {}
+## Warmth and wetness of the land (-1..1 each, slow): a place's biome is the
+## one whose climate is nearest (so snow lies by the taiga, not by the steppe).
 var _biome_noise := FastNoiseLite.new()
+var _wet_noise := FastNoiseLite.new()
 var _water_noise := FastNoiseLite.new()
 ## One noise field per patch slot (the n-th lesser ground of any biome uses field n).
 var _patch_noise: Array[FastNoiseLite] = []
@@ -49,7 +54,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	for id: String in ids:
 		var d := content.get_def(id)
 		_biomes.append({"ground": _patches(d["ground"]), "cover": _table(d.get("cover", {})),
-			"density": float(d["cover_density"])})
+			"density": float(d["cover_density"]), "climate": Vector2(d["climate"][0], d["climate"][1])})
 		biome_ids.append(id)
 		for plant: String in d.get("cover", {}):
 			if content.get_def(plant).get("solid", false):
@@ -64,8 +69,11 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 		_water_level = g["water_threshold"]
 		_shore_width = g["shore_width"]
 	_biome_noise.seed = seed_value
-	_biome_noise.frequency = 0.012
+	_biome_noise.frequency = 0.0025
 	_biome_noise.fractal_octaves = 3
+	_wet_noise.seed = seed_value + 4241
+	_wet_noise.frequency = 0.003
+	_wet_noise.fractal_octaves = 3
 	_water_noise.seed = seed_value + 7919
 	_water_noise.frequency = 0.03
 	_water_noise.fractal_octaves = 2
@@ -106,6 +114,15 @@ func generate(cx: int, cy: int) -> Chunk:
 				var plant := _pick(b["cover"], _hash(x, y, 3))
 				if plant != "" and not (clearing and _solid.has(plant)):
 					c.set_cell("cover", lx, ly, plant)
+	# Roads between settlements, under them (a settlement's own cells win).
+	for road: Dictionary in settlements.roads_touching(cx, cy):
+		var cells: Dictionary = road["cells"]
+		for at: Vector2i in cells:
+			var lx := at.x - cx * Chunk.SIZE
+			var ly := at.y - cy * Chunk.SIZE
+			if lx >= 0 and ly >= 0 and lx < Chunk.SIZE and ly < Chunk.SIZE:
+				c.set_cell("ground", lx, ly, cells[at]["ground"])
+				c.set_cell("cover", lx, ly, "")
 	# Settlements: the cells of each whose plan falls in this chunk (the same
 	# in any order the chunks are made).
 	for plan: Dictionary in settlements.plans_touching(cx, cy):
@@ -164,8 +181,18 @@ func biome_id_at(x: int, y: int) -> String:
 
 
 func _biome_at(x: int, y: int) -> int:
-	var v := (_biome_noise.get_noise_2d(x, y) + 1.0) * 0.5
-	return clampi(int(v * _biomes.size()), 0, _biomes.size() - 1)
+	# Fractal noise keeps mostly within -0.6..0.6: stretched to the climates' range,
+	# a little jitter so the edges between biomes are ragged.
+	var here := Vector2(_biome_noise.get_noise_2d(x, y), _wet_noise.get_noise_2d(x, y)) * 1.4 \
+		+ Vector2(_hash(x, y, 6) - 0.5, _hash(x, y, 7) - 0.5) * 0.06
+	var best := 0
+	var best_d := INF
+	for i in _biomes.size():
+		var d := here.distance_squared_to(_biomes[i]["climate"])
+		if d < best_d:
+			best_d = d
+			best = i
+	return best
 
 
 ## The dominant ground of a biome covers everything except patches of the

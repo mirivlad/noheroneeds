@@ -1752,7 +1752,7 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	if layer != "structure":
 		_set_layer_props(c, layer, at[3], at[4], {})
 	if layer != "ground":
-		c.set_cell(layer, at[3], at[4], "")
+		c.set_cell(layer, at[3], at[4], String(g.get("becomes", "")))  # gone, or what it is after (a bush picked)
 	_changed(chunk_key(loc, at[1], at[2]))
 	var drops: Dictionary = g.get("drops", {})
 	for id: String in drops:

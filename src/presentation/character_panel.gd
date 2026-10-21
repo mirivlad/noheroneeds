@@ -49,14 +49,7 @@ func setup(registry: ContentRegistry, view: WorldView) -> void:
 	custom_minimum_size = Vector2(456, 0)
 	var box := VBoxContainer.new()
 	add_child(box)
-	var header := HBoxContainer.new()
-	box.add_child(header)
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(_title)
-	var close := Button.new()
-	close.text = "Закрыть (C)"
-	close.pressed.connect(func() -> void: hide())
-	header.add_child(close)
+	box.add_child(Art.window_head(_title, "C", hide))
 	var columns := HBoxContainer.new()
 	box.add_child(columns)
 	var left := VBoxContainer.new()

@@ -37,6 +37,8 @@ var _hidden_room := {}
 ## world's clock with nothing sent, so their stage is looked at now and then.
 var _crops := {}
 var _crops_seen := 0.0
+## Things that move (a fire): [sprite, first frame's x, frames, ms a frame, phase].
+var _animated: Array = []
 ## Sprites made see-through because they stand in front of the player.
 var _faded: Array[Sprite2D] = []
 ## Things in front of the player are seen through a window round the body.
@@ -329,6 +331,7 @@ func update_view(alpha: float, delta: float) -> void:
 	_keep_near()
 	_paint_pending()
 	_update_light()
+	_animate()
 	_update_characters(alpha, delta)
 	_update_room()
 	_fade_occluders()
@@ -377,6 +380,27 @@ func _update_light() -> void:
 			continue
 		l.energy = float(l.get_meta("intensity")) * dark * 1.6
 		l.visible = dark > 0.02
+		if l.has_meta("flicker"):  # a fire's light trembles: brighter and dimmer, a little wider and narrower
+			var t := Time.get_ticks_msec() / 1000.0 + float(l.get_meta("flicker"))
+			var f := 0.08 * sin(t * 11.0) + 0.05 * sin(t * 23.7 + 1.3) + 0.04 * sin(t * 47.1 + 0.4)
+			l.energy *= 1.0 + f
+			l.texture_scale = float(l.get_meta("scale")) * (1.0 + f * 0.35)
+
+
+## Frames of the things that move: in order, then the same mirrored (twice
+## the round, less even to the eye).
+func _animate() -> void:
+	var now := Time.get_ticks_msec()
+	for i in range(_animated.size() - 1, -1, -1):
+		var a: Array = _animated[i]
+		if not is_instance_valid(a[0]):
+			_animated.remove_at(i)
+			continue
+		var s: Sprite2D = a[0]
+		var n: int = a[2]
+		var k := (now / int(a[3]) + int(a[4])) % (n * 2)
+		s.region_rect.position.x = float(a[1]) + (k % n) * s.region_rect.size.x
+		s.flip_h = k >= n
 
 
 ## A light source's glow: a soft round light the size of its radius.
@@ -398,6 +422,9 @@ func _light_for(def: Dictionary, cell: Vector2i) -> PointLight2D:
 	l.texture_scale = float(def["radius"]) * CELL * 2.0 / _glow.width
 	l.position = Vector2((cell.x + 0.5) * CELL, (cell.y + 0.5) * CELL - CELL)
 	l.set_meta("intensity", float(def["intensity"]))
+	l.set_meta("scale", l.texture_scale)
+	if def.get("flicker", false):
+		l.set_meta("flicker", float(absi((cell.x * 73856093) ^ (cell.y * 19349663)) % 1000))
 	l.energy = 0.0
 	_lights.append(l)
 	return l
@@ -481,6 +508,7 @@ func _paint_pending() -> void:
 func _clear() -> void:
 	_ground.clear()
 	_crops.clear()
+	_animated.clear()
 	_floor32.clear()
 	_cover32.clear()
 	_pending.clear()
@@ -749,6 +777,9 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 			var s := _tall_sprite(v, cell, state, variant, String(props.get("facing", "")))
 			if planted != null and crop.has("crop"):
 				_crops[cell] = [s, v, crop, float(planted)]
+			if v.has("frames"):  # each one out of step with the others, the same for every player
+				_animated.append([s, s.region_rect.position.x, int(v["frames"]), int(v.get("frame_ms", 150)),
+					absi((cell.x * 73856093) ^ (cell.y * 19349663)) % 97])
 			s.set_meta("cell", cell)
 			s.set_meta("layer", layer)
 			s.set_meta("id", id)

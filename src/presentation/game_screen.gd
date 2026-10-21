@@ -45,6 +45,9 @@ var _craft_rids := {}
 const WEATHER_WORDS := {"clear": "ясно", "cloudy": "пасмурно", "rain": "дождь", "storm": "гроза", "snow": "снег", "fog": "туман"}
 ## Rain, fog, lightning over the world (ADR-0033).
 var weather := WeatherView.new()
+## One's own state at the top left, the world's time at the top right.
+var needs_box := HudBoxes.NeedsBox.new()
+var clock_box := HudBoxes.ClockBox.new()
 ## Feeding an animal (ADR-0030): how it took it.
 var _feed_rids := {}
 var inventory_panel := InventoryPanel.new()
@@ -65,17 +68,20 @@ var _door_rids := {}
 var _chest_rids := {}
 var _inv_seen := 0
 ## The context menu (right button) and the actions it lists.
-var _menu := PopupMenu.new()
+var _menu := ActionMenu.new()
 var _menu_actions: Array[Dictionary] = []
 ## The blueprint under the cursor ("" none; BuildCatalog.DEMOLISH: taking apart),
 ## where a drag began (NO_CELL: none).
 var _blueprint := ""
 var _drag_from := NO_CELL
 const NO_CELL := Vector2i(1 << 30, 1 << 30)
+## Windows begin below the boxes at the top (needs, time).
+const WINDOW_TOP := 52.0
 ## What the cursor points at, and what can be done there with what is held.
 var target := {}
 var actions: Array[Dictionary] = []
-var _cursor_aim := false
+var _cursor_kind := "corners"
+var _cursor_drawn := []
 var _hotbar_loaded := false
 ## Where the cursor is in the world; tests that push mouse events set it
 ## (a window-less viewport keeps no mouse position of its own).
@@ -149,7 +155,7 @@ const REASONS := {
 	"nothing_to_jump_from": "прыгать можно с этажа", "not_an_edge": "пол продолжается — идите",
 	"roof_below": "внизу крыша", "bad_request": "не получилось",
 	"no_tool": "этим этого не сделать", "nothing_to_gather": "здесь нечего добыть", "natural": "это не разобрать — только выкопать", "not_buildable": "это не строится",
-	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят",
+	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят", "side_wall": "дверь в боковой стене не видна — ставьте в стену поперёк", "door_beside": "дверь окажется в боковой стене",
 	"blocked_below": "внизу что-то построено", "box_full": "сундук полон", "full": "сумка полна", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
@@ -213,6 +219,8 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 		l.add_theme_color_override("font_outline_color", Art.INK)
 		l.add_theme_constant_override("outline_size", 4)
 		layer.add_child(l)
+	layer.add_child(needs_box)
+	layer.add_child(clock_box)
 	hud.position = Vector2(6, 2)
 	_info.position = Vector2(6, 16)
 	_info.add_theme_color_override("font_color", Art.TEXT_DIM)
@@ -223,6 +231,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	layer.add_child(minimap)
 	# Equipment covers the minimap in drawing and mouse picking alike.
 	layer.move_child(character_panel, layer.get_child_count() - 1)
+	layer.move_child(_menu, layer.get_child_count() - 1)  # the right button's list over everything
 	var map_layer := CanvasLayer.new()
 	map_layer.layer = 5
 	add_child(map_layer)
@@ -235,43 +244,30 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	return ""
 
 
-## The cursor: a crosshair when a click would strike or shoot, else the
-## corners of a square.
+## The cursor: what a click (or E) will do (CursorArt), its pixels the
+## raster's (ADR-0022), never thinner than two screen pixels.
 func _set_cursor() -> void:
-	var combat := _cursor_aim
-	var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
-	var ink := Color(0.1, 0.08, 0.07)
-	var light := Color(0.98, 0.94, 0.82) if not combat else Color(1.0, 0.45, 0.35)
-	for pass_ in 2:
-		var c := ink if pass_ == 0 else light
-		var o := 1 if pass_ == 0 else 0  # the outline one pixel round
-		if combat:
-			for d in range(-9 - o, 10 + o):
-				if absi(d) > 3 - o:
-					for w in range(-o, o + 1):
-						img.set_pixel(16 + d, 16 + w, c)
-						img.set_pixel(16 + w, 16 + d, c)
-			img.set_pixel(16, 16, c)
-		else:
-			for corner: Vector2i in [Vector2i(6, 6), Vector2i(25, 6), Vector2i(6, 25), Vector2i(25, 25)]:
-				var sx := 1 if corner.x < 16 else -1
-				var sy := 1 if corner.y < 16 else -1
-				for d in range(-o, 6 + o):
-					for w in range(-o, o + 1):
-						img.set_pixel(corner.x + d * sx, corner.y + w, c)
-						img.set_pixel(corner.x + w, corner.y + d * sy, c)
-	Input.set_custom_mouse_cursor(ImageTexture.create_from_image(img), Input.CURSOR_ARROW, Vector2(16, 16))
+	var win := get_window()
+	var fit := minf(float(win.size.x) / PixelDisplay.SIZE.x, float(win.size.y) / PixelDisplay.SIZE.y)
+	var scale := maxi(2, roundi(fit))
+	if _cursor_drawn == [_cursor_kind, scale]:
+		return
+	_cursor_drawn = [_cursor_kind, scale]
+	Input.set_custom_mouse_cursor(CursorArt.texture(_cursor_kind, scale), Input.CURSOR_ARROW,
+		CursorArt.hotspot(_cursor_kind, scale))
 
 
 func _exit_tree() -> void:
 	Input.set_custom_mouse_cursor(null)  # the menu has its own
+	_cursor_drawn = []
 
 
 func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
 		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog, crafts,
-				inventory_panel, character_panel, chest_panel, trade_panel, talk_panel, journal_panel, pin_panel, _menu, weather]:
+				inventory_panel, character_panel, chest_panel, trade_panel, talk_panel, journal_panel, pin_panel, _menu, weather,
+				needs_box, clock_box]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -299,22 +295,62 @@ func apply_settings() -> void:
 	camera.zoom = Vector2.ONE * z * PixelDisplay.WORLD_SCALE
 
 
+## One's own state as rows of the box at the top left (ADR-0032, 0034, 0035):
+## [key, name, value, most, colour, warning].
+func _need_rows() -> Array:
+	var rows := []
+	var top := int(client.own.get("max_health", 0))
+	if top > 0:
+		var hp := int(client.own.get("health", top))
+		rows.append(["health", "Здоровье", hp, top, Color("c84040"), "Ранены" if hp * 10 < top * 3 else ""])
+	if client.own.has("needs"):  # one's own, from the server
+		var n: Dictionary = client.own["needs"]
+		var satiety := int(n.get("satiety", 100))
+		rows.append(["satiety", "Сытость", satiety, 100, Color("d8a040"),
+			"Голод!" if satiety <= 0 else ("Голодно" if satiety < int(Needs.HUNGRY) else "")])
+		var warmth := int(n.get("warmth", 100))
+		rows.append(["warmth", "Тепло", warmth, 100, Color("e07030"),
+			"Замерзаете!" if warmth <= 0 else ("Холодно" if warmth < int(Needs.COLD) else "")])
+		var energy := int(n.get("energy", 100))
+		rows.append(["energy", "Бодрость", energy, 100, Color("60a8d8"),
+			"Сон" if client.own.get("asleep", false) else ("Устали" if energy < int(Needs.TIRED) else "")])
+	return rows
+
+
+## The boxes at the top change size with what they say: the lines between them follow.
+var _top_sizes := []
+
+
+func _layout_top() -> void:
+	var sizes := [needs_box.get_combined_minimum_size(), clock_box.get_combined_minimum_size()]
+	if sizes != _top_sizes:
+		_top_sizes = sizes
+		_layout_hud()
+
+
 ## HUD coordinates are viewport pixels, independent of the world's camera.
 func _layout_hud() -> void:
 	var viewport_size := get_viewport_rect().size
+	needs_box.position = Vector2(4, 4)
+	clock_box.size = clock_box.get_combined_minimum_size()
+	clock_box.position = Vector2(viewport_size.x - maxf(clock_box.size.x, Minimap.SIZE) - 4, 4)
 	minimap.position = Vector2(viewport_size.x - Minimap.SIZE - 4, 34)
 	hotbar.position = Vector2(floorf((viewport_size.x - hotbar.get_combined_minimum_size().x) / 2.0), viewport_size.y - 60)  # above the status line
 	status.position = Vector2(6, viewport_size.y - 18)
 	# Bounded lines: they cannot spill across the minimap or hotbar.
-	hud.position.y = 4
-	_info.position.y = 24
-	minimap.position.y = 48
+	# The lines at the top run between the two boxes.
+	var left := needs_box.position.x + needs_box.get_combined_minimum_size().x + 8
+	hud.position = Vector2(left, 4)
+	_info.position = Vector2(left, 24)
+	minimap.position.y = maxf(48, clock_box.position.y + clock_box.size.y + 4)
 	for label: Label in [hud, _info, status]:
 		label.clip_text = true
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		label.custom_minimum_size.x = 0
 		label.size = Vector2(viewport_size.x - 12, 18)
 		label.add_theme_constant_override("outline_size", 2)
+	for label: Label in [hud, _info]:
+		label.size.x = maxf(40, clock_box.position.x - 8 - left)
 
 
 ## Ends the game: the world is saved and closed, connections dropped.
@@ -476,10 +512,22 @@ func _process(delta: float) -> void:
 	if _opts.has("goto") and game and _frames == 40:  # dev only: --goto=X,Y (or "village") puts one at a cell
 		var cell := Vector2i.ZERO
 		if String(_opts["goto"]).begins_with("village"):  # "village" or "village,DX,DY" from its fire
-			var near := game.world.generator.settlements.plans_near(Vector2i.ZERO, 1200)
+			var home := game.world.generator.settlements.home_plan()
 			var off := String(_opts["goto"]).split(",")
-			if not near.is_empty():
-				cell = (near[0]["fire"] as Vector2i) + (Vector2i(int(off[1]), int(off[2])) if off.size() == 3 else Vector2i(2, 0))
+			if not home.is_empty():
+				cell = (home["fire"] as Vector2i) + (Vector2i(int(off[1]), int(off[2])) if off.size() == 3 else Vector2i(2, 0))
+		elif String(_opts["goto"]).begins_with("biome:"):  # "biome:base:taiga": the nearest middle of one
+			var want := String(_opts["goto"]).trim_prefix("biome:")
+			var g := game.world.generator
+			for r in range(0, 3000, 24):
+				for k in 32:
+					var p := Vector2i(Vector2(r, 0).rotated(k * TAU / 32))
+					if [Vector2i.ZERO, Vector2i(12, 0), Vector2i(-12, 0), Vector2i(0, 12), Vector2i(0, -12)].all(func(d: Vector2i) -> bool:
+							return g.biome_id_at(p.x + d.x, p.y + d.y) == want):
+						cell = p
+						break
+				if cell != Vector2i.ZERO:
+					break
 		else:
 			var to := String(_opts["goto"]).split(",")
 			cell = Vector2i(int(to[0]), int(to[1]))
@@ -550,6 +598,10 @@ func _process(delta: float) -> void:
 						_trade_rids[client.request({"type": "trade_look", "creature": best})] = best
 			"pin":
 				pin_panel.open_for(Vector2i(0, 2), false)
+			"menu":  # the right button's list over the door of the demo house
+				mouse_at = Vector2(0 * WorldView.CELL + 8, 2 * WorldView.CELL + 8)
+				_update_target()
+				_open_menu()
 			"plan":  # a row of walls dragged, part of it out of reach
 				var me := Movement.cell_of(client.position)
 				_blueprint = "base:wood_wall"
@@ -584,6 +636,7 @@ func _process(delta: float) -> void:
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
 	_update_target()
+	_place_windows()
 	_update_hud()
 	_update_ghost()
 	_frames += 1
@@ -610,6 +663,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
+		if _menu.visible:
+			_menu.hide()
+			return
 		if catalog.visible or crafts.visible or inventory_panel.visible or character_panel.visible or chest_panel.visible or trade_panel.visible or talk_panel.visible or journal_panel.visible or pin_panel.visible or _blueprint != "":
 			_close_tools()
 			return
@@ -695,6 +751,9 @@ func _key(k: int, shift: bool) -> void:
 
 
 func _mouse(b: InputEventMouseButton) -> void:
+	if _menu.visible and b.pressed:
+		_menu.hide()  # a click past it lets it go, and does nothing else
+		return
 	if b.button_index == MOUSE_BUTTON_WHEEL_UP or b.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 		if b.pressed:
 			_choose_slot(posmod(hotbar.selected + (-1 if b.button_index == MOUSE_BUTTON_WHEEL_UP else 1), Hotbar.SLOTS))
@@ -736,6 +795,18 @@ func _mouse(b: InputEventMouseButton) -> void:
 		_open_menu()
 
 
+## Every window the same way: in the middle, between the lines at the top
+## and the quick slots below.
+func _place_windows() -> void:
+	var area := get_viewport_rect().size
+	for w: Control in [catalog, crafts, inventory_panel, character_panel, chest_panel, trade_panel, talk_panel,
+			journal_panel, pin_panel]:
+		if w.visible:
+			w.size = w.get_combined_minimum_size()
+			w.position = Vector2(floorf((area.x - w.size.x) / 2.0),
+				clampf(floorf((area.y - 60 - w.size.y) / 2.0), WINDOW_TOP, maxf(WINDOW_TOP, area.y - 60 - w.size.y)))
+
+
 ## Does an action: sends its request, or looks (inspect).
 func _do(a: Dictionary) -> void:
 	if not a.get("enabled", true):
@@ -743,6 +814,10 @@ func _do(a: Dictionary) -> void:
 		return
 	if a.get("local") == "inspect":
 		_note = Actions.describe(content, target, client.character_id)
+		return
+	if a.get("local") == "crafts":
+		_close_tools()
+		crafts.open(String(a["station"]))
 		return
 	if a.get("local") == "lock":
 		pin_panel.open_for(Vector2i(int(a["request"]["x"]), int(a["request"]["y"])), true)
@@ -799,21 +874,12 @@ func _do(a: Dictionary) -> void:
 
 
 func _open_menu() -> void:
-	_menu.clear()
 	_menu_actions = actions.duplicate()
-	var title := Actions.describe(content, target, client.character_id)
-	if title != "":
-		_menu.add_separator(title)
-	for i in _menu_actions.size():
-		var a: Dictionary = _menu_actions[i]
-		var label := String(a["name"]) + ("  (E)" if a.get("quick", false) else "") + ("  (ЛКМ)" if a.get("primary", false) else "")
-		_menu.add_item(label, i)
-		if not a.get("enabled", true):
-			_menu.set_item_disabled(_menu.get_item_index(i), true)
-			_menu.set_item_tooltip(_menu.get_item_index(i), String(a.get("why", "")))
-	_menu.position = Vector2i(get_viewport().get_mouse_position() * get_viewport().get_screen_transform().get_scale())
-	_menu.reset_size()
-	_menu.popup()
+	var lines: Array[Dictionary] = []
+	for a: Dictionary in _menu_actions:
+		lines.append({"text": String(a["name"]) + ("  (E)" if a.get("quick", false) else "") + ("  (ЛКМ)" if a.get("primary", false) else ""),
+			"disabled": not a.get("enabled", true), "why": String(a.get("why", ""))})
+	_menu.open(get_viewport().get_mouse_position(), Actions.describe(content, target, client.character_id), lines)
 
 
 func _choose_slot(slot: int) -> void:
@@ -870,21 +936,18 @@ func _build_tools(layer: CanvasLayer) -> void:
 	hotbar.setup(content, view)
 	layer.add_child(hotbar)
 	catalog.setup(content, view)
-	catalog.position = Vector2(6, 40)
 	catalog.chosen.connect(func(part: String) -> void:
 		_blueprint = part
 		_facing = 0
 		catalog.visible = false)
 	layer.add_child(catalog)
 	crafts.setup(content, view, client)
-	crafts.position = Vector2(6, 40)
 	crafts.craft.connect(func(recipe: String, count: int) -> void:
 		var crid := client.request({"type": "craft", "recipe": recipe, "count": count})
 		_craft_rids[crid] = true
 		_craft_rids_recipe[crid] = recipe)
 	layer.add_child(crafts)
 	inventory_panel.setup(content, view)
-	inventory_panel.position = Vector2(90, 24)  # clear of the minimap and the quick slots
 	inventory_panel.unslot.connect(func(slot: int) -> void:
 		hotbar.put(slot, "", -1))
 	layer.add_child(inventory_panel)
@@ -893,7 +956,6 @@ func _build_tools(layer: CanvasLayer) -> void:
 	inventory_panel.wear.connect(_wear_item)
 	inventory_panel.arranged.connect(_save_bag)
 	character_panel.setup(content, view)
-	character_panel.position = Vector2(10, 16)
 	character_panel.wear.connect(_wear_item)
 	character_panel.take_off.connect(func(slot: String) -> void:
 		if slot == "main_hand":
@@ -907,21 +969,18 @@ func _build_tools(layer: CanvasLayer) -> void:
 	hotbar.select_slot.connect(func(i: int) -> void: _choose_slot(i))
 	hotbar.changed.connect(_save_hotbar)
 	chest_panel.setup(content, view)
-	chest_panel.position = Vector2(60, 50)
 	chest_panel.move.connect(func(item: String, n: int, putting: bool) -> void:
 		var c := chest_panel.cell
 		_chest_rids[client.request({"type": "store" if putting else "take", "location": client.location,
 			"x": c.x, "y": c.y, "item": item, "count": n})] = c)
 	layer.add_child(chest_panel)
 	trade_panel.setup(content, view)
-	trade_panel.position = Vector2(40, 40)
 	trade_panel.deal.connect(func(item: String, n: int, buying: bool) -> void:
 		if n > 0:
 			_trade_rids[client.request({"type": "trade", "creature": trade_panel.creature, "item": item, "count": n,
 				"buy": buying})] = trade_panel.creature)
 	layer.add_child(trade_panel)
 	talk_panel.setup(content)
-	talk_panel.position = Vector2(40, 40)
 	talk_panel.promise.connect(func(who: String) -> void:
 		_talk_rids[client.request({"type": "promise", "creature": who})] = who)
 	talk_panel.report.connect(func(who: String) -> void:
@@ -931,21 +990,18 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_trade_rids[client.request({"type": "trade_look", "creature": who})] = who)
 	layer.add_child(talk_panel)
 	journal_panel.setup()
-	journal_panel.position = Vector2(40, 30)
 	layer.add_child(journal_panel)
 	pin_panel.setup()
-	pin_panel.position = Vector2(180, 90)
 	pin_panel.entered.connect(func(c: Vector2i, pin: String, new_code: bool) -> void:
 		var r := {"type": "lock" if new_code else "use", "location": client.location, "x": c.x, "y": c.y, "pin": pin}
 		var rid := client.request(r)
 		if not new_code:
 			_door_rids[rid] = c)
 	layer.add_child(pin_panel)
-	_menu.theme = Art.theme()
-	_menu.id_pressed.connect(func(i: int) -> void:
+	_menu.chosen.connect(func(i: int) -> void:
 		if i >= 0 and i < _menu_actions.size():
 			_do(_menu_actions[i]))
-	add_child(_menu)
+	layer.add_child(_menu)
 
 
 func _wear_item(item: String) -> void:
@@ -1306,24 +1362,18 @@ func _update_hud() -> void:
 	for id: String in MATERIALS:
 		bag.append("%s %d" % [content.get_def(id).get("name", id), int(inv.get(id, 0))])
 	var level := "Поверхность  0" if client.z == 0 else ("Этаж  %+d" % client.z if client.z > 0 else "Глубина  −%d" % -client.z)
-	var clock := "%s, день %d  %s  %s     " % [Seasons.name_of(client.world_time).capitalize(), Seasons.day_of(client.world_time),
-		Daylight.clock_text(client.world_time),
-		WEATHER_WORDS[Weather.kind(client.weather_seed, client.world_time)] if client.z >= 0 else ""] if client.has_time else ""
-	var top := int(client.own.get("max_health", 0))
-	var health := "Здоровье %d/%d     " % [int(client.own.get("health", top)), top] if top > 0 else ""
+	if client.has_time:
+		clock_box.show_time(Seasons.of(client.world_time), "%s, день %d" % [Seasons.name_of(client.world_time).capitalize(),
+			Seasons.day_of(client.world_time)], "%s  %s" % [Daylight.clock_text(client.world_time),
+			WEATHER_WORDS[Weather.kind(client.weather_seed, client.world_time)] if client.z >= 0 else ""],
+			Weather.kind(client.weather_seed, client.world_time) if client.z >= 0 else "", Daylight.is_night(client.world_time), level)
 	var deaths := int(client.own.get("deaths", 0))
 	if deaths > _deaths_seen and _deaths_seen >= 0:
 		_note = "вы погибли и вернулись к началу"
 	_deaths_seen = deaths if client.own.has("deaths") else _deaths_seen
-	var fed := ""
-	if client.own.has("needs"):  # ADR-0032: one's own, from the server
-		var satiety := int(client.own["needs"].get("satiety", 100))
-		fed = "Сытость %d%s     " % [satiety, " — голод!" if satiety <= 0 else (" — голодно" if satiety < int(Needs.HUNGRY) else "")]
-		var warmth := int(client.own["needs"].get("warmth", 100))
-		fed += "Тепло %d%s     " % [warmth, " — замерзаете!" if warmth <= 0 else (" — холодно" if warmth < int(Needs.COLD) else "")]
-		var energy := int(client.own["needs"].get("energy", 100))
-		fed += "Бодрость %d%s     " % [energy, " — сон" if client.own.get("asleep", false) else (" — устали" if energy < int(Needs.TIRED) else "")]
-	hud.text = clock + level + "     " + health + fed + "  ".join(bag)
+	needs_box.show_rows(_need_rows())
+	_layout_top()
+	hud.text = "  ".join(bag)
 	var info := PackedStringArray()
 	if hosted:
 		info.append("сервер: порт %d%s" % [hosted.port, _lan_address()])
@@ -1409,11 +1459,8 @@ func _update_target() -> void:
 			target = {"kind": "ground", "id": view.ground_at(client.location, Movement.cell_of(aim)),
 				"cell": Movement.cell_of(aim), "location": client.location}  # out of reach: nothing to dig
 	actions = Actions.of(content, client, view, held, target, aim)
-	var p := Actions.primary(actions)
-	var aiming := _blueprint == "" and String(p.get("id", "")) in ["strike", "shoot", "swing"]
-	if aiming != _cursor_aim:
-		_cursor_aim = aiming
-		_set_cursor()
+	_cursor_kind = CursorArt.kind_of(actions) if _blueprint == "" else "corners"
+	_set_cursor()
 
 
 ## Where others on the local network reach this host (first private IPv4).

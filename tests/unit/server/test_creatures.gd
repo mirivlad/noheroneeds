@@ -71,9 +71,16 @@ func test_chunks_get_their_animals_once_and_villagers_come() -> void:
 	for cy in range(-3, 4):
 		for cx in range(-3, 4):
 			w.chunk("surface", cx, cy)
-	var homes: Array = w.generator.settlements.plans_near(Vector2i.ZERO, 300)[0]["homes"]
+	# Villages lie closer now (ADR-0038): more than the spawn's may fall in
+	# the chunks made — a dweller for every home in them.
+	var made := Rect2i(-3 * 32, -3 * 32, 7 * 32, 7 * 32)
+	var homes := []
+	for p: Dictionary in w.generator.settlements.plans_near(Vector2i.ZERO, 400):
+		for h: Dictionary in p["homes"]:
+			if h["bed"] != Settlements.NONE and made.has_point(h["bed"]):
+				homes.append(h)
 	var villagers := w.creatures.creatures.values().filter(func(c: Creature) -> bool: return c.kind == "base:villager")
-	eq(villagers.size(), homes.size(), "a dweller a home in the village by the spawn point")
+	eq(villagers.size(), homes.size(), "a dweller a home in the villages made")
 	check(not (villagers[0] as Creature).looks.is_empty(), "with looks of their own")
 	for c: Creature in w.creatures.creatures.values():
 		animals += 1 if c.kind != "base:villager" and c.owner == "" else 0

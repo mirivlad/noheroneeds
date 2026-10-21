@@ -17,6 +17,8 @@
     {"id": "base:milk_bucket", "kind": "item", "name": "Ведро молока", "stack": 1, "liquid": {"empty": "base:bucket"},
       "food": {"heal": 3, "satiety": 30}},
     {"id": "base:egg", "kind": "item", "name": "Яйцо", "stack": 30, "food": {"heal": 2, "satiety": 12}},
+    {"id": "base:berries", "kind": "item", "name": "Ягоды", "stack": 50, "food": {"heal": 1, "satiety": 8}},
+    {"id": "base:mushroom", "kind": "item", "name": "Грибы", "stack": 50, "food": {"heal": 1, "satiety": 6}},
     {"id": "base:cooked_meat", "kind": "item", "name": "Жареное мясо", "stack": 20, "food": {"heal": 6, "satiety": 35}},
     {"id": "base:iron_ingot", "kind": "item", "name": "Железный слиток", "stack": 50},
     {"id": "base:copper_ingot", "kind": "item", "name": "Медный слиток", "stack": 50},

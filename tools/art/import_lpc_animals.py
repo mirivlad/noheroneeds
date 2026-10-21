@@ -100,6 +100,42 @@ ANIMALS = {
                             "attack": grid(FARM + "chicken_eat.png", 32, 32, FARM_ROWS, range(4))},
         "sheet": FARM + "chicken_walk.png", "attack": "attack", "fps": 8,
     },
+    # Bears (rows n, e, w, s: the sides the other way round from the deer's),
+    # walking and striking with a paw.
+    "base:bear": {
+        "anims": lambda p: {
+            "walk": strip(p, {"n": (0, 0, 64, 64, 4), "e": (0, 64, 64, 64, 5), "w": (0, 128, 64, 64, 5), "s": (0, 192, 64, 64, 4)}),
+            "idle": strip(p, {"n": (0, 0, 64, 64, 1), "e": (0, 64, 64, 64, 1), "w": (0, 128, 64, 64, 1), "s": (0, 192, 64, 64, 1)}),
+            "attack": strip(p, {"n": (0, 256, 64, 64, 4), "e": (0, 320, 64, 64, 3), "w": (0, 384, 64, 64, 3), "s": (0, 448, 64, 64, 4)}),
+        },
+        "sheet": A22 + "bear, grizzly.png", "alternates": [A22 + "bear, black.png"], "attack": "attack", "fps": 7,
+    },
+    "base:polar_bear": {
+        "anims": lambda p: {
+            "walk": strip(p, {"n": (0, 0, 64, 64, 4), "e": (0, 64, 64, 64, 5), "w": (0, 128, 64, 64, 5), "s": (0, 192, 64, 64, 4)}),
+            "idle": strip(p, {"n": (0, 0, 64, 64, 1), "e": (0, 64, 64, 64, 1), "w": (0, 128, 64, 64, 1), "s": (0, 192, 64, 64, 1)}),
+            "attack": strip(p, {"n": (0, 256, 64, 64, 4), "e": (0, 320, 64, 64, 3), "w": (0, 384, 64, 64, 3), "s": (0, 448, 64, 64, 4)}),
+        },
+        "sheet": A22 + "bear, polar.png", "attack": "attack", "fps": 7,
+    },
+    # Foxes (rows s, w, e, n): no strike of their own, a lunge of the walk.
+    "base:fox": {
+        "anims": lambda p: {"walk": grid(p, 64, 64, {"s": 0, "w": 1, "e": 2, "n": 3}, range(4)),
+                            "idle": grid(p, 64, 64, {"s": 0, "w": 1, "e": 2, "n": 3}, [0])},
+        "sheet": A22 + "fox, woods.png", "attack": "walk", "fps": 10,
+    },
+    "base:arctic_fox": {
+        "anims": lambda p: {"walk": grid(p, 64, 64, {"s": 0, "w": 1, "e": 2, "n": 3}, range(4)),
+                            "idle": grid(p, 64, 64, {"s": 0, "w": 1, "e": 2, "n": 3}, [0])},
+        "sheet": A22 + "fox, arctic.png", "attack": "walk", "fps": 10,
+    },
+    # A mushroom that walks (rows s, e, w, n).
+    "base:mushroom_walker": {
+        "anims": lambda p: {"walk": grid(p, 32, 32, {"s": 0, "e": 1, "w": 2, "n": 3}, range(4)),
+                            "idle": grid(p, 32, 32, {"s": 0, "e": 1, "w": 2, "n": 3}, [0])},
+        "sheet": A22 + "mushroom walker (Sevarihk).png", "alternates": [A22 + "mushroom walker, fly amanita (Sevarihk).png"],
+        "attack": "walk", "fps": 8,
+    },
     # Slimes look the same every way: their hop and their spit in every row.
     "base:poporing": {
         "anims": lambda p: {"walk": {d: [(p, (i * 64, 0, 64, 64)) for i in range(6)] for d in DIRS},
@@ -115,9 +151,9 @@ ANIMALS = {
     },
 }
 CREDITS_ANIMALS = [
-    ("[LPC] bears, deer, lions and more (олень)", "tapatilorenzo", "CC-BY 4.0",
+    ("[LPC] bears, deer, lions and more (олень, медведи, лиса, песец)", "tapatilorenzo", "CC-BY 4.0",
      "https://opengameart.org/content/lpc-bears-deer-lions-and-more"),
-    ("Giant rat (пещерная крыса), из того же набора", "Sevarihk", "CC-BY 4.0",
+    ("Giant rat, mushroom walker (пещерная крыса, грибовик), из того же набора", "Sevarihk", "CC-BY 4.0",
      "https://opengameart.org/content/lpc-bears-deer-lions-and-more"),
     ("[LPC] Wolf Animation (волк)", "Redshrike, заказ William.Thompsonj", "CC-BY 3.0 / CC-BY 4.0 / GPL 2.0 / GPL 3.0 / OGA-BY 3.0",
      "https://opengameart.org/content/lpc-wolf-animation"),

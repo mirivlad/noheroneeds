@@ -681,6 +681,376 @@
    "alternates": []
   },
   {
+   "id": "base:visual/bear",
+   "kind": "visual",
+   "for": "base:bear",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/bear.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     1
+    ],
+    "walk": [
+     64,
+     0,
+     64,
+     5
+    ],
+    "attack": [
+     384,
+     0,
+     64,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    63
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "fps": 7
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 11
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/lpc_animals/bear_1.png",
+     "rect": [
+      0,
+      0,
+      64,
+      64
+     ],
+     "origin": [
+      32,
+      63
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/polar_bear",
+   "kind": "visual",
+   "for": "base:polar_bear",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/polar_bear.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     1
+    ],
+    "walk": [
+     64,
+     0,
+     64,
+     5
+    ],
+    "attack": [
+     384,
+     0,
+     64,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    63
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "fps": 7
+    },
+    "attack": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 11
+    }
+   },
+   "swings": {
+    "lunge": "attack"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/fox",
+   "kind": "visual",
+   "for": "base:fox",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/fox.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     1
+    ],
+    "walk": [
+     64,
+     0,
+     64,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    61
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 10
+    }
+   },
+   "swings": {
+    "lunge": "walk"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/arctic_fox",
+   "kind": "visual",
+   "for": "base:arctic_fox",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/arctic_fox.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     64,
+     1
+    ],
+    "walk": [
+     64,
+     0,
+     64,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    61
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 10
+    }
+   },
+   "swings": {
+    "lunge": "walk"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/mushroom_walker",
+   "kind": "visual",
+   "for": "base:mushroom_walker",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/mushroom_walker.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     32,
+     1
+    ],
+    "walk": [
+     32,
+     0,
+     32,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    16,
+    31
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 8
+    }
+   },
+   "swings": {
+    "lunge": "walk"
+   },
+   "variants": 1,
+   "alternates": [
+    {
+     "atlas": "art/lpc_animals/mushroom_walker_1.png",
+     "rect": [
+      0,
+      0,
+      32,
+      32
+     ],
+     "origin": [
+      16,
+      31
+     ]
+    }
+   ]
+  },
+  {
    "id": "base:visual/poporing",
    "kind": "visual",
    "for": "base:poporing",

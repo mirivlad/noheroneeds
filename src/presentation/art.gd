@@ -292,10 +292,77 @@ static func theme() -> Theme:
 	t.set_icon("radio_checked", "PopupMenu", _check(true))
 	t.set_icon("radio_unchecked", "PopupMenu", _check(false))
 	t.set_constant("h_separation", "CheckBox", 6)
+	# Lists in windows: the same dark base and warm frame, the chosen line lit.
+	t.set_stylebox("panel", "ItemList", _box(Color("161219"), FRAME, 3))
+	t.set_stylebox("focus", "ItemList", StyleBoxEmpty.new())
+	for st in ["selected", "selected_focus"]:
+		t.set_stylebox(st, "ItemList", _box(BUTTON_DOWN, FRAME_HOT, 2))
+	t.set_stylebox("hovered", "ItemList", _box(BUTTON_HOT, Color(0, 0, 0, 0), 2))
+	t.set_stylebox("cursor", "ItemList", StyleBoxEmpty.new())
+	t.set_stylebox("cursor_unfocused", "ItemList", StyleBoxEmpty.new())
+	t.set_color("font_color", "ItemList", TEXT)
+	t.set_color("font_hovered_color", "ItemList", TEXT_HOT)
+	t.set_color("font_selected_color", "ItemList", TEXT_HOT)
+	t.set_color("guide_color", "ItemList", Color(FRAME, 0.35))
+	t.set_stylebox("separator", "HSeparator", _box(FRAME, Color(0, 0, 0, 0), 0, 1))
 	t.set_constant("separation", "VBoxContainer", 3)
 	t.set_constant("separation", "HBoxContainer", 4)
 	_theme = t
 	return t
+
+
+## A small pixel picture from rows of letters (palette: letter -> colour,
+## "." empty), outlined round with `ink` (none if transparent), each pixel
+## `scale` pixels.
+static func glyph(rows: String, palette: Dictionary, ink: Color, scale := 1) -> ImageTexture:
+	var lines := rows.strip_edges().split("\n")
+	var img := Image.create(lines[0].length(), lines.size(), false, Image.FORMAT_RGBA8)
+	for y in lines.size():
+		for x in lines[y].length():
+			if palette.has(lines[y][x]):
+				img.set_pixel(x, y, palette[lines[y][x]])
+	var out := img.duplicate() as Image
+	if ink.a > 0.0:
+		var bounds := Rect2i(Vector2i.ZERO, img.get_size())
+		for y in img.get_height():
+			for x in img.get_width():
+				if img.get_pixel(x, y).a > 0.0:
+					continue
+				for d: Vector2i in [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1), Vector2i(-1, 0),
+						Vector2i(1, 0), Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)]:
+					var p := Vector2i(x, y) + d
+					if bounds.has_point(p) and img.get_pixelv(p).a > 0.0:
+						out.set_pixel(x, y, ink)
+						break
+	if scale > 1:
+		out.resize(out.get_width() * scale, out.get_height() * scale, Image.INTERPOLATE_NEAREST)
+	return ImageTexture.create_from_image(out)
+
+
+## The head of every window: its title on the left, on the right the button
+## that closes it, named with the key that does the same.
+static func window_head(title: Label, key: String, close: Callable) -> HBoxContainer:
+	var head := HBoxContainer.new()
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_color_override("font_color", TEXT_HOT)
+	head.add_child(title)
+	var b := Button.new()
+	b.name = "Close"
+	b.text = "Закрыть (%s)" % key
+	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(close)
+	head.add_child(b)
+	return head
+
+
+## A hint under a window's contents: dim, wrapped to `width`.
+static func hint(text: String, width: float) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_color_override("font_color", TEXT_DIM)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size.x = width
+	return l
 
 
 static func _box(fill: Color, frame: Color, margin := 4, height := -1) -> StyleBoxFlat:

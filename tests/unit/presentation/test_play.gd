@@ -219,6 +219,7 @@ func test_q_against_a_wolf_and_things_in_and_out_of_a_chest() -> void:
 	_frames(3)
 	eq(w.held_of(id), "base:pickaxe", "Q again: the pick back")
 	# A chest: one, half, all, by the panel's signal (as its clicks send).
+	w.grant(id, "base:chest_item", 1)  # set up from the bag (ADR-0048)
 	_blueprint("base:chest")
 	_click(_screen(me + Vector2i(0, 1)))
 	_frames(10)
@@ -380,7 +381,8 @@ func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	var id := g.client.character_id
 	w.knowledge.never_fail = true  # the window and the chain, not a novice's dice (test_mastery)
 	var me := _me()
-	w.grant(id, "base:log", 6)
+	w.grant(id, "base:log", 2)
+	w.grant(id, "base:workbench_item", 1)
 	g.client.request({"type": "build", "location": "surface", "x": me.x + 1, "y": me.y, "part": "base:workbench"})
 	_frames_until(func() -> bool: return _part(me + Vector2i(1, 0)) == "base:workbench")
 	_frames_until(func() -> bool: return g.crafts.station_near("workbench"))  # the client sees it too

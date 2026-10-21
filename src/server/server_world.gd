@@ -125,8 +125,9 @@ var _encoded := {}
 ## What a world's things, characters and knowledge are written as (beyond
 ## the store's schema): a world of another format is not opened. 2: each
 ## copy's state — wear, quality, enhancements, maker (ADR-0046, ADR-0047),
-## characters' knowledge and mastery.
-const WORLD_FORMAT := 2
+## characters' knowledge and mastery. 3: furniture set up from things of
+## their own, buckets single (ADR-0048).
+const WORLD_FORMAT := 3
 ## Why the last open() failed, for people ("" — it did not).
 static var open_error := ""
 
@@ -1531,8 +1532,15 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 			if above[0] != "":
 				return {"ok": false, "reason": above[0]}
 			opening = true
+	# Furniture is set up from the bag (ADR-0048): that very copy, its quality,
+	# maker and wear kept with the part, to come back when it is taken apart.
+	var made := {}
 	for id: String in costs:
-		inv.remove(id, int(costs[id]))
+		var placing := content.get_def(id).has("places")
+		var copy := ri(r, "copy", -1) if placing else -1
+		var taken := inv.take(id, int(costs[id]), copy if copy < inv.count(id) else -1)
+		if placing and not taken.is_empty():
+			made = taken[0]
 	_touch_inventory(actor)
 	knowledge.practise(actor, "build")  # building is practice (ADR-0047)
 	if role == "floor":
@@ -1544,6 +1552,11 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 		creatures.noise(loc, Vector2i(x, y))
 		return {"ok": true}
 	var props := {"owner": actor}
+	if not made.is_empty():
+		props["made"] = made.duplicate()
+		if (props["made"] as Dictionary).has("damage"):
+			props["damage"] = props["made"]["damage"]
+			(props["made"] as Dictionary).erase("damage")
 	if def.has("container"):
 		props["store"] = Uuid.v4()  # its contents are an inventory of their own
 	if not (def["rotations"] as Array).is_empty():
@@ -1720,12 +1733,26 @@ func _dismantle(actor: String, r: Dictionary) -> Dictionary:
 	var above := _above(loc, c, at, layer)
 	if above[0] != "":
 		return {"ok": false, "reason": above[0]}
+	var was := _layer_props(c, layer, at[3], at[4])
 	_take_down(loc, c, at, layer, part, above[1])
 	creatures.noise(loc, Vector2i(x, y))
 	var costs := content.structure_cost(part)
 	for id: String in costs:
-		give(actor, id, int(costs[id]))
+		var back: Array = []
+		if content.get_def(id).has("places"):  # the furniture itself, as it was (ADR-0048)
+			var st: Dictionary = (was.get("made", {}) as Dictionary).duplicate()
+			if float(was.get("damage", 0)) > 0.0:
+				st["damage"] = float(was["damage"])
+			back = [st]
+		give(actor, id, int(costs[id]), back)
 	return {"ok": true, "part": part}
+
+
+## How many blows a part takes before it breaks: furniture by how well it
+## was made (ADR-0048), the rest as the content says.
+func part_durability(def: Dictionary, props: Dictionary) -> int:
+	var made: Dictionary = props.get("made", {})
+	return roundi(int(def.get("durability", 0)) * Wear.quality(made) * Wear.mod_effect(content, made, "durability"))
 
 
 ## What keeps a part from going (ADR-0007, ADR-0016: nothing is left hanging):
@@ -2515,14 +2542,14 @@ func _eat(actor: String, r: Dictionary) -> Dictionary:
 	# Eaten when hurt or not full (ADR-0032): it heals and fills.
 	if health >= most and needs.satiety_of(actor) > Needs.FULL - 5.0:
 		return {"ok": false, "reason": "not_hungry"}
-	inventory(actor).remove(item, 1)
+	var vessel := inventory(actor).take(item, 1, 0)
 	_touch_inventory(actor)
 	combat.heal(actor, int(food.get("heal", 0)))
 	needs.set_satiety(actor, needs.satiety_of(actor) + float(food.get("satiety", 0)))
 	var out := {"ok": true, "health": combat.health_of(actor), "satiety": needs.shown(actor)["satiety"]}
 	var empty := String(content.get_def(item).get("liquid", {}).get("empty", ""))
-	if empty != "":  # drunk: the container is left (a bucket of milk)
-		give(actor, empty, 1)
+	if empty != "":  # drunk: the container is left (a bucket of milk), the same one
+		give(actor, empty, 1, vessel)
 		out["now"] = empty
 	return out
 
@@ -2820,9 +2847,10 @@ func _fill(actor: String, r: Dictionary) -> Dictionary:
 		if into == "":
 			return {"ok": false, "reason": "nothing_to_fill"}
 	var inv := inventory(actor)
-	if not inv.remove(item, 1):
+	var vessel := inv.take(item, 1, 0)  # the one in the hands: filled, it is the same bucket (ADR-0048)
+	if vessel.is_empty():
 		return {"ok": false, "reason": "not_carried"}
-	give(actor, into, 1)
+	give(actor, into, 1, vessel)
 	return {"ok": true, "now": into}
 
 
@@ -2859,9 +2887,10 @@ func _pour(actor: String, r: Dictionary) -> Dictionary:
 				_changed(chunk_key(at[0], at[1], at[2]))
 				watered = true
 	var inv := inventory(actor)
-	if not inv.remove(item, 1):
+	var vessel := inv.take(item, 1, 0)
+	if vessel.is_empty():
 		return {"ok": false, "reason": "not_carried"}
-	give(actor, String(liquid["empty"]), 1)
+	give(actor, String(liquid["empty"]), 1, vessel)
 	return {"ok": true, "now": String(liquid["empty"]), "watered": watered}
 
 
@@ -3007,6 +3036,7 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 	if part == "" or durability <= 0:
 		return {"ok": false, "reason": "unbreakable"}
 	var props := _layer_props(c, layer, at[3], at[4]).duplicate()
+	durability = maxi(1, part_durability(def, props))
 	if String(props.get("owner", "")) != actor and not break_others:
 		return {"ok": false, "reason": "not_owner"}
 	var above := _above(loc, c, at, layer)
@@ -3034,11 +3064,18 @@ func _strike_part(actor: String, r: Dictionary) -> Dictionary:
 			place_item(loc, centre, it, int(box.stacks[it]), "", 0, box.take(it, int(box.stacks[it])))
 		_touch_inventory("store|" + String(props["store"]))
 	_take_down(loc, c, at, layer, part, above[1])
+	# Half of what it cost lies there; smashed furniture is wreckage — the
+	# boards it is mended with (ADR-0048).
 	var cost := content.structure_cost(part)
+	var wreck := {}
 	for m: String in cost:
-		var half := int(cost[m]) / 2
-		if half > 0:
-			place_item(loc, centre, m, half)
+		if content.get_def(m).has("places"):
+			wreck = (def.get("repair_cost", {}) as Dictionary).duplicate()
+			break
+		wreck[m] = int(cost[m]) / 2
+	for m: String in wreck:
+		if int(wreck[m]) > 0:
+			place_item(loc, centre, m, int(wreck[m]))
 	return {"ok": true, "broken": part}.merged(worn)
 
 
@@ -3061,8 +3098,8 @@ func _repair(actor: String, r: Dictionary) -> Dictionary:
 	var damage := float(props.get("damage", 0))
 	if part == "" or damage <= 0.0:
 		return {"ok": false, "reason": "not_damaged"}
-	var durability := maxi(1, int(content.get_def(part).get("durability", 1)))
-	var cost := content.structure_cost(part)
+	var durability := maxi(1, part_durability(content.get_def(part), props))
+	var cost: Dictionary = content.get_def(part).get("repair_cost", content.structure_cost(part))
 	var need := {}
 	for m: String in cost:
 		need[m] = ceili(float(cost[m]) * damage / durability)

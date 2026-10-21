@@ -59,9 +59,12 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 			deal.emit(_their_ids[i], 5 if Input.is_key_pressed(KEY_SHIFT) else 1, true, -1))
 	_mine.item_clicked.connect(func(i: int, _at: Vector2, _b: int) -> void:
 		var id := _mine_ids[i]
-		if id.begins_with("copy|"):  # a thing of its own: that copy, at its own price
+		if id.begins_with("copy|"):  # a thing of its own: that copy, at its own price; Shift — every one
 			var p := id.split("|")
-			deal.emit(p[1], 1, false, int(p[2]))
+			if Input.is_key_pressed(KEY_SHIFT):
+				deal.emit(p[1], int(_inventory.get(p[1], 0)), false, -1)
+			else:
+				deal.emit(p[1], 1, false, int(p[2]))
 		else:
 			deal.emit(id, mini(int(_inventory.get(id, 0)), 5 if Input.is_key_pressed(KEY_SHIFT) else 1), false, -1))
 	box.add_child(_money)

@@ -143,17 +143,21 @@ func _from_nothing(seed_value: int) -> void:
 	check(_make("base:twist_cord", "base:cord", 3), what + "cord from fibre: %s" % str(_log))
 	check(_make("base:make_flint_axe", "base:flint_axe", 1) and _make("base:make_flint_pick", "base:flint_pick", 1),
 		what + "flint axe and pick, no station: %s %s" % [str(_log), w.inventory(me).stacks])
-	# 3. Logs with the flint axe.
-	_req({"type": "hold", "item": "base:flint_axe"})
+	# 3. Logs with the flint axe (a novice's lasts some sixty blows: a new one
+	# is made when it falls apart, as a player would).
 	for at: Vector2i in tree:
-		if _bag("base:log") >= 7 or _bag("base:flint_axe") == 0:
+		if _bag("base:log") >= 12:
 			break
+		if _bag("base:flint_axe") == 0 and not _make("base:make_flint_axe", "base:flint_axe", 1):
+			break
+		_req({"type": "hold", "item": "base:flint_axe"})
 		_work("surface", at, "cover", "base:flint_axe")
-	check(_bag("base:log") >= 7, what + "logs felled with flint: %d %s" % [_bag("base:log"), str(_log)])
+	check(_bag("base:log") >= 12, what + "logs felled with flint: %d %s" % [_bag("base:log"), str(_log)])
 	# 4. A workbench, planks.
+	check(_make("base:make_workbench", "base:workbench_item", 1), what + "a workbench of logs, in the hands: %s" % str(_log))
 	var spot := _free_spot()
 	check(_req({"type": "build", "location": "surface", "x": spot.x, "y": spot.y, "part": "base:workbench"}).get("ok", false),
-		what + "a workbench of logs")
+		what + "the workbench set up")
 	check(_make("base:saw_planks", "base:plank", 6), what + "planks at the workbench: %s" % str(_log))
 	# 5. Stone with the flint pick: a boulder on the surface, else the rock of
 	# the cave below the spawn point's way down.
@@ -223,10 +227,14 @@ func test_from_an_empty_bag_to_stone_tools_in_several_worlds() -> void:
 		_from_nothing(seed_value)
 
 
-## The flint tools last the way to the stone ones (their wear is real, but
-## not a chore): about 120 uses new, half that from a novice's hand.
-func test_flint_tools_last_the_way_to_stone_ones() -> void:
+## The flint tools wear on the way to the stone ones (about 120 uses new,
+## half that from a novice's hand): one may have to be made anew, no more.
+func test_flint_tools_wear_on_the_way_to_stone_ones() -> void:
 	_from_nothing(21)
-	var axe := _bag("base:flint_axe")
-	var pick := _bag("base:flint_pick")
-	eq([axe, pick], [1, 1], "both flint tools still there")
+	var spent := 0
+	for tool: String in ["base:flint_axe", "base:flint_pick"]:
+		for st: Dictionary in w.inventory(me).states_of(tool):
+			spent += Wear.spent(st)
+	check(spent > 0 or _bag("base:flint_axe") + _bag("base:flint_pick") < 2, "they wore")
+	var made := int(((w._known_character(me)["data"].get("mastery", {}) as Dictionary).get("base:make_flint_axe", {}) as Dictionary).get("xp", 0))
+	check(made <= 6 * Mastery.XP_SUCCESS, "a few flint axes at most: %d xp" % made)

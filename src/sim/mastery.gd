@@ -111,7 +111,8 @@ const AMOUNTS := ["damage", "yield"]
 ## enhancements, a maker): a tool, a weapon, armour, clothes.
 static func crafted_alone(content: ContentRegistry, item: String) -> bool:
 	var d := content.get_def(item)
-	return int(d.get("stack", 1)) == 1 and (d.has("durability") or d.has("warmth") or d.has("armor") or d.has("weapon") or d.has("tools"))
+	return int(d.get("stack", 1)) == 1 and (d.has("durability") or d.has("warmth") or d.has("armor") or d.has("weapon") or d.has("tools")
+		or d.has("places"))
 
 
 ## Enhancements that fit a thing (content kind "modifier", "fits": tool,
@@ -130,6 +131,8 @@ static func fitting(content: ContentRegistry, item: String) -> Array[String]:
 		kinds.append("armor")
 	if int(d.get("warmth", 0)) > 0:
 		kinds.append("clothes")
+	if d.has("places"):
+		kinds.append("furniture")
 	var out: Array[String] = []
 	for id: String in content.defs:
 		var m := content.get_def(id)

@@ -47,7 +47,7 @@ func _at(r: Dictionary) -> Dictionary:
 
 func test_a_chest_keeps_things_for_its_owner() -> void:
 	var a := _player("Аня")
-	w.grant(a, "base:plank", 20)
+	w.grant(a, "base:chest_item", 1)
 	w.grant(a, "base:stone", 30)
 	check(_req(a, _at({"type": "build", "part": "base:chest"})).get("ok", false), "built")
 	var r := _req(a, _at({"type": "store", "item": "base:stone", "count": 30}))
@@ -70,6 +70,7 @@ func test_a_chest_keeps_things_for_its_owner() -> void:
 func test_a_chest_holds_so_many_cells() -> void:
 	var a := _player("Аня")
 	w.grant(a, "base:plank", 2000)
+	w.grant(a, "base:chest_item", 1)
 	var r := _req(a, _at({"type": "build", "part": "base:chest"}))
 	# Planks stack by 99: 16 cells hold 1584.
 	eq(_req(a, _at({"type": "store", "item": "base:plank", "count": 1584})).get("ok"), true)

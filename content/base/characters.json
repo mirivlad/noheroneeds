@@ -544,7 +544,8 @@
         "tool",
         "weapon",
         "armor",
-        "clothes"
+        "clothes",
+        "furniture"
       ],
       "effects": {},
       "value": 1.4

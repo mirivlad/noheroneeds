@@ -521,6 +521,29 @@
    ]
   },
   {
+   "id": "base:visual/bridge",
+   "kind": "visual",
+   "for": "base:bridge",
+   "mode": "flat",
+   "atlas": "art/lpc_env/flat.png",
+   "rect": [
+    0,
+    96,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "grid": [
+    2,
+    2
+   ]
+  },
+  {
    "id": "base:visual/wood_ceiling",
    "kind": "visual",
    "for": "base:wood_ceiling",
@@ -528,7 +551,7 @@
    "atlas": "art/lpc_env/flat.png",
    "rect": [
     0,
-    96,
+    192,
     32,
     32
    ],
@@ -551,7 +574,7 @@
    "atlas": "art/lpc_env/flat.png",
    "rect": [
     0,
-    192,
+    288,
     32,
     32
    ],
@@ -942,7 +965,109 @@
       169
      ]
     }
-   ]
+   ],
+   "seasons": {
+    "autumn": {
+     "rect": [
+      0,
+      452,
+      165,
+      200
+     ],
+     "origin": [
+      103,
+      205
+     ],
+     "alternates": [
+      {
+       "rect": [
+        165,
+        452,
+        170,
+        189
+       ],
+       "origin": [
+        95,
+        192
+       ]
+      },
+      {
+       "rect": [
+        335,
+        452,
+        160,
+        189
+       ],
+       "origin": [
+        96,
+        190
+       ]
+      },
+      {
+       "rect": [
+        495,
+        452,
+        155,
+        170
+       ],
+       "origin": [
+        92,
+        169
+       ]
+      }
+     ]
+    },
+    "winter": {
+     "rect": [
+      0,
+      652,
+      165,
+      200
+     ],
+     "origin": [
+      103,
+      205
+     ],
+     "alternates": [
+      {
+       "rect": [
+        165,
+        652,
+        170,
+        189
+       ],
+       "origin": [
+        95,
+        192
+       ]
+      },
+      {
+       "rect": [
+        335,
+        652,
+        160,
+        189
+       ],
+       "origin": [
+        96,
+        190
+       ]
+      },
+      {
+       "rect": [
+        495,
+        652,
+        155,
+        170
+       ],
+       "origin": [
+        92,
+        169
+       ]
+      }
+     ]
+    }
+   }
   },
   {
    "id": "base:visual/birch",
@@ -952,7 +1077,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    452,
+    852,
     89,
     128
    ],
@@ -966,7 +1091,7 @@
     {
      "rect": [
       89,
-      452,
+      852,
       107,
       128
      ],
@@ -975,7 +1100,61 @@
       118
      ]
     }
-   ]
+   ],
+   "seasons": {
+    "autumn": {
+     "rect": [
+      0,
+      980,
+      89,
+      128
+     ],
+     "origin": [
+      24,
+      120
+     ],
+     "alternates": [
+      {
+       "rect": [
+        89,
+        980,
+        107,
+        128
+       ],
+       "origin": [
+        42,
+        118
+       ]
+      }
+     ]
+    },
+    "winter": {
+     "rect": [
+      0,
+      1108,
+      83,
+      122
+     ],
+     "origin": [
+      24,
+      114
+     ],
+     "alternates": [
+      {
+       "rect": [
+        83,
+        1108,
+        103,
+        121
+       ],
+       "origin": [
+        38,
+        111
+       ]
+      }
+     ]
+    }
+   }
   },
   {
    "id": "base:visual/spruce",
@@ -985,7 +1164,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    580,
+    1230,
     63,
     149
    ],
@@ -999,7 +1178,7 @@
     {
      "rect": [
       63,
-      580,
+      1230,
       62,
       145
      ],
@@ -1018,7 +1197,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    729,
+    1379,
     170,
     189
    ],
@@ -1032,7 +1211,7 @@
     {
      "rect": [
       170,
-      729,
+      1379,
       160,
       189
      ],
@@ -1041,7 +1220,87 @@
       190
      ]
     }
-   ]
+   ],
+   "seasons": {
+    "spring": {
+     "rect": [
+      0,
+      1568,
+      170,
+      189
+     ],
+     "origin": [
+      95,
+      192
+     ],
+     "alternates": [
+      {
+       "rect": [
+        170,
+        1568,
+        160,
+        189
+       ],
+       "origin": [
+        96,
+        190
+       ]
+      }
+     ]
+    },
+    "summer": {
+     "rect": [
+      0,
+      1757,
+      170,
+      189
+     ],
+     "origin": [
+      95,
+      192
+     ],
+     "alternates": [
+      {
+       "rect": [
+        170,
+        1757,
+        160,
+        189
+       ],
+       "origin": [
+        96,
+        190
+       ]
+      }
+     ]
+    },
+    "winter": {
+     "rect": [
+      0,
+      1946,
+      170,
+      189
+     ],
+     "origin": [
+      95,
+      192
+     ],
+     "alternates": [
+      {
+       "rect": [
+        170,
+        1946,
+        160,
+        189
+       ],
+       "origin": [
+        96,
+        190
+       ]
+      }
+     ]
+    }
+   }
   },
   {
    "id": "base:visual/fir",
@@ -1051,7 +1310,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    918,
+    2135,
     63,
     149
    ],
@@ -1065,7 +1324,7 @@
     {
      "rect": [
       63,
-      918,
+      2135,
       62,
       145
      ],
@@ -1084,7 +1343,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1067,
+    2284,
     83,
     122
    ],
@@ -1098,7 +1357,7 @@
     {
      "rect": [
       83,
-      1067,
+      2284,
       103,
       121
      ],
@@ -1110,7 +1369,7 @@
     {
      "rect": [
       186,
-      1067,
+      2284,
       124,
       148
      ],
@@ -1122,7 +1381,7 @@
     {
      "rect": [
       310,
-      1067,
+      2284,
       150,
       156
      ],
@@ -1141,7 +1400,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1223,
+    2440,
     24,
     19
    ],
@@ -1155,7 +1414,7 @@
     {
      "rect": [
       24,
-      1223,
+      2440,
       28,
       56
      ],
@@ -1174,7 +1433,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1279,
+    2496,
     20,
     30
    ],
@@ -1188,7 +1447,7 @@
     {
      "rect": [
       20,
-      1279,
+      2496,
       25,
       19
      ],
@@ -1207,7 +1466,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1309,
+    2526,
     30,
     29
    ],
@@ -1221,7 +1480,7 @@
     {
      "rect": [
       30,
-      1309,
+      2526,
       29,
       30
      ],
@@ -1240,7 +1499,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1339,
+    2556,
     28,
     29
    ],
@@ -1260,7 +1519,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1368,
+    2585,
     28,
     30
    ],
@@ -1274,7 +1533,7 @@
     {
      "rect": [
       28,
-      1368,
+      2585,
       28,
       29
      ],
@@ -1293,7 +1552,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1398,
+    2615,
     24,
     25
    ],
@@ -1307,7 +1566,7 @@
     {
      "rect": [
       24,
-      1398,
+      2615,
       27,
       21
      ],
@@ -1326,7 +1585,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1423,
+    2640,
     28,
     21
    ],
@@ -1340,7 +1599,7 @@
     {
      "rect": [
       28,
-      1423,
+      2640,
       28,
       27
      ],
@@ -1352,7 +1611,7 @@
     {
      "rect": [
       56,
-      1423,
+      2640,
       28,
       28
      ],
@@ -1371,7 +1630,7 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1451,
+    2668,
     28,
     28
    ],
@@ -1391,12 +1650,65 @@
    "atlas": "art/lpc_env/plants.png",
    "rect": [
     0,
-    1479,
+    2696,
     29,
     28
    ],
    "origin": [
     -9,
+    33
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": []
+  },
+  {
+   "id": "base:visual/silver_outcrop",
+   "kind": "visual",
+   "for": "base:silver_outcrop",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    2724,
+    28,
+    28
+   ],
+   "origin": [
+    -2,
+    33
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1,
+   "alternates": [
+    {
+     "rect": [
+      28,
+      2724,
+      29,
+      28
+     ],
+     "origin": [
+      -9,
+      33
+     ]
+    }
+   ]
+  },
+  {
+   "id": "base:visual/gold_outcrop",
+   "kind": "visual",
+   "for": "base:gold_outcrop",
+   "mode": "tall",
+   "atlas": "art/lpc_env/plants.png",
+   "rect": [
+    0,
+    2752,
+    28,
+    28
+   ],
+   "origin": [
+    -2,
     33
    ],
    "pixel_scale": 0.5,
@@ -2429,13 +2741,108 @@
    "variants": 1
   },
   {
+   "id": "base:visual/mushroom_stew",
+   "kind": "visual",
+   "for": "base:mushroom_stew",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1216,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/silver_ore",
+   "kind": "visual",
+   "for": "base:silver_ore",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1248,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/silver_ingot",
+   "kind": "visual",
+   "for": "base:silver_ingot",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1280,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/gold_ore",
+   "kind": "visual",
+   "for": "base:gold_ore",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1312,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/gold_ingot",
+   "kind": "visual",
+   "for": "base:gold_ingot",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1344,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/water_bucket",
    "kind": "visual",
    "for": "base:water_bucket",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1216,
+    1376,
     0,
     32,
     32
@@ -2454,7 +2861,26 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1248,
+    1408,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/fur",
+   "kind": "visual",
+   "for": "base:fur",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1440,
     0,
     32,
     32
@@ -2473,7 +2899,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1280,
+    1472,
     0,
     32,
     32
@@ -2492,7 +2918,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1312,
+    1504,
     0,
     32,
     32
@@ -2511,7 +2937,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1344,
+    1536,
     0,
     32,
     32
@@ -2530,7 +2956,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1376,
+    1568,
     0,
     32,
     32
@@ -2549,7 +2975,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1408,
+    1600,
     0,
     32,
     32
@@ -2568,7 +2994,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1440,
+    1632,
     0,
     32,
     32
@@ -2587,7 +3013,45 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1472,
+    1664,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/fur_cloak",
+   "kind": "visual",
+   "for": "base:fur_cloak",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1696,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
+   "id": "base:visual/fur_hood",
+   "kind": "visual",
+   "for": "base:fur_hood",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    1728,
     0,
     32,
     32
@@ -2606,7 +3070,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1504,
+    1760,
     0,
     32,
     32

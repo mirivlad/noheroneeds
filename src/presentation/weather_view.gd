@@ -80,5 +80,78 @@ func _draw() -> void:
 		var x := fmod(float(h % int(r.size.x + 20)) + sin(_t * 1.3 + float(h % 97)) * 6.0, r.size.x + 20.0) - 10.0
 		var big := (h >> 3) % 3 == 0
 		draw_rect(Rect2(roundf(x), roundf(y), 2 if big else 1, 2 if big else 1), Color(1, 1, 1, 0.85))
+	if client.has_time and client.z >= 0:
+		_draw_life(r)
 	if flash > 0.0:
 		draw_rect(r, Color(1, 1, 1, flash))
+
+
+## Life over the land (presentation only), by what lies there: each tile of
+## the world in sight looks at the ground and plant of its cell ("ambient"):
+## fireflies at night over grass and moss, mist over bog and mud, snow
+## drifting over snow, leaves falling from maples. Where each one is comes
+## from its tile, so it stays put as the view moves.
+const LIFE_TILE := 32
+func _draw_life(r: Rect2) -> void:
+	var xf := view.get_global_transform_with_canvas()
+	var seen := xf.affine_inverse() * r  # the world in sight, in world pixels
+	var zoom := xf.get_scale().x
+	var night := Daylight.is_night(client.world_time)
+	var dim := 1.0 - 0.6 * rain
+	var x0 := floori(seen.position.x / LIFE_TILE)
+	var y0 := floori(seen.position.y / LIFE_TILE)
+	for ty in range(y0, floori(seen.end.y / LIFE_TILE) + 1):
+		for tx in range(x0, floori(seen.end.x / LIFE_TILE) + 1):
+			var h := absi(hash([tx, ty, 31]))
+			var cell := Vector2i(tx * 2 + (h % 2), ty * 2 + ((h >> 1) % 2))
+			for kind: String in _life_at(cell):
+				var base := Vector2(tx * LIFE_TILE + (h >> 2) % LIFE_TILE, ty * LIFE_TILE + (h >> 7) % LIFE_TILE)
+				match kind:
+					"fireflies":
+						if not night or (h >> 12) % 3 != 0:
+							continue
+						var at := base + Vector2(sin(_t * 0.7 + h % 13) * 6.0, cos(_t * 0.9 + h % 7) * 4.0)
+						var glow := maxf(0.0, sin(_t * 2.2 + float(h % 50)))
+						if glow > 0.05:
+							var p := (xf * at).round()
+							_soft_at(p + Vector2(zoom, zoom) * 0.5, zoom * 7.0, Color(0.85, 1.0, 0.45, 0.35 * glow * dim))
+							draw_rect(Rect2(p, Vector2(zoom, zoom)), Color(0.92, 1.0, 0.6, glow * dim))
+					"mist":
+						var at := base + Vector2(fmod(_t * 3.0 + h % 40, 40.0) - 20.0, 0)
+						var a := (0.22 if night else 0.14) * (0.6 + 0.4 * sin(_t * 0.4 + h % 11))
+						_soft_at(xf * at, zoom * (36.0 + h % 20), Color(0.82, 0.88, 0.85, a))
+					"drift":
+						if (h >> 12) % 2 != 0:
+							continue
+						var run := fmod(_t * 40.0 + float(h % 97), 64.0)
+						var at := Vector2(tx * LIFE_TILE - 16 + run, base.y + sin(_t + h % 5) * 2.0)
+						var p := (xf * at).round()
+						draw_line(p, p + Vector2(zoom * 3.0, 0), Color(1, 1, 1, 0.45 * (1.0 - run / 64.0)), zoom * 0.5)
+					"leaves":
+						for k in 2:
+							var hk := absi(hash([h, k]))
+							var fall := fmod(_t * (8.0 + hk % 6) + hk % 50, 40.0)
+							var at := base + Vector2(sin(_t * 1.6 + hk % 9) * 4.0 + k * 9, -24.0 + fall)
+							var p := (xf * at).round()
+							var c := Color(0.95, 0.5 + 0.2 * (hk % 3) / 2.0, 0.15, 0.9 * (1.0 - fall / 40.0))
+							draw_rect(Rect2(p, Vector2(zoom, zoom)), c)
+
+
+## A soft round patch of light or mist, `size` across, centred on `at`.
+func _soft_at(at: Vector2, size: float, color: Color) -> void:
+	draw_texture_rect(Effects.soft(), Rect2(at - Vector2(size, size) * 0.5, Vector2(size, size)), false, color)
+
+
+## What lives over a cell: the ambient of its ground and of its plant.
+func _life_at(cell: Vector2i) -> Array:
+	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cell.x >> 5, cell.y >> 5))
+	if c == null:
+		return []
+	var out := []
+	for layer: String in ["ground", "cover"]:
+		var id := c.get_cell(layer, cell.x & 31, cell.y & 31)
+		if id != "":
+			var a := String(view.content.get_def(id).get("ambient", ""))
+			if a != "":
+				out.append(a)
+	return out

@@ -5,5 +5,6 @@ class_name Hash
 static func sha256(data: PackedByteArray) -> PackedByteArray:
 	var ctx := HashingContext.new()
 	ctx.start(HashingContext.HASH_SHA256)
-	ctx.update(data)
+	if not data.is_empty():  # nothing to add is a valid input (the engine complains of it)
+		ctx.update(data)
 	return ctx.finish()

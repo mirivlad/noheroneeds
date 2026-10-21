@@ -81,6 +81,8 @@ WORN = {
     "base:leather_armor": ("armor", D + "torso/armour/torso_armour_leather.json", None, {}),
     "base:iron_helmet": ("headwear", D + "headwear/helmets/helmets/hat_helmet_nasal.json", None, {}),
     "base:wool_cloak": ("back_item", D + "torso/cape/cape_solid.json", None, {"cloth": "gray"}),
+    "base:fur_cloak": ("back_item", D + "torso/cape/cape_solid.json", None, {"cloth": "brown"}),
+    "base:fur_hood": ("headwear", D + "headwear/coverings/hoods/hat_hood_cloth.json", None, {"cloth": "brown"}),
 }
 # Things in the hands, drawn with their own frames: item -> (sheet definition, variant).
 HELD = {

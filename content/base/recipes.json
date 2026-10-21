@@ -52,6 +52,16 @@
     {"id": "base:make_boots", "kind": "recipe", "name": "Стачать сапоги", "station": "workbench",
       "inputs": {"base:leather": 2}, "outputs": {"base:boots": 1}},
     {"id": "base:forge_iron_helmet", "kind": "recipe", "name": "Железный шлем", "station": "forge",
-      "inputs": {"base:iron_ingot": 3}, "outputs": {"base:iron_helmet": 1}}
+      "inputs": {"base:iron_ingot": 3}, "outputs": {"base:iron_helmet": 1}},
+    {"id": "base:cook_stew", "kind": "recipe", "name": "Сварить грибную похлёбку", "station": "fire",
+      "inputs": {"base:mushroom": 3, "base:carrot": 1}, "outputs": {"base:mushroom_stew": 1}},
+    {"id": "base:make_fur_cloak", "kind": "recipe", "name": "Меховой плащ", "station": "workbench",
+      "inputs": {"base:fur": 4, "base:leather": 1}, "outputs": {"base:fur_cloak": 1}},
+    {"id": "base:make_fur_hood", "kind": "recipe", "name": "Меховой капюшон", "station": "workbench",
+      "inputs": {"base:fur": 2}, "outputs": {"base:fur_hood": 1}},
+    {"id": "base:smelt_silver", "kind": "recipe", "name": "Выплавить серебро", "station": "forge",
+      "inputs": {"base:silver_ore": 2, "base:log": 1}, "outputs": {"base:silver_ingot": 1}},
+    {"id": "base:smelt_gold", "kind": "recipe", "name": "Выплавить золото", "station": "forge",
+      "inputs": {"base:gold_ore": 2, "base:log": 1}, "outputs": {"base:gold_ingot": 1}}
   ]
 }

@@ -71,7 +71,7 @@
       "behavior": "prey", "fauna_since": 5,
       "speed": 0.8, "run_speed": 1.4, "sight": 9, "dark_sight": 0.5, "hearing": 9,
       "flee_distance": 0, "home_radius": 16, "think_ticks": 10, "memory_s": 40,
-      "health": 30, "drops": {"base:raw_meat": 5, "base:hide": 2},
+      "health": 30, "drops": {"base:raw_meat": 5, "base:fur": 2},
       "attack": {"kind": "melee", "damage": 5, "reach": 1.0, "arc": 100, "cooldown_ms": 1300},
       "reaction": {"hurt": "fight", "kin": false}
     },
@@ -80,20 +80,20 @@
       "behavior": "predator", "fauna_since": 5,
       "speed": 0.8, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
       "flee_distance": 0, "home_radius": 18, "think_ticks": 8, "memory_s": 30,
-      "health": 34, "territory": 5, "drops": {"base:raw_meat": 5, "base:hide": 2},
+      "health": 34, "territory": 5, "drops": {"base:raw_meat": 5, "base:fur": 3},
       "attack": {"kind": "melee", "damage": 6, "reach": 1.0, "arc": 100, "cooldown_ms": 1300}
     },
     {
       "id": "base:fox", "kind": "creature", "size": {"half": [0.3, 0.15], "height": 0.4}, "name": "Лиса", "behavior": "prey", "fauna_since": 5,
       "speed": 1.0, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
       "flee_distance": 6, "home_radius": 14, "think_ticks": 8, "memory_s": 30,
-      "health": 4, "drops": {"base:raw_meat": 1, "base:hide": 1}
+      "health": 4, "drops": {"base:raw_meat": 1, "base:fur": 1}
     },
     {
       "id": "base:arctic_fox", "kind": "creature", "size": {"half": [0.3, 0.15], "height": 0.4}, "name": "Песец", "behavior": "prey", "fauna_since": 5,
       "speed": 1.0, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
       "flee_distance": 6, "home_radius": 14, "think_ticks": 8, "memory_s": 30,
-      "health": 4, "drops": {"base:raw_meat": 1, "base:hide": 1}
+      "health": 4, "drops": {"base:raw_meat": 1, "base:fur": 1}
     },
     {
       "id": "base:mushroom_walker", "kind": "creature", "size": {"half": [0.18, 0.12], "height": 0.45}, "name": "Грибовик", "many": "грибовики",

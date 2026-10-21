@@ -281,3 +281,24 @@ func test_ore_shut_in_rock_is_told_as_rock_until_dug_open() -> void:
 	w._changed(ServerWorld.chunk_key(depth, -1, 0))
 	check(w.chunk_revision(depth, 0, 0) > rev, "the neighbour is told again")
 	eq(west_of.call(), "base:copper_ore_rock", "and its ore shows")
+
+
+## The wild's goods made into things: a stew at a fire, fur into a cloak at
+## a workbench (warmer than wool), silver smelted at a forge — and sold.
+func test_stew_fur_and_silver() -> void:
+	var a := _player("Аня")
+	w.grant(a, "base:log", 6)
+	w.grant(a, "base:stone", 10)
+	for part: Array in [["base:campfire", 4, 3], ["base:workbench", 2, 3], ["base:forge", 3, 5]]:
+		check(_req(a, {"type": "build", "location": "surface", "x": part[1], "y": part[2], "part": part[0]}).get("ok", false), part[0])
+	w.grant(a, "base:mushroom", 3)
+	w.grant(a, "base:carrot", 1)
+	eq(_req(a, {"type": "craft", "recipe": "base:cook_stew"}).get("made"), {"base:mushroom_stew": 1}, "a stew")
+	w.grant(a, "base:fur", 4)
+	w.grant(a, "base:leather", 1)
+	eq(_req(a, {"type": "craft", "recipe": "base:make_fur_cloak"}).get("made"), {"base:fur_cloak": 1}, "a fur cloak")
+	check(int(_content.get_def("base:fur_cloak")["warmth"]) > int(_content.get_def("base:wool_cloak")["warmth"]), "warmer than wool")
+	w.grant(a, "base:silver_ore", 2)
+	w.grant(a, "base:log", 1)
+	eq(_req(a, {"type": "craft", "recipe": "base:smelt_silver"}).get("made"), {"base:silver_ingot": 1}, "silver")
+	check(int(_content.get_def("base:smith")["trade"]["buys"].get("base:silver_ingot", 0)) > 10, "a smith pays well for it")

@@ -77,7 +77,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	_water_noise.seed = seed_value + 7919
 	_water_noise.frequency = 0.03
 	_water_noise.fractal_octaves = 2
-	settlements = Settlements.new(seed_value, content, is_wet, _clearing)
+	settlements = Settlements.new(seed_value, content, is_wet, _clearing, biome_id_at)
 	for i in 8:
 		var n := FastNoiseLite.new()
 		n.seed = seed_value + 104729 * (i + 1)
@@ -121,7 +121,13 @@ func generate(cx: int, cy: int) -> Chunk:
 			var lx := at.x - cx * Chunk.SIZE
 			var ly := at.y - cy * Chunk.SIZE
 			if lx >= 0 and ly >= 0 and lx < Chunk.SIZE and ly < Chunk.SIZE:
-				c.set_cell("ground", lx, ly, cells[at]["ground"])
+				var on: Dictionary = cells[at]
+				if c.get_cell("ground", lx, ly) == _water:
+					if String(on.get("over_water", "")) == "":
+						continue
+					c.set_cell("ground", lx, ly, on["over_water"])  # a bridge
+				else:
+					c.set_cell("ground", lx, ly, on["ground"])
 				c.set_cell("cover", lx, ly, "")
 	# Settlements: the cells of each whose plan falls in this chunk (the same
 	# in any order the chunks are made).

@@ -12,7 +12,10 @@ const PACK_FORMAT := 1
 ## Fields only a player sees (texts). They, "visual" and "sound" definitions
 ## are left out of the rules fingerprint (ADR-0009): translations, texture
 ## and sound packs never stop anyone from joining.
-const PRESENTATION_FIELDS := ["name", "description"]
+## "effects": what a thing gives off on the screen ({sparks|smoke|embers: [x, y]
+## world pixels from its cell's bottom middle}).
+## "ambient": life over a ground or plant (fireflies, mist, drift, leaves).
+const PRESENTATION_FIELDS := ["name", "description", "effects", "ambient"]
 ## Fields the registry adds while loading.
 const DERIVED_FIELDS := ["pack", "atlas_path", "paths", "body_size"]
 ## Kinds that only show or sound, never rule.
@@ -378,6 +381,22 @@ const BEHAVIORS := ["prey", "villager", "predator", "looter"]
 ## it is built of, its buildings (their size, furniture, who lives there),
 ## fields and a pen. The generator only lays them out.
 func _check_settlement(id: String, d: Dictionary) -> void:
+	# Styles by biome (ADR-0038): what is built otherwise where its middle
+	# lies in one of "biomes" — each must make a whole settlement too.
+	var styles: Variant = d.get("styles", [])
+	if typeof(styles) != TYPE_ARRAY:
+		errors.append("%s: styles is a list of {biomes, ...what differs}" % id)
+		styles = []
+	for st: Variant in styles:
+		if typeof(st) != TYPE_DICTIONARY or typeof((st as Dictionary).get("biomes")) != TYPE_ARRAY:
+			errors.append("%s: a style needs biomes" % id)
+			continue
+		_check_refs(id, "style biomes", st["biomes"], "biome")
+		var whole := d.duplicate(true)
+		whole.erase("styles")
+		whole.merge((st as Dictionary).duplicate(true), true)
+		whole.erase("biomes")
+		_check_settlement(id + " (style)", whole)
 	d["region_chunks"] = int(d.get("region_chunks", 12))
 	d["chance"] = float(d.get("chance", 0.0))
 	if d["region_chunks"] < 4 or d["chance"] < 0.0 or d["chance"] > 1.0:
@@ -385,6 +404,8 @@ func _check_settlement(id: String, d: Dictionary) -> void:
 	var houses: Variant = d.get("houses")
 	if typeof(houses) != TYPE_ARRAY or (houses as Array).size() != 2 or int(houses[0]) < 1 or int(houses[1]) < int(houses[0]):
 		errors.append("%s: houses is [least, most], at least one" % id)
+	if d.has("bridge") and kind_of(String(d["bridge"])) != "ground":
+		errors.append("%s: 'bridge' must be a ground" % id)
 	for f: String in ["road", "floor"]:
 		if kind_of(String(d.get(f, ""))) != "ground":
 			errors.append("%s: '%s' must be a ground" % [id, f])

@@ -43,6 +43,8 @@ func test_the_cursor_follows_the_action() -> void:
 	eq(_kind("base:spear", thing), "glove", "whatever is held")
 	eq(_kind("", _part("base:tall_grass", "cover")), "glove", "grass plucked by hand")
 	eq(_kind("", _part("base:workbench")), "hammer", "work at a workbench")
+	eq(_kind("base:fishing_rod", {"kind": "ground", "id": "base:water", "cell": Vector2i(1, 1), "location": "surface"}), "rod", "a rod fishes")
+	eq(_kind("base:hoe", grass), "hoe", "a hoe ploughs")
 	eq(_kind("", grass), "corners", "else the corners")
 
 

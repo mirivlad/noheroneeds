@@ -95,6 +95,22 @@
       "warmth": 3
     },
     {
+      "id": "base:fur_cloak",
+      "kind": "item",
+      "name": "Меховой плащ",
+      "stack": 1,
+      "equip_slot": "back_item",
+      "warmth": 6
+    },
+    {
+      "id": "base:fur_hood",
+      "kind": "item",
+      "name": "Меховой капюшон",
+      "stack": 1,
+      "equip_slot": "headwear",
+      "warmth": 2
+    },
+    {
       "id": "base:axe",
       "kind": "item",
       "name": "Топор",

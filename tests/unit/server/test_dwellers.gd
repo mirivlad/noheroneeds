@@ -165,3 +165,36 @@ func test_trade_with_a_dweller_coins_stock_purse_and_the_morning() -> void:
 	eq(g["purse"], 60)
 	farmer.asleep = true
 	eq(_req(a, {"type": "trade_look", "creature": farmer.id}).get("reason"), "not_now", "not in its sleep")
+
+
+## A traveller on a road between two villages walks along it by day.
+func test_a_traveller_walks_a_road() -> void:
+	var s := w.generator.settlements
+	var found: Creature = null
+	for ry in range(-2, 3):
+		for rx in range(-2, 3):
+			for dir in 2:
+				var road := s.road_of(0, rx, ry, dir)
+				if road.is_empty() or found:
+					continue
+				for at: Vector2i in road["path"]:
+					w.chunk("surface", at.x >> 5, at.y >> 5)
+				for c: Creature in w.creatures.creatures.values():
+					if not c.route.is_empty():
+						found = c
+	check(found != null, "a traveller somewhere on the roads")
+	if found == null:
+		return
+	var road := s.road_of(int(found.route["road"][0]), int(found.route["road"][1]), int(found.route["road"][2]), int(found.route["road"][3]))
+	var start := found.cell()
+	w.world_time = Daylight.DAY_MS + 10 * Daylight.HOUR_MS
+	found.last_time = w.world_time
+	for i in 600:
+		w.tick += 1
+		w.mark_needed("surface", found.cell().x >> 5, found.cell().y >> 5)
+		w.creatures.step(w.tick)
+	check(Vector2(found.cell()).distance_to(Vector2(start)) > 6.0, "it went on: %s -> %s (%s)" % [start, found.cell(), found.state])
+	var near := false
+	for d: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		near = near or (road["cells"] as Dictionary).has(found.cell() + d)
+	check(near, "along the road: %s" % found.cell())

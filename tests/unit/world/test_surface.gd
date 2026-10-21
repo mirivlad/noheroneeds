@@ -14,7 +14,6 @@ func _plain() -> ContentRegistry:
 	return ContentRegistry.from_defs([
 		{"id": "test:grass", "kind": "ground"}, {"id": "test:pond", "kind": "ground", "solid": true},
 		{"id": "test:flower", "kind": "plant"},
-		{"id": "base:surface", "kind": "generator", "water": "test:pond", "shore": "test:grass", "water_threshold": 2.0},
 		{"id": "test:lawn", "kind": "biome", "ground": {"test:grass": 1}, "cover": {"test:flower": 1}, "cover_density": 0.1},
 		{"id": "test:body", "kind": "body_plan", "directions": 8, "slots": ["body"], "appearance_slots": ["hair"], "colors": ["skin"]},
 		{"id": "test:hair", "kind": "style", "slot": "hair", "body_plans": ["test:body"]},

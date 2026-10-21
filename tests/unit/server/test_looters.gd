@@ -88,13 +88,21 @@ func test_a_poring_keeps_what_it_swallowed_over_a_restart() -> void:
 ## the new kinds only, about as many as their share of the fauna.
 func test_old_chunks_get_only_the_new_kinds() -> void:
 	var kinds := {}
-	for i in 40:
-		var cx := 20 + i
-		w.chunk("surface", cx, 20)
-		for id: String in w.creatures.in_chunk("surface", cx, 20):
+	# Forty chunks of land (not the sea) round spawn, past its village.
+	var lands: Array[Vector2i] = []
+	for r in range(4, 40):
+		for cx in range(-r, r + 1):
+			for cy: int in [-r, r]:
+				if lands.size() < 40 and w.chunk("surface", cx, cy).layer_ids("ground").count("base:water") < Chunk.CELLS / 4:
+					lands.append(Vector2i(cx, cy))
+	eq(lands.size(), 40, "land enough round spawn")
+	for at: Vector2i in lands:
+		var cx := at.x
+		var cy := at.y
+		for id: String in w.creatures.in_chunk("surface", cx, cy):
 			w.creatures.remove(id)
-		w.creatures._populate("surface", cx, 20, 1)
-		for id: String in w.creatures.in_chunk("surface", cx, 20):
+		w.creatures._populate("surface", cx, cy, 1)
+		for id: String in w.creatures.in_chunk("surface", cx, cy):
 			var k := w.creatures.get_creature(id).kind
 			kinds[k] = int(kinds.get(k, 0)) + 1
 	check(not kinds.is_empty(), "some came")

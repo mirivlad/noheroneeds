@@ -126,8 +126,9 @@ var _encoded := {}
 ## the store's schema): a world of another format is not opened. 2: each
 ## copy's state — wear, quality, enhancements, maker (ADR-0046, ADR-0047),
 ## characters' knowledge and mastery. 3: furniture set up from things of
-## their own, buckets single (ADR-0048).
-const WORLD_FORMAT := 3
+## their own, buckets single (ADR-0048). 4: the land from geography
+## (ADR-0049) — places not yet visited would not meet the old ones.
+const WORLD_FORMAT := 4
 ## Why the last open() failed, for people ("" — it did not).
 static var open_error := ""
 
@@ -149,8 +150,8 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 			return null
 	var format := int(s.read_meta("world_format")) if s.read_meta("world_format").is_valid_int() else 1
 	if format != WORLD_FORMAT:
-		open_error = ("Этот мир сохранён старой версией игры (формат %d, нужен %d): вещи, знания и мастерство в нём " \
-			+ "записаны по-старому, и эта версия его не откроет. Начните новый мир.") % [format, WORLD_FORMAT] \
+		open_error = ("Этот мир сохранён старой версией игры (формат %d, нужен %d): земля, вещи или знания в нём " \
+			+ "устроены по-старому, и эта версия его не откроет. Начните новый мир.") % [format, WORLD_FORMAT] \
 			if format < WORLD_FORMAT else "Этот мир сохранён более новой версией игры (формат %d): обновите игру." % format
 		s.close()
 		return null

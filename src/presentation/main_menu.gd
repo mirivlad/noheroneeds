@@ -267,27 +267,68 @@ func show_character_edit(file_id: String) -> void:
 		show_characters())
 
 
-## Who made what the game borrows (CREDITS-art.md, written by tools/art/import_lpc.py).
+## Who made the game, under which licence; where its pictures come from and
+## under what terms (the whole list of their authors: CREDITS-art.md, written
+## by tools/art/import_lpc*.py, shipped with the game).
 const CREDITS := "res://CREDITS-art.md"
+const LPC_URL := "https://lpc.opengameart.org"
+const OGA_URL := "https://opengameart.org"
+const ULPC_URL := "https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator"
+const GPL_URL := "https://www.gnu.org/licenses/gpl-3.0.html"
+const REPO_URL := "https://github.com/mirivlad/noheroneeds"
 
 
 func show_credits() -> void:
 	_clear("Авторы")
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(560, 300)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_body.add_child(scroll)
-	var text := Label.new()
+	var text := _rich(560, 300)
 	text.name = "CreditsText"
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.custom_minimum_size = Vector2(540, 0)
-	text.add_theme_color_override("font_color", Art.TEXT)
+	var version := String(ProjectSettings.get_setting("application/config/version", ""))
+	text.text = "\n".join([
+		"[color=#%s]No Hero Needed — «Герой не требуется»[/color]  %s" % [Art.TEXT_HOT.to_html(false), version],
+		"[url=%s]%s[/url]" % [REPO_URL, REPO_URL],
+		"",
+		"[color=#%s]Авторы игры[/color]" % Art.TEXT_HOT.to_html(false),
+		"mirivlad — автор: замысел, решения, музыка",
+		"Claude (Anthropic) — соавтор: код, инструменты, сборка графики",
+		"",
+		"[color=#%s]Лицензия[/color]" % Art.TEXT_HOT.to_html(false),
+		"Игра — свободная программа по лицензии [url=%s]GNU GPL версии 3[/url] (или более поздней): её можно запускать, изучать, менять и распространять на её условиях. Текст лицензии — в файле LICENSE рядом с игрой." % GPL_URL,
+		"",
+		"[color=#%s]Графика[/color]" % Art.TEXT_HOT.to_html(false),
+		"Почти всё нарисовано участниками [url=%s]Liberated Pixel Cup (LPC)[/url] и авторами других свободных наборов на [url=%s]OpenGameArt[/url]; персонажи собраны из [url=%s]Universal LPC Spritesheet Generator[/url]. Каждая работа взята под лицензией, которую указали её авторы (CC-BY-SA, CC-BY, OGA-BY, GPL, CC0). Кто нарисовал что и под какой лицензией — «Полный список» ниже и файл CREDITS-art.md рядом с игрой." % [LPC_URL, OGA_URL, ULPC_URL],
+		"",
+		"[color=#%s]Шрифт, звуки, музыка[/color]" % Art.TEXT_HOT.to_html(false),
+		"Шрифт Monogram Extended — datagoblin, CC0. Звуки синтезированы для игры. Музыка — mirivlad.",
+	])
+	_button("Полный список авторов графики", show_art_credits)
+	_button("Назад", show_start)
+
+
+## Every borrowed picture's authors and licences (CREDITS-art.md).
+func show_art_credits() -> void:
+	_clear("Авторы графики")
+	var text := _rich(560, 300)
+	text.name = "ArtCreditsText"
 	var lines := PackedStringArray()
 	for line: String in FileAccess.get_file_as_string(CREDITS).split("\n"):
-		lines.append(line.trim_prefix("## ").trim_prefix("# ").replace("`", ""))
+		lines.append(line.trim_prefix("## ").trim_prefix("# ").replace("`", "").replace("[", "[lb]"))
 	text.text = "\n".join(lines).strip_edges()
-	scroll.add_child(text)
-	_button("Назад", show_start)
+	_button("Назад", show_credits)
+
+
+## A scrolling text with links that open in the browser.
+func _rich(width: float, height: float) -> RichTextLabel:
+	var t := RichTextLabel.new()
+	t.bbcode_enabled = true
+	t.scroll_active = true
+	t.custom_minimum_size = Vector2(width, height)
+	t.add_theme_font_override("normal_font", Art.font())
+	t.add_theme_font_size_override("normal_font_size", 16)
+	t.add_theme_color_override("default_color", Art.TEXT)
+	t.meta_underlined = true
+	t.meta_clicked.connect(func(meta: Variant) -> void: OS.shell_open(String(meta)))
+	_into.add_child(t)
+	return t
 
 
 func show_settings() -> void:

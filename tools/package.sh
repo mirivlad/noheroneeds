@@ -31,7 +31,7 @@ D="$WORK/noheroneeds-$VERSION"
 mkdir -p "$D"
 cp "$LIN"/* "$D"/
 cp "$ROOT/assets/icon/icon-256.png" "$D/noheroneeds.png"
-cp "$ROOT/CREDITS-art.md" "$D"/
+cp "$ROOT/CREDITS-art.md" "$ROOT/LICENSE" "$D"/
 tar -C "$WORK" -czf "$OUT/noheroneeds-$VERSION-linux-x86_64.tar.gz" "noheroneeds-$VERSION"
 rm -rf "$D"
 
@@ -39,12 +39,12 @@ rm -rf "$D"
 D="$WORK/noheroneeds-$VERSION-windows"
 mkdir -p "$D"
 cp "$WIN"/* "$D"/
-cp "$ROOT/CREDITS-art.md" "$D"/
+cp "$ROOT/CREDITS-art.md" "$ROOT/LICENSE" "$D"/
 (cd "$WORK" && zip -qr "$OUT/noheroneeds-$VERSION-windows-portable.zip" "noheroneeds-$VERSION-windows")
 
 # Windows, installer (NSIS builds it on Linux too).
 if command -v makensis >/dev/null; then
-  makensis -V2 -DVERSION="$VERSION" -DSRC="$D" -DICON="$ROOT/assets/icon/icon.ico" \
+  makensis -V2 -DVERSION="$VERSION" -DSRC="$D" -DICON="$ROOT/assets/icon/icon.ico" -DLICENSE="$ROOT/LICENSE" \
     -DOUT="$OUT/noheroneeds-$VERSION-windows-setup.exe" "$PKG/windows/installer.nsi"
 else
   echo "makensis not found: no Windows installer (apt install nsis)" >&2
@@ -71,8 +71,15 @@ Upstream-Name: No Hero Needed
 Source: https://github.com/mirivlad/noheroneeds
 
 Files: *
-Copyright: No Hero Needed contributors
-License: see the project's repository
+Copyright: mirivlad, Claude (Anthropic) and No Hero Needed contributors
+License: GPL-3+
+ This program is free software: you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the Free
+ Software Foundation, either version 3 of the License, or (at your option)
+ any later version.
+ .
+ On Debian systems the full text of the GNU General Public License version 3
+ is in /usr/share/common-licenses/GPL-3.
 
 Files: opt/noheroneeds/*.so
 Copyright: 2shady4u and contributors (godot-sqlite)

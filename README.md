@@ -81,3 +81,10 @@ tools/package.sh 0.2.0
 Нужен Godot 4.7.2 (`godot` в PATH или переменная `GODOT`).
 
 `tools/fetch_addons.sh` также заранее регистрирует расширение в `.godot/`: без этого самый первый импорт в Godot 4.7.2 падает на выходе (сам импорт при этом завершается).
+
+## Лицензия
+
+Игра — свободная программа по лицензии [GNU GPL версии 3](LICENSE) или (на ваш выбор) любой более поздней. Авторы: mirivlad и Claude (Anthropic).
+
+Графика — из [Liberated Pixel Cup](https://lpc.opengameart.org) и других свободных наборов с [OpenGameArt](https://opengameart.org): каждая работа под лицензией, которую указали её авторы; кто что нарисовал и под какой лицензией — [CREDITS-art.md](CREDITS-art.md). Шрифт Monogram Extended — datagoblin, CC0.
+

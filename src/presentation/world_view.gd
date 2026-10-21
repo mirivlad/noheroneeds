@@ -1227,10 +1227,12 @@ func _update_characters(alpha: float, delta: float) -> void:
 	if client.has_position:
 		seen[client.character_id] = true
 		var me := _character(client.character_id, client.own.get("appearance", {}))
+		me.submerged = client.in_water(client.position)  # swimming (ADR-0050)
 		me.show_at(own_pixel_position(alpha), delta, true)
 		me.modulate = Color.WHITE
 		_health(client.character_id, me, client.own, delta)
-		me.hold(item_picture(own_held), item_grip(own_held), own_held)
+		var in_hands := "" if me.submerged else own_held
+		me.hold(item_picture(in_hands), item_grip(in_hands), in_hands)
 		_held_light(me, own_held)
 		_lie(me, bool(client.own.get("asleep", false)))
 	for id: String in client.entities:
@@ -1258,7 +1260,8 @@ func _update_characters(alpha: float, delta: float) -> void:
 		# lies dimmed under the floor, as the surface there does.
 		var dz := int(e.get("z", client.z)) - client.z
 		var sprite := _character(id, looks)
-		var held := String(e.get("held", ""))
+		sprite.submerged = kind == "character" and dz == 0 and client.in_water(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
+		var held := "" if sprite.submerged else String(e.get("held", ""))
 		sprite.hold(item_picture(held), item_grip(held), held)
 		_held_light(sprite, held)
 		var blows := int(e.get("swing", 0))

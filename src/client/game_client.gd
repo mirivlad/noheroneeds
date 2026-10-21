@@ -99,7 +99,7 @@ func step() -> void:
 		_input_seq += 1
 		_unacked_inputs.append([_input_seq, move.x, move.y, 1 if run else 0])
 		previous_position = position
-		position = Movement.step(position, move.x, move.y, _solid, run)
+		position = _step(position, move.x, move.y, run)
 		_send(Transport.Channel.STATE, Protocol.INPUT, {"inputs": _unacked_inputs.slice(-Protocol.INPUT_REDUNDANCY),
 			"ack": _latest_snapshot})
 
@@ -406,7 +406,7 @@ func _reconcile(server_pos: Vector2i, ack: int) -> void:
 		_unacked_inputs.pop_front()
 	var replay := server_pos
 	for e: Array in _unacked_inputs:
-		replay = Movement.step(replay, e[1], e[2], _solid, e[3] == 1)
+		replay = _step(replay, e[1], e[2], e[3] == 1)
 	if has_position and replay != position:
 		corrections += 1
 	if not has_position:
@@ -426,7 +426,22 @@ func _solid(x: int, y: int) -> bool:
 	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
 	if c == null:
 		return false  # unknown ground: the server will correct us
-	return Terrain.is_solid(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content, location != Levels.SURFACE)
+	return Terrain.is_solid(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content, location != Levels.SURFACE, true)
+
+
+## A step as the server takes it: in water one swims (ADR-0050), slowly.
+func _step(pos: Vector2i, dx: int, dy: int, run: bool) -> Vector2i:
+	var swim := in_water(pos)
+	return Movement.step(pos, dx, dy, _solid, run and not swim, Vector2i(Movement.HALF_X, Movement.HALF_Y), swim)
+
+
+## Whether a position (movement units) on our location is in water.
+func in_water(pos: Vector2i) -> bool:
+	var cell := Movement.cell_of(pos)
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	return c != null and Terrain.is_water(c, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
 
 
 func _send(channel: Transport.Channel, type: String, fields: Dictionary) -> void:

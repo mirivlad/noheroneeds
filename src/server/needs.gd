@@ -29,6 +29,12 @@ const SEASON_DAY := [0.0, 0.0, 0.0, 6.0]
 const AWAKE_HOURS := 40.0
 const BED_RESTS := 34.0
 const TIRED := 20.0
+## Swimming (ADR-0050): it tires (a full one swims some three game hours),
+## the water chills whatever one wears; spent, one drowns — a health every
+## DROWN_MS of game time, to the last.
+const SWIM_TIRES := 30.0
+const WATER_CHILL := 25.0
+const DROWN_MS := 3 * 60 * 1000
 ## Below this one is cold: food goes faster, health does not come back.
 const COLD := 25.0
 ## Each point of what one wears ("warmth") keeps off this share, to MOST_KEPT.
@@ -39,6 +45,8 @@ var world: ServerWorld
 var _last_time := -1
 ## Game ms of hunger not yet taken as health, by character.
 var _starving := {}
+## Game ms of drowning not yet taken as health, by character.
+var _drowning := {}
 
 
 func _init(w: ServerWorld) -> void:
@@ -174,10 +182,25 @@ func step() -> void:
 	for id: String in world.present:
 		# Awake it runs down; asleep in a bed it comes back, and full one wakes.
 		var sleeping := asleep(id)
-		set_energy(id, energy_of(id) + (BED_RESTS if sleeping else -FULL / AWAKE_HOURS) * hours)
+		var swimming := world.in_water(id)
+		set_energy(id, energy_of(id) + (BED_RESTS if sleeping else (-SWIM_TIRES if swimming else -FULL / AWAKE_HOURS)) * hours)
 		if sleeping and energy_of(id) >= FULL:
 			world.wake(id)
-		var warm := warmth_of(id) + warming(id) * hours
+		var warm := warmth_of(id) + (minf(0.0, warming(id)) - WATER_CHILL if swimming else warming(id)) * hours
+		# Spent in the water, one goes under: health goes, to the very last.
+		if swimming and energy_of(id) <= 0.0:
+			var deaths := int(world.present[id].get("deaths", 0))
+			var due := int(_drowning.get(id, 0)) + gone
+			while due >= DROWN_MS and world.in_water(id):
+				due -= DROWN_MS
+				world.combat.hurt(id, 1, "")
+			_drowning[id] = due
+			if int(world.present[id].get("deaths", 0)) != deaths:  # drowned: back at the spawn point, rested a little
+				_drowning.erase(id)
+				set_energy(id, FULL / 2.0)
+				continue
+		else:
+			_drowning.erase(id)
 		set_warmth(id, warm)
 		# The cold burns food: half as fast again.
 		var left := satiety_of(id) - FULL / EMPTY_HOURS * hours * (1.5 if warm < COLD else 1.0) * (0.5 if sleeping else 1.0)

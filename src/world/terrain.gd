@@ -22,17 +22,31 @@ static func is_covered(c: Chunk, lx: int, ly: int) -> bool:
 ## "solid" flag; unknown structure parts block, unknown ground and plants do not.
 const BLOCKING_LAYERS := ["ground", "cover", "structure"]
 
-## Bits of Chunk.traits: worked out; blocks walking; blocks sight; no ground.
+## Bits of Chunk.traits: worked out; blocks walking; blocks sight; no ground;
+## water one swims in (ADR-0050); something solid standing or growing there.
 const _KNOWN := 1
 const _SOLID := 2
 const _OPAQUE := 4
 const _NO_GROUND := 8
+const _SWIM := 16
+const _UPPER_SOLID := 32
 
 
 ## empty_ground_blocks: on building levels a cell without floor is a void.
-static func is_solid(c: Chunk, lx: int, ly: int, content: ContentRegistry, empty_ground_blocks := false) -> bool:
+## swims: one who swims (a character, ADR-0050) goes into water a creature
+## keeps out of.
+static func is_solid(c: Chunk, lx: int, ly: int, content: ContentRegistry, empty_ground_blocks := false, swims := false) -> bool:
 	var t := _traits(c, lx, ly, content)
-	return t & _SOLID != 0 or (empty_ground_blocks and t & _NO_GROUND != 0)
+	if empty_ground_blocks and t & _NO_GROUND != 0:
+		return true
+	if swims and t & _SWIM != 0:
+		return t & _UPPER_SOLID != 0
+	return t & _SOLID != 0
+
+
+## Whether a cell is water one swims in.
+static func is_water(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> bool:
+	return _traits(c, lx, ly, content) & _SWIM != 0
 
 
 ## Whether a cell blocks sight (ADR-0018): a part that is not see-through
@@ -58,11 +72,14 @@ static func _traits(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> int
 		if id == "":
 			continue
 		var d := content.get_def(id)
+		if layer == "ground" and bool(d.get("swim", false)):
+			t |= _SWIM
 		if layer == "structure" and d.get("openable", false) and c.get_props(lx, ly).get("open", false):
 			continue  # an open door
 		if bool(d.get("solid", layer == "structure")):
 			t |= _SOLID
-			break
+			if layer != "ground":
+				t |= _UPPER_SOLID
 	var part := c.get_cell("structure", lx, ly)
 	if part != "":
 		var d := content.get_def(part)

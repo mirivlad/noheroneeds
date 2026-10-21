@@ -16,15 +16,21 @@ const DIAGONAL := 36
 ## Running (Ctrl): 1.5 times as fast. A step stays shorter than a cell.
 const RUN := 77
 const RUN_DIAGONAL := 54
+## Swimming (ADR-0050): half as fast as walking, never running.
+const SWIM := 26
+const SWIM_DIAGONAL := 18
 const HALF_X := 80
 const HALF_Y := 48
 
 
 ## One tick of movement in direction (dx, dy), each -1..1; run: 1.5 times as fast.
 ## solid: Callable(cell_x: int, cell_y: int) -> bool
-static func step(pos: Vector2i, dx: int, dy: int, solid: Callable, run := false, half := Vector2i(HALF_X, HALF_Y)) -> Vector2i:
+## swim: in water, slowly.
+static func step(pos: Vector2i, dx: int, dy: int, solid: Callable, run := false, half := Vector2i(HALF_X, HALF_Y), swim := false) -> Vector2i:
 	var diagonal := dx != 0 and dy != 0
 	var speed := (RUN_DIAGONAL if diagonal else RUN) if run else (DIAGONAL if diagonal else WALK)
+	if swim:
+		speed = SWIM_DIAGONAL if diagonal else SWIM
 	pos = _axis(pos, dx * speed, true, solid, half)
 	return _axis(pos, dy * speed, false, solid, half)
 

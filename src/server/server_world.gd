@@ -189,8 +189,12 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 			gen.extra_ways["-1|%d|%d" % [spawn_way.x, spawn_way.y]] = true
 	if world.generator:
 		world.generator.underground = world.underground
+		if world.underground:
+			world.underground.geography = world.generator.geography  # ores by the land above (ADR-0053)
 	if lg:
 		lg.underground = lug
+		if lug:
+			lug.geography = lg.geography
 	if not world.loader.start(db_path, lg, lug):
 		w.stop()
 		s.close()

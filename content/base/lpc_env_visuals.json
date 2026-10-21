@@ -542,6 +542,46 @@
    "autotile": "rock"
   },
   {
+   "id": "base:visual/silver_ore_rock",
+   "kind": "visual",
+   "for": "base:silver_ore_rock",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    960,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "rock"
+  },
+  {
+   "id": "base:visual/gold_ore_rock",
+   "kind": "visual",
+   "for": "base:gold_ore_rock",
+   "mode": "tall",
+   "atlas": "art/lpc_env/walls.png",
+   "rect": [
+    0,
+    1056,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 16,
+   "autotile": "rock"
+  },
+  {
    "id": "base:visual/wood_floor",
    "kind": "visual",
    "for": "base:wood_floor",

@@ -394,6 +394,13 @@ func _validate() -> void:
 				if not ["vein", "single"].has(String(d.get("shape", "vein"))):
 					errors.append("%s: shape must be vein or single" % id)
 				d["threshold"] = float(d.get("threshold", 0.0))
+				# How rich under lowland, hills, mountains (ADR-0053).
+				var relief: Variant = d.get("relief", [1.0, 1.0, 1.0])
+				if typeof(relief) != TYPE_ARRAY or (relief as Array).size() != 3 \
+						or (relief as Array).any(func(v: Variant) -> bool: return typeof(v) not in [TYPE_INT, TYPE_FLOAT] or float(v) < 0.0):
+					errors.append("%s: relief is [lowland, hills, mountains], each 0 or more" % id)
+					relief = [1.0, 1.0, 1.0]
+				d["relief"] = [float(relief[0]), float(relief[1]), float(relief[2])]
 				if d["threshold"] <= 0.0 or d["threshold"] >= 1.0:
 					errors.append("%s: threshold (how much of the rock it takes) must be within 0..1" % id)
 			"generator":

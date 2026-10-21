@@ -489,10 +489,33 @@ func _check_settlement(id: String, d: Dictionary) -> void:
 		whole.merge((st as Dictionary).duplicate(true), true)
 		whole.erase("biomes")
 		_check_settlement(id + " (style)", whole)
-	d["region_chunks"] = int(d.get("region_chunks", 12))
-	d["chance"] = float(d.get("chance", 0.0))
-	if d["region_chunks"] < 4 or d["chance"] < 0.0 or d["chance"] > 1.0:
-		errors.append("%s: region_chunks at least 4, chance within 0..1" % id)
+	# Clusters (ADR-0054): districts of district_chunks; a cluster of
+	# villages [least, most] in cluster_chance of them, within spread cells
+	# of its first; joined with a neighbouring cluster by link_chance.
+	d["district_chunks"] = int(d.get("district_chunks", 24))
+	d["cluster_chance"] = float(d.get("cluster_chance", 0.0))
+	d["link_chance"] = float(d.get("link_chance", 0.0))
+	d["spread"] = int(d.get("spread", 300))
+	if d["district_chunks"] < 8 or d["cluster_chance"] < 0.0 or d["cluster_chance"] > 1.0 \
+			or d["link_chance"] < 0.0 or d["link_chance"] > 1.0 or d["spread"] < Settlements.APART:
+		errors.append("%s: district_chunks at least 8, cluster_chance and link_chance within 0..1, spread at least %d" % [id, Settlements.APART])
+	var count: Variant = d.get("villages", [1, 1])
+	if typeof(count) != TYPE_ARRAY or (count as Array).size() != 2 or int(count[0]) < 1 or int(count[1]) < int(count[0]):
+		errors.append("%s: villages is [least, most] in a cluster, at least one" % id)
+	# Ways of life by the place (ADR-0054): the first whose "near" fits.
+	var ways: Variant = d.get("ways", [])
+	if typeof(ways) != TYPE_ARRAY:
+		errors.append("%s: ways is a list" % id)
+		ways = []
+	var ids := (d.get("buildings", []) as Array).map(func(b: Variant) -> String:
+		return String(b.get("id", "")) if typeof(b) == TYPE_DICTIONARY else "")
+	for w: Variant in ways:
+		if typeof(w) != TYPE_DICTIONARY or String(w.get("id", "")) == "" \
+				or not String(w.get("near", "")) in ["", "water", "mountains", "grassland"] \
+				or typeof(w.get("buildings", {})) != TYPE_DICTIONARY \
+				or (w.get("buildings", {}) as Dictionary).keys().any(func(b: Variant) -> bool: return not ids.has(b)) \
+				or (w.has("first") and not ids.has(w["first"])):
+			errors.append("%s: a way has an id, near (water, mountains, grassland or none), its buildings and first building by id" % id)
 	var houses: Variant = d.get("houses")
 	if typeof(houses) != TYPE_ARRAY or (houses as Array).size() != 2 or int(houses[0]) < 1 or int(houses[1]) < int(houses[0]):
 		errors.append("%s: houses is [least, most], at least one" % id)

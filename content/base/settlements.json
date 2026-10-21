@@ -3,7 +3,7 @@
   "defs": [
     {
       "id": "base:village", "kind": "settlement", "name": "Деревня",
-      "region_chunks": 6, "chance": 0.6, "near_spawn": true,
+      "district_chunks": 24, "cluster_chance": 0.75, "villages": [2, 5], "spread": 300, "link_chance": 0.4, "near_spawn": true,
       "houses": [4, 7],
       "road": "base:dirt", "bridge": "base:bridge", "floor": "base:wood_floor", "wall": "base:wood_wall", "door": "base:wood_door",
       "window": "base:wood_window", "roof": "base:thatch_roof", "square": "base:campfire",
@@ -18,6 +18,12 @@
       ],
       "fields": {"count": [1, 3], "size": [6, 4], "ground": "base:farmland", "crops": {"base:wheat_crop": 2, "base:carrot_crop": 1}},
       "pen": {"size": [7, 5], "fence": "base:wood_fence", "gate": "base:wood_gate", "animals": {"base:sheep": 2, "base:chicken": 3}},
+      "ways": [
+        {"id": "mining", "name": "Горняцкая", "near": "mountains", "first": "smithy", "buildings": {"smithy": {"weight": 6, "max": 2}}},
+        {"id": "fishing", "name": "Рыбацкая", "near": "water", "first": "fisher", "buildings": {"fisher": {"weight": 6, "max": 3}}},
+        {"id": "herding", "name": "Пастушья", "near": "grassland", "first": "herder", "buildings": {"herder": {"weight": 6, "max": 3}}},
+        {"id": "farming", "name": "Земледельческая", "buildings": {"house": {"weight": 8}}}
+      ],
       "styles": [
         {"biomes": ["base:tundra", "base:rocky"], "wall": "base:stone_wall", "houses": [3, 5],
           "fields": {},

@@ -20,7 +20,8 @@ const ID := "base:surface"
 ##    heights.
 ## 7: shallows at the edges of the sea and lakes, fords, deep water (ADR-0051).
 ## 8: pebbles (flint) on shores (ADR-0053).
-const VERSION := 8
+## 9: villages in clusters, roads by the land (ADR-0054).
+const VERSION := 9
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -106,7 +107,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	_meander.seed = seed_value + 3571
 	_meander.frequency = 0.03
 	_meander.fractal_octaves = 2
-	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at)
+	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at, land_at if geography else Callable())
 	for i in 8:
 		var n := FastNoiseLite.new()
 		n.seed = seed_value + 104729 * (i + 1)

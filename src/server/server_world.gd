@@ -128,8 +128,9 @@ var _encoded := {}
 ## characters' knowledge and mastery. 3: furniture set up from things of
 ## their own, buckets single (ADR-0048). 4: the land from geography
 ## (ADR-0049) — places not yet visited would not meet the old ones. 5:
-## shallows, fords and deep water (ADR-0051).
-const WORLD_FORMAT := 5
+## shallows, fords and deep water (ADR-0051). 6: villages in clusters, their
+## ids and places new (ADR-0054).
+const WORLD_FORMAT := 6
 ## Why the last open() failed, for people ("" — it did not).
 static var open_error := ""
 

@@ -23,7 +23,11 @@ const DAY_WARMS := 5.0
 const FIRE_REACH := 3
 ## By season (ADR-0036): the night's chill as a share, and a chill by day too.
 const SEASON_NIGHT := [1.0, 0.5, 1.2, 1.8]
-const SEASON_DAY := [0.0, 0.0, 0.0, 6.0]
+## How a day chills by how far below freezing the season is where one is
+## (a middling winter, -0.5: 6 an hour, ADR-0055).
+const DAY_COLD := 12.0
+## How much a warm place softens its nights (a cold one sharpens them).
+const NIGHT_WARMTH := 0.6
 ## Energy (0..100, ADR-0035): awake it lasts this many game hours; in a bed
 ## it comes back this much an hour. Below TIRED one does not run.
 const AWAKE_HOURS := 40.0
@@ -122,11 +126,15 @@ func warming(id: String) -> float:
 	var sky := world.has_daylight(loc) and not world.sheltered(loc, cell.x, cell.y)
 	var chill := 0.0
 	if sky:
+		# How cold the season is here (ADR-0055): the warm south hardly
+		# freezes, the north and the heights do in spring and autumn too.
+		var climate := world.climate_at(loc, cell)
 		var season := Seasons.of(world.world_time)
+		var cold := maxf(0.0, -Seasons.temperature(season, climate.x))
 		if Daylight.is_night(world.world_time):
-			chill += NIGHT_CHILL * SEASON_NIGHT[season]
-		chill += SEASON_DAY[season]
-		chill += RAIN_CHILL * Weather.precipitation(world.weather_seed, world.world_time)
+			chill += NIGHT_CHILL * SEASON_NIGHT[season] * clampf(1.0 - NIGHT_WARMTH * Seasons.felt(climate.x), 0.3, 1.8)
+		chill += DAY_COLD * cold
+		chill += RAIN_CHILL * Weather.precipitation(world.weather_seed, world.world_time, cell, climate)
 	chill *= 1.0 - minf(MOST_KEPT, KEPT_A_POINT * float(clothes_warmth(id)))
 	if chill > 0.0:
 		return heat - chill
@@ -148,8 +156,8 @@ func _fire_near(location: String, at: Vector2i) -> float:
 	for y in range(at.y - FIRE_REACH, at.y + FIRE_REACH + 1):
 		for x in range(at.x - FIRE_REACH, at.x + FIRE_REACH + 1):
 			var part := world.part_at(location, x, y)
-			if part != "":
-				best = maxf(best, float(world.content.get_def(part).get("heat", 0.0)))
+			if part != "" and float(world.content.get_def(part).get("heat", 0.0)) > best and world.fire_burns(location, x, y):
+				best = float(world.content.get_def(part).get("heat", 0.0))  # put out by the rain, it warms no one
 	return best
 
 

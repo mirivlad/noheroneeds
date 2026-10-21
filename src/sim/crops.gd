@@ -9,19 +9,24 @@ const RAIN_GROWTH := 1.0
 
 
 ## The stage (0 .. stages-1) of a crop sown at `planted` (world ms) at `now`;
-## under the sky (`weather_seed` >= 0) the rain since counts too.
-static func stage(def: Dictionary, planted: float, now: float, weather_seed := -1) -> int:
+## under the sky (`weather_seed` >= 0) the rain since counts too. At a place
+## of a climate (ADR-0055): it stands still while it freezes there, and the
+## rain there waters it.
+static func stage(def: Dictionary, planted: float, now: float, weather_seed := -1, place := Vector2i.ZERO,
+		climate := Vector2.ZERO) -> int:
 	var crop: Dictionary = def.get("crop", {})
 	var stages := maxi(1, int(crop.get("stages", 1)))
 	var grow := float(crop.get("grow_hours", 0.0)) * Daylight.HOUR_MS
 	if grow <= 0.0:
 		return stages - 1
-	# Nothing grows in winter (ADR-0036).
-	var grown := now - planted - Seasons.winter_ms(planted, now)
+	# Nothing grows while it freezes (ADR-0036: winter; in the south never,
+	# in the north spring and autumn too).
+	var grown := now - planted - Seasons.frozen_ms(planted, now, climate.x)
 	if weather_seed >= 0 and grown > 0.0:
-		grown += RAIN_GROWTH * Weather.rain_hours(weather_seed, planted, now) * Daylight.HOUR_MS
+		grown += RAIN_GROWTH * Weather.rain_hours(weather_seed, planted, now, place, climate) * Daylight.HOUR_MS
 	return clampi(int(floorf(grown / grow * (stages - 1))), 0, stages - 1)
 
 
-static func ripe(def: Dictionary, planted: float, now: float, weather_seed := -1) -> bool:
-	return stage(def, planted, now, weather_seed) >= maxi(1, int(def.get("crop", {}).get("stages", 1))) - 1
+static func ripe(def: Dictionary, planted: float, now: float, weather_seed := -1, place := Vector2i.ZERO,
+		climate := Vector2.ZERO) -> bool:
+	return stage(def, planted, now, weather_seed, place, climate) >= maxi(1, int(def.get("crop", {}).get("stages", 1))) - 1

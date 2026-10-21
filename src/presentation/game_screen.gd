@@ -1262,8 +1262,8 @@ func _update_hud() -> void:
 	if client.has_time:
 		clock_box.show_time(Seasons.of(client.world_time), "%s, день %d" % [Seasons.name_of(client.world_time).capitalize(),
 			Seasons.day_of(client.world_time)], "%s  %s" % [Daylight.clock_text(client.world_time),
-			WEATHER_WORDS[Weather.kind(client.weather_seed, client.world_time)] if client.z >= 0 else ""],
-			Weather.kind(client.weather_seed, client.world_time) if client.z >= 0 else "", Daylight.is_night(client.world_time), level)
+			WEATHER_WORDS[Weather.kind(client.weather_seed, client.world_time, client.weather_place(), client.climate())] if client.z >= 0 else ""],
+			Weather.kind(client.weather_seed, client.world_time, client.weather_place(), client.climate()) if client.z >= 0 else "", Daylight.is_night(client.world_time), level)
 	var deaths := int(client.own.get("deaths", 0))
 	if deaths > _deaths_seen and _deaths_seen >= 0:
 		_note = "вы погибли и вернулись к началу"

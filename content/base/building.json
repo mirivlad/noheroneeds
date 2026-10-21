@@ -25,7 +25,7 @@
     {"id": "base:forge", "kind": "structure", "role": "furniture", "name": "Печь", "station": "forge", "heat": 30,
      "cost": {"base:stone": 10}, "durability": 2400, "material": "stone", "toughness": 0.15,
      "light": {"radius": 4, "intensity": 0.7, "color": "#ff8040", "flicker": true}, "effects": {"smoke": [-2, -56]}},
-    {"id": "base:campfire", "kind": "structure", "role": "furniture", "solid": false, "name": "Костёр", "station": "fire", "heat": 40,
+    {"id": "base:campfire", "kind": "structure", "role": "furniture", "solid": false, "open_fire": true, "name": "Костёр", "station": "fire", "heat": 40,
      "cost": {"base:log": 2}, "light": {"radius": 6, "intensity": 0.9, "color": "#ffa050", "flicker": true},
      "effects": {"sparks": [0, -6], "smoke": [0, -14]}}
   ]

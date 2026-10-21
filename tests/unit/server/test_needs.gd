@@ -35,10 +35,14 @@ func _req(actor: String, r: Dictionary) -> Dictionary:
 
 
 ## The world's clock on by `hours`, needs stepped as the server does each second.
-func _hours(hours: float) -> void:
+## Time goes on a minute a step; `warm`: one is kept warm (what is measured
+## is something else, not the weather's cold, ADR-0055).
+func _hours(hours: float, warm := "") -> void:
 	var steps := int(hours * 60)
 	for i in steps:
 		w.world_time += Daylight.HOUR_MS / 60
+		if warm != "":
+			w.needs.set_warmth(warm, Needs.FULL)
 		w.needs.step()
 
 
@@ -46,7 +50,7 @@ func test_satiety_goes_down_with_time_and_work() -> void:
 	var a := _player()
 	w.needs.step()
 	eq(w.needs.satiety_of(a), Needs.FULL, "one comes full")
-	_hours(18.0)
+	_hours(18.0, a)
 	check(absf(w.needs.satiety_of(a) - 50.0) < 1.0, "half in eighteen hours: %.1f" % w.needs.satiety_of(a))
 	var before := w.needs.satiety_of(a)
 	for i in 4:
@@ -187,7 +191,7 @@ func test_energy_runs_down_and_a_bed_brings_it_back() -> void:
 	var at := _clear_round(a)
 	var loc := String(w.present[a]["location"])
 	w.needs.step()
-	_hours(20.0)
+	_hours(20.0, a)
 	check(absf(w.needs.energy_of(a) - 50.0) < 1.0, "half in twenty hours: %.1f" % w.needs.energy_of(a))
 	check(w.needs.may_run(a), "not tired yet")
 	w.needs.set_energy(a, 10.0)
@@ -205,12 +209,12 @@ func test_energy_runs_down_and_a_bed_brings_it_back() -> void:
 	w.needs.set_energy(b, 10.0)
 	eq(_req(b, bed.duplicate()).get("reason"), "someone_there", "a bed sleeps one")
 	w.leave(b)
-	_hours(1.0)
+	_hours(1.0, a)
 	check(w.needs.energy_of(a) > 40.0, "an hour in bed: %.1f" % w.needs.energy_of(a))
 	w.combat.hurt(a, 1, "")
 	check(not w.needs.asleep(a), "a blow wakes one")
 	check(_req(a, bed.duplicate()).get("ok", false), "back to bed")
-	_hours(3.0)  # full in about an hour and a half, then up and about
+	_hours(3.0, a)  # full in about an hour and a half, then up and about
 	check(w.needs.energy_of(a) > 95.0, "rested: %.1f" % w.needs.energy_of(a))
 	check(not w.needs.asleep(a), "and up by oneself")
 	eq(_req(a, bed.duplicate()).get("reason"), "not_tired", "rested ones do not lie down")

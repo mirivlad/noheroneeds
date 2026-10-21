@@ -25,6 +25,9 @@ var time_rate := 0
 var has_time := false
 ## The world's weather (ADR-0033) is worked out here from this and the time.
 var weather_seed := 0
+## The world's geography (ADR-0049) for the climate of places (ADR-0055); null
+## — a world without one (all places mild).
+var geography: Geography
 var location := ""
 ## The level label of the location (0 on the surface).
 var z := 0
@@ -234,6 +237,9 @@ func _on_message(m: Dictionary) -> void:
 			location = m["location"]
 			max_levels = int(m["max_levels"])
 			weather_seed = int(m.get("weather_seed", 0))
+			# The land's climate (ADR-0055), worked out here as the server does.
+			var seed_value := int(m.get("world_seed", -1))
+			geography = Geography.of(seed_value) if seed_value != -1 else null
 			state = "playing"
 			# The server knows nothing of our hands after a (re)join: they come
 			# before anything resent that may be done with them.
@@ -442,6 +448,32 @@ func _step(pos: Vector2i, dx: int, dy: int, run: bool) -> Vector2i:
 	var swim := in_water(pos)
 	return Movement.step(pos, dx, dy, _solid, run and not swim and not in_shallows(pos),
 		Vector2i(Movement.HALF_X, Movement.HALF_Y), swim)
+
+
+## The climate of a cell of the surface (ADR-0055): Vector2(warmth, rain).
+func climate_at(cell: Vector2i) -> Vector2:
+	return geography.climate_at(cell.x, cell.y) if geography and location == Levels.SURFACE else Vector2.ZERO
+
+
+## Whether a fire at a cell of the surface is out: hard rain there under the
+## open sky (ADR-0055), as the server has it.
+func doused(cell: Vector2i) -> bool:
+	if location != Levels.SURFACE:
+		return false
+	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, floori(cell.x / 32.0), floori(cell.y / 32.0)))
+	if c == null or Terrain.is_covered(c, posmod(cell.x, 32), posmod(cell.y, 32)) \
+			or not content.get_def(c.get_cell("structure", posmod(cell.x, 32), posmod(cell.y, 32))).get("open_fire", false):
+		return false
+	return Weather.rain(weather_seed, world_time, cell, climate_at(cell)) > ServerWorld.DOUSES
+
+
+## Where we are, for the weather: our cell and its climate.
+func weather_place() -> Vector2i:
+	return Movement.cell_of(position)
+
+
+func climate() -> Vector2:
+	return climate_at(weather_place())
 
 
 ## The boat we are in ("" — none, ADR-0052).

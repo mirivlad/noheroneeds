@@ -155,7 +155,7 @@ func _rain_on(delta: float) -> void:
 	var d := content.sound_of("", "rain")
 	if d.is_empty() or not client.has_time:
 		return
-	var want := Weather.rain(client.weather_seed, client.world_time) if client.z >= 0 else 0.0
+	var want := Weather.rain(client.weather_seed, client.world_time, client.weather_place(), client.climate()) if client.z >= 0 else 0.0
 	_rain_level = move_toward(_rain_level, want, delta / AMB_FADE)
 	if _rain_level <= 0.01:
 		if _rain.playing:

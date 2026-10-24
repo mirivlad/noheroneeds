@@ -399,7 +399,8 @@ func _grow_crops() -> void:
 func _notification(what: int) -> void:
 	# Layers made up front but never added (setup() not called) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [_ground, _cover, _below, _covers, _sorted, _tint, _rock_tops]:
+		for n: Node in [_ground, _cover, _below, _covers, _sorted, _tint, _rock_tops,
+				_below_terrain, _floor32, _cover32]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 

@@ -10,9 +10,11 @@ extends TestCase
 var w: ServerWorld
 var _db := ""
 var _content: ContentRegistry
+var _request_seq := 0
 
 
 func before_each() -> void:
+	_request_seq = 0
 	_content = ContentRegistry.load_packs(["res://content/base"])
 	eq(_content.errors, PackedStringArray())
 	_db = tmp_dir().path_join("world.db")
@@ -40,7 +42,10 @@ func _player(name: String, n := 1) -> String:
 
 
 func _req(actor: String, r: Dictionary) -> Dictionary:
-	r["request_id"] = Uuid.v4()
+	# The deed ID is part of the crafting roll too: fixed actors alone did
+	# not stop this suite from occasionally failing with a different UUID.
+	_request_seq += 1
+	r["request_id"] = "mastery-%d" % _request_seq
 	w.handle(actor, r)
 	w.sync()
 	for ack: Array in w.take_acks():

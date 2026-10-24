@@ -70,13 +70,19 @@ func test_server_and_client_know_the_same_climate() -> void:
 	w.close()
 
 
-## Hard rain puts a fire under the open sky out: no warmth, no cooking at
-## it; a roof over it keeps it going.
-func test_rain_puts_out_a_fire_under_the_open_sky() -> void:
+## Rain prevents lighting a new open fire; an existing one still cooks and
+## warms. Server refusals and the client's blueprint give the same reason.
+func test_rain_blocks_new_fires_but_existing_fires_keep_working() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	var w := ServerWorld.open(tmp_dir().path_join("world.db"), content, {"seed": 2})
 	var cell := Vector2i(3, 3)
 	var c := w.chunk("surface", 0, 0)
+	for at: Vector2i in [cell, cell + Vector2i(1, 0), cell + Vector2i(0, 1)]:
+		c.set_cell("ground", at.x, at.y, "base:grass")
+		c.set_cell("cover", at.x, at.y, "")
+		c.set_cell("structure", at.x, at.y, "")
+		c.set_cell("ceiling", at.x, at.y, "")
+		c.set_cell("roof", at.x, at.y, "")
 	c.set_cell("structure", 3, 3, "base:campfire")
 	var wet := -1.0
 	for h in 2000:
@@ -88,7 +94,38 @@ func test_rain_puts_out_a_fire_under_the_open_sky() -> void:
 		w.close()
 		return
 	w.world_time = int(wet)
-	check(not w.fire_burns("surface", 3, 3), "out in the rain")
-	c.set_cell("roof", 3, 3, "base:thatch_roof")
-	check(w.fire_burns("surface", 3, 3), "under a roof it burns")
+	var character := PortableCharacter.create("Повар", "base:human_m")
+	w.enter("cook", character)
+	var actor := character.character_id
+	w.move_character(actor, Vector2i(3, 4) * Movement.UNIT + Vector2i(128, 128))
+	w.knowledge.all_known = true
+	w.knowledge.never_fail = true
+	w.grant(actor, "base:raw_meat", 1)
+	w.grant(actor, "base:log", 2)
+	check(w.station_near(actor, "fire"), "the fire still cooks in hard rain")
+	check(w.needs._fire_near("surface", cell) > 0.0, "and warms")
+	w.handle(actor, {"type": "craft", "recipe": "base:cook_meat", "request_id": "rain-cooking"})
+	w.sync()
+	eq(w.inventory(actor).count("base:cooked_meat"), 1, "meat actually cooked")
+	w.take_acks()
+	w.handle(actor, {"type": "build", "location": "surface", "x": 4, "y": 3,
+		"part": "base:campfire", "request_id": "rain-build"})
+	w.sync()
+	var replies := w.take_acks()
+	eq(replies[0][2].get("reason"), "rain", "a new fire is refused explicitly")
+	eq(w.inventory(actor).count("base:log"), 2, "no logs wasted")
+	var client := GameClient.new(null, null, PackedByteArray(), content)
+	client.location = "surface"
+	client.weather_seed = w.weather_seed
+	client.world_time = w.world_time
+	client.geography = Geography.of(2)
+	client.chunks[ServerWorld.chunk_key("surface", 0, 0)] = c
+	var view := ClientBuildView.new(client)
+	eq(BuildRules.check(view, content, "base:campfire", "surface", 4, 3, ""), "rain", "the blueprint agrees")
+	c.set_cell("roof", 4, 3, "base:thatch_roof")
+	eq(BuildRules.check(view, content, "base:campfire", "surface", 4, 3, ""), "", "under a roof it can be lit")
+	w.handle(actor, {"type": "build", "location": "surface", "x": 4, "y": 3,
+		"part": "base:campfire", "request_id": "covered-build"})
+	w.sync()
+	eq(c.get_cell("structure", 4, 3), "base:campfire", "the server allows it under cover too")
 	w.close()

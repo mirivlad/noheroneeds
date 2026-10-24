@@ -796,23 +796,6 @@ var _sight_tick := -1
 var _sight := {}
 
 
-## Rain this hard puts a fire under the open sky out (ADR-0055).
-const DOUSES := 0.3
-## Whether rain puts open fires out (a world's rule; off in tests that cook
-## outdoors at a fixed hour).
-var fires_douse := true
-
-
-## Whether a fire at a cell burns: an open one ("open_fire": a campfire, not
-## an oven) not under the open sky in hard rain; a roof over it keeps it going.
-func fire_burns(location: String, x: int, y: int) -> bool:
-	if not fires_douse or not has_daylight(location) or sheltered(location, x, y) \
-			or not content.get_def(part_at(location, x, y)).get("open_fire", false):
-		return true
-	var cell := Vector2i(x, y)
-	return Weather.rain(weather_seed, world_time, cell, climate_at(location, cell)) <= DOUSES
-
-
 ## Whether a character wades through shallows (ADR-0051).
 func in_shallows(id: String) -> bool:
 	if not present.has(id):
@@ -1586,6 +1569,13 @@ func build_max_levels() -> int:
 
 func build_someone_on(location: String, x: int, y: int) -> bool:
 	return _someone_stands_on(location, x, y)
+
+
+func build_rain(location: String, x: int, y: int) -> float:
+	if not has_daylight(location) or sheltered(location, x, y):
+		return 0.0
+	var cell := Vector2i(x, y)
+	return Weather.rain(weather_seed, world_time, cell, climate_at(location, cell))
 
 
 func _changed(key: String) -> void:
@@ -2667,9 +2657,8 @@ func station_near(actor: String, station: String) -> bool:
 	for y in range(at.y - r, at.y + r + 1):
 		for x in range(at.x - r, at.x + r + 1):
 			var part := chunk(loc, x >> 5, y >> 5).get_cell("structure", x & 31, y & 31)
-			if part != "" and content.get_def(part).get("station") == station and _reaches(actor, loc, x, y, USE_REACH) \
-					and (float(content.get_def(part).get("heat", 0.0)) <= 0.0 or fire_burns(loc, x, y)):
-				return true  # a fire put out by the rain cooks nothing (ADR-0055)
+			if part != "" and content.get_def(part).get("station") == station and _reaches(actor, loc, x, y, USE_REACH):
+				return true  # an existing fire keeps burning, including in rain
 	return false
 
 

@@ -29,6 +29,14 @@ func build_max_levels() -> int:
 	return client.max_levels
 
 
+func build_rain(location: String, x: int, y: int) -> float:
+	var c := build_chunk(location, x >> 5, y >> 5)
+	if Levels.is_depth(location) or c == null or Terrain.is_covered(c, x & 31, y & 31):
+		return 0.0
+	var cell := Vector2i(x, y)
+	return Weather.rain(client.weather_seed, client.world_time, cell, client.climate_at(cell))
+
+
 func build_someone_on(location: String, x: int, y: int) -> bool:
 	if location != client.location:
 		return false

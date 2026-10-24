@@ -422,7 +422,7 @@ func _update_light() -> void:
 			_lights.remove_at(i)
 			continue
 		l.energy = float(l.get_meta("intensity")) * dark * 1.6
-		l.visible = dark > 0.02 and not (l.has_meta("fire") and client.doused(l.get_meta("fire")))
+		l.visible = dark > 0.02
 		if l.has_meta("flicker"):  # a fire's light trembles: brighter and dimmer, a little wider and narrower
 			var t := Time.get_ticks_msec() / 1000.0 + float(l.get_meta("flicker"))
 			var f := 0.08 * sin(t * 11.0) + 0.05 * sin(t * 23.7 + 1.3) + 0.04 * sin(t * 47.1 + 0.4)
@@ -884,8 +884,6 @@ func _paint_cell(ctx: PaintContext, lx: int, ly: int) -> void:
 			var light: Dictionary = content.get_def(id).get("light", {})
 			if not light.is_empty():
 				var l := _light_for(light, cell)
-				if float(content.get_def(id).get("heat", 0.0)) > 0.0 and ctx.location == Levels.SURFACE:
-					l.set_meta("fire", cell)  # a fire: out in the rain under the open sky (ADR-0055)
 				_add(ctx, cell, l)
 			var fx: Dictionary = content.get_def(id).get("effects", {})
 			for kind: String in fx:

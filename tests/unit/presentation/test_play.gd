@@ -566,13 +566,21 @@ func test_cave_rock_is_drawn_in_its_own_cell_not_over_the_passage() -> void:
 ## cooks so many pieces (ADR-0026).
 func test_meat_cooked_at_a_campfire_from_its_action() -> void:
 	w.knowledge.never_fail = true  # the fire's action, not a novice's dice (test_mastery)
-	w.fires_douse = false  # whatever the weather at this hour (ADR-0055)
 	var id := g.client.character_id
 	var me := _me()
+	for h in 2000:
+		if w.build_rain("surface", me.x + 1, me.y) <= 0.05:
+			break
+		w.world_time += int(Daylight.HOUR_MS)
 	w.grant(id, "base:log", 2)
 	w.grant(id, "base:raw_meat", 3)
 	g.client.request({"type": "build", "location": "surface", "x": me.x + 1, "y": me.y, "part": "base:campfire"})
 	_frames_until(func() -> bool: return _part(me + Vector2i(1, 0)) == "base:campfire")
+	for h in 2000:
+		if w.build_rain("surface", me.x + 1, me.y) >= 0.6:
+			break
+		w.world_time += int(Daylight.HOUR_MS)
+	_frames(4)  # rain reaches the client too; the existing fire still cooks
 	var fire := {"kind": "part", "id": "base:campfire", "layer": "structure", "cell": me + Vector2i(1, 0), "location": "surface"}
 	var acts := Actions.of(g.content, g.client, g.view, "", fire, Vector2i.ZERO)
 	var at: Array = acts.filter(func(a: Dictionary) -> bool: return a["id"] == "craft_at")
@@ -594,3 +602,22 @@ func test_meat_cooked_at_a_campfire_from_its_action() -> void:
 	_frames_until(func() -> bool: return int(g.client.inventory().get("base:cooked_meat", 0)) >= 2)
 	eq(int(g.client.inventory().get("base:cooked_meat", 0)), 2, "two pieces cooked: " + g._note)
 	eq(int(g.client.inventory().get("base:raw_meat", 0)), 1, "one left raw")
+
+
+func test_a_campfire_in_rain_explains_why_it_cannot_be_built() -> void:
+	var cell := _me() + Vector2i(1, 0)
+	for h in 2000:
+		if w.build_rain("surface", cell.x, cell.y) > 0.6:
+			break
+		w.world_time += int(Daylight.HOUR_MS)
+	_frames(5)
+	var logs := int(g.client.inventory().get("base:log", 0))
+	_blueprint("base:campfire")
+	_move_mouse(_screen(cell))
+	_frames(2)
+	eq(g._plan[0][1], "rain", "the preview knows the server's rain rule")
+	check(g.status.text.contains("под дождём костёр не развести"), "the player sees why: " + g.status.text)
+	_click(_screen(cell))
+	_frames(5)
+	eq(_part(cell), "", "nothing built")
+	eq(int(g.client.inventory().get("base:log", 0)), logs, "nothing spent")

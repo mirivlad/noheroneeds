@@ -8,6 +8,7 @@ class_name BuildRules
 ##   view.build_z(location) -> level label
 ##   view.build_max_levels() -> the server's height limit
 ##   view.build_someone_on(location, x, y) -> someone stands on the cell
+##   view.build_rain(location, x, y) -> rain under the open sky, 0 under cover
 ## Reach and materials are asked apart (reaches(), and the costs), and what
 ## only the server sees (the depth below a shaft) stays with the server.
 
@@ -53,6 +54,8 @@ static func check(view: Object, content: ContentRegistry, part: String, location
 		return ""
 	if c.get_cell(Terrain.layer_for_role(role), lx, ly) != "":
 		return "occupied"
+	if def.get("open_fire", false) and float(view.build_rain(location, x, y)) > 0.05:
+		return "rain"
 	match role:
 		"ceiling", "roof":
 			if Terrain.is_covered(c, lx, ly):

@@ -15,7 +15,11 @@ func before_each() -> void:
 	# What recipes make, not how well one makes them (that is test_mastery).
 	w.knowledge.all_known = true
 	w.knowledge.never_fail = true
-	w.fires_douse = false  # cooking at a fire outdoors, whatever the weather (ADR-0055)
+	# Build the fires in dry weather; cooking through rain is test_local_weather.
+	for h in 2000:
+		if w.build_rain("surface", 3, 3) <= 0.05:
+			break
+		w.world_time += int(Daylight.HOUR_MS)
 	var c := w.chunk("surface", 0, 0)
 	for y in 12:
 		for x in 12:

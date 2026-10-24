@@ -156,8 +156,8 @@ func _fire_near(location: String, at: Vector2i) -> float:
 	for y in range(at.y - FIRE_REACH, at.y + FIRE_REACH + 1):
 		for x in range(at.x - FIRE_REACH, at.x + FIRE_REACH + 1):
 			var part := world.part_at(location, x, y)
-			if part != "" and float(world.content.get_def(part).get("heat", 0.0)) > best and world.fire_burns(location, x, y):
-				best = float(world.content.get_def(part).get("heat", 0.0))  # put out by the rain, it warms no one
+			if part != "" and float(world.content.get_def(part).get("heat", 0.0)) > best:
+				best = float(world.content.get_def(part).get("heat", 0.0))
 	return best
 
 

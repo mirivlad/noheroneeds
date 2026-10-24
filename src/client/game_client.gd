@@ -455,18 +455,6 @@ func climate_at(cell: Vector2i) -> Vector2:
 	return geography.climate_at(cell.x, cell.y) if geography and location == Levels.SURFACE else Vector2.ZERO
 
 
-## Whether a fire at a cell of the surface is out: hard rain there under the
-## open sky (ADR-0055), as the server has it.
-func doused(cell: Vector2i) -> bool:
-	if location != Levels.SURFACE:
-		return false
-	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, floori(cell.x / 32.0), floori(cell.y / 32.0)))
-	if c == null or Terrain.is_covered(c, posmod(cell.x, 32), posmod(cell.y, 32)) \
-			or not content.get_def(c.get_cell("structure", posmod(cell.x, 32), posmod(cell.y, 32))).get("open_fire", false):
-		return false
-	return Weather.rain(weather_seed, world_time, cell, climate_at(cell)) > ServerWorld.DOUSES
-
-
 ## Where we are, for the weather: our cell and its climate.
 func weather_place() -> Vector2i:
 	return Movement.cell_of(position)

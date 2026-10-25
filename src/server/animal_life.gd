@@ -13,6 +13,9 @@ var world: ServerWorld
 var _food := {}
 var _food_hour := -1
 var _changed := {}
+## Loaded domestic animals' bounded searches. Not saved: food, paths and
+## doors are checked again after loading, a terrain change or a new drop.
+var _foraging := {}
 
 
 func _init(w: ServerWorld) -> void:
@@ -64,6 +67,8 @@ func step(c: Creature, def: Dictionary) -> bool:
 			c.ate_at = now
 		if c.migration == Creature.NO_TARGET and (used >= slots or hungry(c)):
 			c.migration = _destination(c, def)
+	elif not offered(c, def):
+		forage(c, def, not world.creatures._active(c))
 	var old_hurt := maxi(0, before - c.ate_at - FED_MS) / HURT_MS
 	var new_hurt := maxi(0, now - c.ate_at - FED_MS) / HURT_MS
 	if new_hurt > old_hurt:
@@ -82,6 +87,121 @@ func ate(c: Creature) -> void:
 	c.ate_at = world.world_time
 	_changed[c.id] = true
 	c.changed()
+	_foraging.erase(c.id)
+
+
+func drop(id: String) -> void:
+	_foraging.erase(id)
+
+
+## An owner's visible offer takes priority over grazing or dropped feed.
+func offered(c: Creature, def: Dictionary) -> bool:
+	var p: Dictionary = world.present.get(c.owner, {})
+	return not p.is_empty() and p["location"] == c.location and world.creatures._holds_its_food(c.owner, def) \
+		and Perception.sees(world, c.location, c.cell(), def, Movement.cell_of(p["pos"]))
+
+
+## Domestic animals eat reachable player feed first, otherwise forage.
+## Full animals wait half a day before another meal; hand feeding keeps its
+## own cooldown, so grazing never prevents accepting the player's food.
+func forage(c: Creature, def: Dictionary, offscreen := false) -> bool:
+	if world.world_time - c.ate_at < FED_MS / 2 or offered(c, def):
+		return false
+	var found: Dictionary = _foraging.get(c.id, {})
+	if found.is_empty() or world.world_time - int(found["at"]) >= CHECK_MS \
+			or int(found["revision"]) != world.revision_epoch or int(found["items"]) != world.items_rev:
+		found = _find_food(c, def)
+		_foraging[c.id] = found
+	var goal: Vector2i = found["goal"]
+	if goal == Creature.NO_TARGET:
+		return false
+	if offscreen or c.cell() == goal:
+		var item := String(found["item"])
+		if item != "":
+			var it := world.take_item(item, null)
+			if int(it["count"]) > 1:
+				world.place_item(c.location, Vector2i(int(it["x"]), int(it["y"])), String(it["item"]), int(it["count"]) - 1,
+					String(it.get("for", "")), int(it.get("until", 0)), (it.get("states", []) as Array).slice(1))
+			c.fed_at = world.world_time  # player-provided feed does not use pasture capacity
+		ate(c)
+		world.creatures._go(c, "eat" if item != "" else "graze", Creature.NO_TARGET, false)
+		return true
+	var path: Array = found["path"]
+	while not path.is_empty() and Vector2(c.pos).distance_to(Vector2((path[0] as Vector2i) * Movement.UNIT + Vector2i(128, 128))) < 64:
+		path.pop_front()
+	if path.is_empty() or c.cell().distance_to(path[0]) > 1.5:
+		_foraging.erase(c.id)  # led somewhere else meanwhile; find a route from there
+		return false
+	world.creatures._go(c, "forage", path[0], false)
+	return true
+
+
+## Flood only the loaded, walkable neighbourhood of its home. Closed gates
+## stay closed; a cow's full body must fit. Unlike a straight line check,
+## this also finds a reachable meal around a corner.
+func _find_food(c: Creature, def: Dictionary) -> Dictionary:
+	var result := {"at": world.world_time, "revision": world.revision_epoch, "items": world.items_rev,
+		"goal": Creature.NO_TARGET, "item": "", "path": []}
+	var radius := maxi(2, int(def["home_radius"]))
+	var box := Rect2i(c.home - Vector2i(radius, radius), Vector2i.ONE * (radius * 2 + 1))
+	var food := {}
+	for cy in range(box.position.y >> 5, ((box.end.y - 1) >> 5) + 1):
+		for cx in range(box.position.x >> 5, ((box.end.x - 1) >> 5) + 1):
+			for id: String in world.items_in_chunk(c.location, cx, cy):
+				var it: Dictionary = world.items[id]
+				if (def.get("tame", {}).get("food", []) as Array).has(it["item"]) and world.may_take(c.id, it):
+					food[Movement.cell_of(Vector2i(int(it["x"]), int(it["y"])))] = id
+	var came := {c.cell(): c.cell()}
+	var queue: Array[Vector2i] = [c.cell()]
+	var pasture: Array[Vector2i] = []
+	var head := 0
+	while head < queue.size():
+		var at := queue[head]
+		head += 1
+		if food.has(at):
+			result["goal"] = at
+			result["item"] = food[at]
+			break
+		if world.has_chunk(c.location, at.x >> 5, at.y >> 5):
+			var ch := world.chunk(c.location, at.x >> 5, at.y >> 5)
+			var forage: Array = def.get("life", {}).get("forage", [])
+			if forage.has(ch.get_cell("ground", at.x & 31, at.y & 31)) or forage.has(ch.get_cell("cover", at.x & 31, at.y & 31)):
+				pasture.append(at)
+		for d: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]:
+			var next := at + d
+			if not came.has(next) and box.has_point(next) and world.creatures._fits(c, next):
+				came[next] = at
+				queue.append(next)
+	if result["item"] == "" and not pasture.is_empty():
+		var cells := pasture.size()
+		if world.has_daylight(c.location) and Seasons.freezing(world.world_time, world.climate_at(c.location, c.cell()).x):
+			cells = maxi(1, cells / 4)
+		var slots := maxi(1, cells / int(def.get("life", {}).get("food_cells", 128)))
+		var used := 0.0
+		var ids := []
+		for cy in range(box.position.y >> 5, ((box.end.y - 1) >> 5) + 1):
+			for cx in range(box.position.x >> 5, ((box.end.x - 1) >> 5) + 1):
+				ids.append_array(world.creatures.in_chunk(c.location, cx, cy))
+		ids.sort()
+		for id: String in ids:
+			var o := world.creatures.get_creature(id)
+			var other: Dictionary = world.content.get_def(o.kind).get("life", {})
+			if came.has(o.cell()) and not _hand_fed(o) and (def.get("life", {}).get("forage", []) as Array).any(
+					func(f: Variant) -> bool: return (other.get("forage", []) as Array).has(f)):
+				used += float(other.get("food_cells", 128)) / float(def.get("life", {}).get("food_cells", 128))
+			if id == c.id:
+				break
+		if used <= slots:
+			result["goal"] = pasture[0]
+	var at: Vector2i = result["goal"]
+	while at != Creature.NO_TARGET and at != c.cell():
+		(result["path"] as Array).push_front(at)
+		at = came[at]
+	return result
+
+
+func _hand_fed(c: Creature) -> bool:
+	return c.owner != "" and c.fed_at >= 0 and world.world_time - c.fed_at <= FED_MS
 
 
 func offspring(c: Creature) -> void:
@@ -120,7 +240,7 @@ func pressure(def: Dictionary, location: String, patch: Vector2i, through := "")
 	for id: String in ids:
 		var o := world.creatures.get_creature(id)
 		var other: Dictionary = world.content.get_def(o.kind).get("life", {})
-		if o.owner == "" and forage.any(func(f: Variant) -> bool: return (other.get("forage", []) as Array).has(f)):
+		if not _hand_fed(o) and forage.any(func(f: Variant) -> bool: return (other.get("forage", []) as Array).has(f)):
 			used += float(other.get("food_cells", 128)) / float(def["life"].get("food_cells", 128))
 		if id == through:
 			break

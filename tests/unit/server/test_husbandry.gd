@@ -162,10 +162,78 @@ func test_fed_ones_give_produce_and_young() -> void:
 	eq(eggs.call(), 0, "no egg yet")
 	w.world_time += 12 * Daylight.HOUR_MS
 	_ticks(20)
-	eq(eggs.call(), 2, "twelve hours on, each fed hen lays (the chick was not fed)")
+	eq(eggs.call(), 2, "twelve hours on, adults lay; the chick is too young")
+	# An empty pen, rather than grass the hens can eat themselves.
+	var ch := w.chunk("surface", 5, 5)
+	for y in Chunk.SIZE:
+		for x in Chunk.SIZE:
+			ch.set_cell("ground", x, y, "base:sand")
+	w._changed(ServerWorld.chunk_key("surface", 5, 5))
 	w.world_time += 30 * Daylight.HOUR_MS
 	_ticks(20)
 	eq(eggs.call(), 2, "hungry hens do not lay")
+
+
+func test_grazing_does_not_prevent_accepting_the_owners_food() -> void:
+	w.world_time += 30 * Daylight.HOUR_MS
+	var a := _player(Vector2i(170, 170))
+	var cow := _spawn("base:cow", Vector2i(171, 170))
+	cow.owner = a
+	cow.fed_at = w.world_time - 30 * Daylight.HOUR_MS
+	cow.ate_at = cow.fed_at
+	w.grant(a, "base:carrot", 1)
+	_ticks(20)
+	check(w.world_time - cow.ate_at < Daylight.HOUR_MS, "grazed without help")
+	w.move_character(a, cow.pos - Vector2i(Movement.UNIT, 0))
+	w.grant(a, "base:bucket", 1)
+	_hold(a, "base:bucket")
+	eq(_req(a, {"type": "fill", "creature": cow.id, "item": "base:bucket"}).get("now"), "base:milk_bucket",
+		"a self-fed cow gives milk")
+	_hold(a, "base:carrot")
+	w.move_character(a, cow.pos - Vector2i(Movement.UNIT, 0))
+	check(_feed(a, cow, "base:carrot").get("ok", false), "still accepts the owner's offer after grazing")
+	eq(w.inventory(a).count("base:carrot"), 0)
+	eq(cow.fed_at, w.world_time, "the hand feeding clock is independent of grazing")
+
+
+func test_self_fed_adults_lay_eggs_and_have_young() -> void:
+	var hens: Array[Creature] = [_spawn("base:chicken", Vector2i(170, 170)), _spawn("base:chicken", Vector2i(171, 170))]
+	for h: Creature in hens:
+		h.owner = "keeper"
+		h.made_at = w.world_time
+		h.bred_at = -1  # newly tamed pair: its first offspring is due
+	w.world_time += 30 * Daylight.HOUR_MS
+	for h: Creature in hens:
+		h.last_time = w.world_time
+	_ticks(25)
+	eq(w.items.values().filter(func(it: Dictionary) -> bool: return it["item"] == "base:egg").size(), 2,
+		"self-fed adult hens lay eggs")
+	eq(w.creatures.creatures.size(), 3, "the self-fed pair has a chick")
+	for h: Creature in hens:
+		eq(h.fed_at, -1, "no hand feeding was needed")
+
+
+func test_owners_held_food_takes_priority_over_pasture_and_dropped_feed() -> void:
+	w.world_time += 30 * Daylight.HOUR_MS
+	var a := _player(Vector2i(175, 170))
+	var cow := _spawn("base:cow", Vector2i(170, 170))
+	cow.owner = a
+	cow.ate_at = w.world_time - 30 * Daylight.HOUR_MS
+	var before := cow.ate_at
+	var dropped := w.place_item("surface", cow.pos, "base:carrot", 2)
+	w.grant(a, "base:carrot", 1)
+	_hold(a, "base:carrot")
+	_ticks(50)
+	eq(cow.ate_at, before, "it waits for the owner's offer instead of grazing")
+	check(cow.cell().x >= 173, "it followed the owner: %s" % cow.cell())
+	check(w.items.has(dropped), "left the dropped food alone while following")
+	_hold(a, "")
+	_ticks(160)
+	check(cow.ate_at > before, "with the offer withdrawn it finds food itself")
+	eq(w.items.values().filter(func(it: Dictionary) -> bool: return it["item"] == "base:carrot").size(), 1)
+	var left: Dictionary = w.items.values().filter(func(it: Dictionary) -> bool: return it["item"] == "base:carrot")[0]
+	eq(left["count"], 1, "one meal, not the whole stack")
+	check(cow.fed_at > 0, "player-provided feed has priority over grass")
 
 
 func test_malformed_husbandry_is_a_content_error() -> void:

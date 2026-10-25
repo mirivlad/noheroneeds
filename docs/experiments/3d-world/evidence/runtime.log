@@ -1,0 +1,40 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+PASS real LocalGame server joined
+PASS native Radeon RX 580 device
+PASS existing GL Compatibility renderer
+PASS walking through existing movement prediction and server
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.062,"chunks":24,"fps":35.9018873223256,"location":"surface","objects":6915,"renderer":"gl_compatibility","worst_frame_ms":1081.765}
+PASS real client chunks built and retained
+PASS own LPC actor in 3D
+PASS drop item request accepted
+PASS dropped item has a Sprite3D
+PASS pickup returns actual inventory
+PASS generated village dweller received
+PASS existing talk request accepted by generated NPC
+PASS natural tree found in original chunks
+PASS 3D ray picks natural tree at rotated camera
+PASS existing mouse action resolves 3D tree
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":25,"fps":57.8938339014327,"location":"surface","objects":7539,"renderer":"gl_compatibility","worst_frame_ms":117.382}
+PASS tree felled by normal server work rules
+PASS changed client chunk replaces 3D tree with stump
+PASS 3D blueprint uses picked cell without 2D roof lift
+PASS existing blueprint mouse clicks build normal door
+PASS 3D ray picks built door
+PASS existing door use request accepted
+PASS 3D door rebuild sees open state
+PASS existing natural cave transition to depth -1
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.11,"chunks":14,"fps":54.5469719430378,"location":"depth:-1","objects":14323,"renderer":"gl_compatibility","worst_frame_ms":113.325}
+PASS natural mineable cave wall found
+PASS 3D ray picks actual underground rock
+PASS normal pickaxe request mines natural wall: { "ok": true, "thing": "base:rock", "drops": { "base:stone": 1 } }
+PASS 3D geometry consumes mined cell update
+PASS mined wall removed from rendered object instances
+PASS existing mine shaft construction on depth -1
+PASS existing shaft transition to depth -2
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.466,"chunks":19,"fps":54.3775367120876,"location":"depth:-2","objects":19441,"renderer":"gl_compatibility","worst_frame_ms":131.613}
+PASS return through existing ladder
+PASS return to surface
+PASS mined wall stays absent after save and reopening
+EXPERIMENT_3D_RUNTIME {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","checks":32,"failures":[],"renderer":"gl_compatibility"}

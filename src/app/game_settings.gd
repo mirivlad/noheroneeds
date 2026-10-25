@@ -5,6 +5,9 @@ extends RefCounted
 ## profile; unknown or broken values fall back to the defaults.
 
 const DEFAULTS := {
+	"experiment_3d_yaw": 0.0,
+	"experiment_3d_tilt": 55.0,
+	"experiment_3d_zoom": 25.0,
 	"fullscreen": false,
 	"vsync": true,
 	"volume": 0.8,

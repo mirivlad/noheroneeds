@@ -1,0 +1,659 @@
+{
+  "base:oak": {
+    "path": "nature/CommonTree_1.gltf",
+    "size": [
+      3.2,
+      4.4,
+      3.2
+    ],
+    "keep_aspect": true
+  },
+  "base:maple": {
+    "path": "nature/CommonTree_1.gltf",
+    "size": [
+      3.2,
+      4.4,
+      3.2
+    ],
+    "keep_aspect": true
+  },
+  "base:birch": {
+    "path": "nature/CommonTree_3.gltf",
+    "size": [
+      3,
+      3.8,
+      3
+    ],
+    "keep_aspect": true
+  },
+  "base:spruce": {
+    "path": "nature/Pine_2.gltf",
+    "size": [
+      2.8,
+      4.8,
+      2.8
+    ],
+    "keep_aspect": true
+  },
+  "base:fir": {
+    "path": "nature/Pine_2.gltf",
+    "size": [
+      2.8,
+      4.8,
+      2.8
+    ],
+    "keep_aspect": true
+  },
+  "base:dead_tree": {
+    "path": "nature/DeadTree_1.gltf",
+    "size": [
+      2,
+      3.2,
+      2
+    ],
+    "keep_aspect": true
+  },
+  "base:sapling": {
+    "path": "nature/CommonTree_3.gltf",
+    "size": [
+      1,
+      1.6,
+      1
+    ],
+    "keep_aspect": true
+  },
+  "base:young_tree": {
+    "path": "nature/CommonTree_3.gltf",
+    "size": [
+      1,
+      1.6,
+      1
+    ],
+    "keep_aspect": true
+  },
+  "base:bush": {
+    "path": "nature/Bush_Common.gltf",
+    "size": [
+      0.85,
+      0.9,
+      0.85
+    ],
+    "keep_aspect": false
+  },
+  "base:dry_bush": {
+    "path": "nature/Bush_Common.gltf",
+    "size": [
+      0.85,
+      0.9,
+      0.85
+    ],
+    "keep_aspect": false
+  },
+  "base:berry_bush": {
+    "path": "nature/Bush_Common_Flowers.gltf",
+    "size": [
+      0.85,
+      0.9,
+      0.85
+    ],
+    "keep_aspect": false
+  },
+  "base:flower_red": {
+    "path": "nature/Flower_3_Group.gltf",
+    "size": [
+      0.5,
+      0.4,
+      0.5
+    ],
+    "keep_aspect": true
+  },
+  "base:flower_yellow": {
+    "path": "nature/Flower_3_Group.gltf",
+    "size": [
+      0.5,
+      0.4,
+      0.5
+    ],
+    "keep_aspect": true
+  },
+  "base:flower_blue": {
+    "path": "nature/Flower_3_Group.gltf",
+    "size": [
+      0.5,
+      0.4,
+      0.5
+    ],
+    "keep_aspect": true
+  },
+  "base:fern": {
+    "path": "nature/Fern_1.gltf",
+    "size": [
+      0.65,
+      0.5,
+      0.65
+    ],
+    "keep_aspect": true
+  },
+  "base:tall_grass": {
+    "path": "nature/Grass_Common_Short.gltf",
+    "size": [
+      0.7,
+      0.45,
+      0.7
+    ],
+    "keep_aspect": true
+  },
+  "base:clover": {
+    "path": "nature/Grass_Common_Short.gltf",
+    "size": [
+      0.7,
+      0.45,
+      0.7
+    ],
+    "keep_aspect": true
+  },
+  "base:reeds": {
+    "path": "nature/Grass_Common_Short.gltf",
+    "size": [
+      0.7,
+      0.45,
+      0.7
+    ],
+    "keep_aspect": true
+  },
+  "base:cattail": {
+    "path": "nature/Grass_Common_Short.gltf",
+    "size": [
+      0.7,
+      0.45,
+      0.7
+    ],
+    "keep_aspect": true
+  },
+  "base:wheat_crop": {
+    "path": "nature/Grass_Common_Short.gltf",
+    "size": [
+      0.7,
+      0.45,
+      0.7
+    ],
+    "keep_aspect": true
+  },
+  "base:carrot_crop": {
+    "path": "nature/Grass_Common_Short.gltf",
+    "size": [
+      0.7,
+      0.45,
+      0.7
+    ],
+    "keep_aspect": true
+  },
+  "base:honey_mushrooms": {
+    "path": "nature/Mushroom_Common.gltf",
+    "size": [
+      0.5,
+      0.4,
+      0.5
+    ],
+    "keep_aspect": true
+  },
+  "base:boletus": {
+    "path": "nature/Mushroom_Common.gltf",
+    "size": [
+      0.5,
+      0.4,
+      0.5
+    ],
+    "keep_aspect": true
+  },
+  "base:fly_agaric": {
+    "path": "nature/Mushroom_Common.gltf",
+    "size": [
+      0.5,
+      0.4,
+      0.5
+    ],
+    "keep_aspect": true
+  },
+  "base:boulder": {
+    "path": "nature/Rock_Medium_1.gltf",
+    "size": [
+      0.95,
+      1.1,
+      0.95
+    ],
+    "keep_aspect": false
+  },
+  "base:pebbles": {
+    "path": "nature/Pebble_Round_1.gltf",
+    "size": [
+      0.4,
+      0.14,
+      0.4
+    ],
+    "keep_aspect": false
+  },
+  "base:stump": {
+    "path": "resource/Wood_Log_A.gltf",
+    "size": [
+      0.55,
+      0.3,
+      0.55
+    ],
+    "keep_aspect": false
+  },
+  "base:iron_outcrop": {
+    "path": "resource/Iron_Nugget_Large.gltf",
+    "size": [
+      0.9,
+      0.8,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:copper_outcrop": {
+    "path": "resource/Copper_Nugget_Large.gltf",
+    "size": [
+      0.9,
+      0.8,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:silver_outcrop": {
+    "path": "resource/Silver_Nugget_Large.gltf",
+    "size": [
+      0.9,
+      0.8,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:gold_outcrop": {
+    "path": "resource/Gold_Nugget_Large.gltf",
+    "size": [
+      0.9,
+      0.8,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:rock": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:cave_rock": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:limestone": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:granite": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:basalt": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:sandstone": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:wood_wall": {
+    "path": "village/Wall_Plaster_Straight.gltf",
+    "size": [
+      1,
+      2,
+      0.32
+    ],
+    "keep_aspect": false
+  },
+  "base:wood_window": {
+    "path": "village/Wall_Plaster_Window_Wide_Flat.gltf",
+    "size": [
+      1,
+      2,
+      0.32
+    ],
+    "keep_aspect": false
+  },
+  "base:loophole": {
+    "path": "village/Wall_Plaster_Window_Wide_Flat.gltf",
+    "size": [
+      1,
+      2,
+      0.32
+    ],
+    "keep_aspect": false
+  },
+  "base:wood_door": {
+    "path": "village/Door_1_Flat.gltf",
+    "size": [
+      0.9,
+      1.9,
+      0.18
+    ],
+    "keep_aspect": false
+  },
+  "base:wood_gate": {
+    "path": "village/Door_1_Flat.gltf",
+    "size": [
+      0.9,
+      1.9,
+      0.18
+    ],
+    "keep_aspect": false
+  },
+  "base:stone_wall": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      2,
+      0.4
+    ],
+    "keep_aspect": false
+  },
+  "base:wood_fence": {
+    "path": "village/Wall_Plaster_Straight.gltf",
+    "size": [
+      1,
+      0.7,
+      0.15
+    ],
+    "keep_aspect": false
+  },
+  "base:plank_floor": {
+    "path": "village/Floor_WoodDark.gltf",
+    "size": [
+      1,
+      0.1,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:wood_floor": {
+    "path": "village/Floor_WoodDark.gltf",
+    "size": [
+      1,
+      0.1,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:bridge": {
+    "path": "village/Floor_WoodDark.gltf",
+    "size": [
+      1,
+      0.1,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:wood_ceiling": {
+    "path": "village/Floor_WoodDark.gltf",
+    "size": [
+      1,
+      0.1,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:stone_floor": {
+    "path": "dungeon/floor_tile_large.gltf",
+    "size": [
+      1,
+      0.1,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:flagstone_floor": {
+    "path": "dungeon/floor_tile_large.gltf",
+    "size": [
+      1,
+      0.1,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:thatch_roof": {
+    "path": "village/Roof_RoundTiles_4x4.gltf",
+    "size": [
+      1,
+      0.5,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:wood_stairs": {
+    "path": "village/Stair_Interior_Simple.gltf",
+    "size": [
+      1,
+      2,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:cave_mouth": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:stairs_up": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:stairs_down": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:mine_shaft": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:chest": {
+    "path": "dungeon/chest.gltf",
+    "size": [
+      0.85,
+      0.7,
+      0.65
+    ],
+    "keep_aspect": false
+  },
+  "base:workbench": {
+    "path": "dungeon/table_medium.gltf",
+    "size": [
+      0.95,
+      0.8,
+      0.8
+    ],
+    "keep_aspect": false
+  },
+  "base:torch": {
+    "path": "dungeon/torch_lit.gltf",
+    "size": [
+      0.25,
+      1.2,
+      0.25
+    ],
+    "keep_aspect": true
+  },
+  "base:campfire": {
+    "path": "dungeon/torch_lit.gltf",
+    "size": [
+      0.25,
+      1.2,
+      0.25
+    ],
+    "keep_aspect": true
+  },
+  "base:forge": {
+    "path": "dungeon/barrel_small.gltf",
+    "size": [
+      0.85,
+      0.8,
+      0.85
+    ],
+    "keep_aspect": false
+  },
+  "base:iron_ore_rock": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:copper_ore_rock": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:silver_ore_rock": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:gold_ore_rock": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:gem_rock": {
+    "path": "dungeon/wall.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:cave_drop": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:cave_climb": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:shaft_hole": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:mine_ladder": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:headframe": {
+    "path": "dungeon/stairs.gltf",
+    "size": [
+      0.9,
+      0.5,
+      0.9
+    ],
+    "keep_aspect": false
+  },
+  "base:cave_floor": {
+    "path": "dungeon/floor_tile_large.gltf",
+    "size": [
+      1,
+      0.1,
+      1
+    ],
+    "keep_aspect": false
+  },
+  "base:surface_rock": {
+    "path": "resource/Stone_Chunks_Large.gltf",
+    "size": [
+      1,
+      1.8,
+      1
+    ],
+    "keep_aspect": false
+  }
+}

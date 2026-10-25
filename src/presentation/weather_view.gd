@@ -95,6 +95,8 @@ func _draw() -> void:
 ## from its tile, so it stays put as the view moves.
 const LIFE_TILE := 32
 func _draw_life(r: Rect2) -> void:
+	if view is WorldView3D:
+		return  # Existing rain/snow remain screen-space; 2D world motes do not.
 	var xf := view.get_global_transform_with_canvas()
 	var seen := xf.affine_inverse() * r  # the world in sight, in world pixels
 	var zoom := xf.get_scale().x

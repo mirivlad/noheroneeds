@@ -509,15 +509,24 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _key(k: int, shift: bool) -> void:
-	if view is WorldView3D and game and k in [KEY_F6, KEY_F7]:
+	if (view is WorldView3D or _opts.has("quality")) and game and k in [KEY_F6, KEY_F7, KEY_F8]:
 		var at := game.world._spawn_way()
 		if k == KEY_F6:
 			var village := game.world.generator.settlements.home_plan()
 			if not village.is_empty():
 				at = (village["fire"] as Vector2i) + Vector2i(2, 0)
+		if k == KEY_F8:
+			if game.world.generator.world_seed != 431:
+				_note = "Маршрут seed 431: запустите tools/run_3d_experiment.sh --quality"
+				return
+			at = Vector2i(-231, 816)  # Original Settlements.roads_of(), quality/inspect.gd.
+		if view is WorldView3D:
+			(view as WorldView3D).zoom = 38 if k == KEY_F8 else 16.875
+			(view as WorldView3D).tilt = 38 if k == KEY_F8 else (65 if k == KEY_F7 else 49)
+			(view as WorldView3D).yaw = PI + .6 if k == KEY_F8 else .6
 		if client.location == Levels.SURFACE:
 			game.world.move_character(client.character_id, at * Movement.UNIT + Vector2i.ONE * (Movement.UNIT / 2))
-			_note = "Эксперимент: деревня" if k == KEY_F6 else "Эксперимент: вход в пещеру; F — спуск"
+			_note = "Эксперимент: горная дорога (seed 431)" if k == KEY_F8 else ("Эксперимент: деревня" if k == KEY_F6 else "Эксперимент: вход в пещеру; F — спуск")
 		else:
 			_note = "Сначала вернитесь на поверхность через существующий переход (F)"
 		return

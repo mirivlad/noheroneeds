@@ -84,6 +84,19 @@ func _ready() -> void:
 		var id := String(_opts.get("world", "local"))
 		if id == "":
 			id = "local"
+		if _opts.has("quality"):
+			id = "quality_431"
+			if not DirAccess.dir_exists_absolute(worlds.root.path_join(id)):
+				id = worlds.create("quality_431", {"seed": "431", "starter_kit": true})
+				# WorldLibrary.read() only exposes rules after world.db exists.
+				var prepared := ServerWorld.open(worlds.db_path(id), content, {"seed": 431})
+				if prepared == null:
+					show_start_screen("Не удалось создать маршрут seed 431: " + ServerWorld.open_error)
+					return
+				prepared.close()
+			if WorldLibrary.seed_of(worlds.read(id)) != 431:
+				show_start_screen("Мир quality_431 уже существует с другим seed; файлы сохранены. Используйте новый отдельный профиль.")
+				return
 		start_game({"mode": "local", "world": id, "world_path": worlds.db_path(id), "rules": worlds.read(id)})
 	else:
 		show_start_screen()

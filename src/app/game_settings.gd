@@ -7,7 +7,7 @@ extends RefCounted
 const DEFAULTS := {
 	"experiment_3d_yaw": 0.0,
 	"experiment_3d_tilt": 55.0,
-	"experiment_3d_zoom": 25.0,
+	"experiment_3d_zoom": 16.875,
 	"fullscreen": false,
 	"vsync": true,
 	"volume": 0.8,

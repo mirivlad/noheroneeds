@@ -18,10 +18,12 @@ VERSION=$("$GODOT" --version) || die 'Не удалось проверить в�
 exec 9>"$DATA/run.lock"
 flock -n 9 || die 'Эксперимент уже запущен. Закройте его окно перед повторным запуском.'
 MODE='3d'
+PROFILE='experiment-3d'
 ARGS=()
 for ARG in "$@"; do
   case "$ARG" in
     --2d) MODE='2d' ;;
+    --quality) PROFILE='experiment-3d-quality'; ARGS+=("--quality") ;;
     --profile*|--world*|--connect*|--server*|--renderer*|--demo*) die "Параметр $ARG запрещён: launcher использует отдельный профиль и мир." ;;
     *) ARGS+=("$ARG") ;;
   esac
@@ -37,6 +39,6 @@ if [[ "$IMPORTED" != true ]] || grep -q 'SCRIPT ERROR\|^ERROR:' "$LOG"; then
   tail -n 35 "$LOG" >&2
   die "Godot не смог импортировать эксперимент. Журнал: $LOG"
 fi
-printf 'Запускаю %s-эксперимент. Профиль и мир: experiment-3d.\n' "$MODE"
+printf 'Запускаю %s-эксперимент. Отдельный профиль: %s.\n' "$MODE" "$PROFILE"
 cd -- "$ROOT"
-"$GODOT" --path "$ROOT" -- "${ARGS[@]}" --profile=experiment-3d --world=experiment-3d --renderer="$MODE" || die 'Godot завершился с ошибкой; сохранения основной игры не затронуты.'
+"$GODOT" --path "$ROOT" -- "${ARGS[@]}" --profile="$PROFILE" --world="$PROFILE" --renderer="$MODE" || die 'Godot завершился с ошибкой; сохранения основной игры не затронуты.'

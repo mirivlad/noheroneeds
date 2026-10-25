@@ -1,0 +1,42 @@
+[
+	{
+		"composition_bytes_equal": true,
+		"name": "human_m-0",
+		"reference_size": "(192, 192)"
+	},
+	{
+		"composition_bytes_equal": true,
+		"name": "human_m-1",
+		"reference_size": "(192, 192)"
+	},
+	{
+		"composition_bytes_equal": true,
+		"name": "human_m-2",
+		"reference_size": "(192, 192)"
+	},
+	{
+		"composition_bytes_equal": true,
+		"name": "human_m-3",
+		"reference_size": "(192, 192)"
+	},
+	{
+		"composition_bytes_equal": true,
+		"name": "sheep-0",
+		"reference_size": "(192, 192)"
+	},
+	{
+		"composition_bytes_equal": true,
+		"name": "sheep-1",
+		"reference_size": "(192, 192)"
+	},
+	{
+		"composition_bytes_equal": true,
+		"name": "sheep-2",
+		"reference_size": "(192, 192)"
+	},
+	{
+		"composition_bytes_equal": true,
+		"name": "sheep-3",
+		"reference_size": "(192, 192)"
+	}
+]

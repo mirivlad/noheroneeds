@@ -630,7 +630,7 @@ func _check_profession(id: String, d: Dictionary) -> void:
 ## dwellers makes of whoever asks: hunt (a kind seen by the village, near
 ## it), fetch (an item, so many), find (a thing lost in a cave near it).
 const STORY_FROM := ["founding", "predators", "season:spring", "season:summer", "season:autumn", "season:winter",
-	"dweller_killed", "dweller_hurt"]
+	"dweller_killed", "dweller_hurt", "livestock_killed"]
 
 
 func _check_story(id: String, d: Dictionary) -> void:
@@ -718,6 +718,8 @@ func _check_creature(id: String, d: Dictionary) -> void:
 	d["reaction"] = {"hurt": hurt, "kin": bool(r.get("kin", false))}
 	if d.has("drops"):
 		_check_amounts(id, "drops", d["drops"], false)
+	if d.has("life"):
+		_check_animal_life(id, d["life"], d.has("attack"))
 	# A looter (ADR-0016): picks up what lies about, digests it in time.
 	if String(d.get("behavior", "")) == "looter":
 		d["digest_s"] = float(d.get("digest_s", 7200.0))
@@ -752,6 +754,32 @@ func _check_creature(id: String, d: Dictionary) -> void:
 		errors.append("%s: dark_sight is a share, 0..1" % id)
 	if d.has("body_plan") and kind_of(String(d["body_plan"])) != "body_plan":
 		errors.append("%s: body_plan '%s' is not a body plan" % [id, d["body_plan"]])
+
+
+func _check_animal_life(id: String, life: Variant, armed: bool) -> void:
+	if not life is Dictionary:
+		errors.append("%s: life is {mature_hours, breed_hours, forage or prey}" % id)
+		return
+	for f: String in ["mature_hours", "breed_hours", "hunt_hours"]:
+		if not (life.get(f, 6) is float or life.get(f, 6) is int) or float(life.get(f, 0 if f != "hunt_hours" else 6)) <= 0:
+			errors.append("%s: life %s must be above 0" % [id, f])
+	var forage: Variant = life.get("forage", [])
+	var prey: Variant = life.get("prey", [])
+	if not forage is Array or not prey is Array:
+		errors.append("%s: life forage and prey are arrays" % id)
+		return
+	if forage.is_empty() and prey.is_empty():
+		errors.append("%s: life needs forage or prey" % id)
+	for food: Variant in forage:
+		if not kind_of(String(food)) in ["ground", "plant"]:
+			errors.append("%s: life forage must name ground or plants" % id)
+	if not prey.is_empty():
+		_check_refs(id, "life prey", prey, "creature")
+	if not prey.is_empty() and (not armed or prey.has(id)):
+		errors.append("%s: a hunter needs an attack and cannot eat its own kind" % id)
+	if not forage.is_empty() and (not (life.get("food_cells", 128) is int or life.get("food_cells", 128) is float) \
+			or int(life.get("food_cells", 128)) < 16):
+		errors.append("%s: life food_cells must be at least 16" % id)
 
 
 ## A light source (ADR-0014): {"radius" cells 1..8, "intensity" 0..1,

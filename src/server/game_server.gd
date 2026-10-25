@@ -576,6 +576,7 @@ func _update_creature_replicas() -> void:
 	_lagging.merge(ch[2])
 	var cold_changed := world.creatures.take_owner_changes()
 	cold_changed.merge(world.creatures.take_cold_changes())
+	cold_changed.merge(world.creatures.life.take_changes())
 	for id: String in cold_changed:
 		var c := world.creatures.get_creature(id)
 		var r: Replica = _replica.get(id)
@@ -612,6 +613,9 @@ func _update_creature_replicas() -> void:
 ## owner (ADR-0030), what it holds, its last words and how many, sleep (ADR-0039).
 func _creature_cold(c: Creature) -> Dictionary:
 	var cold := {"kind": "creature", "creature": c.kind}
+	if world.content.get_def(c.kind).has("life"):
+		cold["young"] = world.creatures.life.young(c, world.content.get_def(c.kind))
+		cold["hungry"] = world.creatures.life.hungry(c)
 	if not c.looks.is_empty():
 		cold["appearance"] = c.looks
 	if c.owner != "":

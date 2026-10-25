@@ -371,6 +371,13 @@ func _open_hunt(v: Dictionary, kind: String) -> bool:
 ## A creature died (killer: who struck last): a dweller's death is written
 ## down; a predator a taker of a hunt killed near the village counts.
 func died(c: Creature, killer: String) -> void:
+	var hunter := world.creatures.get_creature(killer)
+	if c.owner != "" and hunter and not _plan(c.owner).is_empty():
+		of(c.owner)
+		for s: Dictionary in _stories:
+			if s["def"]["from"] == "livestock_killed":
+				_happen(c.owner, s["id"], {"animal": String(world.content.get_def(c.kind).get("name", c.kind)).to_lower(),
+					"hunter": String(world.content.get_def(hunter.kind).get("name", hunter.kind))}, world.world_time)
 	if c.job.has("village"):
 		var id := String(c.job["village"])
 		var v := of(id)

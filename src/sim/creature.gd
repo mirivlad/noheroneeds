@@ -18,7 +18,8 @@ var home := Vector2i.ZERO
 var state := "idle"
 var target := NO_TARGET
 var running := false
-## What it knows: id -> {"pos": Vector2i, "time": world ms, "what": "character"|"noise"}.
+## What it knows: id -> {"pos": Vector2i, "time": world ms, "what":
+## "character"|"noise"|"animal"|"predator"|"attacker"}.
 var memory := {}
 ## World time it last thought (for catching up after a time away).
 var last_time := 0
@@ -36,6 +37,12 @@ var bred_at := -1
 var made_at := -1
 ## World ms it last filled a container (a cow milked, ADR-0037).
 var filled_at := -1
+## Animal life (ADR-0057). Old saves have adults and get a feeding grace
+## period when first loaded; only offspring have a birth time.
+var born_at := -1
+var ate_at := -1
+var life_at := -1
+var migration := NO_TARGET
 ## A villager's place in its settlement (ADR-0039): {"village", "home" (its
 ## index), "profession", "water" (a fisher's spot, once found)}.
 var job := {}
@@ -76,7 +83,9 @@ func to_data() -> Dictionary:
 	return {"kind": kind, "x": pos.x, "y": pos.y, "hx": home.x, "hy": home.y, "state": state,
 		"tx": target.x, "ty": target.y, "run": running, "memory": mem, "last_time": last_time,
 		"looks": looks.duplicate(true), "seed": seed, "health": health, "stomach": stomach.duplicate(true),
-		"owner": owner, "fed": fed, "fed_at": fed_at, "bred_at": bred_at, "made_at": made_at, "filled_at": filled_at, "job": job.duplicate(), "route": route.duplicate(true)}
+		"owner": owner, "fed": fed, "fed_at": fed_at, "bred_at": bred_at, "made_at": made_at, "filled_at": filled_at,
+		"born_at": born_at, "ate_at": ate_at, "life_at": life_at, "mx": migration.x, "my": migration.y,
+		"job": job.duplicate(), "route": route.duplicate(true)}
 
 
 static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
@@ -99,6 +108,10 @@ static func from_data(cid: String, loc: String, d: Dictionary) -> Creature:
 	c.bred_at = int(d.get("bred_at", -1))
 	c.made_at = int(d.get("made_at", -1))
 	c.filled_at = int(d.get("filled_at", -1))
+	c.born_at = int(d.get("born_at", -1))
+	c.ate_at = int(d.get("ate_at", -1))
+	c.life_at = int(d.get("life_at", -1))
+	c.migration = Vector2i(int(d.get("mx", NO_TARGET.x)), int(d.get("my", NO_TARGET.y)))
 	c.job = d.get("job", {}) if d.get("job") is Dictionary else {}
 	c.route = d.get("route", {}) if d.get("route") is Dictionary else {}
 	for e: Variant in d.get("stomach", []):

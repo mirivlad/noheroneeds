@@ -50,6 +50,9 @@
         "goal": "Принести железной руды, штук {count}, в деревню {village}: {asker} ({asker_trade}).",
         "deed": "{player} выручил{player_a} кузницу рудой."}},
 
+    {"id": "base:livestock_killed", "kind": "story", "from": "livestock_killed",
+      "entry": "{hunter} напал на деревенский скот. Погибло животное: {animal}."},
+
     {"id": "base:dweller_killed", "kind": "story", "from": "dweller_killed",
       "entry": "Погиб{who_a} {who}, {trade}. Убийца — {killer}."},
 

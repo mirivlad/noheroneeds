@@ -257,6 +257,10 @@ static func describe(content: ContentRegistry, target: Dictionary, me := "") -> 
 						name += " — " + String(content.get_def(String(e["profession"])).get("name", "")).to_lower()
 					if String(e.get("owner", "")) != "":
 						name += " (ваша)" if me != "" and e["owner"] == me else " (чья-то)"
+					if e.get("young", false):
+						name += " · детёныш"
+					if e.get("hungry", false):
+						name += " · голодает"
 				"item":
 					name = "%s ×%d" % [content.get_def(String(e.get("item", ""))).get("name", "вещь"), int(e.get("count", 1))]
 			if e.has("max_health") and int(e["max_health"]) > 0:

@@ -1278,7 +1278,9 @@ func _update_characters(alpha: float, delta: float) -> void:
 		if _swing_seen.has(id) and int(_swing_seen[id]) != blows:
 			sprite.swing(Vector2.RIGHT.rotated((blows & 7) * PI / 4), swing_kind(String(e.get("held", ""))))
 		_swing_seen[id] = blows
+		sprite.scale = Vector2.ONE
 		sprite.show_at(target - Vector2(0, COVER_LIFT * maxi(dz, 0)), delta, false)
+		sprite.scale *= 0.6 if e.get("young", false) else 1.0
 		_at_level(sprite, client.z + dz)
 		_health(id, sprite, e, delta)
 		_lie(sprite, bool(e.get("asleep", false)))

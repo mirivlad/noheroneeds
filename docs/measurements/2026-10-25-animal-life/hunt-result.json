@@ -1,0 +1,12 @@
+{
+  "sheep_alive": false,
+  "world_time": 907284240,
+  "wolf_ate_at": 907214040,
+  "prey_loot": [
+    {
+      "item": "base:wool",
+      "count": 2
+    }
+  ],
+  "player_death_stacks": 6
+}

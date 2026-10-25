@@ -1,0 +1,535 @@
+{
+  "license": "CC0-1.0",
+  "packs": {
+    "nature": {
+      "author": "Quaternius",
+      "url": "https://quaternius.itch.io/stylized-nature-megakit",
+      "edition": "Standard FREE",
+      "archive_sha256": "298f6732b872e4cf7b30e6e7abf9641c7f6dc6b326df37ac089533ed7e3d58c9",
+      "models": [
+        "CommonTree_1",
+        "CommonTree_3",
+        "Pine_2",
+        "DeadTree_1",
+        "Bush_Common",
+        "Bush_Common_Flowers",
+        "Flower_3_Group",
+        "Fern_1",
+        "Grass_Common_Short",
+        "Mushroom_Common",
+        "Rock_Medium_1",
+        "Pebble_Round_1"
+      ]
+    },
+    "village": {
+      "author": "Quaternius",
+      "url": "https://quaternius.com/packs/medievalvillagemegakit.html",
+      "edition": "Standard FREE",
+      "archive_sha256": "e60dea67c10f30dccccfbff92a7933f5ea5cfe99be0e2a0fa5118cceabeec5c4",
+      "models": [
+        "Wall_Plaster_Straight",
+        "Wall_Plaster_Window_Wide_Flat",
+        "Door_1_Flat",
+        "Floor_WoodDark",
+        "Roof_RoundTiles_4x4",
+        "Stair_Interior_Simple"
+      ]
+    },
+    "resource": {
+      "author": "Kay Lousberg",
+      "url": "https://kaylousberg.itch.io/resource-bits",
+      "edition": "FREE",
+      "archive_sha256": "7056f1310896a4612a67703fd6d5af389fcccdeb46df0a89e2322aa8e3bcfcf7",
+      "models": [
+        "Wood_Log_A",
+        "Stone_Chunks_Large",
+        "Iron_Nugget_Large",
+        "Copper_Nugget_Large",
+        "Silver_Nugget_Large",
+        "Gold_Nugget_Large"
+      ]
+    },
+    "dungeon": {
+      "author": "Kay Lousberg",
+      "url": "https://kaylousberg.itch.io/kaykit-dungeon-pack",
+      "edition": "FREE",
+      "archive_sha256": "6acb859d1aefae074f937d1e6f13656a7312b2bdb6d9f1232ebdade8d93d6a1c",
+      "models": [
+        "wall",
+        "floor_tile_large",
+        "stairs",
+        "chest",
+        "table_medium",
+        "torch_lit",
+        "barrel_small"
+      ]
+    }
+  },
+  "files": {
+    "assets/experiment_3d/nature/Bark_DeadTree.png": {
+      "sha256": "8f055724c35f8e8c5685a505775b3b9ebfc6b4745308ef35ce1cfe6fd976153f",
+      "source": "glTF/Bark_DeadTree.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Bark_DeadTree_Normal.png": {
+      "sha256": "692da2f58909263f074cb17b36defd09f56bf89ab7efda567a9a3e59261747b3",
+      "source": "glTF/Bark_DeadTree_Normal.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Bark_NormalTree.png": {
+      "sha256": "f36e94fdd73255347325b998e02a0b2575fdf714b0315bfe5e8ff34bc8e13603",
+      "source": "glTF/Bark_NormalTree.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Bark_NormalTree_Normal.png": {
+      "sha256": "852f6155404b8c39e100e41e26970e02a6a5c81b482d3726618dab28e3ad03a2",
+      "source": "glTF/Bark_NormalTree_Normal.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Bush_Common.bin": {
+      "sha256": "a5e1a773c8ba78fd9c05a8b342131eba4879302a8fddd2c5186cab9ee1ef4966",
+      "source": "glTF/Bush_Common.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Bush_Common.gltf": {
+      "sha256": "77811fca92610cb254713d3d49d5029ab6cf13050c3afb61aa942786a7b2ca90",
+      "source": "glTF/Bush_Common.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Bush_Common_Flowers.bin": {
+      "sha256": "15f56a013afe0eecaded0eb97fd8f323305af11e1f0f7bb9b68472ec4cdc20d5",
+      "source": "glTF/Bush_Common_Flowers.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Bush_Common_Flowers.gltf": {
+      "sha256": "08768c680e3abeafd25858c9d3f369bcb7eed014661d3b6825a397f2a6a3deea",
+      "source": "glTF/Bush_Common_Flowers.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/CommonTree_1.bin": {
+      "sha256": "9dd689e84e1aa2f5b08db8def591254d582783c73737af54ba0d89b3e549c3ae",
+      "source": "glTF/CommonTree_1.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/CommonTree_1.gltf": {
+      "sha256": "b51cdea6545edb51d102dd6c27caafe62aa75e3c328ac8f9039f4e7bfd690bfa",
+      "source": "glTF/CommonTree_1.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/CommonTree_3.bin": {
+      "sha256": "24541f46fd9553e2389aba15575f2697009226e82118ed76868284114fd12b49",
+      "source": "glTF/CommonTree_3.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/CommonTree_3.gltf": {
+      "sha256": "17c6537aa8042bb7255fbb501bf7aeb2b6db87c16766f794f9c37be3ce70c976",
+      "source": "glTF/CommonTree_3.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/DeadTree_1.bin": {
+      "sha256": "d623cfc5199a732cc988175fad149e8afcb84516df01a8dc1e378844019f408c",
+      "source": "glTF/DeadTree_1.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/DeadTree_1.gltf": {
+      "sha256": "b7ca9e90cbd8e8e3b3b17fd9c8fd57184ebf4986ff433ee3f2212f37f3114469",
+      "source": "glTF/DeadTree_1.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Fern_1.bin": {
+      "sha256": "5e92b87a27f81a69fe15347a533df3c77d567b48298dceeef43168ccb7c22853",
+      "source": "glTF/Fern_1.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Fern_1.gltf": {
+      "sha256": "d41915cffe9dbbde1ae88be381eb9c60f7caa2274511436cc78fe4de627468ab",
+      "source": "glTF/Fern_1.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Flower_3_Group.bin": {
+      "sha256": "5ab387dd3d6fe181df3af4eeac4df85533e4c27e77545ae39a61e0c2aaaab248",
+      "source": "glTF/Flower_3_Group.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Flower_3_Group.gltf": {
+      "sha256": "4df1612371982c543f930d6b213967372e0d459622d7eff7fc2ed1ddbfaa3b6c",
+      "source": "glTF/Flower_3_Group.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Flowers.png": {
+      "sha256": "5c531f2329c241c625aafd6cb769de29f33b480ef2a16491c2489f3c68e62a6a",
+      "source": "glTF/Flowers.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Grass.png": {
+      "sha256": "5d69048193b246a73c996b892607fb36c75d0c60afcb2dab8aa12de3c0b2d9bd",
+      "source": "glTF/Grass.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Grass_Common_Short.bin": {
+      "sha256": "7a0f0f7a9ac39cfa4b303bac03a6594f43e48d873b73553fa06a79e4df1271e9",
+      "source": "glTF/Grass_Common_Short.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Grass_Common_Short.gltf": {
+      "sha256": "6957b50622c9e26e7296c1b47ea8653bc0d957e0a547de444e2ed96f0075a21a",
+      "source": "glTF/Grass_Common_Short.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Leaf_Pine_C.png": {
+      "sha256": "86f7ff7a214f5424de48d269568f36a15485e61c80677e426c7be9f45181eef9",
+      "source": "glTF/Leaf_Pine_C.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Leaves.png": {
+      "sha256": "23248cebe28a24e78add32db3c2ee2f4d7b9219e9d2467279722f0197a7b6bd5",
+      "source": "glTF/Leaves.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Leaves_NormalTree_C.png": {
+      "sha256": "998612bdf0b76a22f5f54d65cd7a457815d2842d89653fa4348a4ebb42933ad3",
+      "source": "glTF/Leaves_NormalTree_C.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Leaves_TwistedTree_C.png": {
+      "sha256": "0e459b56b14c0e81b1b7cf3d1e8c6f0bb71790eb6c46bb02a76a922d8df646ea",
+      "source": "glTF/Leaves_TwistedTree_C.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Mushroom_Common.bin": {
+      "sha256": "e4cee9f2570505a172990a2754d52ed5775a4d75857a832fffa1b573e38a4051",
+      "source": "glTF/Mushroom_Common.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Mushroom_Common.gltf": {
+      "sha256": "2088b39d92f2f6331f45e59a048d02814dcd8b22767b024f4d220143bc8339f4",
+      "source": "glTF/Mushroom_Common.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Mushrooms.png": {
+      "sha256": "e29eed2db831e44a29634fe25c62e9e31edf201e978a52912b9e5221ffd4a1f3",
+      "source": "glTF/Mushrooms.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/PathRocks_Diffuse.png": {
+      "sha256": "85a04abb2c136fee53b376daf3b7d7f96fdf3966de0258dff6fe2b24da792b23",
+      "source": "glTF/PathRocks_Diffuse.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Pebble_Round_1.bin": {
+      "sha256": "f3dacef3243ccaaad7df2beb5c72574a38fb3eae45357e1b5e2b40200d51c375",
+      "source": "glTF/Pebble_Round_1.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Pebble_Round_1.gltf": {
+      "sha256": "9f6261c81134915e73cf35eb4e37076238fd1e79434515ac686d15cbd1f779ab",
+      "source": "glTF/Pebble_Round_1.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Pine_2.bin": {
+      "sha256": "5ba81ed2b131243bf02f5fb18e278083205ce16b0f30c364ccbe9355e7637c60",
+      "source": "glTF/Pine_2.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Pine_2.gltf": {
+      "sha256": "57bd4732170b6c7e51bcf78fe5adaabf142f95a50378d8d3051d1f20a04d3c2f",
+      "source": "glTF/Pine_2.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Rock_Medium_1.bin": {
+      "sha256": "ea79527d4c2b3bdb7a28bf589bf0c1fd96d192a4d0738636753911dd58681e99",
+      "source": "glTF/Rock_Medium_1.bin",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Rock_Medium_1.gltf": {
+      "sha256": "5d1ab1fa03218f4a908728ed0eabe6486344a7e4f510b0d3d6f837fd1d011bd8",
+      "source": "glTF/Rock_Medium_1.gltf",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/Rocks_Diffuse.png": {
+      "sha256": "b813696df6081f469a127092eb0ce45cc39d56f3ccc0699152bfcd3804810b48",
+      "source": "glTF/Rocks_Diffuse.png",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/nature/LICENSE.txt": {
+      "sha256": "120710e542c3ebaf83856c4eb55b4a1e680593b39302eba7fdc5d942dfe78c58",
+      "source": "License_Standard.txt",
+      "pack": "nature"
+    },
+    "assets/experiment_3d/village/Door_1_Flat.bin": {
+      "sha256": "f2235efcb17e3c7c761eba632bba8901f0299e65a27483528b486fbaece29bb5",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Door_1_Flat.bin",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Door_1_Flat.gltf": {
+      "sha256": "7e69ba9bcaf45238daa22b96461e9af6c80a59f422f9effb6de7f32e1fc677d8",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Door_1_Flat.gltf",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Floor_WoodDark.bin": {
+      "sha256": "cb43341c0969b62d82c11e2759caec854ea97ecba3bcb505d3300d57ebba7b81",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Floor_WoodDark.bin",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Floor_WoodDark.gltf": {
+      "sha256": "2ee57724a06289164fee75ad62eb770f7f8cc9cb1b51c041da477c086775cd8d",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Floor_WoodDark.gltf",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Roof_RoundTiles_4x4.bin": {
+      "sha256": "414067398f08e15e7c5c2c56b648770d3d49427489f073b0078ffde81673af67",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Roof_RoundTiles_4x4.bin",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Roof_RoundTiles_4x4.gltf": {
+      "sha256": "c6a7ce0649b897a7746929b44c448f4343f55ccd969ca1e4462f2f18b61676e4",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Roof_RoundTiles_4x4.gltf",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Stair_Interior_Simple.bin": {
+      "sha256": "56746e0b3bf1dc0a36f4b707c95cccf800b5c2fc7c82733ee50b3420e5ed931a",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Stair_Interior_Simple.bin",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Stair_Interior_Simple.gltf": {
+      "sha256": "dae162fb6f92b39714f72a9c7ddbf42a8d4d1b01a0357932144ce4f9f09d3bd4",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Stair_Interior_Simple.gltf",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_Brick_BaseColor.png": {
+      "sha256": "5515f57e61767838f53f4b9e25aa83b1382ad345ff6b446482718b5140c33813",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_Brick_BaseColor.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_Brick_Normal.png": {
+      "sha256": "6349f1fb3eed9985e6f969c1de04b9e92490020a12ba19a44b96ea808fb27c1a",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_Brick_Normal.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_Brick_Roughness.png": {
+      "sha256": "981e7a4f8e3119749b2fb3d557e3d0ba0551e75a39b467cff0a3a948a9392716",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_Brick_Roughness.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_Plaster_BaseColor.png": {
+      "sha256": "98547ca83888307e3ffa96384ce058b7622affe0a42add3b36d0b48618c5eda4",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_Plaster_BaseColor.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_Plaster_Normal.png": {
+      "sha256": "8b9617b561466cce00d5a0628eae7bef208dcf63445d72570e7f8e5057fed0d4",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_Plaster_Normal.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_Plaster_ORM.png": {
+      "sha256": "7be9d64a6154ba12bb7086e1d6774a7d5bbbc95775efb614f6ff40a4787fe0c7",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_Plaster_ORM.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_RoundTiles_BaseColor.png": {
+      "sha256": "acf388ebd1a97346e1e5b59091cfc609ed15b4f70b83a626089f12a82a2d9997",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_RoundTiles_BaseColor.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_RoundTiles_Normal.png": {
+      "sha256": "e8cf202fbc1ec36c3f5389a25ab9c99f015d49ae0ca963d0404614c3e1e8f687",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_RoundTiles_Normal.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_RoundTiles_Roughness.png": {
+      "sha256": "02c5cdbb6768de6ac674a343265c020c5bd6ef70fd7ba555d9b9dc7445179366",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_RoundTiles_Roughness.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_WoodTrim_BaseColor.png": {
+      "sha256": "a59f410b07a9bc5f0664df3ba7a2c1e37acffc7979795911f3fc8730ab60e33e",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_WoodTrim_BaseColor.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_WoodTrim_Normal.png": {
+      "sha256": "5847623e4ed6c206e59f32d1718ee75dcb2b49a1d55ede7ef70a254739caf4a8",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_WoodTrim_Normal.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/T_WoodTrim_Roughness.png": {
+      "sha256": "e888464fd4199d458d8cf39e00fa07d56f8a0bcb658aa03b4a7c95d466ceefa3",
+      "source": "Medieval Village MegaKit[Standard]/glTF/T_WoodTrim_Roughness.png",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Wall_Plaster_Straight.bin": {
+      "sha256": "986bf171c62e9019eea9aab709d19d07a3bd5021ff76ab749f57563f364858f3",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Wall_Plaster_Straight.bin",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Wall_Plaster_Straight.gltf": {
+      "sha256": "3bef920cbba4d124df4ca401439d893e0569f88f56049239e3480a04008fd0ac",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Wall_Plaster_Straight.gltf",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Wall_Plaster_Window_Wide_Flat.bin": {
+      "sha256": "45e3b1de7fac151e1192926c6156c6a8c16918d3fa5b0f85e2f56eb0026f0df6",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Wall_Plaster_Window_Wide_Flat.bin",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/Wall_Plaster_Window_Wide_Flat.gltf": {
+      "sha256": "548aab2c01d593a744a9704511068e5485d84bee6f722c50e071cf866aa2ba62",
+      "source": "Medieval Village MegaKit[Standard]/glTF/Wall_Plaster_Window_Wide_Flat.gltf",
+      "pack": "village"
+    },
+    "assets/experiment_3d/village/LICENSE.txt": {
+      "sha256": "ec6fd5004514cb0515a7dc1065f474644d31698861597b32e1745945ffec71de",
+      "source": "Medieval Village MegaKit[Standard]/License_Standard.txt",
+      "pack": "village"
+    },
+    "assets/experiment_3d/resource/Copper_Nugget_Large.bin": {
+      "sha256": "82b46fd4600f60c57633ac74003340f0fb046fab0d52ba60f1b012c16c3dceae",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Copper_Nugget_Large.bin",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Copper_Nugget_Large.gltf": {
+      "sha256": "ee4b741b900f0c82ac2ebb73f80de076900c15969318b6260b4b6eb760ab30e4",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Copper_Nugget_Large.gltf",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Gold_Nugget_Large.bin": {
+      "sha256": "67c6222aeab22a2ea7c4d2f698d84d1ee3be52dc0ccf7c4745bded7e66ae89da",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Gold_Nugget_Large.bin",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Gold_Nugget_Large.gltf": {
+      "sha256": "a07b12507152420966e4de069eac0094f903839138a391e0321eae9cda150b01",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Gold_Nugget_Large.gltf",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Iron_Nugget_Large.bin": {
+      "sha256": "c6bfcf43407a3b9132d774a698fde6615773f63b9acc50948d3c2cedd378c885",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Iron_Nugget_Large.bin",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Iron_Nugget_Large.gltf": {
+      "sha256": "5481c5575450147ad3122e9c164a67d390228c1028ee7bac5b0496e884ac2324",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Iron_Nugget_Large.gltf",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Silver_Nugget_Large.bin": {
+      "sha256": "1f9d155a26cf161b5f8b82b0cc4220baf4553bb567662cbcb276b50476dd89fe",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Silver_Nugget_Large.bin",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Silver_Nugget_Large.gltf": {
+      "sha256": "6cb736ec80b42d85a203e71e4ebbe0a56361c66a1459ff222bbcb87602e13bba",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Silver_Nugget_Large.gltf",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Stone_Chunks_Large.bin": {
+      "sha256": "abbcf2eb0b45b1b57b0279b288730e74ff880a547a8b7b4451fc4a9e229bd386",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Stone_Chunks_Large.bin",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Stone_Chunks_Large.gltf": {
+      "sha256": "441ab568aa7f3446c6f7f650f82dd2513924bc2b01b29435ae434ae44908cbeb",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Stone_Chunks_Large.gltf",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Wood_Log_A.bin": {
+      "sha256": "cc8de89a2079438987df3b0157118b81bb506dd1a89367ec0273ab28e056e7a7",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Wood_Log_A.bin",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/Wood_Log_A.gltf": {
+      "sha256": "39827330b7d77d528149bd57197b4204f72d471cc2cda290fb4a18a6165a1e68",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/Wood_Log_A.gltf",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/resource_bits_texture.png": {
+      "sha256": "62a252aba7bc9382effe48d93b976605d8fa70a3a40af7fc52362f5ca89c135b",
+      "source": "KayKit_ResourceBits_1.0_FREE/Assets/gltf/resource_bits_texture.png",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/resource/LICENSE.txt": {
+      "sha256": "cfeda9f60f4c03bb8b342ab4448c944ea5dccc84cd697b4b8eaedcdaa46fcc34",
+      "source": "KayKit_ResourceBits_1.0_FREE/License.txt",
+      "pack": "resource"
+    },
+    "assets/experiment_3d/dungeon/barrel_small.bin": {
+      "sha256": "06516a376dd32c1d43deb49507005f81b988c31138a21a1b46cf37553d15f9e3",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/barrel_small.bin",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/barrel_small.gltf": {
+      "sha256": "d87539ccfbb96cfbd50f060ba619c2dbbd2c24a51603da1c70356f3cf98478e5",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/barrel_small.gltf",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/chest.bin": {
+      "sha256": "2c41c61df12691a7bdae510433588ce82bbf0593622b986ae2e0981f67e48ae3",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/chest.bin",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/chest.gltf": {
+      "sha256": "25c1770655f555e266aadbc1936f5608ae2832a328f183277309c82c549afb5d",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/chest.gltf",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/dungeon_texture.png": {
+      "sha256": "ceb331d6ed53273da5e26808560bca8496f8f6ebc12d83b570c0e317560f1d03",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/dungeon_texture.png",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/floor_tile_large.bin": {
+      "sha256": "d4649c85286ff59fbf4b3fc8e5b228dc63ee2bb6914dbe716ca88acc9937ab23",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/floor_tile_large.bin",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/floor_tile_large.gltf": {
+      "sha256": "c9c8807b44e18ecf1cb058b45f237008a23503e95e2d2282498730c87a734af1",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/floor_tile_large.gltf",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/stairs.bin": {
+      "sha256": "f048336109afcaa340062e58cb4598e44615cc565bc04a17090c6e069fbc6633",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/stairs.bin",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/stairs.gltf": {
+      "sha256": "40e14349e811d092c2e45b32197dde9f522d811f75e693537eb6fd3450249cd7",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/stairs.gltf",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/table_medium.bin": {
+      "sha256": "80675d395aba32e885564eb675882080b3a2dc58d5eae612daf5f9798ac650d6",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/table_medium.bin",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/table_medium.gltf": {
+      "sha256": "826a24b261e897b37dcaf3470f6c9275830c4a8ed58f052ea9abaffde9fd086a",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/table_medium.gltf",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/torch_lit.bin": {
+      "sha256": "1ac41275544c951d7db724b78452b5a27399718691b83de3c1ba727d8b9e5944",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/torch_lit.bin",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/torch_lit.gltf": {
+      "sha256": "2962691576e45f5b80debe2ce35f99d9f929f9d013ad9f7bc8e96341beef48e5",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/torch_lit.gltf",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/wall.bin": {
+      "sha256": "cb081f98e2abd7f857d812534fe40c8b151b628a5b15f1c1c532fd93b46c29b2",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/wall.bin",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/wall.gltf": {
+      "sha256": "e7262d242545816fde7ab138be802a50e5e4af0a5a392682a32c5657184d4de1",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf/wall.gltf",
+      "pack": "dungeon"
+    },
+    "assets/experiment_3d/dungeon/LICENSE.txt": {
+      "sha256": "3ad9bfddc7e218841ee558f6c462369230021192183a29e5ed1793942c752290",
+      "source": "KayKit_Dungeon_Pack_1.1_FREE/License.txt",
+      "pack": "dungeon"
+    }
+  }
+}

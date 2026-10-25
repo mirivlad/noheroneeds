@@ -1,0 +1,9 @@
+test_dependency_directory_symlink_is_refused (__main__.AddonSetupTest.test_dependency_directory_symlink_is_refused) ... ok
+test_installed_libraries_are_reused_and_unrelated_files_preserved (__main__.AddonSetupTest.test_installed_libraries_are_reused_and_unrelated_files_preserved) ... ok
+test_invalid_source_is_preserved_on_download_failure (__main__.AddonSetupTest.test_invalid_source_is_preserved_on_download_failure) ... ok
+test_modified_binary_is_never_replaced (__main__.AddonSetupTest.test_modified_binary_is_never_replaced) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.202s
+
+OK

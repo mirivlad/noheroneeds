@@ -1,0 +1,22 @@
+Подготавливаю импорт Godot (установленные ресурсы используются повторно)…
+Запускаю 3d-эксперимент. Профиль и мир: experiment-3d.
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+perf z=0 frame 27.3 ms: map 0.00 sim 1.65 view 22.04 ui 1.09; worst ours 603.2 (map 0.0 sim 0.7 view 601.3 ui 1.2); nodes 600, sprites 13, chunks 25
+  server slowest tick 36.3 ms: { "network_in": 36.3, "prefetch": 0.0, "movement": 0.0, "creatures": 0.0, "combat": 0.0, "storage": 0.0, "chunks": 0.0, "snapshots": 0.0 }; sync loads 6
+perf z=0 frame 16.7 ms: map 0.00 sim 0.44 view 6.43 ui 1.07; worst ours 15.7 (map 0.0 sim 1.9 view 12.7 ui 1.0); nodes 805, sprites 13, chunks 25
+  server slowest tick 3.0 ms: { "network_in": 0.1, "prefetch": 0.0, "movement": 0.0, "creatures": 2.6, "combat": 0.0, "storage": 0.0, "chunks": 0.0, "snapshots": 0.3 }; sync loads 0
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":25,"fps":47.8442802641388,"location":"surface","objects":7825,"renderer":"gl_compatibility","worst_frame_ms":150.0}
+perf z=0 frame 16.7 ms: map 0.00 sim 0.79 view 2.98 ui 1.09; worst ours 17.3 (map 0.0 sim 1.9 view 14.3 ui 1.2); nodes 886, sprites 13, chunks 25
+  server slowest tick 3.0 ms: { "network_in": 0.1, "prefetch": 0.0, "movement": 0.0, "creatures": 2.5, "combat": 0.0, "storage": 0.0, "chunks": 0.0, "snapshots": 0.4 }; sync loads 0
+perf z=0 frame 16.7 ms: map 0.00 sim 0.86 view 0.78 ui 1.11; worst ours 6.4 (map 0.0 sim 3.4 view 1.3 ui 1.6); nodes 893, sprites 14, chunks 25
+  server slowest tick 3.1 ms: { "network_in": 0.1, "prefetch": 0.0, "movement": 0.0, "creatures": 2.3, "combat": 0.0, "storage": 0.1, "chunks": 0.0, "snapshots": 0.6 }; sync loads 0
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":25,"fps":60.0000000000001,"location":"surface","objects":7825,"renderer":"gl_compatibility","worst_frame_ms":16.6666666666667}
+perf z=0 frame 16.7 ms: map 0.00 sim 1.16 view 0.97 ui 1.11; worst ours 23.9 (map 0.0 sim 3.3 view 19.5 ui 1.1); nodes 900, sprites 14, chunks 25
+  server slowest tick 15.3 ms: { "network_in": 0.1, "prefetch": 0.0, "movement": 0.0, "creatures": 14.3, "combat": 0.0, "storage": 0.0, "chunks": 0.0, "snapshots": 0.8 }; sync loads 1
+perf z=0 frame 16.9 ms: map 0.00 sim 1.34 view 0.85 ui 1.12; worst ours 49.6 (map 0.0 sim 47.6 view 0.9 ui 1.1); nodes 903, sprites 14, chunks 25
+  server slowest tick 47.4 ms: { "network_in": 0.1, "prefetch": 0.0, "movement": 0.0, "creatures": 46.8, "combat": 0.0, "storage": 0.0, "chunks": 0.0, "snapshots": 0.4 }; sync loads 0
+perf z=0 frame 16.7 ms: map 0.00 sim 0.94 view 1.07 ui 1.10; worst ours 24.8 (map 0.0 sim 2.8 view 20.9 ui 1.0); nodes 913, sprites 14, chunks 25
+  server slowest tick 3.3 ms: { "network_in": 0.1, "prefetch": 0.0, "movement": 0.0, "creatures": 2.5, "combat": 0.0, "storage": 0.1, "chunks": 0.0, "snapshots": 0.6 }; sync loads 0
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":25,"fps":59.6002649960228,"location":"surface","objects":7825,"renderer":"gl_compatibility","worst_frame_ms":41.8773333333336}

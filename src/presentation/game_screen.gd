@@ -89,6 +89,8 @@ var mouse_at: Variant = null
 
 
 func _mouse_world() -> Vector2:
+	if mouse_at == null and view is WorldView3D:
+		return (view as WorldView3D).screen_point(get_viewport().get_mouse_position())
 	return mouse_at if mouse_at != null else get_global_mouse_position()
 
 var painter := MapPainter.new()
@@ -216,6 +218,10 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	content = registry
 	settings = player_settings
 	_opts = dev
+	if _opts.get("renderer") == "3d":
+		view.free()
+		view = WorldView3D.new()
+		(view as WorldView3D).configure_camera(settings)
 	if not _opts.is_empty():
 		_dev = DevRuns.new(self)
 	match String(cfg.get("mode", "local")):
@@ -475,6 +481,9 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if paused or client == null:
 		return
+	if view is WorldView3D and not world_map.visible and (view as WorldView3D).camera_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and world_map.visible:
 		var mk: int = (event as InputEventKey).keycode
 		if mk == KEY_ESCAPE or mk == KEY_M:
@@ -500,6 +509,18 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _key(k: int, shift: bool) -> void:
+	if view is WorldView3D and game and k in [KEY_F6, KEY_F7]:
+		var at := game.world._spawn_way()
+		if k == KEY_F6:
+			var village := game.world.generator.settlements.home_plan()
+			if not village.is_empty():
+				at = (village["fire"] as Vector2i) + Vector2i(2, 0)
+		if client.location == Levels.SURFACE:
+			game.world.move_character(client.character_id, at * Movement.UNIT + Vector2i.ONE * (Movement.UNIT / 2))
+			_note = "Эксперимент: деревня" if k == KEY_F6 else "Эксперимент: вход в пещеру; F — спуск"
+		else:
+			_note = "Сначала вернитесь на поверхность через существующий переход (F)"
+		return
 	var slot := k - KEY_1
 	if k >= KEY_1 and k <= KEY_9:
 		_choose_slot(slot)
@@ -997,7 +1018,7 @@ func _turns() -> Array:
 ## roofs the cell whose cover would be drawn there (covers sit a storey higher).
 func _build_cell() -> Vector2i:
 	var m := _mouse_world()
-	if Terrain.layer_for_role(String(content.get_def(_blueprint).get("role", ""))) != "structure":
+	if not view is WorldView3D and Terrain.layer_for_role(String(content.get_def(_blueprint).get("role", ""))) != "structure":
 		m.y += WorldView.COVER_LIFT
 	return Vector2i(floori(m.x / WorldView.CELL), floori(m.y / WorldView.CELL))
 
@@ -1072,6 +1093,9 @@ func _update_ghost() -> void:
 	_plan = [] if client.state != "playing" or v.is_empty() or world_map.visible else _plan_cells()
 	if _opts.has("screenshot") and not _opts.has("ui"):
 		_plan = []
+	if view is WorldView3D:
+		(view as WorldView3D).show_plan(_plan)
+		return
 	while _ghosts.size() < _plan.size():
 		var g := Sprite2D.new()
 		g.centered = false
@@ -1114,7 +1138,7 @@ func _direction() -> Vector2i:
 		d.y -= 1
 	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
 		d.y += 1
-	return d
+	return (view as WorldView3D).world_direction(d) if view is WorldView3D else d
 
 
 func _update_hud() -> void:
@@ -1280,6 +1304,9 @@ func _update_hud() -> void:
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
 		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9/колесо — в руки, Q — оружие, I — вещи, C — персонаж, B — стройка, K — ремёсла, M — карта, L — журнал, Esc — меню")
+	if view is WorldView3D:
+		var v3 := view as WorldView3D
+		info = PackedStringArray(["3D · %d FPS · %d чанков · %d объектов · %.1f мс · очередь %d" % [Engine.get_frames_per_second(), v3._geometry.size(), v3.object_count(), v3._last_build_ms, v3.pending_chunks()]])
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:

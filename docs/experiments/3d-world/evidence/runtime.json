@@ -1,0 +1,6 @@
+{
+	"adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+	"checks": 32,
+	"failures": [],
+	"renderer": "gl_compatibility"
+}

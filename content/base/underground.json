@@ -48,12 +48,14 @@
 
     {
       "id": "base:cave_rat", "kind": "creature", "size": {"half": [0.3, 0.2], "height": 0.45}, "name": "Пещерная крыса", "behavior": "prey",
+      "life": {"mature_hours": 48, "breed_hours": 36, "forage": ["base:cave_floor"], "food_cells": 256},
       "speed": 1.0, "run_speed": 2.2, "sight": 6, "dark_sight": 0.9, "hearing": 10,
       "flee_distance": 5, "home_radius": 8, "think_ticks": 8, "memory_s": 20,
       "health": 2, "drops": {"base:raw_meat": 1}
     },
     {
       "id": "base:cave_spider", "kind": "creature", "size": {"half": [0.3, 0.25], "height": 0.35}, "name": "Пещерный паук", "behavior": "predator",
+      "life": {"mature_hours": 72, "breed_hours": 72, "prey": ["base:cave_rat"], "hunt_hours": 6},
       "speed": 0.8, "run_speed": 1.9, "sight": 7, "dark_sight": 0.95, "hearing": 9,
       "flee_distance": 0, "home_radius": 8, "think_ticks": 6, "memory_s": 20,
       "health": 8, "territory": 5,

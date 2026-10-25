@@ -183,6 +183,9 @@ func step(tick: int) -> void:
 			continue
 		if world.present.has(id) and not world.needs.may_heal(id):
 			continue  # hungry: health does not come back (ADR-0032)
+		var animal := world.creatures.get_creature(id)
+		if animal and world.creatures.life.hungry(animal):
+			continue
 		var h := health_of(id) + 1
 		_set_health(id, mini(h, max_health_of(id)))
 		if h >= max_health_of(id):
@@ -211,11 +214,17 @@ func _character_dies(id: String) -> void:
 
 func _creature_dies(c: Creature, killer := "") -> void:
 	var drops: Dictionary = world.content.get_def(c.kind).get("drops", {})
+	var hunter := world.creatures.get_creature(killer)
+	var eaten := hunter != null and (world.content.get_def(hunter.kind).get("life", {}).get("prey", []) as Array).has(c.kind)
+	if eaten:
+		world.creatures.life.ate(hunter)
 	# A hunter's kill (ADR-0047): practice, and a skilled one gets more of it.
 	var more := world.knowledge.effect(killer, "kill", "yield") if world.present.has(killer) else 0.0
 	if world.present.has(killer) and not drops.is_empty():
 		world.knowledge.practise(killer, "kill", 3)
 	for item: String in drops:
+		if eaten and item == "base:raw_meat":
+			continue  # the hunter ate the meat; the hide is left
 		world.place_item(c.location, c.pos, item, world.knowledge.with_extra(killer, [c.id, item], int(drops[item]), more))
 	# A looter gives back what it had not digested yet.
 	world.creatures.digest(c)
@@ -290,6 +299,12 @@ func creature_attack(c: Creature, target: String) -> bool:
 		return false
 	var at := _position(target)
 	if at == NO_POS or _location(target) != c.location:
+		return false
+	var reach := float(w["reach"]) * Movement.UNIT + float(size_of(c.id)["radius"]) \
+		- float(BodySize.HUMAN["radius"]) + float(size_of(target)["radius"])
+	if Vector2(c.pos).distance_to(Vector2(at)) > reach \
+			or not Sight.clear(world, c.location, c.cell(), c.location, Movement.cell_of(at),
+				float(size_of(c.id)["eye"]), float(size_of(target)["body"])):
 		return false
 	_ready_at[c.id] = _tick + _ticks(float(w["cooldown_ms"]))
 	swung(c.id, at)

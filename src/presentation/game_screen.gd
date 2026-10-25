@@ -146,6 +146,7 @@ var _build_view: ClientBuildView
 
 ## What the server's refusals mean, for people.
 const REASONS := {
+	"young_animal": "детёныш ещё не вырос", "hungry_animal": "сначала накормите животное",
 	"occupied": "место занято", "blocked": "мешает вода, стена или дерево", "someone_there": "там кто-то стоит",
 	"materials": "не хватает материалов", "too_far": "слишком далеко", "no_floor": "здесь нет пола",
 	"rain": "под дождём костёр не развести: дождитесь сухой погоды или поставьте его под крышей",

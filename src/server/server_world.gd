@@ -2986,6 +2986,10 @@ func _fill(actor: String, r: Dictionary) -> Dictionary:
 			return {"ok": false, "reason": "too_far"}
 		if c.owner != actor:
 			return {"ok": false, "reason": "not_yours"}
+		if creatures.life.young(c, def):
+			return {"ok": false, "reason": "young_animal"}
+		if not creatures.fed_lately(c):
+			return {"ok": false, "reason": "hungry_animal"}
 		if c.filled_at >= 0 and world_time - c.filled_at < int(float(def.get("fill_hours", 12.0)) * Daylight.HOUR_MS):
 			return {"ok": false, "reason": "not_yet"}
 		c.filled_at = world_time

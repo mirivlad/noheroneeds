@@ -3,18 +3,21 @@
   "defs": [
     {
       "id": "base:hare", "kind": "creature", "size": {"half": [0.15, 0.12], "height": 0.25}, "name": "Заяц", "behavior": "prey",
+      "life": {"mature_hours": 48, "breed_hours": 36, "forage": ["base:grass", "base:grass_dead"], "food_cells": 128},
       "speed": 1.1, "run_speed": 1.5, "sight": 9, "dark_sight": 0.5, "hearing": 8,
       "flee_distance": 6, "home_radius": 10, "think_ticks": 8, "memory_s": 30,
       "health": 3, "drops": {"base:raw_meat": 1}
     },
     {
       "id": "base:deer", "kind": "creature", "size": {"half": [0.45, 0.25], "height": 1.0}, "name": "Олень", "behavior": "prey",
+      "life": {"mature_hours": 96, "breed_hours": 72, "forage": ["base:grass", "base:grass_dead", "base:forest_floor"], "food_cells": 256},
       "speed": 0.9, "run_speed": 1.2, "sight": 12, "dark_sight": 0.4, "hearing": 10,
       "flee_distance": 8, "home_radius": 16, "think_ticks": 10, "memory_s": 40,
       "health": 10, "drops": {"base:raw_meat": 3, "base:hide": 1}
     },
     {
       "id": "base:sheep", "kind": "creature", "size": {"half": [0.35, 0.22], "height": 0.7}, "name": "Овца", "behavior": "prey", "fauna_since": 3,
+      "life": {"mature_hours": 72, "breed_hours": 48, "forage": ["base:grass", "base:grass_dead"], "food_cells": 192},
       "speed": 0.7, "run_speed": 1.1, "sight": 9, "dark_sight": 0.4, "hearing": 8,
       "flee_distance": 4, "home_radius": 10, "think_ticks": 12, "memory_s": 30,
       "health": 8, "drops": {"base:raw_meat": 2, "base:wool": 2},
@@ -22,6 +25,7 @@
     },
     {
       "id": "base:cow", "kind": "creature", "size": {"half": [0.55, 0.3], "height": 1.1}, "name": "Корова", "behavior": "prey", "fauna_since": 3,
+      "life": {"mature_hours": 120, "breed_hours": 72, "forage": ["base:grass", "base:grass_dead"], "food_cells": 256},
       "speed": 0.6, "run_speed": 0.95, "sight": 9, "dark_sight": 0.4, "hearing": 8,
       "flee_distance": 3, "home_radius": 10, "think_ticks": 14, "memory_s": 30,
       "health": 16, "drops": {"base:raw_meat": 4, "base:hide": 2},
@@ -30,6 +34,7 @@
     },
     {
       "id": "base:chicken", "kind": "creature", "size": {"half": [0.12, 0.1], "height": 0.3}, "name": "Курица", "behavior": "prey", "fauna_since": 3,
+      "life": {"mature_hours": 48, "breed_hours": 36, "forage": ["base:grass", "base:grass_dead"], "food_cells": 128},
       "speed": 0.7, "run_speed": 1.2, "sight": 7, "dark_sight": 0.3, "hearing": 7,
       "flee_distance": 3, "home_radius": 8, "think_ticks": 8, "memory_s": 20,
       "health": 2, "drops": {"base:raw_meat": 1},
@@ -44,6 +49,7 @@
     },
     {
       "id": "base:wolf", "kind": "creature", "size": {"half": [0.35, 0.2], "height": 0.5}, "name": "Волк", "many": "волки", "behavior": "predator",
+      "life": {"mature_hours": 96, "breed_hours": 96, "prey": ["base:hare", "base:deer", "base:sheep", "base:cow", "base:chicken", "base:fox"], "hunt_hours": 6},
       "speed": 1.0, "run_speed": 2.2, "sight": 11, "dark_sight": 0.8, "hearing": 12,
       "flee_distance": 0, "home_radius": 14, "think_ticks": 6, "memory_s": 25,
       "health": 14, "territory": 4, "drops": {"base:raw_meat": 2, "base:hide": 1},
@@ -68,6 +74,7 @@
     },
     {
       "id": "base:bear", "kind": "creature", "size": {"half": [0.55, 0.35], "height": 1.2}, "name": "Медведь", "many": "медведи",
+      "life": {"mature_hours": 144, "breed_hours": 120, "forage": ["base:forest_floor", "base:grass", "base:grass_dead"], "food_cells": 384, "prey": ["base:hare", "base:deer", "base:sheep", "base:chicken"], "hunt_hours": 6},
       "behavior": "prey", "fauna_since": 5,
       "speed": 0.8, "run_speed": 1.4, "sight": 9, "dark_sight": 0.5, "hearing": 9,
       "flee_distance": 0, "home_radius": 16, "think_ticks": 10, "memory_s": 40,
@@ -77,6 +84,7 @@
     },
     {
       "id": "base:polar_bear", "kind": "creature", "size": {"half": [0.55, 0.35], "height": 1.2}, "name": "Белый медведь", "many": "белые медведи",
+      "life": {"mature_hours": 144, "breed_hours": 120, "prey": ["base:hare", "base:deer", "base:sheep", "base:arctic_fox"], "hunt_hours": 6},
       "behavior": "predator", "fauna_since": 5,
       "speed": 0.8, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
       "flee_distance": 0, "home_radius": 18, "think_ticks": 8, "memory_s": 30,
@@ -85,18 +93,23 @@
     },
     {
       "id": "base:fox", "kind": "creature", "size": {"half": [0.3, 0.15], "height": 0.4}, "name": "Лиса", "behavior": "prey", "fauna_since": 5,
+      "life": {"mature_hours": 72, "breed_hours": 72, "prey": ["base:hare", "base:chicken"], "hunt_hours": 6},
       "speed": 1.0, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
       "flee_distance": 6, "home_radius": 14, "think_ticks": 8, "memory_s": 30,
+      "attack": {"kind": "melee", "damage": 1, "reach": 0.7, "arc": 100, "cooldown_ms": 1000},
       "health": 4, "drops": {"base:raw_meat": 1, "base:fur": 1}
     },
     {
       "id": "base:arctic_fox", "kind": "creature", "size": {"half": [0.3, 0.15], "height": 0.4}, "name": "Песец", "behavior": "prey", "fauna_since": 5,
+      "life": {"mature_hours": 72, "breed_hours": 72, "prey": ["base:hare", "base:chicken"], "hunt_hours": 6},
       "speed": 1.0, "run_speed": 1.45, "sight": 10, "dark_sight": 0.7, "hearing": 10,
       "flee_distance": 6, "home_radius": 14, "think_ticks": 8, "memory_s": 30,
+      "attack": {"kind": "melee", "damage": 1, "reach": 0.7, "arc": 100, "cooldown_ms": 1000},
       "health": 4, "drops": {"base:raw_meat": 1, "base:fur": 1}
     },
     {
       "id": "base:mushroom_walker", "kind": "creature", "size": {"half": [0.18, 0.12], "height": 0.45}, "name": "Грибовик", "many": "грибовики",
+      "life": {"mature_hours": 72, "breed_hours": 72, "forage": ["base:forest_floor", "base:bog"], "food_cells": 256},
       "behavior": "prey", "fauna_since": 5,
       "speed": 0.6, "run_speed": 1.0, "sight": 6, "dark_sight": 0.6, "hearing": 6,
       "flee_distance": 0, "home_radius": 10, "think_ticks": 12, "memory_s": 20,

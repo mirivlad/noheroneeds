@@ -35,10 +35,15 @@ const SAVE_EVERY := 100
 const NOISE_S := 3.0
 
 var world: ServerWorld
+var life: AnimalLife
 var creatures := {}
 ## Thinks done in the last tick (tests, stats).
 var thinks_last_tick := 0
 var _by_chunk := {}
+## The same chunk index split by kind: perception asks only for kinds it
+## reacts to, instead of scanning every herbivore in a crowded meadow.
+var _by_kind := {}
+var _watch := {}
 ## Changes for those who mirror the creatures (GameServer, each tick through
 ## take_changes): ids that came into memory, left it, or moved.
 var _appeared := {}
@@ -58,12 +63,16 @@ var _tick := 0
 
 func _init(w: ServerWorld) -> void:
 	world = w
+	life = AnimalLife.new(w)
 
 
 # --- what is where -----------------------------------------------------------
 
-func in_chunk(location: String, cx: int, cy: int) -> Array:
-	return (_by_chunk.get(ServerWorld.chunk_key(location, cx, cy), {}) as Dictionary).keys()
+func in_chunk(location: String, cx: int, cy: int, kind := "") -> Array:
+	var key := ServerWorld.chunk_key(location, cx, cy)
+	if kind != "":
+		return (_by_kind.get(key, {}).get(kind, {}) as Dictionary).keys()
+	return (_by_chunk.get(key, {}) as Dictionary).keys()
 
 
 ## {id: true} of creatures whose owner changed since the last call.
@@ -103,12 +112,17 @@ func _chunk_of(c: Creature) -> String:
 func _index(c: Creature, old_key := "") -> void:
 	if old_key != "":
 		(_by_chunk.get(old_key, {}) as Dictionary).erase(c.id)
+		(_by_kind.get(old_key, {}).get(c.kind, {}) as Dictionary).erase(c.id)
 	(_by_chunk.get_or_add(_chunk_of(c), {}) as Dictionary)[c.id] = true
+	var kinds: Dictionary = _by_kind.get_or_add(_chunk_of(c), {})
+	(kinds.get_or_add(c.kind, {}) as Dictionary)[c.id] = true
 
 
 func add(c: Creature) -> void:
 	if c.health < 0:
 		c.health = int(world.content.get_def(c.kind).get("health", 5))
+	if world.content.get_def(c.kind).has("life"):
+		life.start(c)
 	creatures[c.id] = c
 	_appeared[c.id] = true
 	_left.erase(c.id)
@@ -394,6 +408,7 @@ func remove(id: String) -> void:
 	if c == null:
 		return
 	(_by_chunk.get(_chunk_of(c), {}) as Dictionary).erase(id)
+	(_by_kind.get(_chunk_of(c), {}).get(c.kind, {}) as Dictionary).erase(id)
 	creatures.erase(id)
 	_movers.erase(id)
 	_last_saved.erase(id)
@@ -440,6 +455,7 @@ func drop_chunk(key: String) -> void:
 		_appeared.erase(id)
 		_moved.erase(id)
 	_by_chunk.erase(key)
+	_by_kind.erase(key)
 
 
 # --- noises --------------------------------------------------------------------
@@ -510,6 +526,8 @@ func _think(c: Creature, tick: int) -> void:
 	if def.is_empty():
 		_schedule(c, tick + 200)  # its pack is gone: it waits, unchanged
 		return
+	if not life.step(c, def):
+		return
 	if not _active(c):
 		# Nobody near: it stands; it will catch up when someone comes.
 		_movers.erase(c.id)
@@ -564,6 +582,8 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 	c.running = false
 	var night := Daylight.is_night(world.world_time)
 	var cell := c.home
+	if c.migration != Creature.NO_TARGET:
+		return  # keep its real route instead of teleporting it back home
 	if not c.job.is_empty():  # a dweller is where its day has it now
 		var spot := _dweller_spot(c, _phase(c))
 		if spot != Creature.NO_TARGET:
@@ -608,6 +628,30 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 				was["pos"] = at  # who hurt it: still that, seen where it is now
 			else:
 				c.memory[pid] = {"pos": at, "time": now, "what": "character"}
+	# Nearby creatures are subject to exactly the same sight as players.
+	# Kinds of interest are immutable content; readiness is asked once here,
+	# rather than once per neighbour in a crowded chunk.
+	var watching := _watched_kinds(c.kind)
+	var kinds := watching.keys()
+	if life.ready(c, def):
+		kinds.append(c.kind)
+	for id: String in c.memory:
+		if c.memory[id]["what"] == "attacker":
+			var o := get_creature(id)
+			if o and not kinds.has(o.kind):
+				kinds.append(o.kind)
+	for cy in range((me.y - int(sight)) >> 5, ((me.y + int(sight)) >> 5) + 1):
+		for cx in range((me.x - int(sight)) >> 5, ((me.x + int(sight)) >> 5) + 1):
+			for kind: String in kinds:
+				var body := float(BodySize.of(world.content.get_def(kind))["body"])
+				for id: String in in_chunk(c.location, cx, cy, kind):
+					var o := get_creature(id)
+					if o == null or o == c:
+						continue
+					if Perception.sees(world, c.location, me, def, o.cell(), o.location, body):
+						var was: Dictionary = c.memory.get(id, {})
+						c.memory[id] = {"pos": o.cell(), "time": now,
+							"what": "attacker" if was.get("what") == "attacker" and now - int(was["time"]) <= _ms(20.0) else watching.get(kind, "animal")}
 	for n: Array in _noises:
 		if n[0] == c.location and Perception.hears(def, me, n[1]):
 			c.memory["noise"] = {"pos": n[1], "time": int(n[2]), "what": "noise"}
@@ -617,14 +661,31 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 			c.memory.erase(k)
 
 
+func _watched_kinds(kind: String) -> Dictionary:
+	if _watch.has(kind):
+		return _watch[kind]
+	var kinds := {}
+	for prey: String in world.content.get_def(kind).get("life", {}).get("prey", []):
+		kinds[prey] = "animal"
+	for id: String in world.content.defs:
+		if (world.content.get_def(id).get("life", {}).get("prey", []) as Array).has(kind):
+			kinds[id] = "predator"
+	_watch[kind] = kinds
+	return kinds
+
+
 ## The nearest remembered character (or a recent noise), within `within`
 ## cells: [cell, distance] or [] — from memory only.
-func _nearest_threat(c: Creature, within: float, noise_s: float) -> Array:
+func _nearest_threat(c: Creature, within: float, noise_s: float, people := true) -> Array:
 	var me := c.cell()
 	var best := []
 	var def := world.content.get_def(c.kind)
 	for k: String in c.memory:
 		var m: Dictionary = c.memory[k]
+		if m["what"] == "animal":
+			continue
+		if not people and m["what"] in ["character", "noise"]:
+			continue
 		if m["what"] == "noise" and world.world_time - int(m["time"]) > _ms(noise_s):
 			continue
 		if m["what"] == "character" and _holds_its_food(k, def):
@@ -662,6 +723,8 @@ func _prey(c: Creature, def: Dictionary) -> void:
 		return
 	if c.state == "alert" and not _nearest_threat(c, flee * 1.8, NOISE_S).is_empty():
 		return  # still watching what it ran from
+	if _hunt_animal(c, def) or life.wander(c, def):
+		return
 	if Daylight.is_night(world.world_time) and world.has_daylight(c.location):
 		if c.target == Creature.NO_TARGET:
 			_go(c, "rest", Creature.NO_TARGET, false)
@@ -683,7 +746,7 @@ func _fight_back(c: Creature, def: Dictionary) -> bool:
 	if def["reaction"]["hurt"] != "fight" or String(def["behavior"]) == "predator":
 		return false
 	var attacker := _attacker(c, float(def["sight"]) * 1.5)
-	if attacker.is_empty() or not world.present.has(attacker[2]):
+	if attacker.is_empty():
 		return false
 	if c.health * 10 < int(def["health"]) * 3:
 		var away := _away_from(c, attacker[0], 12.0)
@@ -693,8 +756,7 @@ func _fight_back(c: Creature, def: Dictionary) -> bool:
 	if world.combat.creature_attack(c, attacker[2]):
 		_go(c, "attack", Creature.NO_TARGET, false)
 	else:
-		var p: Dictionary = world.present[attacker[2]]
-		_go(c, "hunt", Movement.cell_of(p["pos"]), true)  # it sees where it is now
+		_go(c, "hunt", attacker[0], true)
 	return true
 
 
@@ -753,6 +815,8 @@ func _predator(c: Creature, def: Dictionary) -> void:
 			return
 		_go(c, "hunt", prey[0], true)
 		return
+	if _hunt_animal(c, def) or life.wander(c, def):
+		return
 	if c.target != Creature.NO_TARGET and c.state in ["wander", "prowl"]:
 		return
 	if c.rand(int(world.world_time / 1000) + c.next_think) < (0.5 if night else 0.15):
@@ -761,6 +825,37 @@ func _predator(c: Creature, def: Dictionary) -> void:
 			_go(c, "prowl" if night else "wander", spot, false)
 			return
 	_go(c, "rest" if not night else "idle", Creature.NO_TARGET, false)
+
+
+## Hunts only remembered, visible prey from the kind's diet. A successful
+## kill feeds the hunter through Combat; while full it leaves animals alone.
+func _hunt_animal(c: Creature, def: Dictionary) -> bool:
+	var diet: Array = def.get("life", {}).get("prey", [])
+	var every := int(float(def.get("life", {}).get("hunt_hours", 6)) * Daylight.HOUR_MS)
+	if diet.is_empty() or world.world_time - c.ate_at < every or life.young(c, def):
+		return false
+	var best := ""
+	var distance := INF
+	for id: String in c.memory.keys():
+		var m: Dictionary = c.memory[id]
+		var o := get_creature(id)
+		if o == null or not diet.has(o.kind) or o.location != c.location:
+			continue
+		var d := c.cell().distance_to(m["pos"])
+		if d < distance:
+			best = id
+			distance = d
+	if best == "":
+		return false
+	var seen: Dictionary = c.memory[best]
+	if int(seen["time"]) == world.world_time and world.combat.creature_attack(c, best):
+		_go(c, "attack", Creature.NO_TARGET, false)
+	elif distance < 1.0 and int(seen["time"]) < world.world_time:
+		c.memory.erase(best)
+		return false
+	else:
+		_go(c, "hunt", seen["pos"], true)
+	return true
 
 
 ## Looters (ADR-0016): about their range they go for things lying near that
@@ -814,15 +909,19 @@ const HERD_CAP := 8
 
 
 func _tame(c: Creature, def: Dictionary) -> void:
-	var attacker := _attacker(c, float(def["sight"]))
+	var attacker := _nearest_threat(c, float(def["flee_distance"]), NOISE_S, false)
+	var hurt := _attacker(c, float(def["sight"]))
+	if not hurt.is_empty():
+		attacker = hurt
 	if not attacker.is_empty():
 		var away := _away_from(c, attacker[0], 8.0)
 		if away != Creature.NO_TARGET:
 			_go(c, "flee", away, true)
 			return
 	if fed_lately(c):
-		_produce(c, def)
-		_breed(c, def)
+		if not life.young(c, def):
+			_produce(c, def)
+			_breed(c, def)
 	var m: Dictionary = c.memory.get(c.owner, {})
 	if not m.is_empty() and int(m["time"]) == world.world_time and _holds_its_food(c.owner, def):
 		var d := Vector2(c.cell()).distance_to(Vector2(m["pos"]))
@@ -895,15 +994,16 @@ func _breed(c: Creature, def: Dictionary) -> void:
 				if o == null or o.kind != c.kind or Vector2(o.cell()).distance_to(Vector2(me)) > 8.0:
 					continue
 				herd += 1
-				if o != c and mate == null and o.owner != "" and fed_lately(o) \
-						and Vector2(o.cell()).distance_to(Vector2(me)) <= BREED_NEAR and (o.bred_at < 0 or now - o.bred_at >= every):
+				if o != c and mate == null and o.owner == c.owner and fed_lately(o) and not life.young(o, def) \
+						and Vector2(o.cell()).distance_to(Vector2(me)) <= BREED_NEAR and life.clear_route(c, o.cell()) \
+						and (o.bred_at < 0 or now - o.bred_at >= every):
 					mate = o
 	if mate == null or herd >= HERD_CAP:
 		return
 	var young := _spawn(c.kind, c.location, me, {}, hash([c.seed, mate.seed, now]))
 	young.owner = c.owner
 	young.home = c.home
-	young.bred_at = now
+	life.offspring(young)
 	young.changed()
 	_owned[young.id] = true
 	for o: Creature in [c, mate]:
@@ -916,6 +1016,7 @@ func _breed(c: Creature, def: Dictionary) -> void:
 func fed_by(c: Creature, who: String) -> bool:
 	var tame: Dictionary = world.content.get_def(c.kind)["tame"]
 	c.fed_at = world.world_time
+	life.ate(c)
 	var tamed := false
 	if c.owner == "":
 		c.fed += 1
@@ -923,6 +1024,7 @@ func fed_by(c: Creature, who: String) -> bool:
 			c.owner = who
 			c.home = c.cell()
 			c.made_at = world.world_time
+			c.bred_at = -1
 			_owned[c.id] = true
 			tamed = true
 	c.changed()
@@ -1314,6 +1416,7 @@ func _solid_in(location: String) -> Callable:
 ## The world closes: let go of it (they hold each other).
 func detach() -> void:
 	world = null
+	life.world = null
 	_solid_fns.clear()
 
 

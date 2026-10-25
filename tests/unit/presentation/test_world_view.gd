@@ -2,6 +2,42 @@ extends TestCase
 ## The world view draws what the client received, from visual definitions only.
 
 
+func test_a_young_animal_is_smaller_and_grows_in_the_running_view() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var keys := ProjectSettings.globalize_path("user://test_keys/")
+	var owner := PlayerIdentity.load_or_create(keys + "owner")
+	var c := PortableCharacter.create("Аня", "base:human_m")
+	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
+	var g := LocalGame.start(tmp_dir().path_join("world.db"), content, owner,
+		PlayerIdentity.load_or_create(keys + "server"), CharacterFile.export_signed(c, owner, content))
+	g.server.wait_for_disk = true
+	var view := WorldView.new()
+	view.setup(content, g.client)
+	(Engine.get_main_loop() as SceneTree).root.add_child(view)
+	for i in 30:
+		g.step()
+	var animal := g.world.creatures._spawn("base:sheep", "surface", Movement.cell_of(g.world.present[c.character_id]["pos"]) + Vector2i(2, 0), {}, 9)
+	animal.owner = c.character_id
+	g.world.creatures.life.offspring(animal)
+	for i in 20:
+		g.step()
+	for i in 3:
+		view.update_view(0.05, 0.05)
+	var sprite: CharacterSprite = view._characters[animal.id]
+	eq(sprite.scale, Vector2(0.6, 0.6), "a stable young size over several frames")
+	var target := {"kind": "entity", "entity": g.client.entities[animal.id]}
+	check(Actions.describe(content, target).contains("детёныш"), "inspection explains its age")
+	g.world.world_time += 72 * Daylight.HOUR_MS
+	g.world.creatures.fed_by(animal, c.character_id)
+	for i in 20:
+		g.step()
+	view.update_view(0.05, 0.05)
+	eq(sprite.scale, Vector2.ONE, "the same sprite grows into an adult")
+	check(not Actions.describe(content, target).contains("детёныш"), "inspection is updated too")
+	view.free()
+	g.close()
+
+
 func test_view_follows_the_client() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	eq(content.errors, PackedStringArray())

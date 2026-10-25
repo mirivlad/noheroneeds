@@ -75,6 +75,27 @@ func test_two_players_join_and_see_each_other() -> void:
 	check(a.chunks.size() >= 9, "ground around arrived: %d chunks" % a.chunks.size())
 
 
+func test_animal_growth_and_hunger_reach_the_client() -> void:
+	var a := _client("owner", _character("Аня"))
+	_run(30, [a])
+	var c := world.creatures._spawn("base:chicken", "surface", Movement.cell_of(_server_pos(a)) + Vector2i.RIGHT, {}, 5)
+	c.owner = a.character_id
+	world.creatures.life.offspring(c)
+	_run(30, [a])
+	if not check(a.entities.has(c.id), "the chick reached the player"):
+		return
+	eq(a.entities[c.id].get("young"), true, "a chick, not an adult")
+	eq(a.entities[c.id].get("hungry"), false)
+	world.world_time += 25 * Daylight.HOUR_MS
+	_run(30, [a])
+	eq(a.entities[c.id].get("hungry"), true, "hunger also changes the existing replica")
+	world.creatures.fed_by(c, a.character_id)
+	world.world_time += 23 * Daylight.HOUR_MS
+	_run(30, [a])
+	eq(a.entities[c.id].get("young"), false, "the same creature grew into an adult")
+	eq(a.entities[c.id].get("hungry"), false, "feeding removed the warning")
+
+
 func test_equipment_reaches_owner_and_observer_under_packet_loss() -> void:
 	net.state_loss = 0.3
 	net.state_duplicate = 0.2

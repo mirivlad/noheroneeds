@@ -1,0 +1,8 @@
+  20 clients, 500 creatures: tick p50 30943 p99 53966 max 174834 us, {"chunks":44.5,"combat":31.8,"creatures":2421.3,"movement":83.7,"network_in":414.2,"prefetch":35.1,"snapshots":3381.2,"storage":36.5}
+    slowest tick: {"chunks":0.1,"combat":0.0,"creatures":154.9,"movement":0.4,"network_in":1.8,"prefetch":0.1,"snapshots":17.2,"storage":0.4}
+  20 clients, 500 creatures: tick p50 27656 p99 41906 max 46079 us, {"chunks":16.6,"combat":29.4,"creatures":2065.2,"movement":95.0,"network_in":374.1,"prefetch":31.8,"snapshots":2988.3,"storage":34.7}
+    slowest tick: {"chunks":0.1,"combat":0.0,"creatures":18.0,"movement":0.7,"network_in":3.2,"prefetch":0.1,"snapshots":23.5,"storage":0.3}
+MEASURE snap20_c500_client_step_avg 7.35 ms (all 20 clients)
+PASS bench_snapshots::bench_20_clients_500_creatures (21513 ms)
+expected engine errors: 0
+1 tests, 0 failed checks, 23.0s

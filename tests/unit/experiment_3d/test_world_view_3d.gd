@@ -194,3 +194,23 @@ func test_natural_rock_shared_edges_and_no_brick_gaps() -> void:
 			for w:Vector3 in vb:
 				if (v - (w+Vector3.RIGHT)).length() < .001: shared += 1
 	check(shared >= 2,"adjacent caps share exact world vertices")
+
+func test_decks_clear_the_substrate_and_bridge_feet_match_top_triangles() -> void:
+	var c := Chunk.new()
+	c.set_cell("ground",0,0,"base:bridge")
+	client.chunks["surface|0|0"] = c
+	var at := Vector2(.25,.25)
+	check(absf(view.elevation(at)-view.surface_elevation(at)-.18)<.0001,"bridge feet stand above water level")
+	var mesh := view.bridge_mesh(Vector2i.ZERO)
+	var vertices := mesh.get_faces()
+	for i in [0,1,2,3,4,5]:
+		var p := vertices[i]
+		var expected := view.corner_height(Vector2i(roundi(p.x+.5),roundi(p.z+.5)))
+		check(absf(p.y+view.surface_elevation(Vector2(.5,.5))-expected)<.0001,"deck top has the same original terrain vertices")
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in 32: view._build_row()
+	var root:Node = view._geometry["surface|0|0"]
+	var ground := root.get_child(0) as MeshInstance3D
+	for p:Vector3 in ground.mesh.get_faces():
+		check(p.y < view.corner_height(Vector2i(roundi(p.x),roundi(p.z)))-.13,"substrate is below decking, no coplanar green stripes")

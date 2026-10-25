@@ -84,6 +84,23 @@ func run() -> void:
 	verify(seam,"actual neighboring ground meshes share positions and normals on chunk edge")
 	verify(view._geometry.size()<=25 and view.pending_chunks()==0,"streaming is bounded and finishes after crossing chunk boundary")
 	await capture("mountain-walking")
+	var bridge := Vector2i(1<<20,0)
+	for dy in range(-1,2):
+		for dx in range(-1,2):
+			for road:Dictionary in world.generator.settlements.roads_of(0,dx,dy):
+				for at:Vector2i in road.get("cells",{}):
+					if world.generator.land_at(at.x,at.y)["what"] in ["water","deep","shallows"] and Vector2(at).length()<Vector2(bridge).length(): bridge=at
+	verify(bridge.x != 1<<20,"original road bridge found over actual generated water")
+	if bridge.x != 1<<20:
+		await move_to(bridge)
+		view.zoom=20
+		view.tilt=49
+		await settle()
+		var p := Vector2(bridge)+Vector2.ONE*.5
+		verify(view._cell_layer(bridge,"ground")=="base:bridge","server's road is rendered as bridge decking")
+		verify(absf(view.elevation(p)-view.surface_elevation(p)-.18)<.001,"bridge feet and deck stand above original water surface")
+		await capture("bridge")
+		print("BRIDGE_CELL " + str(bridge))
 	var report := {"checks":checks,"failures":failures,"adapter":RenderingServer.get_video_adapter_name(),"seed":431}
 	FileAccess.open(output.path_join("interactions.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"\t"))
 	app.quit()

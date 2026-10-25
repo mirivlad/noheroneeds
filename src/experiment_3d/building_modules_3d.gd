@@ -10,8 +10,11 @@ var glass := _material(Color("435d61"))
 var stone := _material(Color("817c70"))
 var tiles: ShaderMaterial
 var rock: ShaderMaterial
+var deck: ShaderMaterial
 
 func _init() -> void:
+	deck = ShaderMaterial.new()
+	deck.shader = load("res://src/experiment_3d/deck.gdshader")
 	rock = ShaderMaterial.new()
 	rock.shader = load("res://src/experiment_3d/rock.gdshader")
 	var image := (load("res://content/base/art/lpc_env/terrain.png") as Texture2D).get_image().get_region(Rect2i(480,96,64,32))

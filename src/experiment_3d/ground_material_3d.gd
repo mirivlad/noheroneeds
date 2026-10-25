@@ -1,7 +1,7 @@
 class_name GroundMaterial3D
 extends RefCounted
 ## Reuse original LPC terrain fills, never modify source artwork.
-const IDS := ["base:grass", "base:dirt", "base:forest_floor", "base:sand", "base:snow", "base:cave_floor", "base:stone_floor", "base:grass_dry", "base:mud", "base:gravel", "base:farmland", "base:moss", "base:water", "base:shallows", "base:deep_water"]
+const IDS := ["base:grass", "base:dirt", "base:forest_floor", "base:sand", "base:snow", "base:cave_floor", "base:stone_floor", "base:grass_dry", "base:mud", "base:gravel", "base:farmland", "base:moss", "base:water", "base:shallows", "base:deep_water", "base:bridge"]
 var atlas: ImageTexture
 var shader := preload("res://src/experiment_3d/ground.gdshader")
 

@@ -85,6 +85,11 @@ func test_lpc_paper_doll_and_equipment_are_reused() -> void:
 	eq(actor.position, Vector3(3, 2, 1))
 	actor.show_actor(Vector3(4, 2, 1), PI / 2, .05, true)
 	eq(actor.doll._dir, 0, "world east seen north from rotated camera")
+	# Remote entities only get a new target on snapshots. Their smoothed
+	# movement must keep the walk cycle playing between those snapshots.
+	for i in 10:
+		actor.show_actor(Vector3(10, 2, 1), 0, .016, false)
+	check(actor.doll._walk > .1, "remote walk continues between snapshots")
 
 func test_ray_uses_viewports_actual_world_and_content_cells_after_rotation() -> void:
 	var chunk := Chunk.new()

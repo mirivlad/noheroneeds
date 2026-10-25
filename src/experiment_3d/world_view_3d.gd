@@ -246,6 +246,10 @@ func _refresh_foundations(changed: Array) -> void:
 	for key: String in _geometry: _queued[key] = true
 
 func elevation(p: Vector2) -> float:
+	var bridge := .18 if client.z >= 0 and _cell_layer(Vector2i(floori(p.x),floori(p.y)), "ground") == "base:bridge" else 0.0
+	return surface_elevation(p) + bridge
+
+func surface_elevation(p: Vector2) -> float:
 	if client.z < 0 or _land == null:
 		return 0.0
 	var c := Vector2i(floori(p.x), floori(p.y))
@@ -304,7 +308,10 @@ func _build_row() -> void:
 		var points: Array[Vector3] = []
 		for d: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
 			var at := cell + d
-			points.append(Vector3(at.x, corner_height(at) + level, at.y))
+			# Keep the substrate below laid floors. Coplanar top faces cause
+			# green stripes/z-fighting through boards and bridge decking.
+			var bed := .14 if ground in ["base:wood_floor", "base:stone_floor", "base:bridge"] else 0.0
+			points.append(Vector3(at.x, corner_height(at) + level - bed, at.y))
 		var rock := c.get_cell("structure", x, y)
 		var color := ground_color(ground)
 		_quad(points, color, {"kind": "ground", "id": ground, "cell": cell, "location": client.location})
@@ -439,18 +446,21 @@ func bridge_mesh(cell: Vector2i) -> Mesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var at := Vector2(cell) + Vector2.ONE * .5
-	for i in 5:
-		var x := -.4 + i * .2
-		var box := BoxMesh.new()
-		box.size = Vector3(.196, .12, 1)
-		var vertices := box.get_faces()
-		for vertex: Vector3 in vertices:
-			vertex.x += x
-			vertex.y -= .06
-			vertex.y += elevation(at + Vector2(vertex.x, vertex.z)) - elevation(at)
-			st.set_normal(Vector3.UP)
-			st.add_vertex(vertex)
-	st.set_material(buildings.wood)
+	var p: Array[Vector3] = []
+	for d:Vector2 in [Vector2.ZERO,Vector2.RIGHT,Vector2.DOWN,Vector2.ONE]:
+		p.append(Vector3(d.x-.5,surface_elevation(Vector2(cell)+d)-surface_elevation(at),d.y-.5))
+	for i in 4: p.append(p[i]-Vector3.UP*.12)
+	# The upper face has exactly the terrain's two triangles, so feet and
+	# deck agree even where a river bends over non-planar cell corners.
+	for face:Array in [[0,1,2,3],[4,6,5,7],[4,5,0,1],[6,2,7,3],[4,0,6,2],[5,7,1,3]]:
+		for tri:Array in [[0,1,2],[1,3,2]]:
+			var normal := (p[face[tri[2]]]-p[face[tri[0]]]).cross(p[face[tri[1]]]-p[face[tri[0]]]).normalized()
+			for j:int in tri:
+				var vertex := p[face[j]]
+				st.set_normal(normal)
+				st.set_uv(Vector2(vertex.x+.5,vertex.z+.5))
+				st.add_vertex(vertex)
+	st.set_material(buildings.deck)
 	return st.commit()
 
 func wall_mask(cell: Vector2i) -> int:

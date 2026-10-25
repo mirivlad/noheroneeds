@@ -1,0 +1,13 @@
+test_create_repeat_update_preserves_primary_dirty_branch (__main__.LauncherTest.test_create_repeat_update_preserves_primary_dirty_branch) ... ok
+test_data_symlink_refused (__main__.LauncherTest.test_data_symlink_refused) ... ok
+test_dirty_experiment_stops_without_overwrite (__main__.LauncherTest.test_dirty_experiment_stops_without_overwrite) ... ok
+test_ignored_user_file_is_not_replaced_by_update (__main__.LauncherTest.test_ignored_user_file_is_not_replaced_by_update) ... ok
+test_local_commits_preserved (__main__.LauncherTest.test_local_commits_preserved) ... ok
+test_missing_branch_does_not_create_worktree (__main__.LauncherTest.test_missing_branch_does_not_create_worktree) ... ok
+test_occupied_directory_preserved (__main__.LauncherTest.test_occupied_directory_preserved) ... ok
+test_wrong_branch_refused (__main__.LauncherTest.test_wrong_branch_refused) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 1.378s
+
+OK

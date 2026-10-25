@@ -1,0 +1,26 @@
+{
+	"adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+	"logical_size": "(960, 540)",
+	"seed": 431,
+	"timings": {
+		"mountain": {
+			"chunks": 25,
+			"objects": 7163,
+			"p95_ms": 16.823,
+			"pending": 0,
+			"seconds_300_frames": 4.961137,
+			"worst_ms": 17.205
+		},
+		"village": {
+			"chunks": 25,
+			"objects": 7275,
+			"p95_ms": 16.837,
+			"pending": 0,
+			"seconds_300_frames": 4.975525,
+			"worst_ms": 17.418
+		}
+	},
+	"weather_seed": 0,
+	"weather_time_ms": 36000000,
+	"window_size": "(1920, 1013)"
+}

@@ -1,0 +1,49 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+PASS real LocalGame server joined
+PASS native Radeon RX 580 device
+PASS existing GL Compatibility renderer
+PASS walking through existing movement prediction and server
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.738,"chunks":8,"fps":35.1752350086764,"location":"surface","objects":2422,"renderer":"gl_compatibility","worst_frame_ms":1065.31}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":17.179,"chunks":19,"fps":59.0130538842294,"location":"surface","objects":5453,"renderer":"gl_compatibility","worst_frame_ms":52.585}
+PASS real client chunks built and retained
+PASS own LPC actor in 3D
+PASS drop item request accepted
+PASS dropped item has a Sprite3D
+PASS pickup returns actual inventory
+PASS generated village dweller received
+PASS existing talk request accepted by generated NPC
+PASS natural tree found in original chunks
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.883,"chunks":18,"fps":55.7417847293151,"location":"surface","objects":5433,"renderer":"gl_compatibility","worst_frame_ms":227.948}
+PASS 3D ray picks natural tree at rotated camera
+PASS existing mouse action resolves 3D tree
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.984,"chunks":25,"fps":59.7985387230421,"location":"surface","objects":7564,"renderer":"gl_compatibility","worst_frame_ms":42.007}
+PASS tree felled by normal server work rules
+PASS changed client chunk replaces 3D tree with stump
+PASS 3D blueprint uses picked cell without 2D roof lift
+PASS existing blueprint mouse clicks build normal door
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.576,"chunks":25,"fps":57.8560737595513,"location":"surface","objects":7565,"renderer":"gl_compatibility","worst_frame_ms":186.801}
+PASS 3D ray picks built door
+PASS existing door use request accepted
+PASS 3D door rebuild sees open state
+PASS existing natural cave transition to depth -1
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":6.88,"chunks":1,"fps":55.3859616895303,"location":"depth:-1","objects":1025,"renderer":"gl_compatibility","worst_frame_ms":110.262}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":9.564,"chunks":11,"fps":59.4063170301277,"location":"depth:-1","objects":11250,"renderer":"gl_compatibility","worst_frame_ms":34.302}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":8.844,"chunks":20,"fps":56.0963450987314,"location":"depth:-1","objects":20450,"renderer":"gl_compatibility","worst_frame_ms":224.635}
+PASS natural mineable cave wall found
+PASS 3D ray picks actual underground rock
+PASS normal pickaxe request mines natural wall: { "ok": true, "thing": "base:rock", "drops": { "base:stone": 1 } }
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.787,"chunks":25,"fps":57.6870825738669,"location":"depth:-1","objects":25567,"renderer":"gl_compatibility","worst_frame_ms":99.192}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":8.869,"chunks":25,"fps":58.065546324209,"location":"depth:-1","objects":25567,"renderer":"gl_compatibility","worst_frame_ms":39.216}
+PASS 3D geometry consumes mined cell update
+PASS mined wall removed from rendered object instances
+PASS existing mine shaft construction on depth -1
+PASS existing shaft transition to depth -2
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":8.057,"chunks":1,"fps":53.4525062900237,"location":"depth:-2","objects":1024,"renderer":"gl_compatibility","worst_frame_ms":113.037}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":9.354,"chunks":9,"fps":59.326278911426,"location":"depth:-2","objects":9206,"renderer":"gl_compatibility","worst_frame_ms":36.02}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":11.579,"chunks":18,"fps":58.2705872412664,"location":"depth:-2","objects":18418,"renderer":"gl_compatibility","worst_frame_ms":38.135}
+PASS return through existing ladder
+PASS return to surface
+PASS mined wall stays absent after save and reopening
+EXPERIMENT_3D_RUNTIME {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","checks":32,"failures":[],"renderer":"gl_compatibility"}

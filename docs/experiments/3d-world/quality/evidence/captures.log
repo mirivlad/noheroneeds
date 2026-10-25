@@ -1,0 +1,11 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.534,"chunks":8,"fps":35.1847070061939,"location":"surface","objects":2422,"renderer":"gl_compatibility","worst_frame_ms":1048.101}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.489,"chunks":17,"fps":58.8737336995803,"location":"surface","objects":4878,"renderer":"gl_compatibility","worst_frame_ms":52.813}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":25,"fps":57.1531447089047,"location":"surface","objects":7275,"renderer":"gl_compatibility","worst_frame_ms":232.926}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":25,"fps":54.0560312386201,"location":"surface","objects":7275,"renderer":"gl_compatibility","worst_frame_ms":226.15}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.27,"chunks":1,"fps":52.3190597637132,"location":"surface","objects":334,"renderer":"gl_compatibility","worst_frame_ms":259.435}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.711,"chunks":16,"fps":59.5751339745471,"location":"surface","objects":4555,"renderer":"gl_compatibility","worst_frame_ms":30.437}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":25,"fps":56.9890626590945,"location":"surface","objects":7163,"renderer":"gl_compatibility","worst_frame_ms":263.551}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":25,"fps":52.941304152557,"location":"surface","objects":7163,"renderer":"gl_compatibility","worst_frame_ms":272.145}

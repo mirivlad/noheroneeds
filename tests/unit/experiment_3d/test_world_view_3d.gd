@@ -22,9 +22,12 @@ func after_each() -> void:
 
 func test_height_is_original_surface_sampler_and_has_shared_edges() -> void:
 	for cell: Vector2i in [Vector2i(0, 0), Vector2i(32, 31), Vector2i(-32, -1), Vector2i(100, 180)]:
-		var expected := (float(view._land.land_at(cell.x, cell.y)["height"]) - Geography.SEA) * 14
-		check(is_equal_approx(view.corner_height(cell), expected), "same geography + original local detail")
+		var expected := view.corner_height(cell)
 		check(is_equal_approx(view.elevation(Vector2(cell)), expected), "either chunk's corner agrees")
+		# The fine detail no longer grows into cliffs with the macro relief.
+		var macro := view._land.geography.sample(Geography.HEIGHT, cell.x, cell.y)
+		var detail := float(view._land.land_at(cell.x, cell.y)["height"]) - macro
+		check(is_equal_approx(view.terrain.natural(cell), macro * TerrainShape3D.RELIEF + detail * TerrainShape3D.GRAIN), "same original geography and grain")
 	var at := Vector2(31.25, -32.5)
 	var cell := Vector2i(floori(at.x), floori(at.y))
 	var a := view.corner_height(cell)
@@ -124,3 +127,70 @@ func test_ray_uses_viewports_actual_world_and_content_cells_after_rotation() -> 
 			var occluded: bool = is_equal_approx(yaw, PI / 2) and target[1] == "base:wood_door"
 			eq(hit.get("cell"), Vector2i(10, 10) if occluded else cell, "visible cell under 3D ray at yaw %f" % yaw)
 			eq(hit.get("id"), "base:oak" if occluded else target[1], "frontmost content under ray")
+
+func test_real_mountain_route_is_volumetric_and_walkable_without_visual_cliffs() -> void:
+	var at := Vector2i(-231, 816)
+	var low := INF
+	var high := -INF
+	var max_step := 0.0
+	for y in range(at.y - 24, at.y + 25):
+		for x in range(at.x - 24, at.x + 25):
+			var h := view.corner_height(Vector2i(x,y))
+			low = minf(low,h)
+			high = maxf(high,h)
+			max_step = maxf(max_step, absf(h - view.corner_height(Vector2i(x+1,y))))
+	check(high - low > 25, "real mountain spans over 25 human-scale metres, old span was 5.84")
+	check(max_step < 1, "passable underlying triangles are ramps, not vertical cliffs")
+	var chunk := view._land.generate(floori(at.x/32.0), floori(at.y/32.0))
+	eq(chunk.get_cell("ground", posmod(at.x,32), posmod(at.y,32)), "base:dirt", "actual original mountain road")
+	eq(chunk.get_cell("structure", posmod(at.x,32), posmod(at.y,32)), "", "road has no server rock obstruction")
+
+func test_house_platform_joints_and_door_hinge() -> void:
+	var rect: Rect2i = view._land.settlements.home_plan()["homes"][0]["rect"]
+	var h := view.corner_height(rect.position)
+	for corner: Vector2i in [rect.position, rect.end, Vector2i(rect.position.x,rect.end.y), Vector2i(rect.end.x,rect.position.y)]:
+		check(is_equal_approx(view.corner_height(corner),h), "level house foundation including chunk boundary")
+	var corner := view.buildings.wall(9).get_aabb()
+	check(corner.size.x >= .5 and corner.size.z >= .5, "corner has two connected arms")
+	var closed := view.buildings.opening(false,false).get_aabb()
+	var opened := view.buildings.opening(false,true).get_aabb()
+	check(closed.size.x > .9 and closed.size.z < .3, "closed leaf lies inside frame")
+	check(opened.end.z > .7 and opened.position.x < -.4, "open leaf rotates around left jamb")
+
+func test_roof_patches_share_ridge_and_preserve_removed_cell() -> void:
+	var rect := Rect2i(0,0,5,4)
+	var a := view.buildings.roof(Vector2i(1,1),rect)
+	var b := view.buildings.roof(Vector2i(2,1),rect)
+	for mesh:Mesh in [a,b,view.buildings.roof(Vector2i(2,2),rect)]:
+		for surface in mesh.get_surface_count():
+			var arrays := mesh.surface_get_arrays(surface)
+			var vertices:PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var normals:PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			for i in range(0,vertices.size(),3):
+				var normal := (vertices[i+2]-vertices[i]).cross(vertices[i+1]-vertices[i]).normalized()
+				check(normal.dot(normals[i])>.99,"roof/gable winding faces outward at both ends")
+	check(a.get_aabb().end.x <= .5001, "patch stops at next live roof cell")
+	check(b.get_aabb().position.x >= -.5001, "neighbor begins at shared edge")
+	check(view.buildings._roof_height(2,rect) == view.buildings._roof_height(3,rect), "symmetrical stable ridge")
+	# Roof is instantiated per server tile, so deleting one cannot be filled
+	# by a grouped prefab over its surviving neighbours.
+	var c := Chunk.new()
+	c.set_cell("ground",1,1,"base:wood_floor")
+	c.set_cell("roof",1,1,"base:thatch_roof")
+	client.chunks[ServerWorld.chunk_key("surface",0,0)] = c
+	eq(view._cell_layer(Vector2i(2,1),"roof"),"", "removed roof stays absent in source adapter")
+
+func test_natural_rock_shared_edges_and_no_brick_gaps() -> void:
+	var c := Vector2i(5,8)
+	var a := RockCells3D.mesh(c, func(_p:Vector2i)->float:return 0, func(_p:Vector2i)->bool:return false, view.buildings.stone)
+	var b := RockCells3D.mesh(c+Vector2i.RIGHT, func(_p:Vector2i)->float:return 0, func(_p:Vector2i)->bool:return false, view.buildings.stone)
+	check(a.get_aabb().size.x == 1 and b.get_aabb().size.x == 1, "blocked rock occupies exact cell width")
+	check(RockCells3D.top(c) != RockCells3D.top(c+Vector2i.RIGHT), "natural uneven cap")
+	var va := a.get_faces()
+	var vb := b.get_faces()
+	var shared := 0
+	for v:Vector3 in va:
+		if absf(v.x-.5) < .001:
+			for w:Vector3 in vb:
+				if (v - (w+Vector3.RIGHT)).length() < .001: shared += 1
+	check(shared >= 2,"adjacent caps share exact world vertices")

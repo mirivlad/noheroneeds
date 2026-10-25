@@ -1,0 +1,71 @@
+{
+	"areas": {
+		"mountain_road": {
+			"cell": [
+				-231,
+				816
+			],
+			"geographic_height": 0.335021786857396,
+			"height_max": 0.573269086703658,
+			"height_min": 0.155918939923868,
+			"max_edge_normalized": 0.0105126816406846,
+			"max_new_edge_m": 0.840917183458807,
+			"max_road_edge_m": 0.676718270583079,
+			"new_vertical_span": 27.9994855880365,
+			"old_vertical_span": 5.84290205491707,
+			"road_cells_in_area": 84
+		},
+		"village": {
+			"cell": [
+				28,
+				1
+			],
+			"geographic_height": 0.0920130163140129,
+			"height_max": 0.120584037792869,
+			"height_min": 0.0462380062008742,
+			"max_edge_normalized": 0.00953346529509871,
+			"max_new_edge_m": 0.379407190289348,
+			"max_road_edge_m": 0.207694700649008,
+			"new_vertical_span": 2.89415640315972,
+			"old_vertical_span": 1.04084444228793,
+			"road_cells_in_area": 89
+		}
+	},
+	"homes": "[{ \"name\": \"Дом пастуха\", \"dweller\": \"base:herder\", \"rect\": [P: (15, -4), S: (5, 4)], \"door\": (17, -1), \"bed\": (16, -3) }, { \"name\": \"Дом пастуха\", \"dweller\": \"base:herder\", \"rect\": [P: (22, -4), S: (5, 4)], \"door\": (24, -1), \"bed\": (23, -3) }, { \"name\": \"Дом\", \"dweller\": \"base:farmer\", \"rect\": [P: (29, -4), S: (5, 4)], \"door\": (31, -1), \"bed\": (30, -3) }, { \"name\": \"Дом\", \"dweller\": \"base:farmer\", \"rect\": [P: (36, -4), S: (5, 4)], \"door\": (38, -1), \"bed\": (37, -3) }, { \"name\": \"Дом пастуха\", \"dweller\": \"base:herder\", \"rect\": [P: (26, 4), S: (5, 4)], \"door\": (28, 7), \"bed\": (27, 5) }]",
+	"models": {
+		"base:thatch_roof": {
+			"catalog_size": [
+				1.0,
+				0.5,
+				1.0
+			],
+			"source_bounds": "[P: (-2.756538, -0.515719, -2.739908), S: (5.513076, 4.249393, 5.561475)]"
+		},
+		"base:wood_door": {
+			"catalog_size": [
+				0.9,
+				1.9,
+				0.18
+			],
+			"source_bounds": "[P: (-0.046263, 0.035225, -0.057558), S: (1.117866, 2.09972, 0.1207)]"
+		},
+		"base:wood_wall": {
+			"catalog_size": [
+				1.0,
+				2.0,
+				0.32
+			],
+			"source_bounds": "[P: (-1.0, -0.002096, -0.314035), S: (2.0, 3.124785, 0.406482)]"
+		},
+		"base:wood_window": {
+			"catalog_size": [
+				1.0,
+				2.0,
+				0.32
+			],
+			"source_bounds": "[P: (-1.0, 0.0, -0.314035), S: (2.0, 3.122689, 0.406482)]"
+		}
+	},
+	"road_cells_inspected": 26039,
+	"seed": 431
+}

@@ -17,7 +17,7 @@ var target := {}
 func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary, hit: Dictionary) -> void:
 	looks = appearance.duplicate(true)
 	target = hit
-	viewport.size = Vector2i(96, 96)
+	viewport.size = Vector2i(192, 192)
 	viewport.transparent_bg = true
 	viewport.disable_3d = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -25,13 +25,19 @@ func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary
 	add_child(viewport)
 	doll = Art.character_sprite(registry, visual, appearance)
 	viewport.add_child(doll)
-	doll.position = Vector2(48, 76)
+	doll.scale = Vector2.ONE * 2
+	doll.position = Vector2(96, 152)
 	picture.texture = viewport.get_texture()
-	picture.pixel_size = 1.0 / WorldView.CELL
-	picture.offset = Vector2(0, 28)
+	picture.pixel_size = 1.0 / (WorldView.CELL * 2)
+	picture.offset = Vector2(0, 56)
 	picture.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	picture.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	picture.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	picture.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var paper := ShaderMaterial.new()
+	paper.shader = preload("res://src/experiment_3d/paper_doll.gdshader")
+	paper.set_shader_parameter("paper", viewport.get_texture())
+	picture.material_override = paper
 	add_child(picture)
 	var box := BoxShape3D.new()
 	box.size = Vector3(.7, 1.6, .7)
@@ -52,4 +58,4 @@ func show_actor(at: Vector3, yaw: float, delta: float, exact: bool) -> void:
 	# Rotate the animation's apparent movement, not the authoritative position.
 	doll._face(facing.rotated(-yaw))
 	doll.show_at(animation_at, delta, true)
-	doll.position = Vector2(48, 76)
+	doll.position = Vector2(96, 152)

@@ -42,13 +42,13 @@ func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary
 	add_child(body)
 
 func show_actor(at: Vector3, yaw: float, delta: float, exact: bool) -> void:
-	var horizontal := Vector2(at.x, at.z)
+	position = at if exact else position.lerp(at, minf(1, delta * 12))
+	var horizontal := Vector2(position.x, position.z)
 	if placed and horizontal.distance_squared_to(previous) > .00001:
 		facing = (horizontal - previous).normalized()
 		animation_at += (horizontal - previous).rotated(-yaw) * WorldView.CELL
 	previous = horizontal
 	placed = true
-	position = at if exact else position.lerp(at, minf(1, delta * 12))
 	# Rotate the animation's apparent movement, not the authoritative position.
 	doll._face(facing.rotated(-yaw))
 	doll.show_at(animation_at, delta, true)

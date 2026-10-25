@@ -249,6 +249,7 @@ func test_a_bucket_is_filled_poured_milked_and_drunk() -> void:
 	var cow := w.creatures._spawn("base:cow", "surface", Vector2i(3, 4), {}, 3)
 	eq(_req(a, {"type": "fill", "creature": cow.id, "item": "base:bucket"}).get("reason"), "not_yours", "a wild cow")
 	cow.owner = a
+	cow.ate_at = w.world_time - 25 * Daylight.HOUR_MS
 	eq(_req(a, {"type": "fill", "creature": cow.id, "item": "base:bucket"}).get("reason"), "hungry_animal", "feed before milking")
 	w.creatures.fed_by(cow, a)
 	w.creatures.life.offspring(cow)

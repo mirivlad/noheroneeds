@@ -407,6 +407,7 @@ func remove(id: String) -> void:
 	var c: Creature = creatures.get(id)
 	if c == null:
 		return
+	life.drop(id)
 	(_by_chunk.get(_chunk_of(c), {}) as Dictionary).erase(id)
 	(_by_kind.get(_chunk_of(c), {}).get(c.kind, {}) as Dictionary).erase(id)
 	creatures.erase(id)
@@ -448,6 +449,7 @@ func kin_struck(c: Creature, who: String, at: Vector2i) -> void:
 ## The chunk leaves memory: so do its creatures (they are saved).
 func drop_chunk(key: String) -> void:
 	for id: String in (_by_chunk.get(key, {}) as Dictionary):
+		life.drop(id)
 		creatures.erase(id)
 		_movers.erase(id)
 		_last_saved.erase(id)
@@ -933,6 +935,8 @@ func _tame(c: Creature, def: Dictionary) -> void:
 		return
 	if c.state == "follow":
 		_home_here(c)  # led here: it stays here
+	if life.forage(c, def):
+		return
 	if Daylight.is_night(world.world_time) and world.has_daylight(c.location):
 		if c.target == Creature.NO_TARGET:
 			_go(c, "rest", Creature.NO_TARGET, false)
@@ -960,7 +964,8 @@ func _holds_its_food(pid: String, def: Dictionary) -> bool:
 
 
 func fed_lately(c: Creature) -> bool:
-	return c.fed_at >= 0 and world.world_time - c.fed_at <= int(FED_HOURS * Daylight.HOUR_MS)
+	var last := maxi(c.fed_at, c.ate_at)
+	return last >= 0 and world.world_time - last <= int(FED_HOURS * Daylight.HOUR_MS)
 
 
 ## Its produce (an egg, wool) on the ground where it is, every so often.
@@ -1192,7 +1197,7 @@ func _work(c: Creature, spot: Vector2i, prof: Dictionary) -> void:
 					var a := get_creature(id)
 					if a and a.owner == String(plan["id"]) and not fed_lately(a):
 						a.fed_at = world.world_time
-						a.changed()
+						life.ate(a)
 
 
 func _toward_water(c: Creature) -> Vector2:

@@ -167,6 +167,7 @@ func test_young_do_not_breed_or_produce_then_grow_into_adults() -> void:
 
 
 func test_unfed_livestock_hungers_and_catches_up_after_unload() -> void:
+	_field(Vector2i(5, 5), "base:sand")
 	var c := _spawn("base:sheep")
 	c.owner = "keeper"
 	c.fed_at = w.world_time
@@ -182,6 +183,76 @@ func test_unfed_livestock_hungers_and_catches_up_after_unload() -> void:
 	w.chunk(Levels.SURFACE, 5, 5)
 	_ticks(20)
 	check(not w.creatures.has(id), "neglect is caught up on return; starvation is lethal")
+
+
+func test_livestock_and_young_can_graze_without_manual_feeding() -> void:
+	for kind: String in ["base:sheep", "base:cow", "base:chicken"]:
+		var c := _spawn(kind)
+		c.owner = "keeper"
+		w.creatures.life.offspring(c)
+		_later(30)
+		_ticks(25)
+		check(not w.creatures.life.hungry(c), "%s found its own food" % kind)
+		check(w.world_time - c.ate_at < Daylight.HOUR_MS, "a real new meal: %s" % kind)
+		eq(c.fed_at, -1, "grazing does not count as hand feeding")
+		check(w.creatures.fed_lately(c), "self feeding supports produce as well")
+		var id := c.id
+		var ate := c.ate_at
+		w.advance_time()
+		w.close()
+		w = ServerWorld.open(db, content)
+		w.chunk(Levels.SURFACE, 5, 5)
+		eq(w.creatures.get_creature(id).ate_at, ate, "self feeding survives reload")
+		w.creatures.remove(id)
+
+
+func test_a_fence_blocks_food_but_a_route_around_a_corner_reaches_it() -> void:
+	_field(Vector2i(5, 5), "base:sand")
+	var c := _spawn("base:sheep")
+	c.owner = "keeper"
+	_later(30)
+	var ch := w.chunk(Levels.SURFACE, 5, 5)
+	# A small empty pen, with grass and dropped feed on the other side.
+	for y in range(168, 173):
+		for x in range(168, 173):
+			if x in [168, 172] or y in [168, 172]:
+				ch.set_cell("structure", x & 31, y & 31, "base:wood_fence")
+	ch.set_cell("ground", 173 & 31, 170 & 31, "base:grass")
+	var feed := w.place_item(Levels.SURFACE, Vector2i(173, 170) * Movement.UNIT + Vector2i(128, 128), "base:wheat", 2)
+	w._changed(ServerWorld.chunk_key(Levels.SURFACE, 5, 5))
+	_ticks(40)
+	check(w.creatures.life.hungry(c), "no eating through a fence")
+	check(w.items.has(feed), "unreachable feed stays there")
+	# The exit is to the north, not a straight route towards the food.
+	ch.set_cell("structure", 170 & 31, 168 & 31, "")
+	w._changed(ServerWorld.chunk_key(Levels.SURFACE, 5, 5))
+	for i in 300:
+		_ticks(1)
+		if not w.creatures.life.hungry(c):
+			break
+	check(not w.creatures.life.hungry(c), "walked around the corner and ate")
+	eq(c.cell(), Vector2i(173, 170), "the animal actually reached the feed")
+	check(not w.items.has(feed), "ate from the stack")
+	var left := w.items.values().filter(func(it: Dictionary) -> bool: return it["item"] == "base:wheat")
+	eq(left.size(), 1)
+	eq(left[0]["count"], 1)
+
+
+func test_empty_and_crowded_pasture_cannot_feed_an_unlimited_herd() -> void:
+	_field(Vector2i(5, 5), "base:sand")
+	var a := _spawn("base:sheep")
+	var b := _spawn("base:sheep", HERE + Vector2i.RIGHT)
+	for c: Creature in [a, b]:
+		c.owner = "keeper"
+	_later(30)
+	_ticks(20)
+	check(w.creatures.life.hungry(a) and w.creatures.life.hungry(b), "empty ground feeds neither animal")
+	var ch := w.chunk(Levels.SURFACE, 5, 5)
+	ch.set_cell("ground", HERE.x & 31, HERE.y & 31, "base:grass")
+	w._changed(ServerWorld.chunk_key(Levels.SURFACE, 5, 5))
+	_ticks(80)
+	eq([a, b].filter(func(c: Creature) -> bool: return not w.creatures.life.hungry(c)).size(), 1,
+		"one patch is shared, not counted as a full meal for every animal")
 
 
 func test_a_hunter_eats_real_prey_and_leaves_a_fed_herd_alone() -> void:

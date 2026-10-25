@@ -81,6 +81,13 @@ func test_animal_growth_and_hunger_reach_the_client() -> void:
 	var c := world.creatures._spawn("base:chicken", "surface", Movement.cell_of(_server_pos(a)) + Vector2i.RIGHT, {}, 5)
 	c.owner = a.character_id
 	world.creatures.life.offspring(c)
+	# No pasture in this hunger-replication fixture.
+	for y in range(c.home.y - 12, c.home.y + 13):
+		for x in range(c.home.x - 12, c.home.x + 13):
+			var ch := world.chunk("surface", x >> 5, y >> 5)
+			ch.set_cell("ground", x & 31, y & 31, "base:sand")
+			ch.set_cell("cover", x & 31, y & 31, "")
+			world._changed(ServerWorld.chunk_key("surface", x >> 5, y >> 5))
 	_run(30, [a])
 	if not check(a.entities.has(c.id), "the chick reached the player"):
 		return

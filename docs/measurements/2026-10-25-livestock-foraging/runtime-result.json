@@ -1,0 +1,55 @@
+{
+  "prepared_time": 907200000,
+  "original_meal": 817200000,
+  "pasture": {
+    "grazer": {
+      "ate_at": 907211400,
+      "fed_at": -1,
+      "state": "wander",
+      "x": -1142,
+      "y": -303,
+      "health": 2
+    },
+    "penned": {
+      "ate_at": 817200000,
+      "fed_at": -1,
+      "state": "graze",
+      "x": 2136,
+      "y": 1137,
+      "health": 8
+    },
+    "seeker": {
+      "ate_at": 907215840,
+      "fed_at": -1,
+      "state": "wander",
+      "x": 53,
+      "y": -871,
+      "health": 8
+    }
+  },
+  "feed_before": {
+    "ate_at": 817200000,
+    "fed_at": -1,
+    "state": "wander",
+    "x": 53,
+    "y": -871,
+    "health": 8
+  },
+  "feed_after": {
+    "ate_at": 907278720,
+    "fed_at": 907278720,
+    "state": "eat",
+    "x": 108,
+    "y": 84,
+    "health": 8
+  },
+  "remaining_feed": [
+    {
+      "count": 2,
+      "id": "84fd2ab1-d705-4ffe-9bef-8fb342915195",
+      "item": "base:wheat",
+      "x": 128,
+      "y": 128
+    }
+  ]
+}

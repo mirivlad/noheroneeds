@@ -1,0 +1,78 @@
+"""Reduce supersampled renders to sprite pixels (python3 + Pillow + numpy).
+
+Each SCALE x SCALE block becomes one pixel: opaque when at least half of it is
+covered, coloured with the most frequent opaque colour of the block, so only
+the palette colours of the toon materials survive (no blended in-between tones).
+A one-pixel outline in a darkened colour of the neighbouring pixel is drawn
+around the silhouette, as in Ragnarok Online sprites.
+
+Usage: python3 pixelate.py SCALE IN.png... --out DIR [--no-outline]
+"""
+import argparse
+import os
+
+import numpy as np
+from PIL import Image
+
+OUTLINE_DARKEN = 0.42
+# Drawn lines (eyes, brows) are thin: a dark colour counts this many times over.
+LINE_LUMA = 80
+LINE_WEIGHT = 4.0
+
+
+def reduce(img, scale):
+	a = np.asarray(img.convert("RGBA"), dtype=np.uint8)
+	h, w = a.shape[0] // scale, a.shape[1] // scale
+	blocks = a[:h * scale, :w * scale].reshape(h, scale, w, scale, 4).transpose(0, 2, 1, 3, 4).reshape(h, w, -1, 4)
+	opaque = blocks[..., 3] >= 128
+	out = np.zeros((h, w, 4), np.uint8)
+	keys = (blocks[..., 0].astype(np.int64) << 16) | (blocks[..., 1].astype(np.int64) << 8) | blocks[..., 2]
+	cover = opaque.mean(axis=2) >= 0.5
+	lum = blocks[..., 0] * 0.3 + blocks[..., 1] * 0.59 + blocks[..., 2] * 0.11
+	weight = np.where(lum < LINE_LUMA, LINE_WEIGHT, 1.0)
+	for y, x in zip(*np.nonzero(cover)):
+		sel = opaque[y, x]
+		vals, inv = np.unique(keys[y, x][sel], return_inverse=True)
+		c = int(vals[np.argmax(np.bincount(inv, weights=weight[y, x][sel]))])
+		out[y, x] = (c >> 16, (c >> 8) & 255, c & 255, 255)
+	return out
+
+
+def outline(px):
+	solid = px[..., 3] > 0
+	h, w = solid.shape
+	out = px.copy()
+	acc = np.zeros((h, w, 3))
+	n = np.zeros((h, w))
+	for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+		shifted = np.zeros_like(solid)
+		col = np.zeros((h, w, 3))
+		ys, yd = slice(max(dy, 0), h + min(dy, 0)), slice(max(-dy, 0), h + min(-dy, 0))
+		xs, xd = slice(max(dx, 0), w + min(dx, 0)), slice(max(-dx, 0), w + min(-dx, 0))
+		shifted[yd, xd] = solid[ys, xs]
+		col[yd, xd] = px[ys, xs, :3]
+		acc += col * shifted[..., None]
+		n += shifted
+	edge = (~solid) & (n > 0)
+	out[edge, :3] = (acc[edge] / n[edge, None] * OUTLINE_DARKEN).astype(np.uint8)
+	out[edge, 3] = 255
+	return out
+
+
+def main():
+	ap = argparse.ArgumentParser()
+	ap.add_argument("scale", type=int)
+	ap.add_argument("inputs", nargs="+")
+	ap.add_argument("--out", required=True)
+	ap.add_argument("--no-outline", action="store_true")
+	a = ap.parse_args()
+	os.makedirs(a.out, exist_ok=True)
+	for path in a.inputs:
+		px = reduce(Image.open(path), a.scale)
+		if not a.no_outline:
+			px = outline(px)
+		Image.fromarray(px, "RGBA").save(os.path.join(a.out, os.path.basename(path)))
+
+
+if __name__ == "__main__":
+	main()

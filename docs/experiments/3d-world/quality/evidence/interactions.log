@@ -1,0 +1,32 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+PASS actual server world uses seed 431
+PASS player lays real 5x4 floor through server requests
+PASS real roof part built at -1,-1
+PASS real roof part built at 0,-1
+PASS real roof part built at 1,-1
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.775,"chunks":5,"fps":35.3322196355984,"location":"surface","objects":1586,"renderer":"gl_compatibility","worst_frame_ms":1067.934}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":6.501,"chunks":16,"fps":59.4114111497395,"location":"surface","objects":4566,"renderer":"gl_compatibility","worst_frame_ms":48.985}
+PASS player roof uses live floor footprint across negative chunk border
+PASS player foundation is level across four server chunks
+PASS normal dismantle removes the selected roof tile
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.534,"chunks":25,"fps":57.5211380595513,"location":"surface","objects":7288,"renderer":"gl_compatibility","worst_frame_ms":211.567}
+PASS removed roof tile has no rendered patch
+PASS neighboring roof patches survive removal
+PASS removal keeps surviving ridge geometry stable
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.197,"chunks":9,"fps":50.5521814782873,"location":"surface","objects":2611,"renderer":"gl_compatibility","worst_frame_ms":443.79}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":8.256,"chunks":24,"fps":59.3827754321581,"location":"surface","objects":6892,"renderer":"gl_compatibility","worst_frame_ms":33.807}
+PASS original mountain road cell is server-passable
+MOUNTAIN_WALK { "direction": (0, 1), "start": (-59008, 209024), "end": (-59008, 210044) }
+PASS real server movement along sloped mountain road
+PASS own character and interpolated NPC/animal feet stay on rendered triangles
+PASS actual neighboring ground meshes share positions and normals on chunk edge
+PASS streaming is bounded and finishes after crossing chunk boundary
+PASS original road bridge found over actual generated water
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.598,"chunks":1,"fps":44.459125835776,"location":"surface","objects":205,"renderer":"gl_compatibility","worst_frame_ms":895.732}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.222,"chunks":13,"fps":59.7924603700555,"location":"surface","objects":2805,"renderer":"gl_compatibility","worst_frame_ms":28.14}
+PASS server's road is rendered as bridge decking
+PASS bridge feet and deck stand above original water surface
+BRIDGE_CELL (34, 168)
+QUALITY_INTERACTIONS {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","checks":19,"failures":[],"seed":431}

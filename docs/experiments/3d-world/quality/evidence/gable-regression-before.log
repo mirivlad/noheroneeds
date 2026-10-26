@@ -1,0 +1,13 @@
+FAIL test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell (3070 ms)
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+    - test_world_view_3d::test_roof_patches_share_ridge_and_preserve_removed_cell: roof/gable winding faces outward at both ends
+expected engine errors: 0
+1 tests, 10 failed checks, 4.0s

@@ -1,0 +1,146 @@
+[
+  {
+    "name": "human_m-0",
+    "mask_difference": 0,
+    "max_alpha_error": 0,
+    "max_rgb_error_255": 2,
+    "reference_bounds": [
+      81,
+      103,
+      111,
+      152
+    ],
+    "actual_bounds": [
+      81,
+      103,
+      111,
+      152
+    ]
+  },
+  {
+    "name": "human_m-1",
+    "mask_difference": 0,
+    "max_alpha_error": 0,
+    "max_rgb_error_255": 2,
+    "reference_bounds": [
+      83,
+      103,
+      106,
+      152
+    ],
+    "actual_bounds": [
+      83,
+      103,
+      106,
+      152
+    ]
+  },
+  {
+    "name": "human_m-2",
+    "mask_difference": 0,
+    "max_alpha_error": 0,
+    "max_rgb_error_255": 2,
+    "reference_bounds": [
+      81,
+      105,
+      111,
+      152
+    ],
+    "actual_bounds": [
+      81,
+      105,
+      111,
+      152
+    ]
+  },
+  {
+    "name": "human_m-3",
+    "mask_difference": 0,
+    "max_alpha_error": 0,
+    "max_rgb_error_255": 2,
+    "reference_bounds": [
+      86,
+      103,
+      109,
+      152
+    ],
+    "actual_bounds": [
+      86,
+      103,
+      109,
+      152
+    ]
+  },
+  {
+    "name": "sheep-0",
+    "mask_difference": 0,
+    "max_alpha_error": 0,
+    "max_rgb_error_255": 0,
+    "reference_bounds": [
+      82,
+      112,
+      109,
+      153
+    ],
+    "actual_bounds": [
+      82,
+      112,
+      109,
+      153
+    ]
+  },
+  {
+    "name": "sheep-1",
+    "mask_difference": 0,
+    "max_alpha_error": 0,
+    "max_rgb_error_255": 0,
+    "reference_bounds": [
+      74,
+      108,
+      123,
+      146
+    ],
+    "actual_bounds": [
+      74,
+      108,
+      123,
+      146
+    ]
+  },
+  {
+    "name": "sheep-2",
+    "mask_difference": 0,
+    "max_alpha_error": 0,
+    "max_rgb_error_255": 0,
+    "reference_bounds": [
+      82,
+      104,
+      109,
+      153
+    ],
+    "actual_bounds": [
+      82,
+      104,
+      109,
+      153
+    ]
+  },
+  {
+    "name": "sheep-3",
+    "mask_difference": 0,
+    "max_alpha_error": 0,
+    "max_rgb_error_255": 0,
+    "reference_bounds": [
+      69,
+      108,
+      118,
+      146
+    ],
+    "actual_bounds": [
+      69,
+      108,
+      118,
+      146
+    ]
+  }
+]

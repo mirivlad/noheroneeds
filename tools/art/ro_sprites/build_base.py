@@ -52,6 +52,7 @@ TRUNKS_BELOW_LEGS = 0.10
 TRUNKS_ABOVE_HIPS = 0.03
 # The eyes look this far outwards from the face direction (for how much of each shows).
 EYE_SPLAY = 25
+GRIP_SLANT = 22
 
 
 def main():
@@ -80,6 +81,7 @@ def main():
 	close_holes(face)
 	flatten_face(face, layout)
 	face_anchors(arm, face, layout)
+	grips(arm)
 	for o, n in ((body, 150), (face, 30), (hair, 10)):
 		soft_normals(o, n)
 	trunks(body, arm)
@@ -253,6 +255,27 @@ def face_anchors(arm, face, layout):
 		x = 0.0 if name == "mouth" else c[0]
 		e.matrix_world = Matrix.Translation((x, surface(x, c[2]), c[2])) @ Matrix.Rotation(math.radians(-turn), 4, "Z")
 		layout[name] = list(e.matrix_world.to_translation())
+
+
+def grips(arm):
+	"""Empties grip_l / grip_r in the middle of each fist, parented to the hand: their local +Y
+	runs along a held handle and points out on the thumb side (forward when the arm hangs).
+	A handle crosses the palm slantwise, from the base of the little finger to between
+	thumb and index, so the axis leans GRIP_SLANT degrees towards the fingers."""
+	for s in ("L", "R"):
+		bones = arm.data.bones
+		hand = bones[f"J_Bip_{s}_Hand"].head_local
+		knuckle = bones[f"J_Bip_{s}_Middle1"].head_local
+		centre = knuckle - (knuckle - hand) * 0.1 + Vector((0, 0.005, -0.028))
+		e = bpy.data.objects.new("grip_" + s.lower(), None)
+		e.empty_display_size = 0.05
+		e.empty_display_type = "ARROWS"
+		bpy.context.scene.collection.objects.link(e)
+		e.parent = arm
+		e.parent_type = "BONE"
+		e.parent_bone = f"J_Bip_{s}_Hand"
+		lean = GRIP_SLANT if s == "L" else -GRIP_SLANT  # the fingers point to -X on the left
+		e.matrix_world = Matrix.Translation(centre) @ Matrix.Rotation(math.radians(lean), 4, "Z")
 
 
 def soft_normals(obj, iterations):

@@ -67,14 +67,15 @@ def main():
 	ap.add_argument("--out", required=True)
 	ap.add_argument("--onto")
 	a = ap.parse_args()
-	skin = {pal.rgb(c) for _, c in pal.SKIN}
+	skin = {(r << 16) | (g << 8) | b for r, g, b in (pal.rgb(c) for _, c in pal.SKIN)}
 	os.makedirs(a.out, exist_ok=True)
 	if a.onto:
 		os.makedirs(a.onto, exist_ok=True)
 	for frame, anchors in json.load(open(a.anchors)).items():
 		base = np.asarray(Image.open(os.path.join(a.sprites, frame + ".png")).convert("RGBA")).copy()
 		layer = draw_face((base.shape[1], base.shape[0]), anchors)
-		on_skin = np.array([[tuple(p[:3]) in skin and p[3] for p in row] for row in base], bool)
+		key = (base[..., 0].astype(np.int32) << 16) | (base[..., 1].astype(np.int32) << 8) | base[..., 2]
+		on_skin = np.isin(key, list(skin)) & (base[..., 3] > 0)
 		layer[~on_skin] = 0
 		Image.fromarray(layer, "RGBA").save(os.path.join(a.out, frame + ".png"))
 		if a.onto:

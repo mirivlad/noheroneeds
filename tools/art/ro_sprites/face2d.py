@@ -1,11 +1,12 @@
 """Draw the face in pixels at the projected face anchors (python3 + Pillow).
 
 Ragnarok Online faces are drawn, not modelled: a few pixels of lid line, iris,
-highlight and sclera. render_dirs.py writes where the eyes and the mouth land
+highlight and sclera. render.py writes where the eyes and the mouth land
 in every frame and how far each turns from the viewer; an eye looking at the
 viewer gets the full template, one turned away gets the narrow one, and one
 turned further (or covered by the body) is not drawn. Face pixels go only on
-skin, so a hair layer rendered with the body keeps its bangs over the eyes.
+skin; bangs and headwear, layers of their own, cover them where they are nearer
+(compose.py).
 
 The face is written as its own layer (FACE_DIR/<frame>.png); --onto writes
 the sprites with the face drawn on them as well.

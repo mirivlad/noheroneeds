@@ -6,6 +6,12 @@ the palette colours of the toon materials survive (no blended in-between tones).
 A one-pixel outline in a darkened colour of the neighbouring pixel is drawn
 around the silhouette, as in Ragnarok Online sprites.
 
+A depth map next to a frame (IN.depth.png, 16-bit grey at any multiple of the
+sprite size, nearer brighter) is reduced along: each pixel takes the nearest
+depth of its block, and pixels the colour has but the depth missed (edges, the
+outline) take the nearest depth around them. A frame whose pixels touch the
+edge of the cell is reported: something is cut off.
+
 Usage: python3 pixelate.py SCALE IN.png... --out DIR [--no-outline]   (non-PNG inputs are skipped)
 """
 import argparse
@@ -60,6 +66,27 @@ def outline(px):
 	return out
 
 
+def reduce_depth(img, size):
+	d = np.asarray(img).astype(np.int64)
+	k = d.shape[0] // size
+	d = d[:size * k, :size * k].reshape(size, k, size, k).max(axis=(1, 3))
+	return d
+
+
+def fill_depth(depth, solid, rounds=3):
+	"""Give pixels of the colour that have no depth the nearest depth around them."""
+	for _ in range(rounds):
+		missing = solid & (depth == 0)
+		if not missing.any():
+			break
+		near = depth.copy()
+		for dy in (-1, 0, 1):
+			for dx in (-1, 0, 1):
+				near = np.maximum(near, np.roll(np.roll(depth, dy, 0), dx, 1))
+		depth = np.where(missing, near, depth)
+	return np.where(solid, depth, 0)
+
+
 def main():
 	ap = argparse.ArgumentParser()
 	ap.add_argument("scale", type=int)
@@ -69,7 +96,11 @@ def main():
 	a = ap.parse_args()
 	os.makedirs(a.out, exist_ok=True)
 	with Pool(min(8, os.cpu_count() or 1)) as pool:
-		pool.map(one, [(p, a.scale, a.out, not a.no_outline) for p in a.inputs if p.endswith(".png")])
+		jobs = [(p, a.scale, a.out, not a.no_outline) for p in a.inputs
+			if p.endswith(".png") and not p.endswith(".depth.png")]
+		for clipped in pool.map(one, jobs):
+			if clipped:
+				print("cut off at the cell edge:", clipped)
 
 
 def one(job):
@@ -77,7 +108,14 @@ def one(job):
 	px = reduce(Image.open(path), scale)
 	if line:
 		px = outline(px)
-	Image.fromarray(px, "RGBA").save(os.path.join(out, os.path.basename(path)))
+	name = os.path.basename(path)
+	Image.fromarray(px, "RGBA").save(os.path.join(out, name))
+	depth_path = path[:-4] + ".depth.png"
+	if os.path.exists(depth_path):
+		d = fill_depth(reduce_depth(Image.open(depth_path), px.shape[0]), px[..., 3] > 0)
+		Image.fromarray(d.astype(np.uint16)).save(os.path.join(out, name[:-4] + ".depth.png"))
+	solid = px[..., 3] > 0
+	return name if solid[0].any() or solid[-1].any() or solid[:, 0].any() or solid[:, -1].any() else None
 
 
 if __name__ == "__main__":

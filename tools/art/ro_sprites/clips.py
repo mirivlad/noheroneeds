@@ -83,7 +83,9 @@ def walk(t):
 
 
 def run(t):
-	return gait(t, stride=38, knee=85, arm=38, elbow=70, lean=14, twist=8, ankle=16)
+	out = gait(t, stride=38, knee=85, arm=38, elbow=70, lean=14, twist=8, ankle=16)
+	out["cape"] = 4 * math.sin(4 * math.pi * t)  # a cloak streams back and flaps twice a cycle
+	return out
 
 
 # --- poses and reactions ------------------------------------------------------
@@ -155,12 +157,13 @@ def chop(t):
 
 
 def thrust(t):
-	"""Spear: held low and level, drawn back, driven forward on a straight arm, the left hand guiding."""
-	ready = {"R_arm_fwd": 12, "R_elbow": 15, "L_arm_fwd": 30, "L_arm_in": 20, "L_elbow": 50}
+	"""Spear or hoe: held low and level, drawn back, driven forward on a straight arm; the left
+	hand holds the shaft behind the right one (L_hold) and slides along it."""
+	ready = {"R_arm_fwd": 12, "R_elbow": 15, "L_arm_fwd": 30, "L_arm_in": 20, "L_elbow": 50, "L_hold": -0.4}
 	stance = {"L_hip": 18, "L_knee": 12, "R_hip": -10, "R_knee": 8}
-	back = {**stance, "chest_turn": -20, "R_arm_fwd": -22, "R_arm_down": 70, "R_elbow": 20, "R_wrist_side": 25,
+	back = {**stance, "L_hold": -0.35, "chest_turn": -20, "R_arm_fwd": -22, "R_arm_down": 70, "R_elbow": 20, "R_wrist_side": 25,
 		"L_arm_fwd": 45, "L_arm_in": 25, "L_elbow": 55}
-	out = {**stance, "L_hip": 26, "L_knee": 22, "spine_bend": 10, "chest_turn": 22, "body_y": 0.05,
+	out = {**stance, "L_hold": -0.5, "L_hip": 26, "L_knee": 22, "spine_bend": 10, "chest_turn": 22, "body_y": 0.05,
 		"R_arm_fwd": 70, "R_arm_down": 70, "R_arm_in": 10, "R_elbow": 5, "R_wrist_side": -35,
 		"L_arm_fwd": 55, "L_arm_in": 25, "L_elbow": 30}
 	return keyed([(0.0, ready), (0.3, back), (0.55, out), (0.75, out), (1.0, ready)], t)

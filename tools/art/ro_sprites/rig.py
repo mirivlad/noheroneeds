@@ -21,6 +21,10 @@ Channels (s = L or R, the character's own left and right):
   s_fist         0 open hand .. 1 loose fist
   s_hip          + thigh forward;  s_hip_out  + outwards;  s_hip_twist  + toes out
   s_knee         + bends;  s_ankle  + toes up;  s_ankle_roll  + sole outwards
+  L_hold         two-hand grip: when not 0, the left fist goes onto the right hand's
+                 shaft this many metres along the grip axis (negative: behind the fist)
+  cape           extra backward swing of a cloak (degrees; it already hangs clear of
+                 the legs and of a forward bend)
 """
 import math
 
@@ -70,7 +74,7 @@ def _joints():
 
 
 JOINTS = _joints()
-CHANNELS = {j[0] for j in JOINTS} | {"body_x", "body_y", "body_z"} | {s + "_fist" for s in SIDES}
+CHANNELS = {j[0] for j in JOINTS} | {"body_x", "body_y", "body_z", "L_hold", "cape"} | {s + "_fist" for s in SIDES}
 
 def _rotate(arm, bone, axis, degrees, frame):
 	pb = arm.pose.bones[bone]
@@ -115,6 +119,10 @@ def pose(arm, values, ground_mesh=None):
 			_rotate(arm, bone, axis, v * sign, frame)
 		if name.endswith("_wrist_side") and values.get(name[0] + "_fist"):
 			_fist(arm, name[0], values[name[0] + "_fist"])
+	if values.get("L_hold"):
+		_hold(arm, "L", values["L_hold"])
+	if "Cape1" in arm.pose.bones:
+		_cape(arm, values)
 	if ground_mesh is not None:
 		low = lowest(ground_mesh)
 		hips.matrix = Matrix.Translation((0, 0, -low)) @ hips.matrix
@@ -128,3 +136,58 @@ def lowest(obj):
 	low = min((ev.matrix_world @ v.co).z for v in me.vertices)
 	ev.to_mesh_clear()
 	return low
+
+
+def _turn(arm, bone, have, want):
+	"""Turn a bone about its head by the smallest rotation taking direction `have` to `want`
+	(armature space)."""
+	have, want = have.normalized(), want.normalized()
+	axis = have.cross(want)
+	if axis.length < 1e-6:
+		return
+	_rotate(arm, bone, axis.normalized(), math.degrees(have.angle(want)), None)
+
+
+def _hold(arm, s, along):
+	"""Put the s fist on the shaft held by the other hand, `along` metres down its grip axis:
+	the fist turns to close around the shaft, the arm reaches with the elbow kept on its side."""
+	to_arm = arm.matrix_world.inverted()
+	other = bpy.data.objects["grip_" + ("r" if s == "L" else "l")].matrix_world
+	target = to_arm @ (other @ Vector((0, along, 0)))
+	shaft = (to_arm.to_3x3() @ other.to_3x3() @ Y).normalized()
+	grip = bpy.data.objects["grip_" + s.lower()]
+	b = f"J_Bip_{s}_"
+	upper, lower, hand = (arm.pose.bones[b + n] for n in ("UpperArm", "LowerArm", "Hand"))
+	for _ in range(4):
+		g = to_arm @ grip.matrix_world
+		axis = (g.to_3x3() @ Y).normalized()
+		_turn(arm, hand.name, axis, shaft if axis.dot(shaft) >= 0 else -shaft)
+		offset = (to_arm @ grip.matrix_world).to_translation() - hand.head
+		_reach(arm, upper, lower, hand, target - offset)
+
+
+def _reach(arm, upper, lower, hand, wrist):
+	"""Two-bone reach of the wrist (the hand's head) towards a point, as far as the arm goes."""
+	shoulder, elbow = upper.head.copy(), lower.head.copy()
+	l1, l2 = (elbow - shoulder).length, (hand.head - elbow).length
+	d = wrist - shoulder
+	dist = min(max(d.length, 1e-4), (l1 + l2) * 0.999)
+	dn = d.normalized()
+	bend = (elbow - shoulder) - dn * (elbow - shoulder).dot(dn)
+	bend = bend.normalized() if bend.length > 1e-4 else Vector((0, -0.3, -1)).normalized()
+	a = math.acos(max(-1.0, min(1.0, (l1 * l1 + dist * dist - l2 * l2) / (2 * l1 * dist))))
+	want_elbow = shoulder + (dn * math.cos(a) + bend * math.sin(a)) * l1
+	_turn(arm, upper.name, elbow - shoulder, want_elbow - shoulder)
+	_turn(arm, lower.name, hand.head - lower.head, shoulder + dn * dist - lower.head)
+
+
+def _cape(arm, values):
+	"""Swing the cloak about the shoulders. It is fixed to the chest, so a forward bend already
+	swings its hem back: that is taken back to let it hang plumb. It also clears a thigh swung
+	back and a heel kicked up behind."""
+	lean = values.get("hips_bend", 0) + values.get("spine_bend", 0) + values.get("chest_bend", 0)
+	back = max([0.0] + [-values.get(s + "_hip", 0) for s in SIDES])
+	kick = max([0.0] + [values.get(s + "_knee", 0) for s in SIDES if values.get(s + "_hip", 0) < 10])
+	lift = 3 - 0.8 * max(0.0, lean) + 0.6 * back + 0.2 * kick + values.get("cape", 0)
+	_rotate(arm, "Cape1", X, -lift, "J_Bip_C_UpperChest")
+	_rotate(arm, "Cape2", X, -0.35 * max(0.0, lift), "Cape1")

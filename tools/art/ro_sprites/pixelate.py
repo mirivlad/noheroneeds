@@ -6,10 +6,11 @@ the palette colours of the toon materials survive (no blended in-between tones).
 A one-pixel outline in a darkened colour of the neighbouring pixel is drawn
 around the silhouette, as in Ragnarok Online sprites.
 
-Usage: python3 pixelate.py SCALE IN.png... --out DIR [--no-outline]
+Usage: python3 pixelate.py SCALE IN.png... --out DIR [--no-outline]   (non-PNG inputs are skipped)
 """
 import argparse
 import os
+from multiprocessing import Pool
 
 import numpy as np
 from PIL import Image
@@ -67,11 +68,16 @@ def main():
 	ap.add_argument("--no-outline", action="store_true")
 	a = ap.parse_args()
 	os.makedirs(a.out, exist_ok=True)
-	for path in a.inputs:
-		px = reduce(Image.open(path), a.scale)
-		if not a.no_outline:
-			px = outline(px)
-		Image.fromarray(px, "RGBA").save(os.path.join(a.out, os.path.basename(path)))
+	with Pool(min(8, os.cpu_count() or 1)) as pool:
+		pool.map(one, [(p, a.scale, a.out, not a.no_outline) for p in a.inputs if p.endswith(".png")])
+
+
+def one(job):
+	path, scale, out, line = job
+	px = reduce(Image.open(path), scale)
+	if line:
+		px = outline(px)
+	Image.fromarray(px, "RGBA").save(os.path.join(out, os.path.basename(path)))
 
 
 if __name__ == "__main__":

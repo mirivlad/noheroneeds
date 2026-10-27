@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The 3D world with a profile and saves of its own (../.noheroneeds-3d-data), apart from the
-# main game's. Usage: tools/start_3d_experiment.sh [--2d] [--quality]
+# main game's. Usage: tools/start_3d_experiment.sh [--quality]
 set -euo pipefail
 die() { printf 'Ошибка: %s\n' "$*" >&2; exit 1; }
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
@@ -18,14 +18,12 @@ VERSION=$("$GODOT" --version) || die 'Не удалось проверить в�
 [[ "$VERSION" == 4.7.2.* ]] || die "Нужен Godot 4.7.2, найден $VERSION."
 exec 9>"$DATA/run.lock"
 flock -n 9 || die 'Эксперимент уже запущен. Закройте его окно перед повторным запуском.'
-MODE='3d'
 PROFILE='experiment-3d'
 ARGS=()
 for ARG in "$@"; do
   case "$ARG" in
-    --2d) MODE='2d' ;;
     --quality) PROFILE='experiment-3d-quality'; ARGS+=("--quality") ;;
-    --profile*|--world*|--connect*|--server*|--renderer*|--demo*) die "Параметр $ARG запрещён: launcher использует отдельный профиль и мир." ;;
+    --profile*|--world*|--connect*|--server*|--demo*) die "Параметр $ARG запрещён: launcher использует отдельный профиль и мир." ;;
     *) ARGS+=("$ARG") ;;
   esac
 done
@@ -40,6 +38,6 @@ if [[ "$IMPORTED" != true ]] || grep -q 'SCRIPT ERROR\|^ERROR:' "$LOG"; then
   tail -n 35 "$LOG" >&2
   die "Godot не смог импортировать эксперимент. Журнал: $LOG"
 fi
-printf 'Запускаю %s-эксперимент. Отдельный профиль: %s.\n' "$MODE" "$PROFILE"
+printf 'Запускаю 3D-эксперимент. Отдельный профиль: %s.\n' "$PROFILE"
 cd -- "$ROOT"
-"$GODOT" --path "$ROOT" -- "${ARGS[@]}" --profile="$PROFILE" --world="$PROFILE" --renderer="$MODE" || die 'Godot завершился с ошибкой; сохранения основной игры не затронуты.'
+"$GODOT" --path "$ROOT" -- "${ARGS[@]}" --profile="$PROFILE" --world="$PROFILE" || die 'Godot завершился с ошибкой; сохранения основной игры не затронуты.'

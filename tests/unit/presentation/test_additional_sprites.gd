@@ -95,20 +95,22 @@ func test_animals_are_lpc_sheets_and_keep_their_variant() -> void:
 			view.content = content
 			var id := "animal-%d" % i
 			var looks := {"body_plan": "base:" + animal}
-			var doll := view._character(id, looks)
+			var doll := view.doll_for(id, looks)
 			check(doll is LpcSprite, animal + " plays like the people")
 			var path := String((doll._layers[0][1] as Sprite2D).texture.resource_name)
 			seen[path] = true
-			check(view._character(id, looks) == doll, "unchanged appearance reuses its sprite")
+			check(view.doll_for(id, looks, doll) == doll, "unchanged appearance reuses its sprite")
 			var another := WorldView.new()
 			another.content = content
-			eq((another._character(id, looks)._layers[0][1] as Sprite2D).texture.resource_name, path,
-				"same entity on another client")
+			var theirs := another.doll_for(id, looks)
+			eq((theirs._layers[0][1] as Sprite2D).texture.resource_name, path, "same entity on another client")
+			theirs.free()
 			doll.show_at(Vector2.ZERO, 0.0, true)
 			doll.show_at(Vector2(4, 0), 0.1, true)
 			eq(doll._anim_name, "walk", animal + " walks")
 			doll.swing(Vector2.LEFT, "lunge")
 			check(doll.swinging(), animal + " strikes")
+			doll.free()
 			view.free()
 			another.free()
 		eq(seen.size(), 1 + (visual.get("alternates", []) as Array).size(), "every look of " + animal + " in use")

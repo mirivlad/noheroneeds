@@ -110,7 +110,7 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 	var content := _content()
 	var view := WorldView.new()
 	view.content = content
-	var doll := view._character("me", _look("base:human_m")) as LpcSprite
+	var doll := view.doll_for("me", _look("base:human_m")) as LpcSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	for case: Array in [["base:axe", "chop", "chop"], ["base:pickaxe", "mine", "chop"],
 			["base:spear", "thrust", "thrust"], ["base:bow", "draw", "shoot"], ["", "lunge", "slash"]]:
@@ -137,6 +137,7 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 		eq(doll.scale, Vector2.ONE, "no lean of the whole picture")
 	doll.hold(view.item_picture("base:plank"), view.item_grip("base:plank"), "base:plank")
 	check(doll._held != null and doll._held.visible and doll._held_layers.is_empty(), "other things are their picture at the hand")
+	doll.free()
 	view.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame
 
@@ -145,7 +146,7 @@ func test_a_rod_is_cast_with_its_own_frames_and_carried_as_a_picture() -> void:
 	var content := _content()
 	var view := WorldView.new()
 	view.content = content
-	var doll := view._character("me", _look("base:human_f")) as LpcSprite
+	var doll := view.doll_for("me", _look("base:human_f")) as LpcSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	doll.hold(view.item_picture("base:fishing_rod"), view.item_grip("base:fishing_rod"), "base:fishing_rod")
 	eq(doll._held_item, "base:fishing_rod")
@@ -170,6 +171,7 @@ func test_a_rod_is_cast_with_its_own_frames_and_carried_as_a_picture() -> void:
 	check(t > 0.5, "a cast takes its time: %.2f s" % t)
 	eq(body.size(), 6, "the body plays the thrust's six columns")
 	check(rod > 30, "the rod is drawn through most of the cast: %d" % rod)
+	doll.free()
 	view.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame
 
@@ -227,7 +229,7 @@ func test_a_diagonal_walk_keeps_one_facing() -> void:
 	var content := _content()
 	var view := WorldView.new()
 	view.content = content
-	var doll := view._character("deer", {"body_plan": "base:deer"}) as LpcSprite
+	var doll := view.doll_for("deer", {"body_plan": "base:deer"}) as LpcSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	var turns := 0
 	var was := -1
@@ -243,5 +245,6 @@ func test_a_diagonal_walk_keeps_one_facing() -> void:
 		at += Vector2(0, 2)
 		doll.show_at(at, 0.05, true)
 	eq(doll._dir, 2, "straight south: it turns")
+	doll.free()
 	view.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame

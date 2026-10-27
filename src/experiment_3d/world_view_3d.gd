@@ -662,7 +662,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 	for id: String in entities:
 		var e: Dictionary = entities[id]
 		var kind := String(e.get("kind", ""))
-		if kind not in ["character", "creature", "item"]:
+		if kind not in ["character", "creature", "item", "projectile"]:
 			continue
 		var p := Vector2(float(e.get("x", 0)), float(e.get("y", 0))) / Movement.UNIT
 		if id == client.character_id:
@@ -672,19 +672,24 @@ func _update_actors(alpha: float, delta: float) -> void:
 		if kind == "item":
 			_update_item(id, e, at)
 			continue
+		if kind == "projectile":  # an arrow in flight, about chest high
+			_update_item(id, e, at + Vector3.UP * .8)
+			continue
 		var looks: Dictionary = e.get("appearance", {})
 		if kind == "creature" and looks.is_empty():
 			looks = {"body_plan": String(e.get("creature", ""))}
 		var actor := _actors.get(id) as BillboardActor3D
 		if actor and actor.looks != looks:
-			actor.queue_free()
-			actor = null
+			# Dressed anew where it can be (its walk and blow go on), else made again.
+			if doll_for(id, looks, actor.doll) == actor.doll:
+				actor.looks = looks.duplicate(true)
+			else:
+				actor.queue_free()
+				actor = null
 		if actor == null:
 			actor = BillboardActor3D.new()
-			var visual := content.visual_of(String(looks.get("body_plan", "base:human_m")))
-			if visual.is_empty():
-				visual = content.visual_of("base:human_m")
-			actor.setup(content, visual, looks, {"kind": "entity", "id": id, "entity": e, "location": client.location})
+			actor.setup(content, visual_for(id, looks), looks, {"kind": "entity", "id": id, "entity": e, "location": client.location},
+				doll_for(id, looks))
 			actor.doll.stepped.connect(func() -> void:
 				if on_step.is_valid():
 					on_step.call(Vector2(actor.position.x, actor.position.z) * CELL))
@@ -700,6 +705,15 @@ func _update_actors(alpha: float, delta: float) -> void:
 		actor.scale = Vector3.ONE * (.6 if e.get("young", false) else 1.0)
 		var held := own_held if id == client.character_id else String(e.get("held", ""))
 		actor.doll.hold(item_picture("" if actor.doll.submerged else held), item_grip(held), "" if actor.doll.submerged else held)
+		_speech(id, actor, e, delta)
+		# Asleep in a bed (ADR-0035): lying, as one who fell lies, until it wakes.
+		var asleep := bool(e.get("asleep", false))
+		if asleep != bool(_asleep.get(id, false)):
+			if asleep:
+				actor.doll.react("dead", 1e6)
+			else:
+				actor.doll.react("")
+		_asleep[id] = asleep
 		# Hurt: a flinch; fallen: lies a while (ADR-0019).
 		var h := int(e.get("health", e.get("max_health", 0)))
 		if h < int(_hp_seen.get(id, h)):
@@ -718,6 +732,44 @@ func _update_actors(alpha: float, delta: float) -> void:
 			(_actors[id] as Node).queue_free()
 			_actors.erase(id)
 			_swing_seen.erase(id)
+			_said.erase(id)
+			_asleep.erase(id)
+
+## A line over one who has just said something, for SPEECH_S seconds; words said
+## before it came into view are not shown.
+const SPEECH_S := 4.0
+var _said := {}
+var _asleep := {}
+
+func _speech(id: String, actor: BillboardActor3D, e: Dictionary, delta: float) -> void:
+	var line := actor.get_node_or_null("Speech") as Label3D
+	if e.has("said"):
+		var said := int(e["said"])
+		var fresh := _said.has(id) and int(_said[id]) != said
+		_said[id] = said
+		if fresh:
+			if line == null:
+				line = Label3D.new()
+				line.name = "Speech"
+				line.font = Art.font()
+				line.font_size = 32
+				line.outline_size = 10
+				line.modulate = Color(0.1, 0.08, 0.06)
+				line.outline_modulate = Color(0.97, 0.94, 0.86)
+				line.pixel_size = .006
+				line.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+				line.no_depth_test = true
+				line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				line.width = 360
+				line.position = Vector3(0, 2.3, 0)
+				actor.add_child(line)
+			line.text = String(e.get("say", ""))
+			line.set_meta("left", SPEECH_S)
+	if line:
+		var left := float(line.get_meta("left", 0.0)) - delta
+		line.set_meta("left", left)
+		if left <= 0.0:
+			line.queue_free()
 
 func _update_item(id: String, e: Dictionary, at: Vector3) -> void:
 	var node := _actors.get(id) as Sprite3D
@@ -771,6 +823,13 @@ func screen_point(screen: Vector2) -> Vector2:
 	# Unknown space is outside loaded chunks, so cannot produce a valid action.
 	return own_pixel_position(1)
 
+func covers_shown(cell: Vector2i) -> bool:
+	return not _cut.has_point(cell)
+
+## Where the mouse is not over the 3D view (a point given outright): pick by the point.
+func point_at(_point: Vector2) -> void:
+	_cursor = {}
+
 func pick_target(point: Vector2) -> Dictionary:
 	if not _cursor.is_empty():
 		var target := _cursor.duplicate()
@@ -781,8 +840,7 @@ func pick_target(point: Vector2) -> Dictionary:
 				if int(worn.get(key, 0)) > 0:
 					target[key] = int(worn[key])
 		return target
-	var cell := Vector2i(floori(point.x / CELL), floori(point.y / CELL))
-	return {"kind": "ground", "id": ground_at(client.location, cell), "cell": cell, "location": client.location}
+	return super(point)
 
 ## The house one is inside (a roof or a ceiling over one's cell): its rect grown
 ## by its walls; its covers are not drawn and its walls stand a sixth of their

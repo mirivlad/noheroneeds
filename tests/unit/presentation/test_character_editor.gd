@@ -38,13 +38,13 @@ func test_changing_equipment_preserves_walk_facing_held_tool_and_swing() -> void
 	view.content = ContentRegistry.load_packs(["res://content/base"])
 	var look := {"body_plan":"base:human_m", "styles":{"face":"base:human_face_soft","hair":"base:human_hair_short"},
 		"worn":WorldLibrary.STARTER_OUTFIT.duplicate()}
-	var doll := view._character("actor", look)
+	var doll := view.doll_for("actor", look)
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	doll.show_at(Vector2(-4, -4), 0.17, true)
 	doll.hold(view.item_picture("base:axe"), view.item_grip("base:axe"), "base:axe")
 	var state := [doll._walk, doll._dir, doll._column, doll._shown, doll.position, doll._held_item]
 	look["worn"]["headwear"] = "base:felt_hat"
-	var updated := view._character("actor", look)
+	var updated := view.doll_for("actor", look, doll)
 	eq(updated, doll, "same node")
 	eq([doll._walk, doll._dir, doll._column, doll._shown, doll.position, doll._held_item], state,
 		"no phase, facing or tool reset")
@@ -53,8 +53,9 @@ func test_changing_equipment_preserves_walk_facing_held_tool_and_swing() -> void
 	doll.show_at(Vector2(-4, -4), 0.05, true)
 	var swing := [doll._swing_t, doll._swing_dir, doll._column, doll.scale, doll.position]
 	look["worn"].erase("torso")
-	view._character("actor", look)
+	view.doll_for("actor", look, doll)
 	eq([doll._swing_t, doll._swing_dir, doll._column, doll.scale, doll.position], swing,
 		"changing clothes during a blow leaves it intact")
+	doll.free()
 	view.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame

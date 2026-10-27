@@ -18,7 +18,8 @@ var animation_at := Vector2.ZERO
 var looks := {}
 var target := {}
 
-func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary, hit: Dictionary) -> void:
+func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary, hit: Dictionary,
+		made: CharacterSprite = null) -> void:
 	looks = appearance.duplicate(true)
 	target = hit
 	viewport.size = Vector2i(384, 384)
@@ -27,7 +28,7 @@ func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	add_child(viewport)
-	doll = Art.character_sprite(registry, visual, appearance)
+	doll = made if made else Art.character_sprite(registry, visual, appearance)
 	viewport.add_child(doll)
 	doll.scale = Vector2.ONE * DOLL_SCALE
 	doll.position = DOLL_FEET

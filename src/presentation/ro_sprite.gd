@@ -208,6 +208,10 @@ func _swing_clip() -> String:
 
 
 func react(clip: String, hold := 0.0) -> void:
+	if clip == "":  # back to standing (woken up)
+		_once = ""
+		_once_t = -1.0
+		return
 	if not _visual.get("clips", {}).has(clip) or (clip != "dead" and _once == "dead" and _once_t >= 0.0):
 		return  # one who fell is not startled up again
 	_once = clip

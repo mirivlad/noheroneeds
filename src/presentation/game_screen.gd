@@ -49,6 +49,13 @@ var weather := WeatherView.new()
 ## One's own state at the top left, the world's time at the top right.
 var needs_box := HudBoxes.NeedsBox.new()
 var clock_box := HudBoxes.ClockBox.new()
+## The window buttons by the quick slots, and what the cursor is over (UI 2.0).
+var window_buttons := HudBoxes.WindowButtons.new()
+var cursor_hint := HudBoxes.CursorHint.new()
+## A message (a refusal, a find) shows above the quick slots this long, then fades.
+const NOTE_S := 5.0
+var _note_shown := ""
+var _note_at := 0
 ## Feeding an animal (ADR-0030): how it took it.
 var _feed_rids := {}
 var inventory_panel := InventoryPanel.new()
@@ -77,7 +84,8 @@ var _blueprint := ""
 var _drag_from := NO_CELL
 const NO_CELL := Vector2i(1 << 30, 1 << 30)
 ## Windows begin below the boxes at the top (needs, time).
-const WINDOW_TOP := 52.0
+## The game's windows: one work window at a time, Esc's order, where they stand.
+var windows := UiWindows.new()
 ## What the cursor points at, and what can be done there with what is held.
 var target := {}
 var actions: Array[Dictionary] = []
@@ -283,6 +291,12 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 		l.add_theme_constant_override("outline_size", 4)
 		layer.add_child(l)
 	layer.add_child(needs_box)
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud.visible = false  # the materials: while building
+	window_buttons.chosen.connect(func(w: String) -> void:
+		if client and client.state == "playing":
+			open_window(w))
+	layer.add_child(window_buttons)
 	layer.add_child(clock_box)
 	hud.position = Vector2(6, 2)
 	_info.position = Vector2(6, 16)
@@ -292,6 +306,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	painter.setup(content, view, client)
 	minimap.setup(painter, client)
 	layer.add_child(minimap)
+	layer.add_child(cursor_hint)
 	# Equipment covers the minimap in drawing and mouse picking alike.
 	layer.move_child(character_panel, layer.get_child_count() - 1)
 	layer.move_child(_menu, layer.get_child_count() - 1)  # the right button's list over everything
@@ -330,7 +345,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog, crafts,
 				inventory_panel, character_panel, chest_panel, trade_panel, talk_panel, journal_panel, pin_panel, _menu, weather,
-				needs_box, clock_box]:
+				needs_box, clock_box, window_buttons, cursor_hint]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
 
@@ -391,29 +406,38 @@ func _layout_top() -> void:
 		_layout_hud()
 
 
-## HUD coordinates are viewport pixels, independent of the world's camera.
+## HUD coordinates are viewport pixels, independent of the world's camera
+## (UI 2.0): one's needs top left, the clock and minimap top right, the quick
+## slots and window buttons at the bottom with messages above them; the
+## materials only while building, the frame rate only when asked for.
 func _layout_hud() -> void:
 	var viewport_size := get_viewport_rect().size
 	needs_box.position = Vector2(4, 4)
 	clock_box.size = clock_box.get_combined_minimum_size()
 	clock_box.position = Vector2(viewport_size.x - maxf(clock_box.size.x, Minimap.SIZE) - 4, 4)
-	minimap.position = Vector2(viewport_size.x - Minimap.SIZE - 4, 34)
-	hotbar.position = Vector2(floorf((viewport_size.x - hotbar.get_combined_minimum_size().x) / 2.0), viewport_size.y - 60)  # above the status line
-	status.position = Vector2(6, viewport_size.y - 18)
-	# Bounded lines: they cannot spill across the minimap or hotbar.
-	# The lines at the top run between the two boxes.
+	minimap.position = Vector2(viewport_size.x - Minimap.SIZE - 4, clock_box.position.y + clock_box.size.y + 2)
+	var slots := hotbar.get_combined_minimum_size()
+	var buttons := window_buttons.get_combined_minimum_size()
+	var row := slots.x + 8 + buttons.x
+	hotbar.position = Vector2(floorf((viewport_size.x - slots.x) / 2.0), viewport_size.y - slots.y - 4)
+	if hotbar.position.x + row > viewport_size.x - 4:  # narrow: the slots and buttons together, centred
+		hotbar.position.x = floorf((viewport_size.x - row) / 2.0)
+	window_buttons.size = buttons
+	window_buttons.position = Vector2(hotbar.position.x + slots.x + 8, hotbar.position.y + floorf((slots.y - buttons.y) / 2.0))
+	status.size = Vector2(viewport_size.x - 12, 18)
+	status.position = Vector2(6, hotbar.position.y - 22)
 	var left := needs_box.position.x + needs_box.get_combined_minimum_size().x + 8
 	hud.position = Vector2(left, 4)
-	_info.position = Vector2(left, 24)
-	minimap.position.y = maxf(48, clock_box.position.y + clock_box.size.y + 4)
+	_info.position = Vector2(6, viewport_size.y - 18)
 	for label: Label in [hud, _info, status]:
 		label.clip_text = true
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		label.custom_minimum_size.x = 0
-		label.size = Vector2(viewport_size.x - 12, 18)
 		label.add_theme_constant_override("outline_size", 2)
-	for label: Label in [hud, _info]:
-		label.size.x = maxf(40, clock_box.position.x - 8 - left)
+	hud.size = Vector2(maxf(40, clock_box.position.x - 8 - left), 18)
+	_info.size = Vector2(maxf(40, hotbar.position.x - 12), 18)
+	windows.top = maxf(needs_box.position.y + needs_box.get_combined_minimum_size().y, clock_box.position.y + clock_box.size.y) + 4
+	windows.bottom = viewport_size.y - status.position.y
 
 
 ## Ends the game: the world is saved and closed, connections dropped.
@@ -502,10 +526,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
-		if _menu.visible:
-			_menu.hide()
+		# The popup, a window at a thing, a work window, the blueprint — and only then the menu.
+		if windows.close_top():
 			return
-		if catalog.visible or crafts.visible or inventory_panel.visible or character_panel.visible or chest_panel.visible or trade_panel.visible or talk_panel.visible or journal_panel.visible or pin_panel.visible or _blueprint != "":
+		if _blueprint != "":
 			_close_tools()
 			return
 		menu_requested.emit()
@@ -542,42 +566,8 @@ func _key(k: int, shift: bool) -> void:
 		_choose_slot(slot)
 	elif k == KEY_Q:
 		_snatch_weapon()
-	elif k == KEY_I:
-		if inventory_panel.visible:
-			inventory_panel.visible = false
-		else:
-			catalog.visible = false
-			character_panel.hide()
-			inventory_panel.show_for(client.inventory(), hotbar.selected, client.item_states())
-	elif k == KEY_C:
-		if character_panel.visible:
-			character_panel.hide()
-		else:
-			_close_tools()
-			character_panel.show_for(client.own, hotbar.held(client.inventory()))
-	elif k == KEY_B:
-		if catalog.visible:
-			catalog.visible = false
-		else:
-			inventory_panel.visible = false
-			character_panel.hide()
-			crafts.visible = false
-			catalog.open(client.inventory())
-	elif k == KEY_K:
-		if crafts.visible:
-			crafts.visible = false
-		else:
-			_close_tools()
-			crafts.open()
-	elif k == KEY_M:
-		world_map.open()
-		_places_rid = client.request({"type": "places"})  # the settlements' names on it
-	elif k == KEY_L:
-		if journal_panel.visible:
-			journal_panel.visible = false
-		else:
-			_close_tools()
-			_journal_rids[client.request({"type": "journal"})] = true
+	elif k in WINDOW_KEYS:
+		open_window(String(WINDOW_KEYS[k]))
 	elif k == KEY_MINUS or k == KEY_KP_SUBTRACT:
 		minimap.zoom(1)  # farther out
 	elif k == KEY_EQUAL or k == KEY_KP_ADD:
@@ -670,13 +660,35 @@ func _mouse(b: InputEventMouseButton) -> void:
 ## Every window the same way: in the middle, between the lines at the top
 ## and the quick slots below.
 func _place_windows() -> void:
-	var area := get_viewport_rect().size
-	for w: Control in [catalog, crafts, inventory_panel, character_panel, chest_panel, trade_panel, talk_panel,
-			journal_panel, pin_panel]:
-		if w.visible:
-			w.size = w.get_combined_minimum_size()
-			w.position = Vector2(floorf((area.x - w.size.x) / 2.0),
-				clampf(floorf((area.y - 60 - w.size.y) / 2.0), WINDOW_TOP, maxf(WINDOW_TOP, area.y - 60 - w.size.y)))
+	windows.place(get_viewport_rect().size)
+
+
+## The windows by key and by name (the buttons by the quick slots open them too).
+const WINDOW_KEYS := {KEY_I: "things", KEY_C: "character", KEY_B: "build", KEY_K: "crafts", KEY_M: "map", KEY_L: "journal"}
+
+
+## Opens a window by its name, or closes it if open (its key, its button).
+func open_window(name: String) -> void:
+	match name:
+		"things":
+			windows.toggle(inventory_panel, func() -> void:
+				inventory_panel.show_for(client.inventory(), hotbar.selected, client.item_states()))
+		"character":
+			windows.toggle(character_panel, func() -> void:
+				character_panel.show_for(client.own, hotbar.held(client.inventory())))
+		"build":
+			windows.toggle(catalog, func() -> void: catalog.open(client.inventory()))
+		"crafts":
+			windows.toggle(crafts, func() -> void: crafts.open())
+		"journal":
+			if journal_panel.visible:
+				journal_panel.hide()
+			else:
+				_journal_rids[client.request({"type": "journal"})] = true  # opened by the answer
+		"map":
+			windows.close_all()
+			world_map.open()
+			_places_rid = client.request({"type": "places"})  # the settlements' names on it
 
 
 ## The colour of what flies off a thing worked: wood, stone, earth, green.
@@ -701,10 +713,11 @@ func _do(a: Dictionary) -> void:
 		_note = Actions.describe(content, target, client.character_id)
 		return
 	if a.get("local") == "crafts":
-		_close_tools()
+		windows.opening(crafts)
 		crafts.open(String(a["station"]))
 		return
 	if a.get("local") == "lock":
+		windows.opening(pin_panel)
 		pin_panel.open_for(Vector2i(int(a["request"]["x"]), int(a["request"]["y"])), true)
 		return
 	client.hold(hotbar.held(client.inventory()))  # the hands first: the action is done with them
@@ -809,15 +822,7 @@ func _drag_cells(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 
 
 func _close_tools() -> void:
-	catalog.visible = false
-	crafts.visible = false
-	inventory_panel.visible = false
-	character_panel.hide()
-	chest_panel.visible = false
-	trade_panel.visible = false
-	talk_panel.visible = false
-	journal_panel.visible = false
-	pin_panel.visible = false
+	windows.close_all()
 	_blueprint = ""
 	_drag_from = NO_CELL
 
@@ -851,7 +856,7 @@ func _build_tools(layer: CanvasLayer) -> void:
 	inventory_panel.drop.connect(_drop_item)
 	inventory_panel.wear.connect(_wear_item)
 	inventory_panel.blueprints.connect(func() -> void:
-		_close_tools()
+		windows.opening(crafts)
 		crafts.open("", CraftPanel.SHEETS))
 	inventory_panel.arranged.connect(_save_bag)
 	character_panel.setup(content, view)
@@ -904,6 +909,11 @@ func _build_tools(layer: CanvasLayer) -> void:
 		if not new_code:
 			_door_rids[rid] = c)
 	layer.add_child(pin_panel)
+	for w: Control in [inventory_panel, character_panel, catalog, crafts, journal_panel]:
+		windows.add(w, UiWindows.WORK)
+	for w: Control in [chest_panel, trade_panel, talk_panel, pin_panel]:
+		windows.add(w, UiWindows.AT_THING)
+	windows.add(_menu, UiWindows.POPUP)
 	_menu.chosen.connect(func(i: int) -> void:
 		if i >= 0 and i < _menu_actions.size():
 			_do(_menu_actions[i]))
@@ -1156,6 +1166,7 @@ func _update_hud() -> void:
 					audio.play("pickup", "", null)
 					view.react_own("pickup")
 					_note = "получено: %d монет" % int(r.get("reward", 0))
+				windows.opening(talk_panel)
 				talk_panel.open_for(r)
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
@@ -1164,6 +1175,7 @@ func _update_hud() -> void:
 			_journal_rids.erase(rid)
 			client.results.erase(rid)
 			if r.get("ok"):
+				windows.opening(journal_panel)
 				journal_panel.open_for(r)
 			continue
 		if _trade_rids.has(rid):
@@ -1174,6 +1186,7 @@ func _update_hud() -> void:
 				if trade_panel.visible and trade_panel.creature == who:
 					audio.play("pickup", "", null)
 					view.react_own("pickup")
+				windows.opening(trade_panel)
 				trade_panel.open_for(who, r, client.inventory(), client.item_states())
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
@@ -1184,6 +1197,7 @@ func _update_hud() -> void:
 			client.results.erase(rid)
 			if r.get("ok"):
 				chest_panel.bag_order = inventory_panel.order
+				windows.opening(chest_panel)
 				chest_panel.open_at(at, r.get("contents", {}), int(r.get("slots", 0)), client.inventory(), r.get("states", {}),
 					client.item_states())
 			else:
@@ -1194,6 +1208,7 @@ func _update_hud() -> void:
 			_door_rids.erase(rid)
 			if r.get("reason") == "locked":
 				client.results.erase(rid)
+				windows.opening(pin_panel)
 				pin_panel.open_for(door, false)  # the code is asked for
 				continue
 		if _feed_rids.has(rid):
@@ -1286,12 +1301,12 @@ func _update_hud() -> void:
 	var bag := PackedStringArray()
 	for id: String in MATERIALS:
 		bag.append("%s %d" % [content.get_def(id).get("name", id), int(inv.get(id, 0))])
-	var level := "Поверхность  0" if client.z == 0 else ("Этаж  %+d" % client.z if client.z > 0 else "Глубина  −%d" % -client.z)
+	var level := "" if client.z == 0 else ("Этаж %+d" % client.z if client.z > 0 else "Глубина −%d" % -client.z)
 	if client.has_time:
+		var sky := Weather.kind(client.weather_seed, client.world_time, client.weather_place(), client.climate()) if client.z >= 0 else ""
 		clock_box.show_time(Seasons.of(client.world_time), "%s, день %d" % [Seasons.name_of(client.world_time).capitalize(),
-			Seasons.day_of(client.world_time)], "%s  %s" % [Daylight.clock_text(client.world_time),
-			WEATHER_WORDS[Weather.kind(client.weather_seed, client.world_time, client.weather_place(), client.climate())] if client.z >= 0 else ""],
-			Weather.kind(client.weather_seed, client.world_time, client.weather_place(), client.climate()) if client.z >= 0 else "", Daylight.is_night(client.world_time), level)
+			Seasons.day_of(client.world_time)], Daylight.clock_text(client.world_time), sky, String(WEATHER_WORDS.get(sky, "")),
+			Daylight.is_night(client.world_time), level)
 	var deaths := int(client.own.get("deaths", 0))
 	if deaths > _deaths_seen and _deaths_seen >= 0:
 		_note = "вы погибли и вернулись к началу"
@@ -1299,14 +1314,13 @@ func _update_hud() -> void:
 	needs_box.show_rows(_need_rows())
 	_layout_top()
 	hud.text = "  ".join(bag)
+	hud.visible = catalog.visible or _blueprint != ""  # what there is to build with, while building
 	var info := PackedStringArray()
 	if hosted:
 		info.append("сервер: порт %d%s" % [hosted.port, _lan_address()])
 	if settings.get_value("show_fps"):  # and how the 3D view keeps up
 		info.append("%d к/с · %d чанков · %d объектов · %.1f мс · очередь %d" % [Engine.get_frames_per_second(),
 			view._geometry.size(), view.object_count(), view._last_build_ms, view.pending_chunks()])
-	if settings.get_value("show_hints"):
-		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9 — в руки, Q — оружие, I — вещи, C — персонаж, B — стройка, K — ремёсла, M — карта, L — журнал, Esc — меню")
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:
@@ -1316,9 +1330,9 @@ func _update_hud() -> void:
 	var held := hotbar.held(inv)
 	view.own_held = held
 	client.hold(held)  # the server's word on the hands follows (only when it changes)
-	var hands := "в руках: " + (String(content.get_def(held).get("name", held)) if held != "" else "ничего")
+	var ammo := ""
 	if held != "" and content.get_def(held).get("weapon", {}).get("kind") == "ranged":
-		hands += " (%d)" % int(inv.get(String(content.get_def(held)["weapon"]["ammo"]), 0))
+		ammo = "стрел: %d" % int(inv.get(String(content.get_def(held)["weapon"]["ammo"]), 0))
 	var doing := ""
 	if _blueprint == BuildCatalog.DEMOLISH:
 		doing = "РАЗБОРКА: ЛКМ — разобрать своё, ПКМ — отпустить"
@@ -1337,14 +1351,28 @@ func _update_hud() -> void:
 				doing += "  нельзя: " + String(REASONS.get(p[1], p[1]))
 				break
 		doing += "  ПКМ — отпустить"
-	else:
+	elif not _over_ui():
+		# What is under the cursor, then what the left button and E do there.
 		var p := Actions.primary(actions)
-		var what := Actions.describe(content, target, client.character_id)
+		var q := Actions.quick(actions)
+		var does := PackedStringArray()
 		if not p.is_empty() and p["id"] != "inspect":
-			doing = "ЛКМ: %s%s" % [p["name"], " — " + what if what != "" else ""]
-		elif what != "":
-			doing = what
-	status.text = "%s  %s   %s   %s" % [state, hands, doing, note]
+			does.append("ЛКМ: %s" % p["name"])
+		if not q.is_empty() and q != p:
+			does.append("E: %s" % q["name"])
+		if ammo != "" and not does.is_empty():
+			does.append(ammo)
+		var what := Actions.describe(content, target, client.character_id)
+		doing = what + (" — " if what != "" and not does.is_empty() else "") + " · ".join(does)
+	cursor_hint.text = doing if settings.get_value("show_hints") or _blueprint != "" else ""
+	cursor_hint.follow(get_viewport().get_mouse_position(), get_viewport_rect().size)
+	# A message shows a while, then fades; the connection's state stays.
+	if note != _note_shown:
+		_note_shown = note
+		_note_at = Time.get_ticks_msec()
+	var age := (Time.get_ticks_msec() - _note_at) / 1000.0
+	status.text = "  ".join(PackedStringArray([state, note].filter(func(t: String) -> bool: return t != "")))
+	status.modulate.a = 1.0 if state != "" else clampf((NOTE_S - age) / 1.0, 0.0, 1.0)
 	hotbar.refresh(inv, client.item_states())
 	if character_panel.visible:
 		character_panel.show_for(client.own, held)
@@ -1390,6 +1418,12 @@ func _update_target() -> void:
 	actions = Actions.of(content, client, view, held, target, aim)
 	_cursor_kind = CursorArt.kind_of(actions) if _blueprint == "" else "corners"
 	_set_cursor()
+
+
+## Whether the pointer is over the interface (a window, a button), not the world.
+func _over_ui() -> bool:
+	var c := get_viewport().gui_get_hovered_control()
+	return c != null and c.mouse_filter != Control.MOUSE_FILTER_IGNORE
 
 
 ## Where others on the local network reach this host (first private IPv4).

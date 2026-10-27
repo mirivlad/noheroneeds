@@ -121,7 +121,7 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 	view.content = content
 	var doll := view._character("me", _look()) as RoSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
-	for case: Array in [["base:axe", "chop"], ["base:iron_pickaxe", "chop"], ["base:spear", "thrust"],
+	for case: Array in [["base:axe", "chop"], ["base:iron_pickaxe", "mine"], ["base:spear", "thrust"],
 			["base:hoe", "thrust"], ["base:bow", "shoot"], ["base:fishing_rod", "cast"], ["", "slash"]]:
 		doll.hold(view.item_picture(case[0]), view.item_grip(case[0]), case[0])
 		eq(doll._held_item, case[0], "drawn with frames of its own: " + case[0])

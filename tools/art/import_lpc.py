@@ -109,7 +109,7 @@ BODY_ANIMATIONS = {
     "chop": {"frames": [5, 5, 4, 4, 3, 1, 0, 0, 0, 0], "fps": 22},
     "fish": {"frames": list(range(13)), "fps": 18},
 }
-SWINGS = {"chop": "chop", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "fish"}
+SWINGS = {"chop": "chop", "mine": "chop", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "fish"}
 # A thing in the hands without frames for an animation: what the body does instead.
 FALLBACK = {"idle": ["walk", 0], "run": ["walk", -1], "slash": ["chop", -1]}
 

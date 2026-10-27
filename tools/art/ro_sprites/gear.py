@@ -7,8 +7,8 @@ so the layer holds just the pixels of the item that show on that body, and
 with a depth map that puts the layers together in any combination
 (compose.py).
 
-Held things play the game's swing for them (world_view.gd swing_kind: axes and
-picks chop, the spear and the hoe thrust, the bow shoots, the rod casts) and
+Held things play the game's swing for them (world_view.gd swing_kind: axes
+chop, picks mine, the spear and the hoe thrust, the bow shoots, the rod casts) and
 are carried in the clips that are not swings. Their cell is larger, with the
 ground point at the same place relative to the body (HELD_CELL, HELD_FOOT).
 """
@@ -34,9 +34,9 @@ HELD = {
 	"flint_axe": "chop",
 	"axe": "chop",
 	"iron_axe": "chop",
-	"flint_pick": "chop",
-	"pickaxe": "chop",
-	"iron_pickaxe": "chop",
+	"flint_pick": "mine",
+	"pickaxe": "mine",
+	"iron_pickaxe": "mine",
 	"hoe": "thrust",
 	"spear": "thrust",
 	"bow": "shoot",

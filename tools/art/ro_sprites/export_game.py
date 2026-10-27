@@ -38,7 +38,7 @@ DIRECTIONS = ["s", "se", "e", "ne", "n", "nw", "w", "sw"]
 BODIES = {"male": ("base:human_ro_m", "base:human_ro_hair_tousled"),
 	"female": ("base:human_ro_f", "base:human_ro_hair_twintails")}
 # Game swings (world_view.gd swing_kind) -> clips.
-SWINGS = {"chop": "chop", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "cast"}
+SWINGS = {"chop": "chop", "mine": "mine", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "cast"}
 # Game equipment slots of the layers (content/base character_editor.json).
 SLOTS = {"hair_sample": "hair", **gear.WORN, **{item: "main_hand" for item in gear.HELD}}
 # What wins a tie or a cycle of the depth order: from the body outwards.

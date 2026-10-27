@@ -46,8 +46,8 @@ const HAND_BEHIND := [false, false, false, true, true]
 ## A blow (ADR-0019, ADR-0021), drawn by moving what is held and the whole
 ## body, with no frames of its own on the sheets: the body leans back and
 ## rises as the blow is raised, then leans into it, crouching, its feet in a
-## stride (a walk frame), and comes back. "chop" (an axe, a pick, a club:
-## raised and brought down), "thrust" (a spear: pushed out, no wind-up),
+## stride (a walk frame), and comes back. "chop" (an axe, a club:
+## raised and brought down; "mine", a pick, the same here), "thrust" (a spear: pushed out, no wind-up),
 ## "draw" (a bow: pulled back and let go), "lunge" (empty hands, beasts).
 const SWING_S := 0.3
 ## Fallback grip from the picture's centre for old item visuals.
@@ -161,11 +161,11 @@ func _swing_step(delta: float) -> Vector2:
 	var lean := sin(PI * t)
 	_lean_body(t)
 	if _held == null:
-		return _swing_dir * lean * (3.0 if _swing_kind == "lunge" or _swing_kind == "chop" else 1.0)
+		return _swing_dir * lean * (3.0 if _swing_kind in ["lunge", "chop", "mine"] else 1.0)
 	_place_held()
 	var rest := _held.position
 	match _swing_kind:
-		"chop":
+		"chop", "mine":
 			# Raised (a quarter of the time), brought down past the rest
 			# (another quarter), back.
 			var a := -1.9 * (t / 0.25) if t < 0.25 else (lerpf(-1.9, 0.7, (t - 0.25) / 0.25) if t < 0.5 \

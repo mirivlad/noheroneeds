@@ -51,6 +51,13 @@ func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary
 	body.set_meta("target", target)
 	add_child(body)
 
+## Strikes toward `dir` (on the ground, world axes) and keeps facing it: the
+## facing is turned to the screen every frame, so it must be the world's.
+func swing(dir: Vector2, kind: String, yaw: float) -> void:
+	if dir.length() > 0.01:
+		facing = dir.normalized()
+	doll.swing(dir.rotated(-yaw), kind)
+
 func show_actor(at: Vector3, yaw: float, delta: float, exact: bool) -> void:
 	position = at if exact else position.lerp(at, minf(1, delta * 12))
 	var horizontal := Vector2(position.x, position.z)

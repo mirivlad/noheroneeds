@@ -68,10 +68,22 @@ func test_camera_settings_survive_reload_and_ordinary_wheel_is_preserved() -> vo
 	var wheel := InputEventMouseButton.new()
 	wheel.button_index = MOUSE_BUTTON_WHEEL_UP
 	wheel.pressed = true
-	check(not view.camera_input(wheel), "ordinary wheel continues to choose hotbar slot")
-	wheel.ctrl_pressed = true
-	check(view.camera_input(wheel), "Ctrl wheel zooms")
+	check(view.camera_input(wheel), "the wheel zooms (it no longer turns the quick slots)")
 	check(view.zoom < 19, "zoom moved")
+
+func test_a_blow_turns_the_doll_and_it_stays_turned() -> void:
+	var actor := BillboardActor3D.new()
+	var looks := {"body_plan": "base:human_ro_m", "styles": {}, "worn": {}}
+	actor.setup(content, content.visual_of("base:human_ro_m"), looks, {})
+	view.space.add_child(actor)
+	actor.show_actor(Vector3.ZERO, 0.0, 0.1, true)
+	actor.show_actor(Vector3(0, 0, 1), 0.0, 0.1, true)  # walked south: faces the viewer
+	eq((actor.doll as RoSprite)._row, 0, "facing south after the walk")
+	actor.swing(Vector2.RIGHT, "chop", 0.0)
+	for i in 5:
+		actor.show_actor(Vector3(0, 0, 1), 0.0, 0.1, true)
+	eq((actor.doll as RoSprite)._row, 2, "the blow east turned it east, and frames after keep it")
+	actor.queue_free()
 
 func test_lpc_paper_doll_and_equipment_are_reused() -> void:
 	var actor := BillboardActor3D.new()

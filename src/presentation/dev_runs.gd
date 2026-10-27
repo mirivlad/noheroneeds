@@ -3,7 +3,8 @@ extends RefCounted
 ## Development runs of the game screen (command-line options after "--", see
 ## App): a demo house and yard (--demo[=...]), going somewhere (--goto=...),
 ## a window opened for a picture (--ui=...), a blow caught midway, the own
-## RO character held in poses and photographed (--poses=PREFIX)... Nothing
+## RO character held in poses and photographed (--poses=PREFIX), things put on
+## (--wear=base:felt_hat,...)... Nothing
 ## here is for players; GameScreen calls step() each frame when any is given.
 
 var g: GameScreen
@@ -142,6 +143,10 @@ func step(delta: float) -> void:
 			w.needs.set_energy(g.client.character_id, 10.0)
 		if g._frames == 60:
 			g.client.request({"type": "sleep", "location": g.client.location, "x": bed.x, "y": bed.y})
+	if g._opts.has("wear") and g.game and g._frames == 45:  # dev only: given and put on
+		for item: String in String(g._opts["wear"]).split(","):
+			g.game.world.grant(g.client.character_id, item, 1)
+			g.client.request({"type": "equip", "item": item})
 	if g._opts.has("goto") and g.game and g._frames == 40:  # dev only: --goto=X,Y (or "village") puts one at a cell
 		var cell := Vector2i.ZERO
 		if String(g._opts["goto"]).begins_with("village") and not String(g._opts["goto"]).begins_with("village@"):  # "village" or "village,DX,DY" from its fire

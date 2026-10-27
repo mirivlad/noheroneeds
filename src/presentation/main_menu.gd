@@ -509,8 +509,8 @@ func _check(text: String, on: bool) -> CheckBox:
 
 ## A character's looks in a few words: the body and the hairstyle.
 static func _look_name(body: String, hair: String) -> String:
-	var sex := "женщина" if body.begins_with("base:human_f") else "мужчина"
-	var style := String(CharacterEditor.HAIRS.get(hair, "")).to_lower()
+	var sex := "женщина" if body.begins_with("base:human_f") or body == "base:human_ro_f" else "мужчина"
+	var style := String(CharacterEditor.HAIRS.get(hair, CharacterEditor.RO_HAIRS.get(hair, ""))).to_lower()
 	return sex + (", причёска: " + style if style != "" else "")
 
 

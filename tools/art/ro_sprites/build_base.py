@@ -9,8 +9,7 @@ the eyes and the mouth are: the face is drawn in pixels over the sprite
 the breast for the female body) is a face attribute of the body. Materials are flat toon ramps fed to
 an emission shader, so a render holds only the palette colours.
 
-The sample hair stays in the file as object "HairSample" (collection
-"hair_sample", not rendered by default) for previews.
+The model's hair is removed with the rest: hairstyles are put on by build_hair.py.
 
 Usage: blender -b --factory-startup -P build_base.py -- SRC.vrm OUT.blend LAYOUT.json [--body male|female]
 """
@@ -73,16 +72,15 @@ def main():
 		shutil.copyfile(src, glb)
 		bpy.ops.import_scene.gltf(filepath=glb, bone_heuristic="TEMPERANCE")
 	arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
-	body, face, hair = bpy.data.objects["Body"], bpy.data.objects["Face"], bpy.data.objects["Hair001"]
+	body, face = bpy.data.objects["Body"], bpy.data.objects["Face"]
 	for o in list(bpy.data.objects):
-		if o not in (arm, body, face, hair):
+		if o not in (arm, body, face):
 			bpy.data.objects.remove(o)
 	arm.name = arm.data.name = "Base"
-	hair.name = "HairSample"
 	face.shape_key_clear()
 
-	reshape(arm, [body, face, hair], spec["proportions"])
-	drop = ground(arm, [body, face, hair])
+	reshape(arm, [body, face], spec["proportions"])
+	drop = ground(arm, [body, face])
 	layout = face_layout(face)
 	keep_material(body, ["Body_00_SKIN"])
 	# the eyeballs stay as skin: they plug the eye openings; lids, lashes and brows go
@@ -91,22 +89,15 @@ def main():
 	flatten_face(face, layout)
 	face_anchors(arm, face, layout)
 	grips(arm)
-	for o, n in ((body, 150), (face, 30), (hair, 10)):
+	for o, n in ((body, 150), (face, 30)):
 		soft_normals(o, n)
 	underwear(body, arm, spec["underwear"])
-	remove_unused_bones(arm, [body, face, hair])
+	remove_unused_bones(arm, [body, face])
 
 	body.data.materials.clear()
 	body.data.materials.append(toon.ramp_material("skin", palette.SKIN, under=("trunks", palette.TRUNKS)))
 	face.data.materials.clear()
 	face.data.materials.append(body.data.materials[0])
-	hair.data.materials.clear()
-	hair.data.materials.append(toon.ramp_material("hair_sample", palette.HAIR_SILVER))
-	col = bpy.data.collections.new("hair_sample")
-	bpy.context.scene.collection.children.link(col)
-	for c in hair.users_collection:
-		c.objects.unlink(hair)
-	col.objects.link(hair)
 
 	layout["height"] = max((body.matrix_world @ v.co).z for v in body.data.vertices)
 	layout["head_top"] = max((face.matrix_world @ v.co).z for v in face.data.vertices)
@@ -350,4 +341,5 @@ def remove_unused_bones(arm, meshes):
 	bpy.ops.object.mode_set(mode="OBJECT")
 
 
-main()
+if __name__ == "__main__":  # build_hair.py borrows soft_normals
+	main()

@@ -136,12 +136,13 @@ func show_start_screen(message := "") -> void:
 		menu.tell(message)
 
 
-## Dev: the profile's first character of the body plan --body names, or a new one.
+## Dev: the profile's first character of the body plan --body names, or a new one
+## (with the hairstyle --hair names, if any).
 func _dev_character() -> String:
 	for c: Dictionary in characters.list():
 		if c["body_plan"] == String(_opts["body"]):
 			return String(c["file"])
-	return characters.create("Путник", {}, {}, String(_opts["body"]))
+	return characters.create("Путник", {"hair": String(_opts["hair"])} if _opts.has("hair") else {}, {}, String(_opts["body"]))
 
 
 func start_game(cfg: Dictionary) -> void:

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cme8ygbxqto3k"
-path="res://.godot/imported/hair_sample.png-cde56d3cde86c2d3505d1629acc189d2.ctex"
+uid="uid://c83gjjw2apsmg"
+path="res://.godot/imported/iron_helmet_keep_out.png-457cff90c5b930bc3acc62cd5b268511.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/ro/female/hair_sample.png"
-dest_files=["res://.godot/imported/hair_sample.png-cde56d3cde86c2d3505d1629acc189d2.ctex"]
+source_file="res://content/base/art/ro/male/iron_helmet_keep_out.png"
+dest_files=["res://.godot/imported/iron_helmet_keep_out.png-457cff90c5b930bc3acc62cd5b268511.ctex"]
 
 [params]
 

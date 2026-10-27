@@ -1,7 +1,7 @@
 """Put the rendered RO layers into the game: atlases and visuals (python3 + Pillow + numpy).
 
 For every body build.sh has made in full (BUILD_DIR/<body>/pixels), every layer
-(the body with its drawn face, the sample hair, each item) becomes one atlas in
+(the body with its drawn face, each hairstyle, each item) becomes one atlas in
 content/base/art/ro/<body>/: frames cropped to the box all of that
 layer's frames fit in, eight rows of directions (s, se, e, ne, n, nw, w, sw) and
 the clips one after another along the columns; a layer too wide for one strip
@@ -10,11 +10,17 @@ of columns goes on in another band of eight rows below.
 The order the layers are drawn in comes from the depth maps, frame by frame:
 for two layers that overlap in a frame, the one nearer at most of the shared
 pixels is drawn later. The body is always first: every other layer was filmed
-on it as a holdout and holds only what shows in front of it.
+on it as a holdout and holds only what shows in front of it. The hairstyles
+take one place in that order, the one all of them together would have.
+
+A hairstyle's atlas is grey in red and its depth byte in green; each headwear
+also gets the atlas of its keep-out, the near side's depth byte in red and the
+far side's in green: the game paints the hair and cuts it under the headwear
+(hair.py, ro_hair.gdshader).
 
 CREDITS-art.md gets the source model in its own section ("<!-- ro -->", at
 the end). content/base/ro_visuals.json gets each body plan's visual (format "ro", read by
-RoSprite): the body sheet itself, its sample hair as a style, the clothes and
+RoSprite): the body sheet itself, the hairstyles as styles, the clothes and
 held things of gear.py as fitted layers, the clips with their frames and fps,
 the game's swings, and the draw order of every frame.
 
@@ -31,19 +37,21 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gear  # noqa: E402
+import hair  # noqa: E402
 from clips import CLIPS  # noqa: E402
 
 DIRECTIONS = ["s", "se", "e", "ne", "n", "nw", "w", "sw"]
-# body: (body plan, the style its sample hair is)
-BODIES = {"male": ("base:human_ro_m", "base:human_ro_hair_tousled"),
-	"female": ("base:human_ro_f", "base:human_ro_hair_twintails")}
+# body: its body plan
+BODIES = {"male": "base:human_ro_m", "female": "base:human_ro_f"}
+# The hairstyles as the game's styles (content/base/character_editor.json).
+STYLE_IDS = {layer: "base:ro_hair_" + layer[len("hair_"):] for layer in gear.HAIR_LAYERS}
 # Game swings (world_view.gd swing_kind) -> clips.
 SWINGS = {"chop": "chop", "mine": "mine", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "cast"}
 # Game equipment slots of the layers (content/base character_editor.json).
-SLOTS = {"hair_sample": "hair", **gear.WORN, **{item: "main_hand" for item in gear.HELD}}
+SLOTS = {**{layer: "hair" for layer in gear.HAIR_LAYERS}, **gear.WORN, **{item: "main_hand" for item in gear.HELD}}
 # What wins a tie or a cycle of the depth order: from the body outwards.
 CANONICAL = ["body", "work_trousers", "boots", "linen_shirt", "leather_armor", "wool_cloak", "fur_cloak",
-	"hair_sample", "iron_helmet", "felt_hat", "fur_hood", *gear.HELD]
+	*gear.HAIR_LAYERS, "iron_helmet", "felt_hat", "fur_hood", *gear.HELD]
 
 
 def main():
@@ -55,7 +63,7 @@ def main():
 	layers = gear.all_layers()
 	visuals = []
 	with Pool(min(8, os.cpu_count() or 1)) as pool:
-		for body, (plan, hair) in BODIES.items():
+		for body, plan in BODIES.items():
 			build = os.path.join(a.build, body)
 			if not all(os.path.isdir(os.path.join(build, "pixels", l)) for l in layers):
 				print("ro body %s: not built in full, left out" % body)
@@ -63,9 +71,11 @@ def main():
 			out_dir = os.path.join(a.content, "art", "ro", body)
 			os.makedirs(out_dir, exist_ok=True)
 			sheets = dict(zip(layers, pool.map(atlas, [(build, out_dir, body, layer, a.max_width) for layer in layers])))
+			keep_outs = dict(zip(gear.HEADWEAR, pool.map(atlas, [(build, out_dir, body, hat + "_keep_out", a.max_width)
+				for hat in gear.HEADWEAR])))
 			jobs = [(build, clip, d, i) for clip in CLIPS for d in DIRECTIONS for i in range(CLIPS[clip][0])]
 			orders = dict(zip([j[1:] for j in jobs], pool.map(order, jobs)))
-			visuals.append(visual(body, plan, hair, sheets, orders))
+			visuals.append(visual(plan, sheets, keep_outs, orders))
 			total = sum(os.path.getsize(os.path.join(out_dir, n)) for n in os.listdir(out_dir) if n.endswith(".png"))
 			print("ro body %s: %d layers, %.1f MB" % (body, len(layers), total / 1e6))
 	with open(os.path.join(a.content, "ro_visuals.json"), "w", encoding="utf-8") as f:
@@ -73,7 +83,7 @@ def main():
 	credit(os.path.join(a.content, "..", "..", "CREDITS-art.md"))
 
 
-def visual(body, plan, hair, sheets, orders):
+def visual(plan, sheets, keep_outs, orders):
 	index = {layer: k for k, layer in enumerate(CANONICAL)}
 	return {
 		"id": "base:visual/" + plan.split(":")[1], "kind": "visual", "for": plan, "mode": "character", "format": "ro",
@@ -83,8 +93,9 @@ def visual(body, plan, hair, sheets, orders):
 		"layers": CANONICAL,
 		"order": {c: [[[index[l] for l in orders[(c, d, i)]] for i in range(CLIPS[c][0])] for d in DIRECTIONS]
 			for c in CLIPS},
-		"style_overrides": {hair: {"layer": "hair", "sheets": [sheets["hair_sample"]]}},
-		"worn_overrides": {"base:" + item: {"layer": SLOTS[item], "sheets": [sheets[item]]} for item in gear.WORN},
+		"style_overrides": {STYLE_IDS[layer]: {"layer": "hair", "sheets": [sheets[layer]]} for layer in gear.HAIR_LAYERS},
+		"worn_overrides": {"base:" + item: {"layer": SLOTS[item], "sheets": [sheets[item]],
+			**({"keep_out": keep_outs[item]} if item in keep_outs else {})} for item in gear.WORN},
 		"held_overrides": {"base:" + item: {"layer": "main_hand", "sheets": [sheets[item]]} for item in gear.HELD},
 	}
 
@@ -92,8 +103,9 @@ def visual(body, plan, hair, sheets, orders):
 RO_CREDITS_START = "<!-- ro -->"
 RO_CREDITS = [
 	RO_CREDITS_START, "# Авторы графики персонажей в стиле Ragnarok Online", "",
-	"Тела — модели VRoid **HairSample_Male** и **HairSample_Female** (pixiv Inc., лицензия CC0, указана в",
-	"метаданных VRM) из",
+	"Тела и причёски — модели VRoid **HairSample_Male**, **HairSample_Female**, **Sendagaya Shibu**,",
+	"**Sendagaya Shino**, **Sakurada Fumiriya**, **Victoria Rubin**, **Vita** и **Vivi** (pixiv Inc., лицензия",
+	"CC0: указана в метаданных VRM и на vroid.pixiv.help) из",
 	"[madjin/vrm-samples](https://github.com/madjin/vrm-samples). Пропорции, лицо, одежда, предметы и",
 	"анимации сделаны в `tools/art/ro_sprites` и отрендерены в пиксели там же.", "",
 ]
@@ -115,7 +127,19 @@ def frames_of(layer):
 
 def load(build, layer, clip, d, i):
 	base = os.path.join(build, "pixels", layer, f"{clip}_{d}_{i:02d}")
+	if layer.endswith("_keep_out"):  # the near and the far side's depth bytes, only where some hair is
+		near, far = hair.keep_out(build, layer[:-len("_keep_out")], f"{clip}_{d}_{i:02d}")
+		some_hair = np.zeros(near.shape, bool)
+		for style in gear.HAIR_LAYERS:
+			some_hair |= np.asarray(Image.open(os.path.join(build, "pixels", style, f"{clip}_{d}_{i:02d}.png")))[..., 3] > 0
+		px = np.zeros(near.shape + (4,), np.uint8)
+		px[..., 0], px[..., 1], px[..., 3] = near, far, np.where((near > 0) & (far > 0) & some_hair, 255, 0)
+		px[px[..., 3] == 0] = 0
+		return px, base
 	px = np.asarray(Image.open(base + ".png").convert("RGBA")).copy()
+	if layer in gear.HAIR_LAYERS:  # the grey and the depth byte
+		px[..., 1] = hair.depth_bytes(np.asarray(Image.open(base + ".depth.png")))
+		px[..., 2] = 0
 	if layer == "body":  # the drawn face on top
 		face = np.asarray(Image.open(os.path.join(build, "face", "body", f"{clip}_{d}_{i:02d}.png")).convert("RGBA"))
 		drawn = face[..., 3] > 0
@@ -166,6 +190,11 @@ def order(job):
 		z = np.zeros((cell, cell), np.int64)
 		x, y = (cell - c) // 2, foot - f
 		z[y:y + c, x:x + c] = np.asarray(Image.open(base + ".depth.png")).astype(np.int64)
+		if layer in gear.HAIR_LAYERS:  # every style as one "hair": the nearest of them
+			layer = "hair"
+			if layer in depth:
+				depth[layer] = np.maximum(depth[layer], z)
+				continue
 		present.append(layer)
 		depth[layer] = z
 	# behind[b] = layers drawn before b (b is nearer where they overlap)
@@ -190,7 +219,7 @@ def order(job):
 	while left:
 		ready = [l for l in left if not (behind[l] & set(left))]
 		pick = (ready or left)[0]  # canonical order breaks ties and cycles
-		out.append(pick)
+		out.extend(gear.HAIR_LAYERS if pick == "hair" else [pick])
 		left.remove(pick)
 	return out
 

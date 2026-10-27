@@ -153,3 +153,43 @@ func test_walk_across_chunks_seamlessly() -> void:
 	eq(missing, 0, "ground always there before the player")
 	eq(world.sync_loads - loads_before, 0, "the server never waited for a chunk")
 	world.close()
+
+
+## Hanging bridges (ADR-0064): each found goes from land over a chasm to land,
+## with the chasm beside it; a chasm cell is not walked, a bridge's is.
+func test_chasms_have_hanging_bridges() -> void:
+	var c := _base()
+	var g := SurfaceGenerator.new(431, c)
+	var found := 0
+	for ky in range(-30, 31):
+		for kx in range(-30, 31):
+			for d: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE, Vector2i(1, -1)]:
+				if found >= 6:
+					break
+				var a := g._chasm_site(Vector2i(kx, ky))
+				var b := g._chasm_site(Vector2i(kx, ky) + d)
+				var mid := Vector2i(((a + b) * 0.5).floor())
+				if g.land_at(mid.x, mid.y)["what"] != "bridge":
+					continue
+				found += 1
+				var way := Vector2i.RIGHT if absf(b.x - a.x) >= absf(b.y - a.y) else Vector2i.DOWN
+				var side := Vector2i(way.y, way.x)
+				var start := mid
+				while g.land_at(start.x - way.x, start.y - way.y)["what"] == "bridge":
+					start -= way
+				var span := 0
+				var at := start
+				while g.land_at(at.x, at.y)["what"] == "bridge":
+					span += 1
+					at += way
+				check(span >= 2 and span <= 8, "a bridge %s spans the chasm: %d cells" % [mid, span])
+				eq(g.land_at(at.x, at.y)["what"], "land", "land at its far end %s" % at)
+				eq(g.land_at(start.x - way.x, start.y - way.y)["what"], "land", "and at its near end")
+				var beside := [String(g.land_at(mid.x + side.x, mid.y + side.y)["what"]), String(g.land_at(mid.x - side.x, mid.y - side.y)["what"])]
+				check("chasm" in beside, "the chasm beside it at %s: %s" % [mid, beside])
+				check(g.bridge_sag(mid.x, mid.y) > 0.0, "it sags in its middle")
+	check(found > 0, "there are hanging bridges in the rugged land")
+	var chunk := Chunk.new()
+	chunk.set_cell("ground", 0, 0, "base:chasm")
+	chunk.set_cell("ground", 1, 0, "base:hanging_bridge")
+	check(Terrain.is_solid(chunk, 0, 0, c) and not Terrain.is_solid(chunk, 1, 0, c), "a chasm stops one, its bridge does not")

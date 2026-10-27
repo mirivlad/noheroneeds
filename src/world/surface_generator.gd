@@ -22,7 +22,7 @@ const ID := "base:surface"
 ## 8: pebbles (flint) on shores (ADR-0053).
 ## 9: villages in clusters, roads by the land (ADR-0054).
 ## 10: rugged land in levels with cliffs between them and passes (ADR-0061).
-const VERSION := 10
+const VERSION := 11
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -36,6 +36,9 @@ var _shore_cover: Array = []
 var _shore_density := 0.0
 ## The rock the heights are made of (natural, dug with a pick).
 var _rock := ""
+## Grounds of a chasm and of a hanging bridge over it (ADR-0064); "" for none.
+var _chasm := ""
+var _hanging := ""
 ## All dry land of one height (no geography): asked for, or no generator
 ## described at all.
 var _flat := true
@@ -101,6 +104,8 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 		_shore_density = g["shore_cover_density"]
 		_clearing = g["spawn_clearing"]
 		_rock = String(g.get("rock", ""))
+		_chasm = String(g.get("chasm", ""))
+		_hanging = String(g.get("hanging_bridge", ""))
 		_flat = bool(g["flat"])
 	geography = Geography.of(seed_value) if can_generate() and not _flat else null
 	_grain.seed = seed_value + 7919
@@ -158,6 +163,9 @@ func generate(cx: int, cy: int) -> Chunk:
 			if what == "rock" and not clearing:
 				c.set_cell("structure", lx, ly, _rock)
 				continue
+			if what in ["chasm", "bridge"] and not clearing:
+				c.set_cell("ground", lx, ly, _chasm if what == "chasm" else _hanging)
+				continue
 			if _hash(x, y, 2) < float(b["density"]):
 				var plant := _pick(b["cover"], _hash(x, y, 3))
 				if plant != "" and not (clearing and _solid.has(plant)):
@@ -170,10 +178,13 @@ func generate(cx: int, cy: int) -> Chunk:
 			var ly := at.y - cy * Chunk.SIZE
 			if lx >= 0 and ly >= 0 and lx < Chunk.SIZE and ly < Chunk.SIZE:
 				var on: Dictionary = cells[at]
-				if _swum(c.get_cell("ground", lx, ly)):
+				var under := c.get_cell("ground", lx, ly)
+				if _swum(under):
 					if String(on.get("over_water", "")) == "":
 						continue
 					c.set_cell("ground", lx, ly, on["over_water"])  # a bridge
+				elif under != "" and under in [_chasm, _hanging]:
+					c.set_cell("ground", lx, ly, _hanging)  # a road goes over a chasm on a hanging bridge
 				else:
 					c.set_cell("ground", lx, ly, on["ground"])
 				c.set_cell("cover", lx, ly, "")
@@ -188,6 +199,9 @@ func generate(cx: int, cy: int) -> Chunk:
 			for x in range(maxi(free.position.x, cx * Chunk.SIZE), mini(free.end.x, (cx + 1) * Chunk.SIZE)):
 				if _solid.has(c.get_cell("cover", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)):
 					c.set_cell("cover", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, "")
+				var ground := c.get_cell("ground", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
+				if ground != "" and ground in [_chasm, _hanging]:  # no chasm through a village
+					c.set_cell("ground", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, _ground_at(_biomes[int(land_at(x, y)["biome"])]["ground"], x, y))
 		var cells: Dictionary = plan["cells"]
 		for at: Vector2i in cells:
 			var lx := at.x - cx * Chunk.SIZE
@@ -285,9 +299,90 @@ func land_at(x: int, y: int) -> Dictionary:
 	if near < 1.0 and _hash(x, y, 8) < 0.6:
 		return {"what": "shore", "height": h, "biome": 0}
 	var biome := _biome_at(x, y, h, near < 10.0)
-	if _rock != "" and (h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or is_cliff(x, y, h)):
+	var chasm := chasm_at(x, y) if _chasm != "" and near > CHASM_FROM_WATER and _stepped(x, y, h) >= 0.5 else NO_CHASM
+	if chasm == CHASM or chasm == BRIDGE:
+		return {"what": "chasm" if chasm == CHASM else "bridge", "height": h, "biome": biome}
+	if chasm != APPROACH and _rock != "" and (h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or is_cliff(x, y, h)):
 		return {"what": "rock", "height": h, "biome": biome}
 	return {"what": "land", "height": h, "biome": biome}
+
+
+# --- Chasms and hanging bridges (ADR-0064) -----------------------------------
+# Rugged land is split here and there by a narrow chasm, too deep to climb, and
+# a hanging bridge goes over each one between the levels on its two sides. The
+# chasms run along some of the borders between sites strewn one to a square of
+# CHASM_GRID cells (the borders of a Voronoi diagram); the bridge over the
+# border of two sites crosses it where the line between them does, straight
+# along the axis nearest that line: one row (or column) of cells, its ends cut
+# through any cliff to the level beyond. Cells only: the same on every machine.
+
+## Kinds of a cell for chasms.
+enum {NO_CHASM, CHASM, BRIDGE, APPROACH}
+const CHASM_GRID := 40.0
+## Half a chasm's width, cells (3–4 across), and what share of the borders are chasms.
+const CHASM_HALF := 1.7
+const CHASM_SHARE := 0.3
+## How far a bridge's ends are cut through cliffs beyond the chasm, cells.
+const CHASM_APPROACH := 3.0
+## No chasm this near a river (cells).
+const CHASM_FROM_WATER := 4.0
+## How far a hanging bridge sags in its middle, metres.
+const BRIDGE_SAG := 0.7
+
+
+## The site of a square of the chasms' grid (a point inside it, not near its edges).
+func _chasm_site(k: Vector2i) -> Vector2:
+	return (Vector2(k) + Vector2(0.2 + 0.6 * _hash(k.x, k.y, 31), 0.2 + 0.6 * _hash(k.x, k.y, 32))) * CHASM_GRID
+
+
+## What a cell is for chasms, by the two nearest sites, wherever the land allows
+## one (land_at): NO_CHASM, CHASM, BRIDGE (over it) or APPROACH (a bridge's way on).
+func chasm_at(x: int, y: int) -> int:
+	var c := _chasm_cut(x, y)
+	return int(c[0])
+
+
+## How far a hanging bridge's deck would sag at a cell (metres): deepest over
+## the chasm's middle line, nothing at its edges or off it (a road's bridge too).
+func bridge_sag(x: int, y: int) -> float:
+	var c := _chasm_cut(x, y)
+	return BRIDGE_SAG * (1.0 - pow(float(c[1]) / CHASM_HALF, 2.0)) if int(c[0]) in [CHASM, BRIDGE] else 0.0
+
+
+## [kind, distance from the chasm's middle line (cells)].
+func _chasm_cut(x: int, y: int) -> Array:
+	var p := Vector2(x + 0.5, y + 0.5)
+	var g := Vector2i(floori(p.x / CHASM_GRID), floori(p.y / CHASM_GRID))
+	var a := g
+	var b := g
+	var da := INF
+	var db := INF
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var k := g + Vector2i(dx, dy)
+			var d := p.distance_squared_to(_chasm_site(k))
+			if d < da:
+				b = a
+				db = da
+				a = k
+				da = d
+			elif d < db:
+				b = k
+				db = d
+	var lo := a if a.x < b.x or (a.x == b.x and a.y < b.y) else b
+	var hi := b if lo == a else a
+	if _hash(lo.x * 9176 + hi.x, lo.y * 7919 + hi.y, 33) >= CHASM_SHARE:
+		return [NO_CHASM, INF]
+	var sa := _chasm_site(a)
+	var sb := _chasm_site(b)
+	var across := (db - da) / (2.0 * sa.distance_to(sb))  # from the border, toward the nearer site
+	var mid := (sa + sb) * 0.5
+	var row := y == floori(mid.y) if absf(sb.x - sa.x) >= absf(sb.y - sa.y) else x == floori(mid.x)
+	if across < CHASM_HALF:
+		return [BRIDGE if row else CHASM, across]
+	if row and across < CHASM_HALF + CHASM_APPROACH:
+		return [APPROACH, across]
+	return [NO_CHASM, across]
 
 
 # --- Relief in levels (ADR-0061) ---------------------------------------------

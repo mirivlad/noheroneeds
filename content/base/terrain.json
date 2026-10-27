@@ -13,6 +13,8 @@
     {"id": "base:grass_dead", "kind": "ground", "winter": "base:snow", "name": "Пожухлая трава", "tilled": "base:farmland"},
     {"id": "base:snow", "kind": "ground", "name": "Снег", "ambient": "drift"},
     {"id": "base:bog", "kind": "ground", "name": "Топь", "solid": true, "ambient": "mist"},
+    {"id": "base:chasm", "kind": "ground", "name": "Пропасть", "solid": true, "map_color": "#1a1820"},
+    {"id": "base:hanging_bridge", "kind": "ground", "name": "Висячий мост", "map_color": "#8a6a45"},
     {"id": "base:water", "kind": "ground", "name": "Вода", "solid": true, "swim": true,
       "gather": {"tool": "fishing", "verb": "Ловить рыбу", "drops": {}, "chance": 0.3,
         "pick": {"base:raw_fish": 6, "base:perch": 3, "base:pike": 1}, "stock": 6, "restock_hours": 4},
@@ -78,7 +80,7 @@
     {
       "id": "base:surface", "kind": "generator", "name": "Поверхность",
       "water": "base:water", "shallows": "base:shallows", "deep": "base:deep_water", "shore": "base:sand", "shore_cover": {"base:reeds": 1, "base:pebbles": 0.5}, "shore_cover_density": 0.35,
-      "spawn_clearing": 8, "rock": "base:rock"
+      "spawn_clearing": 8, "rock": "base:rock", "chasm": "base:chasm", "hanging_bridge": "base:hanging_bridge"
     },
     {
       "id": "base:meadow", "kind": "biome", "elevation": [0.0, 0.4], "name": "Луг",

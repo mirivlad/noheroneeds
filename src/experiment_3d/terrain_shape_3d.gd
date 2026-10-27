@@ -8,6 +8,8 @@ extends RefCounted
 var land: SurfaceGenerator
 ## Whether a cell is solid rock now (a cliff or a crag; dug out it is walkable).
 var solid: Callable
+## How far a cell's ground sinks under the land (a hanging bridge's sag), metres.
+var sag: Callable
 var heights := {}
 var pads := {}
 var extra_pads: Array = []
@@ -21,7 +23,7 @@ func _init(source: SurfaceGenerator, is_solid := Callable()) -> void:
 func cell(c: Vector2i) -> float:
 	if not _cells.has(c):
 		_cells[c] = land.metres_at(c.x, c.y)
-	return _cells[c]
+	return float(_cells[c]) - (float(sag.call(c)) if sag.is_valid() else 0.0)
 
 ## The ground under the middle of a rectangle (a settlement's homes stand level).
 func natural(c: Vector2i) -> float:

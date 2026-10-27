@@ -57,7 +57,7 @@ python3 tools/art/ro_sprites/review_sheet.py content/base OUT --plan base:human_
 
 ```bash
 tools/run_game.sh -- --profile=poses --body=base:human_ro_f --poses=/tmp/pose
-tools/run_game.sh -- --profile=hats --body=base:human_ro_f --hair=base:ro_hair_long --wear=base:felt_hat --poses=/tmp/hat
+tools/run_game.sh -- --profile=hats --body=base:human_ro_f --hair=base:human_ro_hair_long --wear=base:felt_hat --poses=/tmp/hat
 ```
 
 `--hair` — причёска нового персонажа разработки, `--wear` — вещи, которые ему выдаются и

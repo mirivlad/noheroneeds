@@ -1079,10 +1079,15 @@ func _check_visual(id: String, d: Dictionary) -> void:
 	worn_layers.append_array(held.values())
 	if d.get("format") == "lpc":
 		_check_lpc(id, d, dir)
+	elif d.get("format") == "ro":
+		_check_ro(id, d, dir)
 	for worn: Variant in worn_layers:
 		if typeof(worn) == TYPE_DICTIONARY and worn.has("sheets") and String(worn.get("layer", "")) != "":
 			for sheet: Variant in worn["sheets"]:
-				_check_sheet(id, sheet, dir)
+				if d.get("format") == "ro":
+					_check_ro_sheet(id, sheet, dir)
+				else:
+					_check_sheet(id, sheet, dir)
 		elif typeof(worn) != TYPE_DICTIONARY or String(worn.get("atlas", "")) == "" or String(worn.get("layer", "")) == "":
 			errors.append("%s: worn needs atlas and layer" % id)
 		else:
@@ -1134,6 +1139,49 @@ func _check_lpc(id: String, d: Dictionary, dir: String) -> void:
 	for kind: Variant in d.get("swings", {}):
 		if not animations.has(d["swings"][kind]):
 			errors.append("%s: swing '%s' plays an unknown animation" % [id, kind])
+
+
+## A body from the RO sprite pipeline (tools/art/ro_sprites/export_game.py):
+## its own sheet, clips with frames and fps, the clip of each swing and the
+## order its layers are drawn in, frame by frame (RoSprite).
+func _check_ro(id: String, d: Dictionary, dir: String) -> void:
+	_check_ro_sheet(id, d, dir)
+	var clips: Variant = d.get("clips")
+	if typeof(clips) != TYPE_DICTIONARY or not ["idle", "walk"].all(func(c: String) -> bool: return clips.has(c)):
+		errors.append("%s: clips need idle and walk" % id)
+		return
+	for c: String in clips:
+		var clip: Variant = clips[c]
+		if typeof(clip) != TYPE_DICTIONARY or int(clip.get("frames", 0)) < 1 \
+				or typeof(clip.get("fps")) not in [TYPE_INT, TYPE_FLOAT] or float(clip["fps"]) <= 0.0:
+			errors.append("%s: clip '%s' needs frames and fps" % [id, c])
+	for kind: Variant in d.get("swings", {}):
+		if not clips.has(d["swings"][kind]):
+			errors.append("%s: swing '%s' plays an unknown clip" % [id, kind])
+	if typeof(d.get("layers")) != TYPE_ARRAY or typeof(d.get("order")) != TYPE_DICTIONARY:
+		errors.append("%s: an RO body needs its layers and their order" % id)
+
+
+## One RO layer: an atlas of frames of one size, eight rows of directions,
+## clips as [first column, frames], bands of rows past `columns` columns.
+func _check_ro_sheet(id: String, sheet: Variant, dir: String) -> void:
+	if typeof(sheet) != TYPE_DICTIONARY or String(sheet.get("atlas", "")) == "" or typeof(sheet.get("anims")) != TYPE_DICTIONARY \
+			or typeof(sheet.get("frame")) != TYPE_ARRAY or (sheet["frame"] as Array).size() != 2 \
+			or typeof(sheet.get("origin")) != TYPE_ARRAY or (sheet["origin"] as Array).size() != 2 or int(sheet.get("columns", 0)) < 1:
+		errors.append("%s: an RO sheet needs atlas, frame, origin, columns and anims" % id)
+		return
+	sheet["atlas_path"] = dir.path_join(String(sheet["atlas"])) if dir != "" else ""
+	if dir != "" and not FileAccess.file_exists(sheet["atlas_path"]) and not ResourceLoader.exists(sheet["atlas_path"]):
+		errors.append("%s: atlas %s not found" % [id, sheet["atlas_path"]])
+	sheet["frame"] = (sheet["frame"] as Array).map(func(n: Variant) -> int: return int(n))
+	sheet["origin"] = (sheet["origin"] as Array).map(func(n: Variant) -> int: return int(n))
+	sheet["columns"] = int(sheet["columns"])
+	for c: String in sheet["anims"]:
+		var r: Variant = sheet["anims"][c]
+		if typeof(r) != TYPE_ARRAY or (r as Array).size() != 2 or int(r[1]) < 1:
+			errors.append("%s: RO sheet clip '%s' needs a first column and frames" % [id, c])
+			continue
+		sheet["anims"][c] = [int(r[0]), int(r[1])]
 
 
 ## One LPC layer: an atlas of animations, each [x, y, frame size, frames]

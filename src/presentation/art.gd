@@ -87,13 +87,16 @@ static func worn_visual(content: ContentRegistry, body: Dictionary, item: String
 	return body.get("worn_overrides", {}).get(item, content.visual_of(item).get("worn", {}))
 
 
-## A paper doll for looks: an LPC human (lpc_visuals.json) or a creature's
-## own sheet. Changing looks later: dress() with the same arguments.
+## A paper doll for looks: an LPC human (lpc_visuals.json), an RO-style
+## human (ro_visuals.json) or a creature's own sheet. Changing looks later:
+## dress() with the same arguments.
 static func character_sprite(content: ContentRegistry, visual: Dictionary, looks: Dictionary) -> CharacterSprite:
 	var body := character_texture(visual, looks.get("colors", {}))
 	var layers := character_layers(content, visual, looks)
 	if visual.get("format") == "lpc":
 		return LpcSprite.new(body, visual, layers, looks.duplicate(true))
+	if visual.get("format") == "ro":
+		return RoSprite.new(body, visual, layers, looks.duplicate(true))
 	return CharacterSprite.new(body, visual, layers, looks.duplicate(true))
 
 
@@ -103,14 +106,14 @@ static func dress(sprite: CharacterSprite, content: ContentRegistry, visual: Dic
 
 ## Whether a sprite can be dressed in a visual (not a creature's sheet for an LPC body).
 static func same_kind(sprite: CharacterSprite, visual: Dictionary) -> bool:
-	return (sprite is LpcSprite) == (visual.get("format") == "lpc")
+	return (sprite is LpcSprite) == (visual.get("format") == "lpc") and (sprite is RoSprite) == (visual.get("format") == "ro")
 
 
 ## The same fitted layers in the editor, equipment window and world:
-## [slot, texture] or, for LPC bodies, [slot, texture, sheet] per sheet.
+## [slot, texture] or, for LPC and RO bodies, [slot, texture, sheet] per sheet.
 static func character_layers(content: ContentRegistry, body: Dictionary, looks: Dictionary) -> Array:
 	var layers := []
-	if body.get("format") == "lpc":
+	if body.get("format") in ["lpc", "ro"]:
 		for style: Variant in (looks.get("styles", {}) as Dictionary).values():
 			for sheet: Dictionary in body.get("style_overrides", {}).get(String(style), {}).get("sheets", []):
 				layers.append([String(body["style_overrides"][String(style)]["layer"]), texture(sheet["atlas_path"]), sheet])
@@ -135,8 +138,8 @@ static func character_layers(content: ContentRegistry, body: Dictionary, looks: 
 ## Palette keys affect skin/hair only; clothes keep their own material colours.
 static func character_texture(visual: Dictionary, colors: Dictionary, under_hat := false) -> Texture2D:
 	var path := String(visual["atlas_path"])
-	if visual.get("format") == "lpc" or not visual.get("recolor", false):
-		return texture(path)  # LPC layers are recoloured by lpc_material
+	if visual.get("format") in ["lpc", "ro"] or not visual.get("recolor", false):
+		return texture(path)  # LPC layers are recoloured by lpc_material; RO ones keep their colours
 	var key := path + str(colors) + str(under_hat)
 	if _textures.has(key):
 		return _textures[key]

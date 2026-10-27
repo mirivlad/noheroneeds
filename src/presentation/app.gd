@@ -11,7 +11,8 @@ extends Node
 ##   --server [options]   (with --headless) runs a dedicated server instead
 ##                        of the game (DedicatedServer lists the options);
 ##   --world=ID       plays a saved world (or makes it) at once;
-## dev runs: --demo[=outside|upstairs|behind], --walk=DX,DY,
+## dev runs: --demo[=outside|upstairs|behind], --walk=DX,DY, --body=PLAN (plays a
+## character of that body plan, made in the profile if it has none),
 ## --screenshot=PATH --frames=N (saves a frame and quits) start a local game
 ## at once in the world "local"; --menu=SCREEN (start, new_game, load,
 ## connect, characters, character_create, settings...) shows a menu screen.
@@ -135,10 +136,18 @@ func show_start_screen(message := "") -> void:
 		menu.tell(message)
 
 
+## Dev: the profile's first character of the body plan --body names, or a new one.
+func _dev_character() -> String:
+	for c: Dictionary in characters.list():
+		if c["body_plan"] == String(_opts["body"]):
+			return String(c["file"])
+	return characters.create("Путник", {}, {}, String(_opts["body"]))
+
+
 func start_game(cfg: Dictionary) -> void:
 	_end_game()
 	_close_menu()
-	var file := characters.file_bytes(characters.current(String(settings.get_value("character"))))
+	var file := characters.file_bytes(_dev_character() if _opts.has("body") else characters.current(String(settings.get_value("character"))))
 	game = GameScreen.new()
 	add_child(game)
 	var err := game.start(cfg, content, me, PlayerIdentity.load_or_create(_user("local_server_identity")),

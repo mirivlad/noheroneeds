@@ -16,7 +16,10 @@ const HAIR_COLORS := {"#1c2222": "Чёрный", "#421603": "Тёмно-кашт
 const EYE_COLORS := {"#544c2e": "Карие", "#5686ae": "Голубые", "#53b351": "Зелёные", "#8b8979": "Серые"}
 ## One build of each body for now (LPC's muscular body lacks clothes and a bow
 ## shot); old broad bodies are drawn as these and become them when edited.
-const PLANS := ["base:human_m", "base:human_f"]
+## The RO-style body (tools/art/ro_sprites) has its own face drawn on and one
+## sample hairstyle: any hair but "Без волос" is that one.
+const PLANS := ["base:human_m", "base:human_f", "base:human_ro_m"]
+const RO_PLAN := "base:human_ro_m"
 
 var content: ContentRegistry
 var preview := CharacterPreview.new()
@@ -52,14 +55,14 @@ func setup(registry: ContentRegistry, character: PortableCharacter = null) -> vo
 	name_edit.max_length = PortableCharacter.NAME_MAX
 	name_edit.text = character.name if character else ""
 	_field("Имя", name_edit)
-	sex_pick = _choice("Пол", "SexChoice", ["Мужской", "Женский"])
+	sex_pick = _choice("Пол", "SexChoice", ["Мужской", "Женский", "Мужской · RO"])
 	face_pick = _choice("Лицо", "FaceChoice", FACES.values())
 	hair_pick = _choice("Причёска", "HairChoice", HAIRS.values())
 	skin_pick = _choice("Кожа", "SkinChoice", SKIN.values())
 	color_pick = _choice("Волосы", "HairColorChoice", HAIR_COLORS.values())
 	eye_pick = _choice("Глаза", "EyeColorChoice", EYE_COLORS.values())
 	if character:
-		sex_pick.selected = 1 if character.body_plan.begins_with("base:human_f") else 0
+		sex_pick.selected = 2 if character.body_plan == RO_PLAN else (1 if character.body_plan.begins_with("base:human_f") else 0)
 		face_pick.selected = maxi(0, FACES.keys().find(character.styles.get("face", "")))
 		hair_pick.selected = maxi(0, HAIRS.keys().find(character.styles.get("hair", "")))
 		skin_pick.selected = maxi(0, SKIN.keys().find(character.colors.get("skin", "")))
@@ -83,8 +86,12 @@ func setup(registry: ContentRegistry, character: PortableCharacter = null) -> vo
 
 
 func appearance() -> Dictionary:
-	return {"body_plan": PLANS[sex_pick.selected],
-		"styles": {"face": FACES.keys()[face_pick.selected], "hair": HAIRS.keys()[hair_pick.selected]},
+	var plan: String = PLANS[sex_pick.selected]
+	var hair: String = HAIRS.keys()[hair_pick.selected]
+	var styles := {"face": FACES.keys()[face_pick.selected], "hair": hair}
+	if plan == RO_PLAN:
+		styles = {"hair": hair if hair == "base:human_hair_bald" else "base:human_ro_hair_sample"}
+	return {"body_plan": plan, "styles": styles,
 		"colors": {"skin": SKIN.keys()[skin_pick.selected], "hair": HAIR_COLORS.keys()[color_pick.selected],
 			"eyes": EYE_COLORS.keys()[eye_pick.selected]}}
 

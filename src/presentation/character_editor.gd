@@ -19,9 +19,9 @@ const EYE_COLORS := {"#544c2e": "Карие", "#5686ae": "Голубые", "#53b
 ## The RO-style bodies (tools/art/ro_sprites) have their own faces drawn on, hairstyles
 ## of their own and hair of any colour (a colour wheel instead of the list).
 const PLANS := ["base:human_m", "base:human_f", "base:human_ro_m", "base:human_ro_f"]
-const RO_HAIRS := {"base:ro_hair_tousled": "Взъерошенная", "base:ro_hair_twintails": "Два хвоста",
-	"base:ro_hair_bob": "Каре", "base:ro_hair_fluffy_bob": "Пышное каре", "base:ro_hair_fringe": "С чёлкой",
-	"base:ro_hair_long": "Длинные", "base:ro_hair_side_tail": "Хвост набок", "base:ro_hair_cat_ears": "С ушками",
+const RO_HAIRS := {"base:human_ro_hair_tousled": "Взъерошенная", "base:human_ro_hair_twintails": "Два хвоста",
+	"base:human_ro_hair_bob": "Каре", "base:human_ro_hair_fluffy_bob": "Пышное каре", "base:human_ro_hair_fringe": "С чёлкой",
+	"base:human_ro_hair_long": "Длинные", "base:human_ro_hair_side_tail": "Хвост набок", "base:human_ro_hair_cat_ears": "С ушками",
 	"base:human_hair_bald": "Без волос"}
 ## Clothes to try on in the preview (not kept: a character starts in the world's outfit).
 const TRY_ON := {"Стартовая одежда": {}, "Фетровая шляпа": {"headwear": "base:felt_hat"},
@@ -29,7 +29,7 @@ const TRY_ON := {"Стартовая одежда": {}, "Фетровая шля
 	"Стражник": {"armor": "base:leather_armor", "headwear": "base:iron_helmet", "back_item": "base:wool_cloak"},
 	"Охотник": {"headwear": "base:fur_hood", "back_item": "base:fur_cloak"}}
 ## The hairstyle an RO body starts with.
-const RO_HAIR := {"base:human_ro_m": "base:ro_hair_tousled", "base:human_ro_f": "base:ro_hair_twintails"}
+const RO_HAIR := {"base:human_ro_m": "base:human_ro_hair_tousled", "base:human_ro_f": "base:human_ro_hair_twintails"}
 ## RO hair with no colour chosen yet.
 const RO_HAIR_COLOR := "#7d4513"
 

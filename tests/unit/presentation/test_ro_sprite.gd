@@ -211,7 +211,7 @@ func test_hair_inside_the_hats_keep_out_is_cut() -> void:
 	var content := _content()
 	var visual := content.visual_of(PLAN)
 	var look := _look(WorldLibrary.STARTER_OUTFIT.merged({"headwear": "base:felt_hat"}), PLAN)
-	look["styles"] = {"hair": "base:ro_hair_long"}
+	look["styles"] = {"hair": "base:human_ro_hair_long"}
 	var doll := Art.character_sprite(content, visual, look) as RoSprite
 	var layer: Array = doll._layers.filter(func(l: Array) -> bool: return l[0] == "hair")[0]
 	var s: Sprite2D = layer[1]

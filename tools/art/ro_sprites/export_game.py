@@ -44,7 +44,7 @@ DIRECTIONS = ["s", "se", "e", "ne", "n", "nw", "w", "sw"]
 # body: its body plan
 BODIES = {"male": "base:human_ro_m", "female": "base:human_ro_f"}
 # The hairstyles as the game's styles (content/base/character_editor.json).
-STYLE_IDS = {layer: "base:ro_hair_" + layer[len("hair_"):] for layer in gear.HAIR_LAYERS}
+STYLE_IDS = {layer: "base:human_ro_hair_" + layer[len("hair_"):] for layer in gear.HAIR_LAYERS}
 # Game swings (world_view.gd swing_kind) -> clips.
 SWINGS = {"chop": "chop", "mine": "mine", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "cast"}
 # Game equipment slots of the layers (content/base character_editor.json).

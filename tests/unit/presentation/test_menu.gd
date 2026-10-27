@@ -78,7 +78,7 @@ func test_load_a_world_and_host_it() -> void:
 func test_create_and_switch_characters() -> void:
 	_press("Персонажи")
 	_press("Создать нового")
-	var name_edit: LineEdit = app.menu.find_children("*", "LineEdit", true, false)[0]
+	var name_edit: LineEdit = app.menu.find_child("CharacterName", true, false)
 	name_edit.text = "Мара"
 	_press("Создать")
 	var made := app.characters.load_character(String(app.settings.get_value("character")))

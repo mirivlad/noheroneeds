@@ -3,9 +3,15 @@
 Toon ramps: (light level from which the colour applies, sRGB hex), darkest first.
 """
 
-SKIN = [(0.0, "#b06c55"), (0.12, "#dc9b7e"), (0.45, "#f6cfb2")]
+# Skin and hair are drawn in greys and painted the character's colour in the game (hair.py,
+# ro_skin.gdshader, ro_hair.gdshader): the MIDDLE grey is the colour itself, darker greys
+# darken it, lighter ones lift it towards white by up to LIFT (at white). Skin greys stay
+# under white: the white highlight of the drawn eyes is not skin.
+SKIN = [(0.0, "#686868"), (0.12, "#909090"), (0.45, "#dcdcdc")]
+SKIN_MIDDLE, SKIN_LIFT = 0x90, 0.8
 TRUNKS = [(0.0, "#1b1d33"), (0.12, "#2c3256"), (0.45, "#434c7d")]
-HAIR_SILVER = [(0.0, "#625e6e"), (0.12, "#938ea0"), (0.45, "#c6c2ce"), (0.85, "#e9e7ee")]
+HAIR = [(0.0, "#505050"), (0.12, "#808080"), (0.45, "#b0b0b0"), (0.85, "#e0e0e0")]
+HAIR_MIDDLE, HAIR_LIFT = 0x80, 0.55
 
 # Clothes and gear (stage 4)
 def tones(dark, mid, light, shine=None):

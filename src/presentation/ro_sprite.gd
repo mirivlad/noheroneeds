@@ -6,7 +6,10 @@ extends CharacterSprite
 ## in eight real directions (no mirroring). Each layer was filmed over the
 ## invisible body, so a frame of a layer holds only what shows of it; the
 ## visual gives the order the layers are drawn in, frame by frame, from their
-## depth. Swings are real clips (a chop, a thrust, a shot, a cast).
+## depth. Swings are real clips (a chop, a thrust, a shot, a cast). Skin and
+## hair are grey, painted the character's colours (ro_skin.gdshader,
+## ro_hair.gdshader); hair is cut under headwear where it is inside the
+## headwear's keep-out.
 
 ## Rows of the atlases: directions on the screen.
 const ROWS := ["s", "se", "e", "ne", "n", "nw", "w", "sw"]
@@ -21,6 +24,11 @@ const HAND_PX := [Vector2(-16, -48), Vector2(-8, -48), Vector2(3, -48), Vector2(
 const HAND_BEHIND_ROW := [false, false, false, true, true, true, true, false]
 ## How deep a swimmer sits: frame pixels below the water line.
 const RO_SINK_PX := 45
+const HAIR_SHADER := preload("res://src/presentation/ro_hair.gdshader")
+const SKIN_SHADER := preload("res://src/presentation/ro_skin.gdshader")
+## Hair and skin with no colour chosen.
+const HAIR_COLOUR := "#7d4513"
+const SKIN_COLOUR := "#dc9b7e"
 
 ## Layers of what is in the hands: [slot, Sprite2D, sheet]; and which item.
 var _held_layers: Array = []
@@ -32,11 +40,33 @@ var _faced := false
 var _drawn_order := []
 ## Dev (DevRuns --poses): [clip, row, frame] shown whatever the character does; [] lets it be.
 var pinned: Array = []
+## The keep-out sheet of the headwear worn ({} for none): hair inside it is not drawn.
+var _keep_out := {}
 
 
 func _init(body: Texture2D, visual: Dictionary, layers: Array = [], looks: Dictionary = {}) -> void:
 	super(body, visual, layers, looks)
 	turn_to(Vector2.DOWN)  # facing the viewer until it moves
+
+
+## The body gets its skin colour; hair its colour and the cut of the headwear worn.
+func _add_layer(slot: String, tex: Texture2D, sheet := {}) -> void:
+	super(slot, tex, sheet)
+	if slot == "body":
+		var skin := ShaderMaterial.new()
+		skin.shader = SKIN_SHADER
+		skin.set_shader_parameter("skin_colour", _colour("skin", SKIN_COLOUR))
+		(_layers[-1][1] as Sprite2D).material = skin
+	if slot != "hair":
+		return
+	var m := ShaderMaterial.new()
+	m.shader = HAIR_SHADER
+	m.set_shader_parameter("hair_colour", _colour("hair", HAIR_COLOUR))
+	var hat := String(look.get("worn", {}).get("headwear", ""))
+	_keep_out = _visual.get("worn_overrides", {}).get(hat, {}).get("keep_out", {})
+	if not _keep_out.is_empty():
+		m.set_shader_parameter("keep_out", Art.texture(_keep_out["atlas_path"]))
+	(_layers[-1][1] as Sprite2D).material = m
 
 
 func dress(body: Texture2D, visual: Dictionary, layers: Array, looks: Dictionary) -> void:
@@ -99,21 +129,47 @@ func _frame(anim: Dictionary, i: int) -> void:
 
 
 func _place_frame(s: Sprite2D, sheet: Dictionary, clip: String, index: int) -> void:
-	var r: Array = sheet.get("anims", {}).get(clip, [])
-	if r.is_empty() or index >= int(r[1]):
+	var at := _frame_rect(sheet, clip, index)
+	if at.size == Vector2.ZERO:
 		s.visible = false
 		return
-	var column := int(r[0]) + index
-	var columns := int(sheet["columns"])
-	var w := int(sheet["frame"][0])
-	var h := int(sheet["frame"][1])
 	s.visible = true
 	s.flip_h = false
-	s.region_rect = Rect2((column % columns) * w, ((column / columns) * ROWS.size() + _row) * h, w, h)
+	s.region_rect = at
 	s.offset = -Vector2(float(sheet["origin"][0]), float(sheet["origin"][1]))
 	if submerged:  # swimming (ADR-0050): sunk, only what is above the water line drawn
 		s.region_rect.size.y = maxf(1.0, float(sheet["origin"][1]) - RO_SINK_PX)
 		s.offset.y += RO_SINK_PX
+	if s.material is ShaderMaterial and (s.material as ShaderMaterial).shader == HAIR_SHADER:
+		_place_cut(s.material, at.position + Vector2(sheet["origin"][0], sheet["origin"][1]), clip, index)
+
+
+## A colour of the look ("#rrggbb") as the shaders take it.
+func _colour(key: String, default: String) -> Vector3:
+	var c := Color.from_string(String(look.get("colors", {}).get(key, default)), Color(default))
+	return Vector3(c.r, c.g, c.b)
+
+
+## Where a frame of a sheet is in its atlas, in this row; empty when the sheet has no such frame.
+func _frame_rect(sheet: Dictionary, clip: String, index: int) -> Rect2:
+	var r: Array = sheet.get("anims", {}).get(clip, [])
+	if r.is_empty() or index >= int(r[1]):
+		return Rect2()
+	var column := int(r[0]) + index
+	var columns := int(sheet["columns"])
+	var w := int(sheet["frame"][0])
+	var h := int(sheet["frame"][1])
+	return Rect2((column % columns) * w, ((column / columns) * ROWS.size() + _row) * h, w, h)
+
+
+## The hair frame's feet are at `feet` in its atlas: the same frame of the keep-out, lined up by the feet.
+func _place_cut(m: ShaderMaterial, feet: Vector2, clip: String, index: int) -> void:
+	var at := _frame_rect(_keep_out, clip, index)
+	m.set_shader_parameter("cut", at.size != Vector2.ZERO)
+	if at.size == Vector2.ZERO:
+		return
+	m.set_shader_parameter("offset", at.position + Vector2(_keep_out["origin"][0], _keep_out["origin"][1]) - feet)
+	m.set_shader_parameter("keep_rect", Vector4(at.position.x, at.position.y, at.size.x, at.size.y))
 
 
 ## Back to front as the visual orders this frame's layers.

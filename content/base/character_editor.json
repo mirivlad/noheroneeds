@@ -313,18 +313,74 @@
       ]
     },
     {
-      "id": "base:human_ro_hair_tousled",
+      "id": "base:ro_hair_tousled",
       "kind": "style",
       "slot": "hair",
       "body_plans": [
-        "base:human_ro_m"
+        "base:human_ro_m",
+        "base:human_ro_f"
       ]
     },
     {
-      "id": "base:human_ro_hair_twintails",
+      "id": "base:ro_hair_twintails",
       "kind": "style",
       "slot": "hair",
       "body_plans": [
+        "base:human_ro_m",
+        "base:human_ro_f"
+      ]
+    },
+    {
+      "id": "base:ro_hair_bob",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_ro_m",
+        "base:human_ro_f"
+      ]
+    },
+    {
+      "id": "base:ro_hair_long",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_ro_m",
+        "base:human_ro_f"
+      ]
+    },
+    {
+      "id": "base:ro_hair_fringe",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_ro_m",
+        "base:human_ro_f"
+      ]
+    },
+    {
+      "id": "base:ro_hair_side_tail",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_ro_m",
+        "base:human_ro_f"
+      ]
+    },
+    {
+      "id": "base:ro_hair_cat_ears",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_ro_m",
+        "base:human_ro_f"
+      ]
+    },
+    {
+      "id": "base:ro_hair_fluffy_bob",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_ro_m",
         "base:human_ro_f"
       ]
     },

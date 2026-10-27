@@ -7,12 +7,14 @@ are rendered SCALE times larger than the sprite cell; pixelate.py reduces them.
 The ground point under the character lands on the same pixel of its cell in
 every frame, and every pose is lowered or raised until the body touches z = 0.
 
-Layers (gear.py): "body" (the body and the face mesh), "hair_sample" and every
+Layers (gear.py): "body" (the body and the face mesh), every hairstyle and every
 item. Each layer is rendered alone, with the body as a holdout: the body does
 not show but hides what is behind it, so a layer holds exactly the pixels of it
 that are seen on that body. Nothing shows under the ground either. Each
 frame also gets a depth map (nearer is brighter), by which compose.py puts any
-set of layers together.
+set of layers together. The keep-outs of headwear (gear.KEEP_OUT_LAYERS) get
+only the depth map, without the body and seeing only faces turned to the camera:
+the near side of the keep-out, or its far side from its inward-turned copy.
 
 Written per layer: <out>/<layer>/<clip>_<direction>_<NN>.png (colour) and
 <clip>_<direction>_<NN>.depth.png (16-bit grey, DEPTH_SCALE times the cell; 0 is
@@ -45,8 +47,7 @@ import rig  # noqa: E402
 DIRECTIONS = ["s", "se", "e", "ne", "n", "nw", "w", "sw"]
 ANCHORS = ["eye_r", "eye_l", "mouth"]
 DEPTH_SCALE = 2
-# Depth range mapped to the 16-bit grey: metres from the camera (it stands CAMERA_DISTANCE off).
-CAMERA_DISTANCE, NEAR, FAR = 20, 17, 23
+CAMERA_DISTANCE, (NEAR, FAR) = 20, gear.DEPTH_RANGE
 
 
 def main():
@@ -59,16 +60,17 @@ def main():
 	ap.add_argument("--elevation", type=float, default=22)
 	ap.add_argument("--scale", type=int, default=8)
 	a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:])
-	layers = gear.all_layers() if a.layers == ["all"] else a.layers
+	layers = gear.render_layers() if a.layers == ["all"] else a.layers
 	wanted = list(clips.CLIPS) if a.clips == ["all"] else a.clips
 	scene = bpy.context.scene
 	arm = bpy.data.objects["Base"]
 	arm.rotation_mode = "XYZ"
 	body = bpy.data.objects["Body"]
 	members = {layer: objects_of(layer) for layer in layers}
-	everything = {o for layer in gear.all_layers() for o in objects_of(layer)}
+	everything = {o for layer in gear.render_layers() for o in objects_of(layer)}
 	setup(scene, a)
 	depth = depth_material()
+	facing = depth_material(cull=True)
 	for layer in layers:
 		os.makedirs(os.path.join(a.out, layer), exist_ok=True)
 	anchors_path = os.path.join(a.out, "body", "anchors.json")
@@ -89,6 +91,9 @@ def main():
 				for layer in todo:
 					show(layer, members[layer], everything, hidden=set() if drawn else {"bow_arrow"})
 					path = os.path.join(os.path.abspath(a.out), layer, frame)
+					if layer in gear.KEEP_OUT_LAYERS:
+						render(scene, a, layer, path + ".depth.png", facing)
+						continue
 					render(scene, a, layer, path + ".png")
 					render(scene, a, layer, path + ".depth.png", depth)
 					if layer == "body":
@@ -138,15 +143,14 @@ def aim_turn(grip, aim, flat):
 def objects_of(layer):
 	if layer == "body":
 		return [bpy.data.objects["Body"], bpy.data.objects["Face"]]
-	if layer == "hair_sample":
-		return [bpy.data.objects["HairSample"]]
 	return list(bpy.data.collections[layer].objects)
 
 
 def show(layer, own, everything, hidden):
+	alone = layer in gear.KEEP_OUT_LAYERS  # a keep-out is filmed without the body
 	for o in everything:
 		mine = o in own and o.name not in hidden
-		o.hide_render = not (mine or (o.name in ("Body", "Face")))
+		o.hide_render = not (mine or (o.name in ("Body", "Face") and not alone))
 		o.is_holdout = not mine
 	bpy.data.objects["ground"].hide_render = False
 
@@ -159,7 +163,9 @@ def render(scene, a, layer, path, override=None):
 	scene.camera.data.ortho_scale = cell / a.px_per_m
 	place_camera(scene.camera, a, cell, foot)
 	scene.view_layers[0].material_override = override
-	scene.eevee.taa_render_samples = 1 if override else 16
+	# One sample: a sprite pixel is the most frequent colour of its 8x8 block, so
+	# smoothing within the block changed 0.6% of pixels and cost two thirds of the time.
+	scene.eevee.taa_render_samples = 1
 	r.filter_size = 0.0 if override else 0.5
 	scene.view_settings.view_transform = "Raw" if override else "Standard"
 	im = r.image_settings
@@ -208,9 +214,11 @@ def strand(bm, a, b, r):
 	bmesh.ops.transform(bm, verts=vs, matrix=Matrix.Translation((a + b) / 2) @ turn)
 
 
-def depth_material():
-	"""Grey by distance from the camera: 1 at NEAR, 0 at FAR (an emission, read raw)."""
+def depth_material(cull=False):
+	"""Grey by distance from the camera: 1 at NEAR, 0 at FAR (an emission, read raw);
+	cull: faces turned away from the camera are not drawn."""
 	mat = bpy.data.materials.new("depth")
+	mat.use_backface_culling = cull
 	mat.use_nodes = True
 	nodes, links = mat.node_tree.nodes, mat.node_tree.links
 	nodes.clear()

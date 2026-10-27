@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dt31s2dulsda"
-path="res://.godot/imported/hair_sample.png-8e5c5f17b5040c0c2461fed6a15502c4.ctex"
+uid="uid://d20nc1fxcry5w"
+path="res://.godot/imported/felt_hat_keep_out.png-6344fb885e01cd9f6b474354337469db.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content/base/art/ro/male/hair_sample.png"
-dest_files=["res://.godot/imported/hair_sample.png-8e5c5f17b5040c0c2461fed6a15502c4.ctex"]
+source_file="res://content/base/art/ro/male/felt_hat_keep_out.png"
+dest_files=["res://.godot/imported/felt_hat_keep_out.png-6344fb885e01cd9f6b474354337469db.ctex"]
 
 [params]
 

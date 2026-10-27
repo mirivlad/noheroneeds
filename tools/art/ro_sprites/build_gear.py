@@ -4,7 +4,7 @@ Every item of gear.py gets a collection of its own name in a copy of the base
 file. Worn clothes are shells of the body: the body's faces of the covered
 part pushed out along their normals, with the body's skin weights, so they
 bend in every pose exactly as the body under them. Headwear is a shell around
-the head and the sample hair, cut along the brow and the nape, riding the head
+the head and the hairstyles, cut along the brow and the nape, riding the head
 bone. A cloak is a sheet hanging from the shoulders on two cape bones
 (Cape1, Cape2) that rig.py swings clear of the legs. Held things are built
 along the grip axis of the fist: +Y out of the thumb side, +X the way the
@@ -39,6 +39,11 @@ FEET = {f"J_Bip_{s}_{b}" for s in "LR" for b in ("Foot", "ToeBase")}
 HEAD_ABOVE_EYES = 0.04
 # How much hair headwear makes room for over the skull, metres.
 HAIR_ROOM = 0.05
+# The keep-out of headwear (gear.KEEP_OUT_LAYERS): everything over its rim within this
+# many metres of the head's upright axis.
+KEEP_OUT_RADIUS = 0.45
+# Rims of the headwear: (point, normal) of the plane its keep-out starts at (set by each).
+RIMS = {}
 # Smallest width that survives as a pixel: a block of the 8x supersampled render is one pixel.
 PIXEL = 1 / gear.PX_PER_M
 
@@ -66,6 +71,14 @@ def main():
 				c.objects.unlink(o)
 			col.objects.link(o)
 			o["layer"] = item
+	for hat in gear.HEADWEAR:
+		for side, inward in (("_keep_out", False), ("_keep_out_back", True)):
+			col = bpy.data.collections.new(hat + side)
+			bpy.context.scene.collection.children.link(col)
+			o = keep_out(hat + side, *RIMS[hat], inward)
+			for c in o.users_collection:
+				c.objects.unlink(o)
+			col.objects.link(o)
 	bpy.ops.wm.save_as_mainfile(filepath=out)
 	print("gear:", ", ".join(c.name for c in bpy.data.collections if c.name in BUILD))
 
@@ -208,13 +221,13 @@ def leather_armor():
 # --- headwear ----------------------------------------------------------------------
 
 def envelope(margin, smooth=3, segments=(48, 24)):
-	"""A sphere around the head and the sample hair, drawn in onto them from outside and kept
+	"""A sphere around the head and the hairstyles, drawn in onto them from outside and kept
 	`margin` metres off; bumps of hair strands are filled out first. Hair counts only up to
 	HAIR_ROOM over the head: long tails and buns stay out (hair outside headwear is cut off
-	when the layers are put together, as in Ragnarok Online)."""
+	in the game, as in Ragnarok Online). The same for every style: one hat fits them all."""
 	dg = bpy.context.evaluated_depsgraph_get()
 	head = [BVHTree.FromObject(bpy.data.objects[n], dg) for n in ("Face", "Body")]
-	hair = BVHTree.FromObject(bpy.data.objects["HairSample"], dg)
+	hairs = [BVHTree.FromObject(bpy.data.objects[n], dg) for n in gear.HAIR_LAYERS]
 	bm = bmesh.new()
 	bmesh.ops.create_uvsphere(bm, u_segments=segments[0], v_segments=segments[1], radius=1.0)
 	r = {}
@@ -225,8 +238,8 @@ def envelope(margin, smooth=3, segments=(48, 24)):
 			hit = t.ray_cast(start, -u, 0.5)
 			if hit[0] is not None:
 				skull = max(skull, (hit[0] - HEAD_CENTRE).length)
-		hit = hair.ray_cast(start, -u, 0.5)
-		hair_r = (hit[0] - HEAD_CENTRE).length if hit[0] is not None else 0.0
+		hits = [t.ray_cast(start, -u, 0.5)[0] for t in hairs]
+		hair_r = max([(h - HEAD_CENTRE).length for h in hits if h is not None], default=0.0)
 		r[v] = max(skull, min(hair_r, skull + HAIR_ROOM))
 	near = {v: [e.other_vert(v) for e in v.link_edges] for v in bm.verts}
 	for _ in range(smooth):
@@ -257,6 +270,20 @@ def rigid(name, bm, trim=None, bone=C + "Head"):
 	return obj
 
 
+def keep_out(name, point, normal, inward):
+	"""A closed upright cylinder about the head cut at the rim plane, all of it over the rim;
+	inward: its faces turned in, so a camera culling back faces sees its far side."""
+	bm = bmesh.new()
+	bmesh.ops.create_cone(bm, cap_ends=True, segments=32, radius1=KEEP_OUT_RADIUS, radius2=KEEP_OUT_RADIUS,
+		depth=1.2, matrix=Matrix.Translation(HEAD_CENTRE + Vector((0, 0, 0.1))))
+	cut(bm, point, normal)
+	bmesh.ops.holes_fill(bm, edges=[e for e in bm.edges if e.is_boundary], sides=0)
+	bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+	if inward:
+		bmesh.ops.reverse_faces(bm, faces=bm.faces)
+	return rigid(name, bm)
+
+
 def above(point, normal):
 	n = Vector(normal).normalized()
 	return lambda co: (co - Vector(point)).dot(n)
@@ -264,6 +291,7 @@ def above(point, normal):
 
 def iron_helmet():
 	rim_point, rim_normal = (0, FACE_FRONT - 0.01, BROW + 0.005), (0, -0.38, 1)
+	RIMS["iron_helmet"] = (rim_point, rim_normal)
 	bm = envelope(0.014)
 	cut(bm, rim_point, rim_normal)
 	height = above(rim_point, rim_normal)
@@ -278,6 +306,7 @@ def iron_helmet():
 
 def felt_hat():
 	base_point, base_normal = (0, 0, BROW + 0.03), (0, -0.15, 1)
+	RIMS["felt_hat"] = (base_point, base_normal)
 	bm = envelope(0.012, smooth=6)
 	cut(bm, base_point, base_normal)
 	height = above(base_point, base_normal)
@@ -295,7 +324,8 @@ def felt_hat():
 
 def fur_hood():
 	bm = envelope(0.022, smooth=6)
-	cut(bm, (0, 0, MOUTH - 0.03), (0, 0, 1))
+	RIMS["fur_hood"] = ((0, 0, MOUTH - 0.03), (0, 0, 1))
+	cut(bm, *RIMS["fur_hood"])
 	face_hole = [v for v in bm.verts
 		if (v.co - HEAD_CENTRE).normalized().y > 0.42 and v.co.z < BROW + 0.012]
 	bmesh.ops.delete(bm, geom=face_hole, context="VERTS")

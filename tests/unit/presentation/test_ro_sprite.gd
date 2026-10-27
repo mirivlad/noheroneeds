@@ -1,12 +1,13 @@
 extends TestCase
 ## Humans from the RO sprite pipeline (tools/art/ro_sprites/export_game.py):
 ## every layer fits its atlas, the sprite faces eight real ways, keeps the
-## feet, draws its layers in the order of each frame, walks and runs, and
-## swings with the tool in frames of its own.
+## feet, draws its layers in the order of each frame, walks and runs, swings
+## with the tool in frames of its own, and paints its skin and hair, the hair cut
+## under headwear.
 
 const PLAN := "base:human_ro_m"
-## Each body plan and its sample hair.
-const PLANS := {"base:human_ro_m": "base:human_ro_hair_tousled", "base:human_ro_f": "base:human_ro_hair_twintails"}
+## Each body plan and the hairstyle it starts with.
+const PLANS := CharacterEditor.RO_HAIR
 
 
 func _content() -> ContentRegistry:
@@ -155,10 +156,22 @@ func test_the_editor_offers_the_ro_bodies() -> void:
 	(Engine.get_main_loop() as SceneTree).root.add_child(editor)
 	editor.setup(content)
 	for plan: String in PLANS:
-		editor.sex_pick.selected = CharacterEditor.PLANS.find(plan)
+		editor.sex_pick.select(CharacterEditor.PLANS.find(plan))
+		editor.sex_pick.item_selected.emit(editor.sex_pick.selected)
 		var look := editor.appearance()
 		eq(look["body_plan"], plan)
-		eq(look["styles"], {"hair": PLANS[plan]}, "its own sample hair, no face to choose")
+		eq(look["styles"], {"hair": PLANS[plan]}, "its starting hairstyle, no face to choose")
+		eq(editor.hair_pick.item_count, CharacterEditor.RO_HAIRS.size(), "every RO hairstyle offered")
+		check(editor.color_wheel.get_parent().visible and not editor.color_pick.get_parent().visible, "hair of any colour")
+		editor.color_wheel.color = Color("#3366cc")
+		eq(editor.appearance()["colors"]["hair"], "#3366cc", "the wheel's colour kept")
+		editor.try_pick.select(CharacterEditor.TRY_ON.keys().find("Стражник"))
+		editor.try_pick.item_selected.emit(editor.try_pick.selected)
+		var tried := editor.preview.doll as RoSprite
+		eq(tried.look["worn"].get("headwear"), "base:iron_helmet", "the preview tries the helmet on")
+		check(not tried._keep_out.is_empty(), "and cuts the hair under it")
+		check(not editor.appearance().has("worn"), "trying on is not kept")
+		editor.try_pick.select(0)
 		var c := PortableCharacter.create("Тест", plan)
 		c.styles = look["styles"]
 		c.colors = look["colors"]
@@ -167,6 +180,66 @@ func test_the_editor_offers_the_ro_bodies() -> void:
 		check(doll is RoSprite and doll._layers.size() == 2 + WorldLibrary.STARTER_OUTFIT.size(), plan + " is dressed")
 		doll.free()
 	editor.free()
+
+
+func test_every_hairstyle_on_both_bodies_painted_its_colours() -> void:
+	var content := _content()
+	for plan: String in PLANS:
+		var visual := content.visual_of(plan)
+		for style: String in CharacterEditor.RO_HAIRS:
+			if style == "base:human_hair_bald":
+				continue
+			check(visual["style_overrides"].has(style), "%s has %s" % [plan, style])
+			var look := _look(WorldLibrary.STARTER_OUTFIT, plan)
+			look["styles"] = {"hair": style}
+			look["colors"] = {"hair": "#3366cc", "skin": "#7f4c31"}
+			var doll := Art.character_sprite(content, visual, look) as RoSprite
+			var skin := (doll._layers[0][1] as Sprite2D).material as ShaderMaterial
+			check(skin != null and skin.shader == RoSprite.SKIN_SHADER, "the body is painted its skin")
+			check((skin.get_shader_parameter("skin_colour") as Vector3).is_equal_approx(Vector3(127, 76, 49) / 255.0), "in the chosen skin")
+			var hair: Array = doll._layers.filter(func(l: Array) -> bool: return l[0] == "hair")
+			eq(hair.size(), 1, style + " drawn")
+			var m := (hair[0][1] as Sprite2D).material as ShaderMaterial
+			check(m != null and m.shader == RoSprite.HAIR_SHADER, style + " is painted")
+			check((m.get_shader_parameter("hair_colour") as Vector3).is_equal_approx(Vector3(0.2, 0.4, 0.8)), "in the chosen colour")
+			eq(m.get_shader_parameter("cut"), false, "nothing cut with no headwear")
+			doll.free()
+
+
+## Hair under a felt hat: the texels the shader would drop, by the same reckoning as ro_hair.gdshader.
+func test_hair_inside_the_hats_keep_out_is_cut() -> void:
+	var content := _content()
+	var visual := content.visual_of(PLAN)
+	var look := _look(WorldLibrary.STARTER_OUTFIT.merged({"headwear": "base:felt_hat"}), PLAN)
+	look["styles"] = {"hair": "base:ro_hair_long"}
+	var doll := Art.character_sprite(content, visual, look) as RoSprite
+	var layer: Array = doll._layers.filter(func(l: Array) -> bool: return l[0] == "hair")[0]
+	var s: Sprite2D = layer[1]
+	var m := s.material as ShaderMaterial
+	check(m.get_shader_parameter("cut"), "cut under the hat")
+	var hair_img := Art.texture(layer[2]["atlas_path"]).get_image()
+	var keep_img := Art.texture(doll._keep_out["atlas_path"]).get_image()
+	var offset: Vector2 = m.get_shader_parameter("offset")
+	var rect: Vector4 = m.get_shader_parameter("keep_rect")
+	var hair_px := 0
+	var cut := 0
+	for y in int(s.region_rect.size.y):
+		for x in int(s.region_rect.size.x):
+			var p := s.region_rect.position + Vector2(x, y)
+			var c := hair_img.get_pixelv(p)
+			if c.a == 0:
+				continue
+			hair_px += 1
+			var q := p + offset
+			if q.x < rect.x or q.y < rect.y or q.x >= rect.x + rect.z or q.y >= rect.y + rect.w:
+				continue
+			var k := keep_img.get_pixelv(q)
+			var d := roundi(c.g * 255)
+			if k.a > 0.5 and d > 0 and d <= roundi(k.r * 255) + 1 and d >= roundi(k.g * 255) - 1:
+				cut += 1
+	check(cut > 0, "the crown is cut: %d of %d" % [cut, hair_px])
+	check(cut < hair_px / 2, "the hair below the rim stays: %d of %d cut" % [cut, hair_px])
+	doll.free()
 
 
 func test_malformed_ro_visuals_are_content_errors() -> void:

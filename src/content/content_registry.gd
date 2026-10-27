@@ -1088,6 +1088,8 @@ func _check_visual(id: String, d: Dictionary) -> void:
 					_check_ro_sheet(id, sheet, dir)
 				else:
 					_check_sheet(id, sheet, dir)
+			if worn.has("keep_out"):  # RO headwear: where hair under it is cut (RoSprite)
+				_check_ro_sheet(id, worn["keep_out"], dir)
 		elif typeof(worn) != TYPE_DICTIONARY or String(worn.get("atlas", "")) == "" or String(worn.get("layer", "")) == "":
 			errors.append("%s: worn needs atlas and layer" % id)
 		else:

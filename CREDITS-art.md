@@ -1141,7 +1141,8 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 <!-- ro -->
 # Авторы графики персонажей в стиле Ragnarok Online
 
-Тела — модели VRoid **HairSample_Male** и **HairSample_Female** (pixiv Inc., лицензия CC0, указана в
-метаданных VRM) из
+Тела и причёски — модели VRoid **HairSample_Male**, **HairSample_Female**, **Sendagaya Shibu**,
+**Sendagaya Shino**, **Sakurada Fumiriya**, **Victoria Rubin**, **Vita** и **Vivi** (pixiv Inc., лицензия
+CC0: указана в метаданных VRM и на vroid.pixiv.help) из
 [madjin/vrm-samples](https://github.com/madjin/vrm-samples). Пропорции, лицо, одежда, предметы и
 анимации сделаны в `tools/art/ro_sprites` и отрендерены в пиксели там же.

@@ -265,3 +265,47 @@ func test_decks_clear_the_substrate_and_bridge_feet_match_top_triangles() -> voi
 	var ground := root.get_child(0) as MeshInstance3D
 	for p:Vector3 in ground.mesh.get_faces():
 		check(p.y < view.corner_height(Vector2i(roundi(p.x),roundi(p.z)))-.13,"substrate is below decking, no coplanar green stripes")
+
+func test_one_hurt_shows_a_bar_and_the_damage() -> void:
+	var actor := BillboardActor3D.new()
+	actor.setup(content, content.visual_of("base:human_ro_m"), {"body_plan": "base:human_ro_m"}, {})
+	view.space.add_child(actor)
+	view._health_bar(actor, 3, 10)
+	var bar := actor.get_node_or_null("Health") as Sprite3D
+	check(bar != null, "a bar over one hurt")
+	eq(int(bar.get_meta("filled")), 4, "three tenths of fourteen, rounded")
+	check(bar.texture.get_image().get_pixel(0, 0).is_equal_approx(Color8(216, 63, 51)), "its left part red")
+	view._health_bar(actor, 10, 10)
+	check(bar.is_queued_for_deletion(), "whole again: no bar")
+	var labels := view.space.get_children().filter(func(n: Node) -> bool: return n is Label3D).size()
+	view.popup_at(Vector2(32, 32), "−3", Color.RED)
+	eq(view.space.get_children().filter(func(n: Node) -> bool: return n is Label3D).size(), labels + 1, "the damage floats up")
+	view.burst_at(Vector2(32, 32), "blood")
+	check(view.space.get_children().any(func(n: Node) -> bool: return n is CPUParticles3D and n.one_shot), "and blood flies")
+	actor.queue_free()
+
+func test_fires_give_off_and_bursts_end() -> void:
+	for kind: String in ["sparks", "embers", "smoke"]:
+		var p := Effects3D.of(kind)
+		check(p != null and not p.one_shot, "%s keeps coming" % kind)
+		p.free()
+	for kind: String in ["chips", "blood", "dust", "splash"]:
+		var p := Effects3D.burst(kind, Color.BROWN)
+		check(p != null and p.one_shot and p.emitting, "%s is a burst" % kind)
+		p.free()
+	check(Effects3D.of("nothing") == null and Effects3D.burst("nothing") == null, "unknown: nothing")
+
+func test_crops_grow_by_the_clock() -> void:
+	var wheat := content.get_def("base:wheat_crop")
+	client.world_time = 100.0 * Daylight.HOUR_MS
+	eq(view._crop_stage(wheat, client.world_time, Vector2i(5, 5)), 0, "just sown")
+	eq(view._crop_stage(wheat, client.world_time - 60.0 * Daylight.HOUR_MS, Vector2i(5, 5)), 3, "ripe after its hours")
+
+func test_life_over_the_land() -> void:
+	var at := PackedVector3Array([Vector3(1, 0, 1), Vector3(5, 2, 3)])
+	for kind: String in ["fireflies", "mist", "drift", "leaves"]:
+		var p := Effects3D.ambient(kind, at)
+		check(p != null and p.emission_points.size() == 2 and p.emission_points[1].y > 2.0, "%s over its cells, lifted" % kind)
+		p.free()
+	check(Effects3D.ambient("fireflies", PackedVector3Array()) == null, "nowhere: nothing")
+	check(Effects3D.ambient("nothing", at) == null, "unknown: nothing")

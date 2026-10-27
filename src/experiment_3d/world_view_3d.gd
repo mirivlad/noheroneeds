@@ -192,6 +192,14 @@ func update_view(alpha: float, delta: float) -> void:
 		_build_row()
 	_last_build_ms = (Time.get_ticks_usec() - start) / 1000.0
 	_update_actors(alpha, delta)
+	_crops_seen += delta
+	if _crops_seen >= 2.0:
+		_crops_seen = 0.0
+		_grow_crops()
+		var night := client.has_time and Daylight.is_night(client.world_time)
+		if night != _night and is_inside_tree():
+			_night = night
+			get_tree().set_group("ambient_fireflies", "visible", night)
 	if client.z >= 0 or _cut != Rect2i():
 		_update_cutaway()
 	if client.has_position:
@@ -323,7 +331,7 @@ func _begin_chunk(around: Vector2i) -> void:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rock_surface := SurfaceTool.new()
 	rock_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_job = {"rock": rock_surface, "rock_count": 0, "key": best, "chunk": client.chunks[best], "origin": Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE, "row": 0, "root": root, "ground": st, "faces": PackedVector3Array(), "targets": [], "instances": {}, "meshes": {}, "parts": {}, "count": 0}
+	_job = {"rock": rock_surface, "rock_count": 0, "key": best, "chunk": client.chunks[best], "origin": Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE, "row": 0, "root": root, "ground": st, "faces": PackedVector3Array(), "targets": [], "instances": {}, "meshes": {}, "parts": {}, "crops": [], "ambient": {}, "count": 0}
 
 func _build_row() -> void:
 	var c: Chunk = _job["chunk"]
@@ -354,6 +362,13 @@ func _build_row() -> void:
 				_add_object(cell, id, layer, c.get_props(x, y))
 		if c.get_props(x, y).get("stairs_down", false):
 			_add_object(cell, "base:stairs_down", "transition", {})
+		# Life over the land, by what lies there ("ambient"): a cell in AMBIENT_EVERY.
+		if absi(hash([cell.x, cell.y, 31])) % AMBIENT_EVERY == 0:
+			for layer: String in ["ground", "cover"]:
+				var a := String(content.get_def(c.get_cell(layer, x, y)).get("ambient", ""))
+				if a != "":
+					var at := Vector2(cell) + Vector2.ONE * .5
+					(_job["ambient"].get_or_add(a, []) as Array).append(Vector3(at.x, elevation(at) + level, at.y))
 	_job["row"] = y + 1
 	if y + 1 == Chunk.SIZE:
 		_finish_chunk()
@@ -405,6 +420,14 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 			facing = "e"
 	if layer != "cover":
 		basis = Basis(Vector3.UP, float(rotation.get(facing, 0.0)))
+	# A crop (ADR-0027) is as tall as the world's clock has grown it: a third
+	# of its full size sown, whole when ripe; looked at again now and then.
+	var planted: Variant = (props.get("cover", {}) as Dictionary).get("planted") if layer == "cover" else null
+	if planted != null and d.has("crop"):
+		var stage := _crop_stage(d, float(planted), cell)
+		var stages := maxi(1, int(d["crop"].get("stages", 1)))
+		basis = basis.scaled(Vector3.ONE * lerpf(.35, 1.0, float(stage) / maxf(1, stages - 1)))
+		(_job["crops"] as Array).append([cell, d, float(planted), stage])
 	var instance_id := model_id
 	var role := String(d.get("role", ""))
 	if role == "rock":
@@ -480,10 +503,19 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	if d.has("light"):
 		var light := OmniLight3D.new()
 		light.position = position3 + Vector3.UP
-		light.light_color = Color("ffbb72")
-		light.light_energy = 1.4
-		light.omni_range = 6
+		light.light_color = Color(String(d["light"].get("color", "#ffbb72")))
+		light.light_energy = 1.55 * float(d["light"].get("intensity", .9))
+		light.omni_range = float(d["light"].get("radius", 5)) + 1.0
 		(_job["root"] as Node).add_child(light)
+	# What it gives off (sparks, smoke, embers) from the top of its model; the
+	# content's offsets (pixels up from the cell's foot) only order them there.
+	var top := (t * mesh.get_aabb()).end.y
+	var fx: Dictionary = d.get("effects", {}) if layer == "structure" else {}
+	for kind: String in fx:
+		var p := Effects3D.of(kind)
+		if p:
+			p.position = Vector3(position3.x + float(fx[kind][0]) / CELL, top + maxf(0, -float(fx[kind][1])) / CELL * .15, position3.z)
+			(_job["root"] as Node).add_child(p)
 
 func bridge_mesh(cell: Vector2i) -> Mesh:
 	var st := SurfaceTool.new()
@@ -635,12 +667,37 @@ func _finish_chunk() -> void:
 		body.add_child(collider)
 		body.set_meta("targets", _job["targets"])
 		root.add_child(body)
+	for kind: String in _job["ambient"]:
+		var life := Effects3D.ambient(kind, PackedVector3Array(_job["ambient"][kind]))
+		if life:
+			life.add_to_group("ambient_" + kind)
+			life.visible = kind != "fireflies" or _night
+			root.add_child(life)
 	root.set_meta("count", _job["count"])
+	if not (_job["crops"] as Array).is_empty():
+		root.set_meta("crops", _job["crops"])
 	var key: String = _job["key"]
 	if _geometry.has(key):
 		(_geometry[key] as Node).queue_free()
 	_geometry[key] = root
 	_job = {}
+
+## Chunks whose crops have grown a stage since they were built are built again.
+var _crops_seen := 0.0
+## One cell in this many gives off its life (fireflies, mist, drifting snow, leaves).
+const AMBIENT_EVERY := 10
+## Whether it is night now (fireflies shown), looked at with the crops.
+var _night := false
+func _grow_crops() -> void:
+	for key: String in _geometry:
+		for c: Array in (_geometry[key] as Node).get_meta("crops", []):
+			if _crop_stage(c[1], c[2], c[0]) != int(c[3]):
+				_queued[key] = true
+				break
+
+## The stage of a crop sown at `planted` on a cell (under the sky the rain waters it).
+func _crop_stage(def: Dictionary, planted: float, cell: Vector2i) -> int:
+	return Crops.stage(def, planted, client.world_time, client.weather_seed if client.z >= 0 else -1, cell, client.climate_at(cell))
 
 func object_count() -> int:
 	var count := 0
@@ -718,7 +775,16 @@ func _update_actors(alpha: float, delta: float) -> void:
 		var h := int(e.get("health", e.get("max_health", 0)))
 		if h < int(_hp_seen.get(id, h)):
 			actor.doll.react("dead" if h <= 0 else "hurt", 2.0 if h <= 0 else 0.0)
+			_flash[id] = FLASH
+			var over := Vector2(actor.position.x, actor.position.z) * CELL
+			burst_at(over, "blood")
+			popup_at(over, "−%d" % (int(_hp_seen[id]) - h), Color(1.0, 0.45, 0.4))
 		_hp_seen[id] = h
+		_health_bar(actor, h, int(e.get("max_health", 0)))
+		var f := float(_flash.get(id, 0.0))
+		actor.doll.modulate = Color.WHITE.lerp(Color(1.0, 0.3, 0.3), maxf(0.0, f) / FLASH)
+		if f > 0.0:
+			_flash[id] = f - delta
 		if int(e.get("deaths", 0)) > int(_deaths_seen.get(id, e.get("deaths", 0))):
 			actor.doll.react("dead", 2.0)
 		_deaths_seen[id] = int(e.get("deaths", 0))
@@ -734,6 +800,8 @@ func _update_actors(alpha: float, delta: float) -> void:
 			_swing_seen.erase(id)
 			_said.erase(id)
 			_asleep.erase(id)
+			_flash.erase(id)
+			_hp_seen.erase(id)
 
 ## A line over one who has just said something, for SPEECH_S seconds; words said
 ## before it came into view are not shown.
@@ -909,8 +977,74 @@ func loose_own(dir: Vector2) -> void:
 			actor.facing = dir.normalized()
 		actor.doll.loose(dir.rotated(-yaw))
 
-func burst_at(_at: Vector2, _kind: String, _tint := Color.WHITE) -> void:
-	pass
+## A short burst at a point of the world (pixels), about chest high (Effects3D.burst).
+func burst_at(at: Vector2, kind: String, tint := Color.WHITE) -> void:
+	var p := Effects3D.burst(kind, tint)
+	if p:
+		var m := at / CELL
+		p.position = Vector3(m.x, _floor_at(m) + .9, m.y)
+		space.add_child(p)
+
+## A word that floats up from over a point of the world (pixels) and fades
+## (a blow's damage, a find).
+func popup_at(at: Vector2, text: String, color := Art.TEXT) -> void:
+	var m := at / CELL
+	var l := Label3D.new()
+	l.text = text
+	l.font = Art.font()
+	l.font_size = 32
+	l.outline_size = 10
+	l.modulate = color
+	l.outline_modulate = Art.INK
+	l.pixel_size = .007
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.no_depth_test = true
+	l.position = Vector3(m.x, _floor_at(m) + 2.0, m.y)
+	space.add_child(l)
+	var t := l.create_tween()
+	t.set_parallel(true)
+	t.tween_property(l, "position:y", l.position.y + .7, 0.9)
+	t.tween_property(l, "modulate:a", 0.0, 0.9).set_delay(0.3)
+	t.tween_property(l, "outline_modulate:a", 0.0, 0.9).set_delay(0.3)
+	t.chain().tween_callback(l.queue_free)
+
+## The ground under a point (metres) on the player's storey.
+func _floor_at(m: Vector2) -> float:
+	return elevation(m) + (0.0 if client.z < 0 else client.z * STOREY)
+
+## A red flash on one hurt, this long (seconds).
+const FLASH := 0.25
+var _flash := {}
+const BAR := Vector2i(14, 2)
+
+## A health bar under the feet of one who is hurt, as in RO (a being of any
+## height); gone when whole again.
+func _health_bar(actor: BillboardActor3D, h: int, top: int) -> void:
+	var bar := actor.get_node_or_null("Health") as Sprite3D
+	if top <= 0 or h >= top:
+		if bar:
+			bar.queue_free()
+		return
+	var filled := clampi(roundi(float(BAR.x) * h / top), 0, BAR.x)
+	if bar == null:
+		bar = Sprite3D.new()
+		bar.name = "Health"
+		bar.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		bar.no_depth_test = true
+		bar.shaded = false
+		bar.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		bar.pixel_size = .05
+		bar.position = Vector3(0, -.25, 0)
+		bar.render_priority = 1
+		bar.set_meta("filled", -1)
+		actor.add_child(bar)
+	if int(bar.get_meta("filled")) != filled:
+		bar.set_meta("filled", filled)
+		var img := Image.create(BAR.x, BAR.y, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0.1, 0.08, 0.08, 0.8))
+		if filled > 0:
+			img.fill_rect(Rect2i(0, 0, filled, BAR.y), Color(0.85, 0.25, 0.2))
+		bar.texture = ImageTexture.create_from_image(img)
 
 func show_plan(plan: Array) -> void:
 	for child: Node in _ghost_root.get_children():

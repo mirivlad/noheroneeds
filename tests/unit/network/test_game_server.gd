@@ -456,6 +456,35 @@ func test_refusals() -> void:
 	check(odd.reject_reason.contains("content"), odd.reject_reason)
 
 
+func test_a_password_or_the_worlds_link_lets_in() -> void:
+	server.password = "дуб"
+	var old_invite := server.new_invite()
+	var stranger := _client("owner", _character("Аня"))
+	_run(10, [stranger])
+	eq([stranger.state, stranger.reject_reason], ["rejected", "password"], "without the password, not in")
+	var wrong := _client("owner", _character("Вика"))
+	wrong.password = "берёза"
+	_run(10, [wrong])
+	eq(wrong.state, "rejected", "a wrong one, not in")
+	var guest := _client("owner", _character("Вера"))
+	guest.password = "дуб"
+	_run(20, [guest])
+	eq(guest.state, "playing", guest.reject_reason)
+	# A share link's invite lets in instead of the password; a new one voids it.
+	var friend := _client("other", _character("Оля"))
+	friend.invite = old_invite
+	_run(20, [friend, guest])
+	eq(friend.state, "playing", friend.reject_reason)
+	server.new_invite()
+	var late := _client("other", _character("Ира"))
+	late.invite = old_invite
+	_run(10, [late, friend, guest])
+	eq(late.state, "rejected", "an old link no longer lets in")
+	eq(HostedGame.parse_link("nhn://192.168.1.5:24680/abc123"), {"address": "192.168.1.5", "port": 24680, "invite": "abc123"})
+	eq(HostedGame.parse_link("192.168.1.5:24680"), {}, "an address is not a link")
+	eq(Protocol.reason_text("password"), "неверный пароль, или ссылка на мир устарела")
+
+
 func test_wrong_protocol_version_is_refused() -> void:
 	var t := net.client()
 	_run(2, [])

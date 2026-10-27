@@ -23,6 +23,9 @@ var settings: GameSettings
 var content: ContentRegistry
 ## Over a running game: "Continue" and "Exit to the start screen".
 var in_game := false
+## Over a world one hosts (ADR-0060): the link to it, and a new one (the old voided).
+var share := Callable()
+var renew := Callable()
 
 var _panel := PanelContainer.new()
 var _body := VBoxContainer.new()
@@ -78,6 +81,9 @@ func show_start() -> void:
 		_gap()
 	if in_game:
 		_button("Продолжить", func() -> void: resume.emit())
+	if in_game and share.is_valid():
+		_button("Поделиться ссылкой", func() -> void: _give_link(share.call()))
+		_button("Новая ссылка", func() -> void: _give_link(renew.call(), true))
 	_button("Новая игра", show_new_game)
 	_button("Загрузить игру", show_load)
 	_button("Подключиться к серверу", show_connect)
@@ -128,19 +134,35 @@ func show_world_form(mode: String) -> void:
 	sure.tooltip_text = "Попытки сделать вещь всегда удаются; качество всё равно растёт с мастерством"
 	var port: SpinBox
 	var players: SpinBox
+	var password: LineEdit
 	if mode == "host":
 		port = _spin("Порт", 1024, 65535, int(settings.get_value("server_port")))
 		players = _spin("Игроков не больше", 1, 64, int(settings.get_value("max_players")))
+		password = _field("Пароль", LineEdit.new()) as LineEdit
+		password.secret = true
+		password.text = String(settings.get_value("server_password"))
+		password.placeholder_text = "без пароля — открыт всем"
+		password.tooltip_text = "Войдут только знающие пароль или получившие ссылку на мир («Поделиться ссылкой» в меню игры)"
 	_gap()
 	_button("Создать и играть", func() -> void:
 		var rules := {"seed": seed_edit.text.strip_edges(), "max_levels": int(levels.value), "day_minutes": int(day.value),
 			"starter_kit": kit.button_pressed, "starter_outfit": outfit.button_pressed,
 			"all_recipes_known": known.button_pressed, "crafts_never_fail": sure.button_pressed}
 		var id := worlds.create(name_edit.text, rules)
+		if password:
+			settings.set_value("server_password", password.text)
+			settings.save()
 		_start_world(id, mode, int(port.value) if port else 0, int(players.value) if players else 0))
 	_button("Назад", show_new_game)
 	name_edit.grab_focus()
 	name_edit.select_all()
+
+
+## The link to the world one hosts, copied for pasting to friends.
+func _give_link(link: String, fresh := false) -> void:
+	DisplayServer.clipboard_set(link)
+	_message = ("Новая ссылка (старая больше не пускает) скопирована:\n" if fresh else "Ссылка скопирована:\n") + link
+	show_start()
 
 
 ## Dev pictures (--menu=world_form_host).
@@ -184,18 +206,29 @@ func show_load() -> void:
 
 func show_connect() -> void:
 	_clear("Подключиться к серверу")
-	var addr := _field("Адрес", LineEdit.new()) as LineEdit
+	var addr := _field("Имя сервера или ссылка на подключение", LineEdit.new()) as LineEdit
+	addr.name = "ServerAddress"
 	addr.text = String(settings.get_value("last_address"))
-	addr.placeholder_text = "адрес:порт"
-	_label("Например 192.168.1.5:24680", Art.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	addr.placeholder_text = "адрес:порт или nhn://…"
+	addr.custom_minimum_size.x = 200
+	var password := _field("Пароль (если нужен)", LineEdit.new()) as LineEdit
+	password.name = "ServerPassword"
+	password.secret = true
+	_label("Например 192.168.1.5:24680 или ссылка, которой поделился хозяин мира", Art.TEXT_DIM,
+		HORIZONTAL_ALIGNMENT_CENTER, true)
 	_gap()
 	var go := func() -> void:
-		var hp := addr.text.strip_edges().rsplit(":", true, 1)
-		var host := hp[0] if hp[0] != "" else "127.0.0.1"
-		var port := int(hp[1]) if hp.size() > 1 and hp[1].is_valid_int() else int(settings.get_value("server_port"))
-		settings.set_value("last_address", "%s:%d" % [host, port])
+		var cfg := {"mode": "connect", "password": password.text}
+		var link := HostedGame.parse_link(addr.text)
+		if not link.is_empty():  # a share link: where, and the invite instead of the password
+			cfg.merge(link, true)
+		else:
+			var hp := addr.text.strip_edges().rsplit(":", true, 1)
+			cfg["address"] = hp[0] if hp[0] != "" else "127.0.0.1"
+			cfg["port"] = int(hp[1]) if hp.size() > 1 and hp[1].is_valid_int() else int(settings.get_value("server_port"))
+		settings.set_value("last_address", "%s:%d" % [cfg["address"], cfg["port"]])
 		settings.save()
-		play.emit({"mode": "connect", "address": host, "port": port})
+		play.emit(cfg)
 	addr.text_submitted.connect(func(_t: String) -> void: go.call())
 	_button("Подключиться", go)
 	_button("Назад", show_start)
@@ -398,6 +431,7 @@ func _start_world(id: String, mode: String, port := 0, players := 0) -> void:
 	if mode == "host":
 		cfg["port"] = port if port > 0 else int(settings.get_value("server_port"))
 		cfg["max_players"] = players if players > 0 else int(settings.get_value("max_players"))
+		cfg["password"] = String(settings.get_value("server_password"))
 	play.emit(cfg)
 
 

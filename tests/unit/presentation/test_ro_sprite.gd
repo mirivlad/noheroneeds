@@ -172,6 +172,29 @@ func test_a_bow_held_drawn_and_loosed() -> void:
 	await (Engine.get_main_loop() as SceneTree).process_frame
 
 
+func test_hurt_fall_and_stoop_play_once() -> void:
+	var content := _content()
+	var doll := Art.character_sprite(content, content.visual_of(PLAN), _look()) as RoSprite
+	doll.show_at(Vector2.ZERO, 0.0, true)
+	doll.react("hurt")
+	doll.show_at(Vector2.ZERO, 0.05, true)
+	eq(doll._once, "hurt", "a flinch at a wound")
+	var t := 0.0
+	while doll._once != "" and t < 3.0:
+		doll.show_at(Vector2.ZERO, 0.05, true)
+		t += 0.05
+	check(t < 1.0, "over soon: %.2f s" % t)
+	doll.react("dead", 2.0)
+	for i in 30:  # 1.5 s: down and lying
+		doll.show_at(Vector2.ZERO, 0.05, true)
+	eq(doll._once, "dead", "lies a while after falling")
+	doll.react("hurt")
+	eq(doll._once, "dead", "and a wound does not startle it up")
+	doll.react("no_such_clip")
+	eq(doll._once, "dead", "a clip the body has not is no matter")
+	doll.free()
+
+
 func test_the_editor_offers_the_ro_bodies() -> void:
 	var content := _content()
 	var editor := CharacterEditor.new()

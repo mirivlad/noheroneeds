@@ -189,6 +189,13 @@ func _on_menu_requested() -> void:
 func _open_menu(over_game: bool) -> void:
 	_close_menu()
 	menu = MainMenu.new(worlds, characters, settings, content, over_game)
+	if over_game and game and game.hosted:  # one's own server: a link to share (ADR-0060)
+		var hosted := game.hosted
+		menu.share = func() -> String: return hosted.share_link()
+		menu.renew = func() -> String:
+			hosted.server.new_invite()
+			return hosted.share_link()
+		menu.show_start()
 	_menu_layer.add_child(menu)
 	menu.play.connect(start_game)
 	menu.quit_game.connect(quit)

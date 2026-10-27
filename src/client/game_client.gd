@@ -15,6 +15,10 @@ var content: ContentRegistry
 ## connecting -> challenged -> joining -> playing; rejected / disconnected
 var state := "connecting"
 var reject_reason := ""
+## What lets one into a server with a password (ADR-0060): the password, or the
+## invite of a share link.
+var password := ""
+var invite := ""
 var character_id := ""
 ## The own character as the server shows it to others (name, appearance).
 var own := {}
@@ -230,7 +234,12 @@ func _on_message(m: Dictionary) -> void:
 			server_id = m["server_id"]
 			_send(Transport.Channel.RELIABLE, Protocol.AUTH, {"sig_alg": PlayerIdentity.SIG_ALG,
 				"signature": identity.sign(Protocol.auth_payload(m["nonce"], server_id, identity.fingerprint))})
-			_send(Transport.Channel.RELIABLE, Protocol.JOIN, {"character": character_file})
+			var join := {"character": character_file}
+			if password != "":
+				join["password"] = password
+			if invite != "":
+				join["invite"] = invite
+			_send(Transport.Channel.RELIABLE, Protocol.JOIN, join)
 			state = "joining"
 		Protocol.WELCOME:
 			character_id = m["character_id"]

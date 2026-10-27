@@ -1419,6 +1419,16 @@ func swing_kind(held: String) -> String:
 	return "chop" if held != "" else "lunge"
 
 
+var _deaths_seen := {}
+
+
+## The own character plays a clip once (a stoop to pick up).
+func react_own(clip: String) -> void:
+	var me: CharacterSprite = _characters.get(client.character_id)
+	if me:
+		me.react(clip)
+
+
 ## The own character strikes toward `dir` at once, before the server answers.
 func swing_own(dir: Vector2) -> void:
 	var me: CharacterSprite = _characters.get(client.character_id)
@@ -1508,6 +1518,11 @@ func _projectile(id: String, e: Dictionary, delta: float) -> void:
 func _health(id: String, sprite: Node2D, e: Dictionary, delta: float) -> void:
 	var top := int(e.get("max_health", 0))
 	var h := int(e.get("health", top))
+	if h < int(_hp_seen.get(id, h)) and sprite is CharacterSprite:
+		(sprite as CharacterSprite).react("dead" if h <= 0 else "hurt", 2.0 if h <= 0 else 0.0)
+	if int(e.get("deaths", 0)) > int(_deaths_seen.get(id, e.get("deaths", 0))) and sprite is CharacterSprite:
+		(sprite as CharacterSprite).react("dead", 2.0)  # fell (ADR-0019): lies a while
+	_deaths_seen[id] = int(e.get("deaths", 0))
 	if h < int(_hp_seen.get(id, h)):
 		_flash[id] = FLASH
 		var at := to_local(sprite.global_position) + Vector2(0, -10)

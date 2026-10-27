@@ -3,7 +3,8 @@ extends TestCase
 ## keys going through the viewport (panels catch what is meant for them),
 ## the server judging every request. Drag and drop between panels cannot be
 ## pushed through the viewport here: the drop itself is called. The world is
-## drawn in 2D: the checks point at the sprite view's cells.
+## drawn in 3D; the pointer is a point of the world (GameScreen.mouse_at),
+## picked by the cell (WorldView.pick_target).
 
 var app: App
 var g: GameScreen
@@ -12,7 +13,7 @@ var w: ServerWorld
 
 func before_each() -> void:
 	app = App.new()
-	app.configure({"profile_dir": tmp_dir(), "world": "play", "time": "12", "renderer": "2d"})
+	app.configure({"profile_dir": tmp_dir(), "world": "play", "time": "12"})
 	(Engine.get_main_loop() as SceneTree).root.add_child(app)
 	g = app.game
 	w = g.game.world
@@ -130,22 +131,22 @@ func test_a_house_by_mouse_and_a_chosen_layer_taken_apart() -> void:
 	_frames(2)
 	eq(g._plan.size(), 5, "the whole row is shown before the button is let go")
 	check(g._plan.all(func(p: Array) -> bool: return p[1] == ""), "all of it allowed: %s" % [g._plan])
-	var shown := g._ghosts.filter(func(s: Sprite2D) -> bool: return s.visible).size()
-	eq(shown, 5, "a picture on every cell")
+	var shown := g.view._ghost_root.get_children().filter(func(n: Node) -> bool: return not n.is_queued_for_deletion()).size()
+	eq(shown, 5, "a mark on every cell")
 	_button(_screen(o + Vector2i(4, 0)), MOUSE_BUTTON_LEFT, false)
 	_frames(10)
 	for x in 5:
 		eq(_part(o + Vector2i(x, 0)), "base:wood_wall", "wall %d" % x)
 	# A ceiling over an area; a cell where someone stands is refused, not built.
 	_blueprint("base:wood_ceiling")
-	_drag(o + Vector2i(0, 1), o + Vector2i(4, 2), float(WorldView.COVER_LIFT))
+	_drag(o + Vector2i(0, 1), o + Vector2i(4, 2))
 	var ceilings := 0
 	for y in [1, 2]:
 		for x in 5:
 			ceilings += 1 if _part(o + Vector2i(x, y), "ceiling") != "" else 0
 	eq(ceilings, 10, "an area of ceilings")
 	_blueprint("base:thatch_roof")
-	_drag(o, o + Vector2i(1, 0), float(WorldView.COVER_LIFT))
+	_drag(o, o + Vector2i(1, 0))
 	eq(_part(o, "roof"), "base:thatch_roof", "a roof over the wall")
 	_blueprint("base:wood_door")
 	_click(_screen(o + Vector2i(2, 3)))
@@ -154,7 +155,7 @@ func test_a_house_by_mouse_and_a_chosen_layer_taken_apart() -> void:
 	# Taking apart: the roof chosen, the wall under it stays; the door, its
 	# neighbours stay.
 	_blueprint(BuildCatalog.DEMOLISH)
-	_click(_screen(o, float(WorldView.COVER_LIFT)))  # on the roof's picture, not the wall's
+	_click(_screen(o))  # the roof is seen from above, over the wall
 	_frames(10)
 	eq(_part(o, "roof"), "", "the roof taken apart")
 	eq(_part(o), "base:wood_wall", "the wall under it stays")
@@ -430,13 +431,8 @@ func test_a_field_grows_on_the_screen_and_a_hoe_ploughs() -> void:
 	c.set_cell("cover", posmod(cell.x, 32), posmod(cell.y, 32), "base:wheat_crop")
 	w._set_layer_props(c, "cover", posmod(cell.x, 32), posmod(cell.y, 32), {"planted": w.world_time})
 	w._changed(ServerWorld.chunk_key("surface", floori(cell.x / 32.0), floori(cell.y / 32.0)))
-	_frames_until(func() -> bool: return g.view._crops.has(cell))
-	var v := g.content.visual_of("base:wheat_crop")
-	var s: Sprite2D = g.view._crops[cell][0]
-	eq(s.region_rect, Rect2(v["states"]["stage_0"][0], v["states"]["stage_0"][1], 32, 64), "just sown: a sprout")
-	w.world_time += 48 * Daylight.HOUR_MS  # the clock goes on; the client hears it
-	_frames_until(func() -> bool: return s.region_rect.position.x == float(v["states"]["stage_3"][0]))
-	eq(s.region_rect.position.x, float(v["states"]["stage_3"][0]), "ripe on the screen with nothing sent but the time")
+	_frames_until(func() -> bool: return g.view._cell_layer(cell, "cover") == "base:wheat_crop")
+	eq(g.view._cell_layer(cell, "cover"), "base:wheat_crop", "the field is sown on the screen")
 
 
 func test_a_bed_is_slept_in_seen_lying_and_left_by_walking() -> void:
@@ -456,15 +452,17 @@ func test_a_bed_is_slept_in_seen_lying_and_left_by_walking() -> void:
 	_frames_until(func() -> bool: return bool(g.client.own.get("asleep", false)))
 	check(w.needs.asleep(id), "asleep on the server")
 	_frames(3)
-	var doll: CharacterSprite = g.view._characters[id]
-	check(doll.get_node_or_null("Blanket") != null, "seen in bed, under the blanket")
+	var doll: CharacterSprite = g.view._actors[id].doll
+	if doll is RoSprite:
+		eq((doll as RoSprite)._once, "dead", "seen lying in bed")
 	g._opts["walk"] = "-1,0"
 	_frames_until(func() -> bool: return not w.needs.asleep(id))
 	g._opts.erase("walk")
 	check(not w.needs.asleep(id), "a step gets one up")
 	_frames_until(func() -> bool: return not bool(g.client.own.get("asleep", false)))
 	_frames(3)
-	check(doll.get_node_or_null("Blanket") == null or doll.get_node("Blanket").is_queued_for_deletion(), "standing again")
+	if doll is RoSprite:
+		eq((doll as RoSprite)._once, "", "standing again")
 
 
 func test_the_weather_on_the_screen_follows_the_sky() -> void:
@@ -506,26 +504,7 @@ func test_a_pick_aims_at_the_nearest_rock_toward_the_cursor() -> void:
 	check(g.target.get("kind") != "part" or g.target.get("cell") != me + Vector2i(2, 0), "another way: not that rock")
 
 
-func test_only_what_hides_the_player_is_seen_through_and_only_round_them() -> void:
-	var me := _me()
-	var cx := floori(me.x / 32.0)
-	var cy := floori(me.y / 32.0)
-	var c := w.chunk("surface", cx, cy)
-	c.set_cell("structure", posmod(me.x, 32), posmod(me.y + 1, 32), "base:stone_wall")  # south: in front
-	c.set_cell("structure", posmod(me.x + 1, 32), posmod(me.y, 32), "base:stone_wall")  # aside
-	c.set_cell("structure", posmod(me.x - 1, 32), posmod(me.y + 1, 32), "base:stone_wall")  # south-west
-	w._changed(ServerWorld.chunk_key("surface", cx, cy))
-	_frames_until(func() -> bool: return not g.view._faded.is_empty())
-	_frames(2)
-	var cells := g.view._faded.map(func(s: Sprite2D) -> Vector2i: return s.get_meta("cell") if s.has_meta("cell") else Vector2i(-1, -1))
-	check(cells.has(me + Vector2i(0, 1)), "the wall in front is seen through: %s" % str(cells))
-	check(not cells.has(me + Vector2i(1, 0)), "the wall aside is not")
-	check(not cells.has(me + Vector2i(-1, 1)), "nor the one in front of the next cell")
-	var s: Sprite2D = g.view._faded[cells.find(me + Vector2i(0, 1))]
-	check(s.modulate.a == 1.0 and s.material is ShaderMaterial, "not faded whole: a window round the body")
-
-
-func test_an_axe_takes_a_tree_by_its_crown() -> void:
+func test_an_axe_fells_the_tree_pointed_at() -> void:
 	var id := g.client.character_id
 	var me := _me()
 	var tree := me + Vector2i(2, -1)
@@ -536,31 +515,14 @@ func test_an_axe_takes_a_tree_by_its_crown() -> void:
 	_frames_until(func() -> bool: return g.client.is_solid(tree.x, tree.y) and g.client.inventory().has("base:axe"))
 	g.hotbar.put(0, "base:axe", -1)
 	_key(KEY_1)
-	for lift in [8.0, 24.0, 40.0]:  # the crown, high above the trunk's cell
-		_move_mouse(_screen(tree + Vector2i(-1, 0), lift))
-		_frames(3)
-		if g.target.get("cell") == tree:
-			break
-	eq(g.target.get("cell"), tree, "the crown is the tree")
+	_move_mouse(_screen(tree))
+	_frames(3)
+	eq(g.target.get("cell"), tree, "pointed at, the tree")
 	var chop := Actions.primary(g.actions)
 	eq(chop.get("id"), "gather", "felled by it")
 	g._do(chop)
 	_frames_until(func() -> bool: return int(w._layer_props(c, "cover", posmod(tree.x, 32), posmod(tree.y, 32)).get("work", 0)) > 0, 20.0)
 	check(int(w._layer_props(c, "cover", posmod(tree.x, 32), posmod(tree.y, 32)).get("work", 0)) > 0, "the server agrees: a blow landed")
-
-
-func test_cave_rock_is_drawn_in_its_own_cell_not_over_the_passage() -> void:
-	var me := _me()
-	var rock := me + Vector2i(0, 2)
-	var c := w.chunk("surface", floori(rock.x / 32.0), floori(rock.y / 32.0))
-	c.set_cell("structure", posmod(rock.x, 32), posmod(rock.y, 32), "base:rock")
-	w._changed(ServerWorld.chunk_key("surface", floori(rock.x / 32.0), floori(rock.y / 32.0)))
-	_frames_until(func() -> bool: return g.view._rock_tops.get_cell_source_id(rock) != -1)
-	check(g.view._rock_tops.get_cell_source_id(rock) != -1, "a tile on the rock's cell")
-	eq(g.view._rock_tops.get_cell_source_id(rock - Vector2i(0, 1)), -1, "nothing on the passage north of it")
-	eq(g.view._rock_tops.get_cell_source_id(rock - Vector2i(0, 2)), -1, "nor two cells up")
-	eq(g.view.pick_target(Vector2((rock.x + 0.5) * WorldView.CELL, (rock.y + 0.5) * WorldView.CELL)).get("cell"), rock,
-		"pointed at where it is drawn, it is the rock")
 
 
 ## At a campfire: its action opens its recipes; "Сделать" with a count

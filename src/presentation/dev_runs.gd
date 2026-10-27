@@ -380,8 +380,5 @@ func _pose_list() -> Array:
 
 
 func _own_doll() -> CharacterSprite:
-	var id: String = g.client.character_id
-	if g.view is WorldView3D:
-		var actor: BillboardActor3D = (g.view as WorldView3D)._actors.get(id)
-		return actor.doll if actor else null
-	return g.view._characters.get(id)
+	var actor: BillboardActor3D = g.view._actors.get(g.client.character_id)
+	return actor.doll if actor else null

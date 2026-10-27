@@ -120,7 +120,7 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 	var content := _content()
 	var view := WorldView.new()
 	view.content = content
-	var doll := view._character("me", _look()) as RoSprite
+	var doll := view.doll_for("me", _look()) as RoSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	for case: Array in [["base:axe", "chop"], ["base:iron_pickaxe", "mine"], ["base:spear", "thrust"],
 			["base:hoe", "thrust"], ["base:bow", "shoot"], ["base:fishing_rod", "cast"], ["", "slash"]]:
@@ -146,6 +146,7 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 		check(seen.size() >= 4, "%s plays its frames: %d" % [case[1], seen.size()])
 	doll.hold(view.item_picture("base:plank"), view.item_grip("base:plank"), "base:plank")
 	check(doll._held != null and doll._held.visible and doll._held_layers.is_empty(), "other things are their picture at the hand")
+	doll.free()
 	view.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame
 
@@ -154,7 +155,7 @@ func test_a_bow_held_drawn_and_loosed() -> void:
 	var content := _content()
 	var view := WorldView.new()
 	view.content = content
-	var doll := view._character("me", _look()) as RoSprite
+	var doll := view.doll_for("me", _look()) as RoSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	doll.hold(view.item_picture("base:bow"), view.item_grip("base:bow"), "base:bow")
 	doll.pull_string(Vector2.RIGHT, view.swing_kind("base:bow"))
@@ -168,6 +169,7 @@ func test_a_bow_held_drawn_and_loosed() -> void:
 		doll.show_at(Vector2.ZERO, 0.05, true)
 		t += 0.05
 	check(not doll.swinging(), "the shot plays on and ends")
+	doll.free()
 	view.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame
 

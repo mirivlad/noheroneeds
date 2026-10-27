@@ -151,6 +151,7 @@ func swinging() -> bool:
 
 ## Plays a clip once over standing and walking (a flinch, a fall, a stoop), then
 ## holds its last frame `hold` seconds; only bodies with such clips (RoSprite).
+## "" ends it (one who lay asleep gets up).
 func react(_clip: String, _hold := 0.0) -> void:
 	pass
 

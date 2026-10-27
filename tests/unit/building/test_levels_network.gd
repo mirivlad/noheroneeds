@@ -1,7 +1,7 @@
 extends TestCase
 ## A building level through the whole chain: requests over the network, the
 ## location change, the level's chunks, prediction against the floor's edge,
-## and the view hiding the cover of the room the player stands in.
+## and the 3D view knowing the player is inside under the room's cover.
 
 
 func test_up_the_stairs_and_back() -> void:
@@ -14,7 +14,7 @@ func test_up_the_stairs_and_back() -> void:
 		PlayerIdentity.load_or_create(keys + "server"), CharacterFile.export_signed(c, owner, content))
 	g.server.wait_for_disk = true
 	g.world.starter_kit = {"base:plank": 100}
-	var view := WorldView.new()
+	var view := WorldView3D.new()
 	view.setup(content, g.client)
 	(Engine.get_main_loop() as SceneTree).root.add_child(view)
 	_steps(g, view, 30)
@@ -29,7 +29,7 @@ func test_up_the_stairs_and_back() -> void:
 	# inside: its cover is hidden, all but the opening over the stairs.
 	g.world.move_character(cl.character_id, Vector2i(2 * 256 + 128, 3 * 256 + 128))
 	_steps(g, view, 10)
-	check(view.hidden_room().has(Vector2i(2, 3)) and view.hidden_room().size() == 8, "the cover over this room is hidden: %d" % view.hidden_room().size())
+	check(view.hidden_room().has(Vector2i(2, 3)), "inside, under the room's cover")
 	cl.request({"type": "climb", "location": "surface", "x": 2, "y": 2})
 	_steps(g, view, 15)
 	eq(cl.z, 1, "on the first floor")

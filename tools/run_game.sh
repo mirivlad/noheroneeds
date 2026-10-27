@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the game (in 3D; --renderer=2d draws the sprite view). Usage: tools/run_game.sh [-- game options, e.g. --connect=HOST:PORT]
+# Run the game (the world in 3D). Usage: tools/run_game.sh [-- game options, e.g. --connect=HOST:PORT]
 # After a pull new or changed pictures and scripts must be imported first:
 # running the game alone (godot --path .) does not import them, only the
 # editor does. This script imports (quickly, when nothing changed) and runs.

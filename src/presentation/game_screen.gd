@@ -35,8 +35,6 @@ signal screenshot_taken
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 ## Most cells one drag of a blueprint builds at once.
 const DRAG_MAX := 64
-## How the world is drawn unless --renderer says otherwise: "3d" (WorldView3D) or "2d" (the sprite view).
-const DEFAULT_RENDERER := "3d"
 
 var content: ContentRegistry
 ## Attack requests in flight, deaths already told (-1: none seen yet).
@@ -92,9 +90,10 @@ var mouse_at: Variant = null
 
 
 func _mouse_world() -> Vector2:
-	if mouse_at == null and view is WorldView3D:
-		return (view as WorldView3D).screen_point(get_viewport().get_mouse_position())
-	return mouse_at if mouse_at != null else get_global_mouse_position()
+	if mouse_at != null:
+		view.point_at(mouse_at)
+		return mouse_at
+	return view.screen_point(get_viewport().get_mouse_position())
 
 var painter := MapPainter.new()
 var minimap := Minimap.new()
@@ -129,7 +128,8 @@ var _learn_rids := {}
 ## The menu is open: no controls, and a single-player world stands still.
 var paused := false
 var _reported := false
-var view := WorldView.new()
+## The world, in 3D (ADR-0063: the 2D view is gone).
+var view := WorldView3D.new()
 var camera := Camera2D.new()
 var hud := Label.new()
 var status := Label.new()
@@ -148,7 +148,6 @@ var _places_rid := ""
 var _dev: DevRuns
 ## The blueprint's cells this frame ([cell, why not]) and their pictures.
 var _plan: Array = []
-var _ghosts: Array[Sprite2D] = []
 var _build_view: ClientBuildView
 
 ## What the server's refusals mean, for people.
@@ -223,10 +222,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	content = registry
 	settings = player_settings
 	_opts = dev
-	if String(_opts.get("renderer", DEFAULT_RENDERER)) == "3d":
-		view.free()
-		view = WorldView3D.new()
-		(view as WorldView3D).configure_camera(settings)
+	view.configure_camera(settings)
 	if not _opts.is_empty():
 		_dev = DevRuns.new(self)
 	match String(cfg.get("mode", "local")):
@@ -491,7 +487,7 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if paused or client == null:
 		return
-	if view is WorldView3D and not world_map.visible and (view as WorldView3D).camera_input(event):
+	if not world_map.visible and view.camera_input(event):
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and world_map.visible:
@@ -519,7 +515,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _key(k: int, shift: bool) -> void:
-	if (view is WorldView3D or _opts.has("quality")) and game and k in [KEY_F6, KEY_F7, KEY_F8]:
+	if game and k in [KEY_F6, KEY_F7, KEY_F8]:
 		var at := game.world._spawn_way()
 		if k == KEY_F6:
 			var village := game.world.generator.settlements.home_plan()
@@ -530,10 +526,9 @@ func _key(k: int, shift: bool) -> void:
 				_note = "Маршрут seed 431: запустите tools/start_3d_experiment.sh --quality"
 				return
 			at = Vector2i(-231, 816)  # Original Settlements.roads_of(), quality/inspect.gd.
-		if view is WorldView3D:
-			(view as WorldView3D).zoom = 38 if k == KEY_F8 else 16.875
-			(view as WorldView3D).tilt = 38 if k == KEY_F8 else (65 if k == KEY_F7 else 49)
-			(view as WorldView3D).yaw = PI + .6 if k == KEY_F8 else .6
+		view.zoom = 38 if k == KEY_F8 else 16.875
+		view.tilt = 38 if k == KEY_F8 else (65 if k == KEY_F7 else 49)
+		view.yaw = PI + .6 if k == KEY_F8 else .6
 		if client.location == Levels.SURFACE:
 			game.world.move_character(client.character_id, at * Movement.UNIT + Vector2i.ONE * (Movement.UNIT / 2))
 			_note = "Эксперимент: горная дорога (seed 431)" if k == KEY_F8 else ("Эксперимент: деревня" if k == KEY_F6 else "Эксперимент: вход в пещеру; F — спуск")
@@ -1049,8 +1044,6 @@ func _turns() -> Array:
 ## roofs the cell whose cover would be drawn there (covers sit a storey higher).
 func _build_cell() -> Vector2i:
 	var m := _mouse_world()
-	if not view is WorldView3D and Terrain.layer_for_role(String(content.get_def(_blueprint).get("role", ""))) != "structure":
-		m.y += WorldView.COVER_LIFT
 	return Vector2i(floori(m.x / WorldView.CELL), floori(m.y / WorldView.CELL))
 
 
@@ -1124,34 +1117,7 @@ func _update_ghost() -> void:
 	_plan = [] if client.state != "playing" or v.is_empty() or world_map.visible else _plan_cells()
 	if _opts.has("screenshot") and not _opts.has("ui"):
 		_plan = []
-	if view is WorldView3D:
-		(view as WorldView3D).show_plan(_plan)
-		return
-	while _ghosts.size() < _plan.size():
-		var g := Sprite2D.new()
-		g.centered = false
-		g.z_index = 20
-		add_child(g)
-		_ghosts.append(g)
-	for i in _ghosts.size():
-		var g: Sprite2D = _ghosts[i]
-		g.visible = i < _plan.size()
-		if not g.visible:
-			continue
-		var cell: Vector2i = _plan[i][0]
-		g.texture = view.texture(v["atlas_path"])
-		g.region_enabled = true
-		var facing := String(_turns()[_facing % _turns().size()]) if not _turns().is_empty() else ""
-		var turned: String = v.get("mirror", {}).get(facing, facing)
-		var r: Array = v.get("rotations", {}).get(turned, v["rect"])
-		g.region_rect = Rect2(r[0], r[1], r[2], r[3])
-		g.flip_h = v.get("mirror", {}).has(facing)
-		g.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))
-		if v["mode"] == "cover":
-			g.position = Vector2(cell.x * WorldView.CELL, cell.y * WorldView.CELL - WorldView.COVER_LIFT)
-		else:
-			g.position = Vector2(cell.x * WorldView.CELL, (cell.y + 1) * WorldView.CELL) - Vector2(v["origin"][0], v["origin"][1]) * g.scale
-		g.modulate = Color(0.6, 1.0, 0.6, 0.6) if _plan[i][1] == "" else Color(1.0, 0.4, 0.4, 0.5)
+	view.show_plan(_plan)
 
 
 func _direction() -> Vector2i:
@@ -1169,11 +1135,11 @@ func _direction() -> Vector2i:
 		d.y -= 1
 	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
 		d.y += 1
-	return (view as WorldView3D).world_direction(d) if view is WorldView3D else d
+	return view.world_direction(d)
 
 
 func _update_hud() -> void:
-	minimap.yaw = (view as WorldView3D).yaw if view is WorldView3D else 0.0
+	minimap.yaw = view.yaw
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
 		if rid == _places_rid:
@@ -1334,13 +1300,11 @@ func _update_hud() -> void:
 	var info := PackedStringArray()
 	if hosted:
 		info.append("сервер: порт %d%s" % [hosted.port, _lan_address()])
-	if settings.get_value("show_fps"):
-		info.append("%d к/с" % Engine.get_frames_per_second())
+	if settings.get_value("show_fps"):  # and how the 3D view keeps up
+		info.append("%d к/с · %d чанков · %d объектов · %.1f мс · очередь %d" % [Engine.get_frames_per_second(),
+			view._geometry.size(), view.object_count(), view._last_build_ms, view.pending_chunks()])
 	if settings.get_value("show_hints"):
 		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9 — в руки, Q — оружие, I — вещи, C — персонаж, B — стройка, K — ремёсла, M — карта, L — журнал, Esc — меню")
-	if view is WorldView3D:
-		var v3 := view as WorldView3D
-		info = PackedStringArray(["3D · %d FPS · %d чанков · %d объектов · %.1f мс · очередь %d" % [Engine.get_frames_per_second(), v3._geometry.size(), v3.object_count(), v3._last_build_ms, v3.pending_chunks()]])
 	_info.text = "   ".join(info)
 	var note := _note
 	if client.has_position and _ways_at(Movement.cell_of(client.position)).size() == 2:

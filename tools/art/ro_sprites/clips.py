@@ -147,13 +147,27 @@ def slash(t):
 	return keyed([(0.0, READY), (0.3, wind), (0.55, strike), (0.75, strike), (1.0, READY)], t)
 
 
+def tool(x, y, z, yaw, pitch, edge_yaw, edge_pitch):
+	"""The right fist placed by the tool (rig.py R_tool): grip, handle and edge in the chest's frame."""
+	return {"R_tool": 1, "R_tool_x": x, "R_tool_y": y, "R_tool_z": z, "R_tool_yaw": yaw, "R_tool_pitch": pitch,
+		"R_tool_edge_yaw": edge_yaw, "R_tool_edge_pitch": edge_pitch}
+
+
 def chop(t):
-	"""Axe, pick or hoe: raised over the head with the right hand, brought down in front."""
-	up = {"spine_bend": -8, "chest_bend": -4, "R_arm_fwd": 165, "R_arm_down": 62, "R_arm_in": 5, "R_elbow": 70,
-		"R_wrist_side": 25, "L_arm_fwd": 40, "L_elbow": 50, "head_bend": -14}
-	down = {"spine_bend": 26, "chest_bend": 6, "head_bend": 8, "R_arm_fwd": 40, "R_arm_down": 70, "R_arm_in": 12,
-		"R_elbow": 5, "R_wrist_side": -35, "L_arm_fwd": 20, "L_elbow": 35, **both("knee", 18), **both("hip", 12)}
-	return keyed([(0.0, READY), (0.35, up), (0.55, up), (0.75, down), (0.9, down), (1.0, READY)], t)
+	"""Felling, with both hands on the handle (the left below the right): the axe goes back and
+	up over the right shoulder as the trunk turns away, then comes round and down across the
+	body as it turns into the blow, and bites in front at waist height with the blade only a
+	little off level, as into a standing trunk. Picks and hoes play it too."""
+	grip = {"L_hold": -0.08, "R_arm_fwd": 40, "R_arm_down": 60, "R_elbow": 60}
+	ready = {**grip, **tool(0.12, 0.3, -0.3, 0, 40, 0, -50)}
+	wind = {**grip, **tool(0.3, -0.02, 0.22, -150, 35, -70, -10),
+		"hips_turn": -10, "spine_turn": -15, "chest_turn": -30, "head_turn": 30, "spine_bend": -4, "R_hip": 6, "L_hip": -4}
+	swing = {**grip, **tool(0.3, 0.2, -0.05, -70, 10, 0, -20),
+		"hips_turn": -2, "spine_turn": -2, "chest_turn": -5, "head_turn": 10, "spine_bend": 6}
+	strike = {**grip, **tool(0.1, 0.36, -0.28, 20, -8, 90, -15),
+		"hips_turn": 8, "spine_turn": 12, "chest_turn": 25, "head_turn": -10, "spine_bend": 14,
+		**both("knee", 14), "L_hip": 14, "R_hip": 4}
+	return keyed([(0.0, ready), (0.35, wind), (0.5, wind), (0.62, swing), (0.74, strike), (0.88, strike), (1.0, ready)], t)
 
 
 def thrust(t):

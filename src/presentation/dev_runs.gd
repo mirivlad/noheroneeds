@@ -2,10 +2,18 @@ class_name DevRuns
 extends RefCounted
 ## Development runs of the game screen (command-line options after "--", see
 ## App): a demo house and yard (--demo[=...]), going somewhere (--goto=...),
-## a window opened for a picture (--ui=...), a blow caught midway... Nothing
+## a window opened for a picture (--ui=...), a blow caught midway, the own
+## RO character held in poses and photographed (--poses=PREFIX)... Nothing
 ## here is for players; GameScreen calls step() each frame when any is given.
 
 var g: GameScreen
+## --poses=PREFIX [--pose_list=clip:dir:frame,...]: the own RO-style character is held in each
+## pose in turn (RoSprite.pinned) and the screen saved as PREFIX_<clip>_<dir>_<frame>.png; then
+## the game quits. Without a list: idle, walk and run frames and the whole chop, in n s e ne se.
+const POSE_DIRS := ["n", "s", "e", "ne", "se"]
+var _poses: Array = []
+var _pose_at := -1
+var _pose_wait := 0
 
 
 func _init(screen: GameScreen) -> void:
@@ -13,6 +21,8 @@ func _init(screen: GameScreen) -> void:
 
 
 func step(delta: float) -> void:
+	if g._opts.has("poses"):
+		_photograph_poses()
 	if g._opts.has("demo") and not g._demo_done and g.client.state == "playing" and g.client.has_position:
 		g._demo_done = true
 		if g.game:
@@ -316,3 +326,55 @@ func step(delta: float) -> void:
 		for y in range(-3, 0):
 			for x in range(-2, 1):
 				g.client.request({"type": "build", "location": g.client.location, "x": x, "y": y, "part": "base:wood_ceiling"})
+
+
+func _photograph_poses() -> void:
+	if g.client == null or g.client.state != "playing" or not g.client.has_position or g._frames < 90:
+		return
+	if g.view is WorldView3D and g._frames < 1200 and _pose_at < 0 \
+			and not ((g.view as WorldView3D)._queued.is_empty() and (g.view as WorldView3D)._job.is_empty()):
+		return  # the ground around still being built
+	var doll := _own_doll() as RoSprite
+	if doll == null:
+		return
+	if _pose_at < 0:
+		_poses = _pose_list()
+		_pose_at = 0
+		_pose_wait = 0
+	if _pose_at >= _poses.size():
+		return
+	var pose: Array = _poses[_pose_at]
+	if _pose_wait == 0:
+		doll.pinned = [pose[0], RoSprite.ROWS.find(pose[1]), int(pose[2])]
+		doll._frame({}, 0)
+	_pose_wait += 1
+	if _pose_wait < 4:  # drawn, and in 3D through the billboard's viewport too
+		return
+	g.get_viewport().get_texture().get_image().save_png("%s_%s_%s_%d.png" % [g._opts["poses"], pose[0], pose[1], int(pose[2])])
+	_pose_at += 1
+	_pose_wait = 0
+	if _pose_at >= _poses.size():
+		doll.pinned = []
+		g.screenshot_taken.emit()
+
+
+func _pose_list() -> Array:
+	var out := []
+	if g._opts.has("pose_list"):
+		for p: String in String(g._opts["pose_list"]).split(","):
+			out.append(Array(p.split(":")))
+		return out
+	for d: String in POSE_DIRS:
+		for p: Array in [["idle", 0], ["walk", 2], ["run", 2]]:
+			out.append([p[0], d, p[1]])
+		for i in 10:
+			out.append(["chop", d, i])
+	return out
+
+
+func _own_doll() -> CharacterSprite:
+	var id: String = g.client.character_id
+	if g.view is WorldView3D:
+		var actor: BillboardActor3D = (g.view as WorldView3D)._actors.get(id)
+		return actor.doll if actor else null
+	return g.view._characters.get(id)

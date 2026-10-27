@@ -13,7 +13,7 @@ extends Node
 ##   --world=ID       plays a saved world (or makes it) at once;
 ## dev runs: --demo[=outside|upstairs|behind], --walk=DX,DY, --body=PLAN (plays a
 ## character of that body plan, made in the profile if it has none),
-## --screenshot=PATH --frames=N (saves a frame and quits) start a local game
+## --screenshot=PATH --frames=N (saves a frame and quits), --poses=PREFIX (DevRuns) start a local game
 ## at once in the world "local"; --menu=SCREEN (start, new_game, load,
 ## connect, characters, character_create, settings...) shows a menu screen.
 
@@ -81,7 +81,7 @@ func _ready() -> void:
 	if _opts.has("connect"):
 		var hp := String(_opts["connect"]).split(":")
 		start_game({"mode": "connect", "address": hp[0], "port": int(hp[1]) if hp.size() > 1 else 24680})
-	elif _opts.has("world") or (not _opts.has("menu") and (_opts.has("demo") or _opts.has("screenshot") or _opts.has("walk"))):
+	elif _opts.has("world") or (not _opts.has("menu") and (_opts.has("demo") or _opts.has("screenshot") or _opts.has("walk") or _opts.has("poses"))):
 		var id := String(_opts.get("world", "local"))
 		if id == "":
 			id = "local"

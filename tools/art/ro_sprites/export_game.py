@@ -1,7 +1,8 @@
-"""Put the rendered RO layers into the game: atlases and a visual (python3 + Pillow + numpy).
+"""Put the rendered RO layers into the game: atlases and visuals (python3 + Pillow + numpy).
 
-Every layer of build.sh (pixels/<layer>/, the body with its drawn face) becomes
-one atlas in content/base/art/ro/: frames cropped to the box all of that
+For every body build.sh has made in full (BUILD_DIR/<body>/pixels), every layer
+(the body with its drawn face, the sample hair, each item) becomes one atlas in
+content/base/art/ro/<body>/: frames cropped to the box all of that
 layer's frames fit in, eight rows of directions (s, se, e, ne, n, nw, w, sw) and
 the clips one after another along the columns; a layer too wide for one strip
 of columns goes on in another band of eight rows below.
@@ -12,12 +13,12 @@ pixels is drawn later. The body is always first: every other layer was filmed
 on it as a holdout and holds only what shows in front of it.
 
 CREDITS-art.md gets the source model in its own section ("<!-- ro -->", at
-the end). content/base/ro_visuals.json gets the body plan's visual (format "ro", read by
-RoSprite): the body sheet itself, the sample hair as a style, the clothes and
+the end). content/base/ro_visuals.json gets each body plan's visual (format "ro", read by
+RoSprite): the body sheet itself, its sample hair as a style, the clothes and
 held things of gear.py as fitted layers, the clips with their frames and fps,
 the game's swings, and the draw order of every frame.
 
-Usage: python3 export_game.py BUILD_DIR CONTENT_DIR [--max-width 4096]
+Usage: python3 export_game.py BUILD_DIR CONTENT_DIR [--max-width 4096]   (BUILD_DIR holds <body>/)
 """
 import argparse
 import json
@@ -33,8 +34,9 @@ import gear  # noqa: E402
 from clips import CLIPS  # noqa: E402
 
 DIRECTIONS = ["s", "se", "e", "ne", "n", "nw", "w", "sw"]
-BODY_PLAN = "base:human_ro_m"
-HAIR_STYLE = "base:human_ro_hair_sample"
+# body: (body plan, the style its sample hair is)
+BODIES = {"male": ("base:human_ro_m", "base:human_ro_hair_tousled"),
+	"female": ("base:human_ro_f", "base:human_ro_hair_twintails")}
 # Game swings (world_view.gd swing_kind) -> clips.
 SWINGS = {"chop": "chop", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "cast"}
 # Game equipment slots of the layers (content/base character_editor.json).
@@ -50,37 +52,48 @@ def main():
 	ap.add_argument("content")
 	ap.add_argument("--max-width", type=int, default=4096)
 	a = ap.parse_args()
-	out_dir = os.path.join(a.content, "art", "ro")
-	os.makedirs(out_dir, exist_ok=True)
 	layers = gear.all_layers()
+	visuals = []
 	with Pool(min(8, os.cpu_count() or 1)) as pool:
-		sheets = dict(zip(layers, pool.map(atlas, [(a.build, out_dir, layer, a.max_width) for layer in layers])))
-		jobs = [(a.build, clip, d, i) for clip in CLIPS for d in DIRECTIONS for i in range(CLIPS[clip][0])]
-		orders = dict(zip([j[1:] for j in jobs], pool.map(order, jobs)))
+		for body, (plan, hair) in BODIES.items():
+			build = os.path.join(a.build, body)
+			if not all(os.path.isdir(os.path.join(build, "pixels", l)) for l in layers):
+				print("ro body %s: not built in full, left out" % body)
+				continue
+			out_dir = os.path.join(a.content, "art", "ro", body)
+			os.makedirs(out_dir, exist_ok=True)
+			sheets = dict(zip(layers, pool.map(atlas, [(build, out_dir, body, layer, a.max_width) for layer in layers])))
+			jobs = [(build, clip, d, i) for clip in CLIPS for d in DIRECTIONS for i in range(CLIPS[clip][0])]
+			orders = dict(zip([j[1:] for j in jobs], pool.map(order, jobs)))
+			visuals.append(visual(body, plan, hair, sheets, orders))
+			total = sum(os.path.getsize(os.path.join(out_dir, n)) for n in os.listdir(out_dir) if n.endswith(".png"))
+			print("ro body %s: %d layers, %.1f MB" % (body, len(layers), total / 1e6))
+	with open(os.path.join(a.content, "ro_visuals.json"), "w", encoding="utf-8") as f:
+		json.dump({"format": 1, "defs": visuals}, f, ensure_ascii=False, separators=(",", ":"))
+	credit(os.path.join(a.content, "..", "..", "CREDITS-art.md"))
+
+
+def visual(body, plan, hair, sheets, orders):
 	index = {layer: k for k, layer in enumerate(CANONICAL)}
-	visual = {
-		"id": "base:visual/human_ro_m", "kind": "visual", "for": BODY_PLAN, "mode": "character", "format": "ro",
+	return {
+		"id": "base:visual/" + plan.split(":")[1], "kind": "visual", "for": plan, "mode": "character", "format": "ro",
 		"pixel_scale": 0.5, **sheets["body"], "rect": [0, 0, *sheets["body"]["frame"]],
 		"clips": {c: {"frames": f, "fps": fps, "loop": loop} for c, (f, fps, loop, _) in CLIPS.items()},
 		"swings": SWINGS,
 		"layers": CANONICAL,
 		"order": {c: [[[index[l] for l in orders[(c, d, i)]] for i in range(CLIPS[c][0])] for d in DIRECTIONS]
 			for c in CLIPS},
-		"style_overrides": {HAIR_STYLE: {"layer": "hair", "sheets": [sheets["hair_sample"]]}},
+		"style_overrides": {hair: {"layer": "hair", "sheets": [sheets["hair_sample"]]}},
 		"worn_overrides": {"base:" + item: {"layer": SLOTS[item], "sheets": [sheets[item]]} for item in gear.WORN},
 		"held_overrides": {"base:" + item: {"layer": "main_hand", "sheets": [sheets[item]]} for item in gear.HELD},
 	}
-	with open(os.path.join(a.content, "ro_visuals.json"), "w", encoding="utf-8") as f:
-		json.dump({"format": 1, "defs": [visual]}, f, ensure_ascii=False, separators=(",", ":"))
-	credit(os.path.join(a.content, "..", "..", "CREDITS-art.md"))
-	total = sum(os.path.getsize(os.path.join(out_dir, n)) for n in os.listdir(out_dir) if n.endswith(".png"))
-	print("ro atlases: %d layers, %.1f MB" % (len(layers), total / 1e6))
 
 
 RO_CREDITS_START = "<!-- ro -->"
 RO_CREDITS = [
 	RO_CREDITS_START, "# Авторы графики персонажей в стиле Ragnarok Online", "",
-	"Тело — модель VRoid **HairSample_Male** (pixiv Inc., лицензия CC0, указана в метаданных VRM) из",
+	"Тела — модели VRoid **HairSample_Male** и **HairSample_Female** (pixiv Inc., лицензия CC0, указана в",
+	"метаданных VRM) из",
 	"[madjin/vrm-samples](https://github.com/madjin/vrm-samples). Пропорции, лицо, одежда, предметы и",
 	"анимации сделаны в `tools/art/ro_sprites` и отрендерены в пиксели там же.", "",
 ]
@@ -112,7 +125,7 @@ def load(build, layer, clip, d, i):
 
 def atlas(job):
 	"""One layer's atlas; returns its sheet: atlas, frame size, the feet in the frame, columns, clips."""
-	build, out_dir, layer, max_width = job
+	build, out_dir, body, layer, max_width = job
 	cell, foot = gear.cell_of(layer)
 	frames = list(frames_of(layer))
 	pics = {(clip, d, i): load(build, layer, clip, d, i)[0] for clip, i in frames for d in DIRECTIONS}
@@ -136,7 +149,7 @@ def atlas(job):
 			sheet.paste(Image.fromarray(crop, "RGBA"), (x, y))
 	name = layer + ".png"
 	sheet.save(os.path.join(out_dir, name), optimize=True)
-	return {"atlas": "art/ro/" + name, "key": layer, "frame": [w, h], "origin": [int(cell // 2 - x0), int(foot - y0)],
+	return {"atlas": "art/ro/%s/%s" % (body, name), "key": layer, "frame": [w, h], "origin": [int(cell // 2 - x0), int(foot - y0)],
 		"columns": columns, "anims": clips}
 
 

@@ -35,17 +35,27 @@ ARMS = {f"J_Bip_{s}_{b}" for s in "LR" for b in ("UpperArm", "LowerArm")}
 UPPER_LEGS = {"J_Bip_L_UpperLeg", "J_Bip_R_UpperLeg"}
 LOWER_LEGS = {"J_Bip_L_LowerLeg", "J_Bip_R_LowerLeg"}
 FEET = {f"J_Bip_{s}_{b}" for s in "LR" for b in ("Foot", "ToeBase")}
-HEAD_CENTRE = Vector((0, -0.01, 1.13))
+# The middle of the head (with the hair): this far above the eyes (set in main()).
+HEAD_ABOVE_EYES = 0.04
+# How much hair headwear makes room for over the skull, metres.
+HAIR_ROOM = 0.05
 # Smallest width that survives as a pixel: a block of the 8x supersampled render is 1 / 58 m.
 PIXEL = 1 / 58
 
 
 def main():
 	out = os.path.abspath(sys.argv[sys.argv.index("--") + 1])
-	global ARM, BODY, BONE, BROW, FACE_FRONT
+	global ARM, BODY, BONE, BROW, FACE_FRONT, HEAD_CENTRE, SHOULDER, ANKLE, KNEE, MOUTH
 	ARM, BODY = bpy.data.objects["Base"], bpy.data.objects["Body"]
 	BONE = {b.name: b.head_local.copy() for b in ARM.data.bones}
-	BROW = bpy.data.objects["eye_r"].matrix_world.to_translation().z + 0.035
+	eyes = bpy.data.objects["eye_r"].matrix_world.to_translation().z
+	BROW = eyes + 0.035
+	HEAD_CENTRE = Vector((0, -0.01, eyes + HEAD_ABOVE_EYES))
+	MOUTH = bpy.data.objects["mouth"].matrix_world.to_translation().z
+	# heights the clothes are cut at, from the body's own bones (the bodies differ in size)
+	SHOULDER = BONE["J_Bip_L_UpperArm"].z
+	ANKLE = BONE["J_Bip_L_Foot"].z
+	KNEE = BONE["J_Bip_L_LowerLeg"].z
 	FACE_FRONT = max(v.co.y for v in bpy.data.objects["Face"].data.vertices)
 	cape_bones()
 	for item in list(gear.WORN) + list(gear.HELD):
@@ -66,6 +76,7 @@ def shell(name, keep, offset, trim=None):
 	"""The body faces whose vertices all pass keep(co, bone), each vertex pushed out by
 	offset(co, bone) metres; trim(co) marks faces (by their centre) for the second colour."""
 	bm = body_bmesh()
+	normals = smooth_normals(bm)
 	deform = bm.verts.layers.deform.verify()
 	groups = {g.index: g.name for g in BODY.vertex_groups}
 	moves, drop = {}, []
@@ -73,7 +84,7 @@ def shell(name, keep, offset, trim=None):
 		w = v[deform]
 		bone = groups[max(w.items(), key=lambda kv: kv[1])[0]] if len(w) else ""
 		if keep(v.co, bone):
-			moves[v] = v.normal * offset(v.co, bone)
+			moves[v] = normals[v] * offset(v.co, bone)
 		else:
 			drop.append(v)
 	bmesh.ops.delete(bm, geom=drop, context="VERTS")
@@ -100,6 +111,15 @@ def body_bmesh():
 	bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
 	bm.normal_update()
 	return bm
+
+
+def smooth_normals(bm, rounds=3):
+	"""Vertex normals averaged with their neighbours': pushed out along them a shell does not
+	fold into the body in creases (under the breast, the armpit)."""
+	n = {v: v.normal.copy() for v in bm.verts}
+	for _ in range(rounds):
+		n = {v: (n[v] + sum((n[e.other_vert(v)] for e in v.link_edges), Vector())).normalized() for v in bm.verts}
+	return n
 
 
 def skinned(name, me):
@@ -144,10 +164,10 @@ def work_trousers():
 	waist = BONE[C + "Hips"].z + 0.035
 
 	def keep(co, bone):
-		return (bone in UPPER_LEGS | LOWER_LEGS and co.z > 0.135) or (bone == C + "Hips" and co.z < waist)
+		return (bone in UPPER_LEGS | LOWER_LEGS and co.z > ANKLE + 0.014) or (bone == C + "Hips" and co.z < waist)
 
 	def offset(co, bone):
-		return 0.006 + 0.010 * (1 - ramp(co.z, 0.135, 0.2))
+		return 0.006 + 0.010 * (1 - ramp(co.z, ANKLE + 0.014, ANKLE + 0.08))
 
 	o = shell("work_trousers", keep, offset, trim=lambda co: co.z > waist - 0.025)
 	material(o, "walnut", pal.WALNUT, pal.DARK_LEATHER)  # a belt at the waist
@@ -155,7 +175,7 @@ def work_trousers():
 
 
 def boots():
-	top = 0.25
+	top = KNEE - 0.085
 
 	def keep(co, bone):
 		return bone in FEET or (bone in LOWER_LEGS and co.z < top)
@@ -189,20 +209,25 @@ def leather_armor():
 
 def envelope(margin, smooth=3, segments=(48, 24)):
 	"""A sphere around the head and the sample hair, drawn in onto them from outside and kept
-	`margin` metres off; bumps of hair strands are filled out first."""
+	`margin` metres off; bumps of hair strands are filled out first. Hair counts only up to
+	HAIR_ROOM over the head: long tails and buns stay out (hair outside headwear is cut off
+	when the layers are put together, as in Ragnarok Online)."""
 	dg = bpy.context.evaluated_depsgraph_get()
-	trees = [BVHTree.FromObject(bpy.data.objects[n], dg) for n in ("Face", "HairSample", "Body")]
+	head = [BVHTree.FromObject(bpy.data.objects[n], dg) for n in ("Face", "Body")]
+	hair = BVHTree.FromObject(bpy.data.objects["HairSample"], dg)
 	bm = bmesh.new()
 	bmesh.ops.create_uvsphere(bm, u_segments=segments[0], v_segments=segments[1], radius=1.0)
 	r = {}
 	for v in bm.verts:
 		u = v.co.normalized()
-		start, best = HEAD_CENTRE + u * 0.5, 0.11
-		for t in trees:
+		start, skull = HEAD_CENTRE + u * 0.5, 0.11
+		for t in head:
 			hit = t.ray_cast(start, -u, 0.5)
 			if hit[0] is not None:
-				best = max(best, (hit[0] - HEAD_CENTRE).length)
-		r[v] = best
+				skull = max(skull, (hit[0] - HEAD_CENTRE).length)
+		hit = hair.ray_cast(start, -u, 0.5)
+		hair_r = (hit[0] - HEAD_CENTRE).length if hit[0] is not None else 0.0
+		r[v] = max(skull, min(hair_r, skull + HAIR_ROOM))
 	near = {v: [e.other_vert(v) for e in v.link_edges] for v in bm.verts}
 	for _ in range(smooth):
 		r = {v: max(r[v], sum(r[n] for n in near[v]) / len(near[v])) for v in bm.verts}
@@ -270,14 +295,14 @@ def felt_hat():
 
 def fur_hood():
 	bm = envelope(0.022, smooth=6)
-	cut(bm, (0, 0, 0.975), (0, 0, 1))
+	cut(bm, (0, 0, MOUTH - 0.03), (0, 0, 1))
 	face_hole = [v for v in bm.verts
 		if (v.co - HEAD_CENTRE).normalized().y > 0.42 and v.co.z < BROW + 0.012]
 	bmesh.ops.delete(bm, geom=face_hole, context="VERTS")
 	opening = {v for v in bm.verts if v.is_boundary and v.co.y > HEAD_CENTRE.y + 0.02}
 	hood = rigid("fur_hood", bm, trim=lambda f: any(v in opening for v in f.verts))
 	material(hood, "fur_hood", pal.FUR_BROWN, pal.FUR_LIGHT)
-	return [hood, capelet("fur_hood_capelet", 0.026, 0.83)]
+	return [hood, capelet("fur_hood_capelet", 0.026, SHOULDER - 0.068)]
 
 
 def capelet(name, thickness, bottom):
@@ -303,10 +328,11 @@ def cape_bones():
 	eb = ARM.data.edit_bones
 	y = -0.06
 	c1 = eb.new("Cape1")
-	c1.head, c1.tail = (0, y, 0.88), (0, y, 0.55)
+	waist = BONE["J_Bip_L_UpperLeg"].z + 0.035
+	c1.head, c1.tail = (0, y, SHOULDER - 0.018), (0, y, waist)
 	c1.parent = eb[C + "UpperChest"]
 	c2 = eb.new("Cape2")
-	c2.head, c2.tail = (0, y, 0.55), (0, y, 0.2)
+	c2.head, c2.tail = (0, y, waist), (0, y, ANKLE + 0.08)
 	c2.parent, c2.use_connect = c1, True
 	bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -328,7 +354,8 @@ def cape(name, bottom, flare, colours, trim=None, hem=0.0):
 	"""A sheet around the back from the shoulders down to `bottom`, widening by `flare` per metre
 	and kept off the trunk and thighs; its lowest `hem` metres take the trim colour."""
 	tree = torso_tree()
-	top, cols, rows, spread = 0.9, 24, 14, math.radians(100)
+	top, cols, rows, spread = SHOULDER + 0.002, 24, 14, math.radians(100)
+	waist = BONE["J_Bip_L_UpperLeg"].z + 0.035
 	groups = [C + "UpperChest", "Cape1", "Cape2"]
 	bm = bmesh.new()
 	deform = bm.verts.layers.deform.verify()
@@ -348,10 +375,10 @@ def cape(name, bottom, flare, colours, trim=None, hem=0.0):
 		for out, r_top in zip(outs, tops):
 			r = max(r_top + (top - z) * flare, body_radius(out, z) + 0.03)
 			v = bm.verts.new(Vector((0, 0, z)) + out * r)
-			if z > 0.84:
+			if z > SHOULDER - 0.058:
 				v[deform][0] = 1.0
 			else:
-				low = ramp(0.55 - z, 0, 0.2)
+				low = ramp(waist - z, 0, 0.2)
 				v[deform][1] = 1 - low
 				if low:
 					v[deform][2] = low
@@ -377,7 +404,7 @@ def mantle(name, thickness, colours, trim=None):
 	def keep(co, bone):
 		on = bone in {C + "UpperChest", C + "Neck", "J_Bip_L_Shoulder", "J_Bip_R_Shoulder"} \
 			or (bone in ARMS and abs(co.x) < 0.22)
-		return on and 0.855 < co.z < 0.96
+		return on and SHOULDER - 0.043 < co.z < SHOULDER + 0.062
 
 	o = shell(name, keep, lambda co, bone: thickness)
 	material(o, name, colours, trim)
@@ -385,12 +412,12 @@ def mantle(name, thickness, colours, trim=None):
 
 
 def wool_cloak():
-	return [mantle("wool_cloak_mantle", 0.03, pal.WOOL_GREY), cape("wool_cloak", 0.2, 0.22, pal.WOOL_GREY)]
+	return [mantle("wool_cloak_mantle", 0.03, pal.WOOL_GREY), cape("wool_cloak", ANKLE + 0.08, 0.22, pal.WOOL_GREY)]
 
 
 def fur_cloak():
 	return [mantle("fur_cloak_mantle", 0.042, pal.FUR_LIGHT),
-		cape("fur_cloak", 0.17, 0.25, pal.FUR_BROWN, pal.FUR_LIGHT, hem=0.04)]
+		cape("fur_cloak", ANKLE + 0.05, 0.25, pal.FUR_BROWN, pal.FUR_LIGHT, hem=0.04)]
 
 
 # --- held things -------------------------------------------------------------------

@@ -104,7 +104,9 @@ def carry(layers, clip):
 	thing would go into the ground (picking up); in its own swing a thing sits straight in the
 	grip (the swing was posed for that)."""
 	hips = bpy.data.objects["Base"].pose.bones["J_Bip_C_Hips"]
-	tipped = min(1.0, (hips.matrix.to_3x3() @ Vector((0, 1, 0))).angle(Vector((0, 0, 1))) / math.radians(90))
+	# against the bone's own rest direction: the female body's hips bone points down
+	tipped = min(1.0, (hips.matrix.to_3x3() @ Vector((0, 1, 0))).angle(hips.bone.matrix_local.to_3x3() @ Vector((0, 1, 0)))
+		/ math.radians(90))
 	for layer in layers:
 		if layer not in gear.HELD:
 			continue

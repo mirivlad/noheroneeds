@@ -43,15 +43,12 @@ HELD = {
 	"fishing_rod": "cast",
 }
 # How a held thing is carried (clips of CARRY): the direction it keeps in the world (the
-# character faces +Y, z is up) while the wrist turns it about the fist's hinge axis, so a tool
-# hangs and a shaft stands up whatever the arm swing does; the fist's channel points forward,
-# and without this every tool would stick straight out. The bow keeps it in its shot too.
-DOWN_FORWARD, UP = (0, 0.5, -1), (0, 0.3, 1)
-CARRY_AIM = {
-	"flint_axe": DOWN_FORWARD, "axe": DOWN_FORWARD, "iron_axe": DOWN_FORWARD,
-	"flint_pick": DOWN_FORWARD, "pickaxe": DOWN_FORWARD, "iron_pickaxe": DOWN_FORWARD,
-	"hoe": UP, "spear": UP, "fishing_rod": UP, "bow": UP,
-}
+# character faces +Y, z is up) while the wrist turns it about the fist's hinge axis, so it
+# stands the same way whatever the arm swing does; the fist's channel points forward, and
+# without this every tool would stick straight out. Everything is carried head up: an axe
+# with its head over the fist and the edge forward, a spear or a rod upright.
+UP = (0, 0.3, 1)
+CARRY_AIM = {item: UP for item in HELD}
 AIM_ALWAYS = {"bow"}
 # Lying flat, forward: along the body of one fallen on its back (render.carry turns carried
 # things towards it in a fall and while they would go into the ground).

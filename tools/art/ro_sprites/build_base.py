@@ -1,17 +1,18 @@
-"""Build the Ragnarok-Online-proportioned male base body (stage 1 of the sprite pipeline).
+"""Build a Ragnarok-Online-proportioned base body, male or female (stage 1 of the sprite pipeline).
 
-Source: VRoid HairSample_Male (CC0, tools/art/ro_sprites/fetch_base.sh). The
+Source: VRoid HairSample_Male or HairSample_Female (CC0, tools/art/ro_sprites/fetch_base.sh). The
 clothes and the 3D eyes, brows and mouth are removed; the head is enlarged and
 the neck, torso, arms and legs shortened to about four heads; the eye and
 mouth openings are closed and levelled, and empties on the head bone mark where
 the eyes and the mouth are: the face is drawn in pixels over the sprite
-(face2d.py) at their projected points. Tight trunks are a face attribute of the body. Materials are flat toon ramps fed to
+(face2d.py) at their projected points. Tight underwear (trunks; and a band over
+the breast for the female body) is a face attribute of the body. Materials are flat toon ramps fed to
 an emission shader, so a render holds only the palette colours.
 
 The sample hair stays in the file as object "HairSample" (collection
 "hair_sample", not rendered by default) for previews.
 
-Usage: blender -b --factory-startup -P build_base.py -- SRC.vrm OUT.blend LAYOUT.json
+Usage: blender -b --factory-startup -P build_base.py -- SRC.vrm OUT.blend LAYOUT.json [--body male|female]
 """
 import bpy
 import bmesh
@@ -47,8 +48,14 @@ OWN_SCALE = [
 	"J_Bip_C_Spine", "J_Bip_C_Neck", "J_Bip_C_Head", "J_Bip_L_UpperArm", "J_Bip_R_UpperArm",
 	"J_Bip_L_Hand", "J_Bip_R_Hand", "J_Bip_L_UpperLeg", "J_Bip_R_UpperLeg", "J_Bip_L_Foot", "J_Bip_R_Foot",
 ]
-# Trunks: from this far below the top of the thighs up to this far above the hips joint.
-TRUNKS_BELOW_LEGS = 0.10
+# Bodies: their proportions over the source's, and the underwear: (bone the band is measured
+# from, metres below it, metres above it) — the trunks from the top of the thighs, a top
+# over the breast from the chest.
+BODIES = {
+	"male": {"proportions": PROPORTIONS, "underwear": [("J_Bip_L_UpperLeg", 0.10, None)]},
+	"female": {"proportions": PROPORTIONS, "underwear": [("J_Bip_L_UpperLeg", 0.10, None), ("J_Bip_C_UpperChest", 0.0, 0.06)]},
+}
+# Trunks reach this far above the hips joint.
 TRUNKS_ABOVE_HIPS = 0.03
 # The eyes look this far outwards from the face direction (for how much of each shows).
 EYE_SPLAY = 25
@@ -58,6 +65,8 @@ GRIP_SLANT = 22
 def main():
 	args = sys.argv[sys.argv.index("--") + 1:]
 	src, out_blend, out_layout = args[0], os.path.abspath(args[1]), os.path.abspath(args[2])
+	body_kind = args[args.index("--body") + 1] if "--body" in args else "male"
+	spec = BODIES[body_kind]
 	bpy.ops.wm.read_factory_settings(use_empty=True)
 	with tempfile.TemporaryDirectory() as tmp:
 		glb = os.path.join(tmp, "base.glb")
@@ -72,7 +81,7 @@ def main():
 	hair.name = "HairSample"
 	face.shape_key_clear()
 
-	reshape(arm, [body, face, hair])
+	reshape(arm, [body, face, hair], spec["proportions"])
 	drop = ground(arm, [body, face, hair])
 	layout = face_layout(face)
 	keep_material(body, ["Body_00_SKIN"])
@@ -84,8 +93,8 @@ def main():
 	grips(arm)
 	for o, n in ((body, 150), (face, 30), (hair, 10)):
 		soft_normals(o, n)
-	trunks(body, arm)
-	remove_unused_bones(arm)
+	underwear(body, arm, spec["underwear"])
+	remove_unused_bones(arm, [body, face, hair])
 
 	body.data.materials.clear()
 	body.data.materials.append(toon.ramp_material("skin", palette.SKIN, under=("trunks", palette.TRUNKS)))
@@ -115,10 +124,10 @@ def local_scale(bone, world):
 	return [world[max(range(3), key=lambda k: abs(m.col[i][k]))] for i in range(3)]
 
 
-def reshape(arm, meshes):
+def reshape(arm, meshes, proportions):
 	for name in OWN_SCALE:
 		arm.data.bones[name].inherit_scale = "NONE"
-	for name, s in PROPORTIONS.items():
+	for name, s in proportions.items():
 		arm.pose.bones[name].scale = local_scale(arm.data.bones[name], s)
 	bpy.context.view_layer.update()
 	for o in meshes:
@@ -297,18 +306,42 @@ def soft_normals(obj, iterations):
 	bpy.data.objects.remove(src)
 
 
-def trunks(body, arm):
-	legs = arm.data.bones["J_Bip_L_UpperLeg"].head_local.z
+def underwear(body, arm, bands):
+	"""Mark the faces of the underwear bands (attribute "trunks"): from `below` metres under a
+	bone's head up to `above` metres over it (None: up to the hips joint and a little over),
+	on the trunk and the thighs only (in the T pose the arms are at the height of the breast)."""
 	hips = arm.data.bones["J_Bip_C_Hips"].head_local.z
-	lo, hi = legs - TRUNKS_BELOW_LEGS, hips + TRUNKS_ABOVE_HIPS
+	spans = []
+	for bone, below, above in bands:
+		z = arm.data.bones[bone].head_local.z
+		spans.append((z - below, hips + TRUNKS_ABOVE_HIPS if above is None else z + above))
 	me = body.data
+	groups = {g.index: g.name for g in body.vertex_groups}
+	limb = [any(k in groups[max(v.groups, key=lambda g: g.weight).group] for k in ("Arm", "Hand", "Shoulder", "Thumb",
+		"Index", "Middle", "Ring", "Little")) if v.groups else False for v in me.vertices]
 	att = me.attributes.new("trunks", "FLOAT", "FACE")
 	for p in me.polygons:
 		z = (body.matrix_world @ p.center).z
-		att.data[p.index].value = 1.0 if lo <= z <= hi else 0.0
+		on = any(lo <= z <= hi for lo, hi in spans) and not any(limb[v] for v in p.vertices)
+		att.data[p.index].value = 1.0 if on else 0.0
 
 
-def remove_unused_bones(arm):
+def remove_unused_bones(arm, meshes):
+	"""Drop the secondary (spring) bones; what they moved — the breast of the female body —
+	goes to the nearest main bone above them, or it would stay put while the body moves."""
+	for o in meshes:
+		for g in list(o.vertex_groups):
+			bone = arm.data.bones.get(g.name)
+			if bone is None or not g.name.startswith("J_Sec_"):
+				continue
+			while bone and bone.name.startswith("J_Sec_"):
+				bone = bone.parent
+			target = o.vertex_groups.get(bone.name) or o.vertex_groups.new(name=bone.name)
+			for v in o.data.vertices:
+				for w in v.groups:
+					if w.group == g.index and w.weight > 0:
+						target.add([v.index], w.weight, "ADD")
+			o.vertex_groups.remove(g)
 	bpy.context.view_layer.objects.active = arm
 	bpy.ops.object.mode_set(mode="EDIT")
 	for b in list(arm.data.edit_bones):

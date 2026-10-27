@@ -30,6 +30,8 @@ var _clip := "idle"
 var _index := 0
 var _faced := false
 var _drawn_order := []
+## Dev (DevRuns --poses): [clip, row, frame] shown whatever the character does; [] lets it be.
+var pinned: Array = []
 
 
 func _init(body: Texture2D, visual: Dictionary, layers: Array = [], looks: Dictionary = {}) -> void:
@@ -54,6 +56,8 @@ func _anim(anim_name: String) -> Dictionary:
 
 
 func _face(v: Vector2) -> void:
+	if not pinned.is_empty():
+		return
 	var angle := rad_to_deg(fposmod(atan2(v.y, v.x), TAU))  # 0 east, 90 south
 	if _faced:
 		# Keep the direction near a boundary between two: no flicker on a diagonal.
@@ -80,6 +84,10 @@ func _frame(anim: Dictionary, i: int) -> void:
 	if swinging():
 		clip = _swing_clip()
 		index = mini(int(_swing_t * _frame_count(clip)), _frame_count(clip) - 1)
+	if not pinned.is_empty():
+		clip = String(pinned[0])
+		_row = int(pinned[1])
+		index = int(pinned[2])
 	for l: Array in _layers + _held_layers:
 		_place_frame(l[1], l[2], clip, index)
 	_draw_in_order(clip, index)

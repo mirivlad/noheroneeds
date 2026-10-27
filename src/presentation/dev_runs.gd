@@ -160,6 +160,8 @@ func step(delta: float) -> void:
 				if g.biome_id_at(p["centre"].x, p["centre"].y) == String(g._opts["goto"]).trim_prefix("village@") \
 						and (cell == Vector2i.ZERO or Vector2(p["centre"]).length() < Vector2(cell).length()):
 					cell = (p["fire"] as Vector2i) + Vector2i(2, 0)
+		elif String(g._opts["goto"]) == "cave":  # beside the way down near the spawn point, on the surface
+			cell = g.game.world._spawn_way() + Vector2i(2, 1)
 		elif String(g._opts["goto"]) == "bridge":  # the nearest road over water
 			var g := g.game.world.generator
 			var best := Vector2i(1 << 20, 0)

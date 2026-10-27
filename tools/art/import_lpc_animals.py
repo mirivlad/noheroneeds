@@ -118,15 +118,16 @@ ANIMALS = {
         },
         "sheet": A22 + "bear, polar.png", "attack": "attack", "fps": 7,
     },
-    # Foxes (rows s, w, e, n): no strike of their own, a lunge of the walk.
+    # Foxes (rows s, e, w, n: read as s, w, e, n they walked backwards): no strike
+    # of their own, a lunge of the walk.
     "base:fox": {
-        "anims": lambda p: {"walk": grid(p, 64, 64, {"s": 0, "w": 1, "e": 2, "n": 3}, range(4)),
-                            "idle": grid(p, 64, 64, {"s": 0, "w": 1, "e": 2, "n": 3}, [0])},
+        "anims": lambda p: {"walk": grid(p, 64, 64, {"s": 0, "e": 1, "w": 2, "n": 3}, range(4)),
+                            "idle": grid(p, 64, 64, {"s": 0, "e": 1, "w": 2, "n": 3}, [0])},
         "sheet": A22 + "fox, woods.png", "attack": "walk", "fps": 10,
     },
     "base:arctic_fox": {
-        "anims": lambda p: {"walk": grid(p, 64, 64, {"s": 0, "w": 1, "e": 2, "n": 3}, range(4)),
-                            "idle": grid(p, 64, 64, {"s": 0, "w": 1, "e": 2, "n": 3}, [0])},
+        "anims": lambda p: {"walk": grid(p, 64, 64, {"s": 0, "e": 1, "w": 2, "n": 3}, range(4)),
+                            "idle": grid(p, 64, 64, {"s": 0, "e": 1, "w": 2, "n": 3}, [0])},
         "sheet": A22 + "fox, arctic.png", "attack": "walk", "fps": 10,
     },
     # A mushroom that walks (rows s, e, w, n).

@@ -1,5 +1,5 @@
 extends TestCase
-## A pick reaches the first solid cell toward the aim, within three cells.
+## A pick reaches the nearest solid cell in the direction of the aim, within three cells.
 
 func _solid(cells: Array) -> Callable:
 	return func(x: int, y: int) -> bool: return cells.has(Vector2i(x, y))
@@ -20,3 +20,7 @@ func test_the_first_solid_toward_the_aim() -> void:
 	eq(Reach.first_solid(me, Vector2(_at(Vector2i(13, 13))), _solid([Vector2i(12, 12)])), Vector2i(12, 12), "diagonally too")
 	eq(Reach.first_solid(me, Vector2(me), _solid([Vector2i(11, 10)])), Reach.NONE, "no direction, nothing")
 	eq(Reach.first_solid(me, far, _solid([Vector2i(10, 10)])), Reach.NONE, "not the cell one stands on")
+	# Not only exactly on the line: a tree a little to the side of the aim is felled.
+	eq(Reach.first_solid(me, far, _solid([Vector2i(12, 11)])), Vector2i(12, 11), "a little aside of the aim")
+	eq(Reach.first_solid(me, far, _solid([Vector2i(11, 12)])), Reach.NONE, "but not far aside")
+	eq(Reach.first_solid(me, far, _solid([Vector2i(13, 10), Vector2i(12, 11)])), Vector2i(12, 11), "the nearer in the arc")

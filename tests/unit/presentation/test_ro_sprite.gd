@@ -150,6 +150,28 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 	await (Engine.get_main_loop() as SceneTree).process_frame
 
 
+func test_a_bow_held_drawn_and_loosed() -> void:
+	var content := _content()
+	var view := WorldView.new()
+	view.content = content
+	var doll := view._character("me", _look()) as RoSprite
+	doll.show_at(Vector2.ZERO, 0.0, true)
+	doll.hold(view.item_picture("base:bow"), view.item_grip("base:bow"), "base:bow")
+	doll.pull_string(Vector2.RIGHT, view.swing_kind("base:bow"))
+	for i in 60:
+		doll.show_at(Vector2.ZERO, 0.05, true)
+	check(doll.swinging() and is_equal_approx(doll._swing_t, CharacterSprite.DRAWN), "held drawn while the button is held")
+	doll.loose(Vector2.UP)
+	eq(doll._row, 4, "turned to where it is loosed")
+	var t := 0.0
+	while doll.swinging() and t < 3.0:
+		doll.show_at(Vector2.ZERO, 0.05, true)
+		t += 0.05
+	check(not doll.swinging(), "the shot plays on and ends")
+	view.free()
+	await (Engine.get_main_loop() as SceneTree).process_frame
+
+
 func test_the_editor_offers_the_ro_bodies() -> void:
 	var content := _content()
 	var editor := CharacterEditor.new()

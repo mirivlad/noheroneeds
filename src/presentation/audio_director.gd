@@ -14,7 +14,12 @@ extends Node2D
 ##   rain        — a loop as loud as it rains (ADR-0033), and thunder
 ##                 at a storm's lightning (WeatherView);
 ##   doings      — filling, pouring, eating, drinking, digging, felling,
-##                 tilling, sowing, crafting, dressing (ADR-0037).
+##                 tilling, sowing, crafting, dressing (ADR-0037);
+##   beasts       — rarely, by events (the author, 27.10.2026): now and then
+##                 one's own call ("voice", every [lo, hi] seconds, each
+##                 beast on its own), and always its blow ("attack"), the
+##                 start of a hunt ("chase": a wolf howls), its death cry
+##                 ("death") — the last three come as world events.
 ## World sounds are positional (Effects bus): far ones fade, the camera
 ## hears. Ambience plays on its own bus.
 
@@ -50,6 +55,9 @@ var _rng := RandomNumberGenerator.new()
 ## Seen by MusicDirector: the share of forest around, and being indoors.
 var forest_share := 0.0
 var indoors := false
+## Beasts heard now and then: id -> the time (s, _clock) of its next call.
+var _calls := {}
+var _clock := 0.0
 
 
 func setup(registry: ContentRegistry, game_client: GameClient, world_view: WorldView) -> void:
@@ -112,6 +120,32 @@ func play(event: String, id: String, at: Variant = null) -> void:
 	v.play()
 
 
+## Beasts near call now and then, each when its own time comes (a first call
+## not before half its least wait: no chorus when one comes upon a herd).
+func _beasts_call(delta: float) -> void:
+	_clock += delta
+	var here := {}
+	for id: String in client.entities:
+		var e: Dictionary = client.entities[id]
+		if e.get("kind") != "creature" or not e.has("x") or String(e.get("profession", "")) != "":
+			continue
+		var kind := String(e.get("creature", ""))
+		var d := content.sound_of(kind, "voice")
+		if d.is_empty() or not d.has("every"):
+			continue
+		here[id] = true
+		var every: Array = d["every"]
+		if not _calls.has(id):
+			_calls[id] = _clock + _rng.randf_range(float(every[0]) * 0.5, float(every[1]))
+		elif _clock >= float(_calls[id]):
+			_calls[id] = _clock + _rng.randf_range(float(every[0]), float(every[1]))
+			if not e.get("asleep", false):
+				play("voice", kind, Vector2(int(e["x"]), int(e["y"])) / WorldView.UNITS_PER_PIXEL)
+	for id: String in _calls.keys():
+		if not here.has(id):
+			_calls.erase(id)
+
+
 ## A character's foot came down at a point (pixels).
 func step_at(location: String, at: Vector2) -> void:
 	if location != client.location:
@@ -138,6 +172,7 @@ func _process(delta: float) -> void:
 		_listen_around()
 	_blow(delta)
 	_rain_on(delta)
+	_beasts_call(delta)
 	for path: String in _amb:
 		var a: Array = _amb[path]
 		a[2] = move_toward(float(a[2]), float(a[3]), delta / AMB_FADE)

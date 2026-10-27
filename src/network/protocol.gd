@@ -29,7 +29,10 @@ class_name Protocol
 ##    REQUESTs "lock", "befriend", "unfriend" (ADR-0016).
 ## 12: WELCOME tells the weather seed (ADR-0033); the own private part
 ##    carries "needs" (ADR-0032); REQUESTs "craft", "eat", "till", "sow", "feed".
-const VERSION := 12
+## 13: SNAPSHOT may carry "died": [[x, y, creature kind]] of creatures that died
+##    near this tick; a creature that strikes carries "hunting" (a bool) while
+##    it hunts — for their voices.
+const VERSION := 13
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.

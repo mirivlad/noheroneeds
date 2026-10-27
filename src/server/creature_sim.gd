@@ -208,20 +208,20 @@ func _populate(location: String, cx: int, cy: int, had := 0) -> void:
 				break
 
 
-## How villagers may look: a body, a face, hair and colours (the editor's).
-const VILLAGER_BODIES := ["base:human_m", "base:human_f"]
-const VILLAGER_FACES := ["base:human_face_soft", "base:human_face_square", "base:human_face_angular"]
-const VILLAGER_HAIR := ["base:human_hair_short", "base:human_hair_plain", "base:human_hair_long",
-	"base:human_hair_ponytail", "base:human_hair_braid", "base:human_hair_bald"]
+## How villagers may look: the player's RO bodies (the author, 27.10.2026: drawn
+## the same as the player, not LPC), a hairstyle and colours (the editor's).
+const VILLAGER_BODIES := ["base:human_ro_m", "base:human_ro_f"]
+const VILLAGER_HAIR := ["base:human_ro_hair_tousled", "base:human_ro_hair_twintails", "base:human_ro_hair_bob",
+	"base:human_ro_hair_fluffy_bob", "base:human_ro_hair_fringe", "base:human_ro_hair_long", "base:human_ro_hair_side_tail",
+	"base:human_ro_hair_tousled", "base:human_ro_hair_bob", "base:human_hair_bald"]
 const VILLAGER_SKIN := ["#e4a47c", "#ea9f54", "#ae6b3f", "#7f4c31", "#76513a", "#442725"]
-const VILLAGER_HAIR_COLORS := ["#1c2222", "#421603", "#7d4513", "#cc6901", "#bf9d5a", "#c0ab81", "#777777"]
+const VILLAGER_HAIR_COLORS := ["#1c2222", "#421603", "#7d4513", "#cc6901", "#bf9d5a", "#c0ab81", "#777777", "#5a3a22"]
 
 
 ## Looks of a villager, the same for the same random state.
 static func villager_looks(r: RandomNumberGenerator) -> Dictionary:
 	var pick := func(list: Array) -> String: return String(list[r.randi() % list.size()])
-	return {"body_plan": pick.call(VILLAGER_BODIES),
-		"styles": {"face": pick.call(VILLAGER_FACES), "hair": pick.call(VILLAGER_HAIR)},
+	return {"body_plan": pick.call(VILLAGER_BODIES), "styles": {"hair": pick.call(VILLAGER_HAIR)},
 		"colors": {"skin": pick.call(VILLAGER_SKIN), "hair": pick.call(VILLAGER_HAIR_COLORS)},
 		"worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
 
@@ -1360,6 +1360,8 @@ func _go(c: Creature, state: String, target_cell: Vector2i, run: bool) -> void:
 	var target := target_cell * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2) \
 		if target_cell != Creature.NO_TARGET else Creature.NO_TARGET
 	if c.state != state or c.target != target or c.running != run:
+		if (c.state == "hunt") != (state == "hunt"):
+			_cold[c.id] = true  # it starts or stops hunting: heard (its howl)
 		c.state = state
 		c.target = target
 		c.running = run

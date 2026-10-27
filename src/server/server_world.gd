@@ -1999,7 +1999,8 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 	# What it practises (ADR-0047): a tool's kind, crops, or bare hands.
 	var practice := ("tool:" + tool) if tool != "" else ("crop" if crop.has("crop") else "hand")
 	var work := int(g.get("work", 1))
-	if work > 1 or g.has("chance"):
+	# A tool keeps its pace whatever it works on: clicking fast digs no faster.
+	if work > 1 or g.has("chance") or tool != "":
 		var pace: Dictionary = content.get_def(item).get("weapon", {}) if item != "" else {}
 		if not combat.ready(actor, float(pace.get("cooldown_ms", 700)) * (held_pace(actor) if tool != "" else 1.0)
 				* knowledge.effect(actor, practice, "pace")):

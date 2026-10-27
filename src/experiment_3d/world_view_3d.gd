@@ -76,6 +76,13 @@ func _ready() -> void:
 	_resize()
 	get_viewport().size_changed.connect(_resize)
 
+func _notification(what: int) -> void:
+	# The scene made up front but never placed (a start that failed before setup()) is freed too.
+	if what == NOTIFICATION_PREDELETE:
+		for n: Node in [panel, viewport, space, eye, sun, environment, _ghost_root]:
+			if is_instance_valid(n) and n.get_parent() == null:
+				n.free()
+
 func _resize() -> void:
 	panel.size = get_viewport_rect().size
 

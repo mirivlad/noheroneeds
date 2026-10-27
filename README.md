@@ -20,6 +20,8 @@ tools/run_game.sh
 
 Скрипт сначала импортирует новые картинки и скрипты: после `git pull` это обязательно. Голый `godot --path .` сам ничего не импортирует, это делает только редактор.
 
+Мир рисуется в 3D ([docs/experiments/3d-world](docs/experiments/3d-world/README.md)); прежний 2D-вид спрайтами — `tools/run_game.sh -- --renderer=2d`.
+
 Экран — **960×540** (на 1920×1080 — ×2). Вся графика — пиксель-арт из открытых наборов
 Liberated Pixel Cup: [художественный стандарт](docs/art/ART_STANDARD.md), авторы —
 [CREDITS-art.md](CREDITS-art.md) и «Авторы» в меню. Исходники наборов в git не хранятся:

@@ -34,6 +34,8 @@ signal screenshot_taken
 const MATERIALS := ["base:plank", "base:stone", "base:log"]
 ## Most cells one drag of a blueprint builds at once.
 const DRAG_MAX := 64
+## How the world is drawn unless --renderer says otherwise: "3d" (WorldView3D) or "2d" (the sprite view).
+const DEFAULT_RENDERER := "3d"
 
 var content: ContentRegistry
 ## Attack requests in flight, deaths already told (-1: none seen yet).
@@ -218,7 +220,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	content = registry
 	settings = player_settings
 	_opts = dev
-	if _opts.get("renderer") == "3d":
+	if String(_opts.get("renderer", DEFAULT_RENDERER)) == "3d":
 		view.free()
 		view = WorldView3D.new()
 		(view as WorldView3D).configure_camera(settings)
@@ -517,7 +519,7 @@ func _key(k: int, shift: bool) -> void:
 				at = (village["fire"] as Vector2i) + Vector2i(2, 0)
 		if k == KEY_F8:
 			if game.world.generator.world_seed != 431:
-				_note = "Маршрут seed 431: запустите tools/run_3d_experiment.sh --quality"
+				_note = "Маршрут seed 431: запустите tools/start_3d_experiment.sh --quality"
 				return
 			at = Vector2i(-231, 816)  # Original Settlements.roads_of(), quality/inspect.gd.
 		if view is WorldView3D:

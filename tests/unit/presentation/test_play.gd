@@ -2,7 +2,8 @@ extends TestCase
 ## The game as a player plays it (ADR-0021): a local world, the mouse and the
 ## keys going through the viewport (panels catch what is meant for them),
 ## the server judging every request. Drag and drop between panels cannot be
-## pushed through the viewport here: the drop itself is called.
+## pushed through the viewport here: the drop itself is called. The world is
+## drawn in 2D: the checks point at the sprite view's cells.
 
 var app: App
 var g: GameScreen
@@ -11,7 +12,7 @@ var w: ServerWorld
 
 func before_each() -> void:
 	app = App.new()
-	app.configure({"profile_dir": tmp_dir(), "world": "play", "time": "12"})
+	app.configure({"profile_dir": tmp_dir(), "world": "play", "time": "12", "renderer": "2d"})
 	(Engine.get_main_loop() as SceneTree).root.add_child(app)
 	g = app.game
 	w = g.game.world

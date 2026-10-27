@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Experiment implementation. The main-branch launcher prepares its worktree.
+# The 3D world with a profile and saves of its own (../.noheroneeds-3d-data), apart from the
+# main game's. Usage: tools/start_3d_experiment.sh [--2d] [--quality]
 set -euo pipefail
 die() { printf 'Ошибка: %s\n' "$*" >&2; exit 1; }
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"

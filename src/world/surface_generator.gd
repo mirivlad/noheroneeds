@@ -21,7 +21,8 @@ const ID := "base:surface"
 ## 7: shallows at the edges of the sea and lakes, fords, deep water (ADR-0051).
 ## 8: pebbles (flint) on shores (ADR-0053).
 ## 9: villages in clusters, roads by the land (ADR-0054).
-const VERSION := 9
+## 10: rugged land in levels with cliffs between them and passes (ADR-0061).
+const VERSION := 10
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -53,6 +54,10 @@ var _solid := {}
 ## Small detail over the coarse land: its height's grain, the edges of biomes.
 var _grain := FastNoiseLite.new()
 var _rock_noise := FastNoiseLite.new()
+## How rugged a place is beside its height, and where the passes are (ADR-0061).
+var _rugged_noise := FastNoiseLite.new()
+var _bumps_noise := FastNoiseLite.new()
+var _pass_noise := FastNoiseLite.new()
 ## Rivers wind: a cell is measured to a course from a place shifted by this.
 var _meander := FastNoiseLite.new()
 ## One noise field per patch slot (the n-th lesser ground of any biome uses field n).
@@ -104,6 +109,15 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	_rock_noise.seed = seed_value + 9137
 	_rock_noise.frequency = 0.09
 	_rock_noise.fractal_octaves = 2
+	_rugged_noise.seed = seed_value + 6007
+	_rugged_noise.frequency = 0.006
+	_rugged_noise.fractal_octaves = 2
+	_bumps_noise.seed = seed_value + 7177
+	_bumps_noise.frequency = 0.018
+	_bumps_noise.fractal_octaves = 3
+	_pass_noise.seed = seed_value + 8111
+	_pass_noise.frequency = 0.045
+	_pass_noise.fractal_octaves = 2
 	_meander.seed = seed_value + 3571
 	_meander.frequency = 0.03
 	_meander.fractal_octaves = 2
@@ -228,7 +242,7 @@ func land_at(x: int, y: int) -> Dictionary:
 	var geo := geography
 	if geo == null:
 		return {"what": "land", "height": 0.1, "biome": _biome_at(x, y, 0.1, false)} if _flat else {"what": "water", "height": -1.0, "biome": 0}
-	var h := geo.sample(Geography.HEIGHT, x, y) + _grain.get_noise_2d(x, y) * 0.035
+	var h := height_at(x, y)
 	if h < Geography.SEA:
 		return {"what": _water_by_depth(Geography.SEA - h), "height": h, "biome": 0}
 	if h < Geography.SEA + 0.012:
@@ -271,9 +285,108 @@ func land_at(x: int, y: int) -> Dictionary:
 	if near < 1.0 and _hash(x, y, 8) < 0.6:
 		return {"what": "shore", "height": h, "biome": 0}
 	var biome := _biome_at(x, y, h, near < 10.0)
-	if _rock != "" and h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06:
+	if _rock != "" and (h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or is_cliff(x, y, h)):
 		return {"what": "rock", "height": h, "biome": biome}
 	return {"what": "land", "height": h, "biome": biome}
+
+
+# --- Relief in levels (ADR-0061) ---------------------------------------------
+# Low land rolls gently; rugged land (hills and mountains, and some rugged
+# lowland) rises in mesas and lies in flat levels LEVEL_METRES apart. The
+# upper edge of a level is a cliff (the rock of the heights: it blocks walking, a
+# pick digs it) except in passes, where the land runs smoothly from one level to
+# the next. The server only ever sees the cliffs; the 3D view stands the land at
+# metres_at().
+
+## Metres a unit of height is, and of the fine grain over it.
+const RELIEF_METRES := 28.0
+const GRAIN_METRES := 4.0
+## Levels of cells lately asked about (each cell's neighbours ask again); the
+## chunk loader's thread and the simulation both ask.
+var _levels := {}
+var _levels_lock := Mutex.new()
+## Metres between two levels, and how far rugged land rises and sinks round its height.
+const LEVEL_METRES := 3.0
+const BUMPS_METRES := 10.0
+
+
+## The height of a cell (the coarse land and its grain), in the land's units.
+func height_at(x: int, y: int) -> float:
+	return _with_grain(x, y, geography.sample(Geography.HEIGHT, x, y)) if geography else 0.1
+
+
+func _with_grain(x: int, y: int, macro: float) -> float:
+	return macro + _grain.get_noise_2d(x, y) * 0.035
+
+
+## How rugged land is, 0 (rolling) to 1 (levels and cliffs): by its height, hills
+## upwards, and somewhat by place.
+func ruggedness(x: int, y: int, h: float) -> float:
+	return clampf(smoothstep(Geography.HILLS * 0.6, Geography.MOUNTAINS * 0.85, h) + _rugged_noise.get_noise_2d(x, y) * 0.7, 0.0, 1.0)
+
+
+## How far a cell lies in a pass, 0 (none) to 1: a winding band of open land.
+func openness(x: int, y: int) -> float:
+	return smoothstep(0.2, 0.3, _pass_noise.get_noise_2d(x, y))
+
+
+## Metres of the land before it is stepped: the height, the grain and, on rugged
+## land, its mesas (only ever raised: no land sinks under the water beside it).
+func _rolling(x: int, y: int, macro: float, h: float) -> float:
+	return (macro - Geography.SEA) * RELIEF_METRES + (h - macro) * GRAIN_METRES \
+		+ (_bumps_noise.get_noise_2d(x, y) * 0.5 + 0.5) * BUMPS_METRES * ruggedness(x, y, h)
+
+
+## The level a cell is on.
+func level_at(x: int, y: int) -> int:
+	if geography == null:
+		return 0
+	var at := Vector2i(x, y)
+	_levels_lock.lock()
+	var known: Variant = _levels.get(at)
+	_levels_lock.unlock()
+	if known != null:
+		return known
+	var macro := geography.sample(Geography.HEIGHT, x, y)
+	var level := floori(_rolling(x, y, macro, _with_grain(x, y, macro)) / LEVEL_METRES)
+	_levels_lock.lock()
+	if _levels.size() > 40000:
+		_levels.clear()
+	_levels[at] = level
+	_levels_lock.unlock()
+	return level
+
+
+## Metres over the sea the ground of a cell stands at: rolling land as it rises,
+## rugged land flat on its level, passes in between.
+func metres_at(x: int, y: int) -> float:
+	if geography == null:
+		return 0.0
+	var macro := geography.sample(Geography.HEIGHT, x, y)
+	var h := _with_grain(x, y, macro)
+	var rolling := _rolling(x, y, macro, h)
+	return lerpf(rolling, floorf(rolling / LEVEL_METRES) * LEVEL_METRES, _stepped(x, y, h))
+
+
+## How much of a cell stands on its level rather than on the rolling land.
+func _stepped(x: int, y: int, h: float) -> float:
+	return smoothstep(0.35, 0.6, ruggedness(x, y, h) * (1.0 - openness(x, y)))
+
+
+## Whether a dry cell is the cliff at the upper edge of its level: stepped land
+## between its level (or a higher one) and a lower one (the land below, or
+## water). A strip of a level one cell wide is no cliff, just a hump.
+func is_cliff(x: int, y: int, h: float) -> bool:
+	if geography == null or _stepped(x, y, h) < 0.5:
+		return false
+	var level := level_at(x, y)
+	var lower := false
+	var level_beside := false
+	for d: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var other := level_at(x + d.x, y + d.y)
+		lower = lower or other < level
+		level_beside = level_beside or other >= level
+	return lower and level_beside
 
 
 ## Cells a ford is along a river (each way from its middle).

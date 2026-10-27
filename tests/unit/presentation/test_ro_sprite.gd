@@ -5,6 +5,8 @@ extends TestCase
 ## swings with the tool in frames of its own.
 
 const PLAN := "base:human_ro_m"
+## Each body plan and its sample hair.
+const PLANS := {"base:human_ro_m": "base:human_ro_hair_tousled", "base:human_ro_f": "base:human_ro_hair_twintails"}
 
 
 func _content() -> ContentRegistry:
@@ -13,8 +15,8 @@ func _content() -> ContentRegistry:
 	return content
 
 
-func _look(worn := WorldLibrary.STARTER_OUTFIT) -> Dictionary:
-	return {"body_plan": PLAN, "styles": {"hair": "base:human_ro_hair_sample"}, "colors": {}, "worn": worn.duplicate()}
+func _look(worn := WorldLibrary.STARTER_OUTFIT, plan := PLAN) -> Dictionary:
+	return {"body_plan": plan, "styles": {"hair": PLANS[plan]}, "colors": {}, "worn": worn.duplicate()}
 
 
 func _sheets(visual: Dictionary) -> Array:
@@ -27,8 +29,13 @@ func _sheets(visual: Dictionary) -> Array:
 
 func test_every_layer_fits_its_atlas() -> void:
 	var content := _content()
-	var visual := content.visual_of(PLAN)
-	eq(visual.get("format"), "ro")
+	for plan: String in PLANS:
+		_fits_its_atlas(content.visual_of(plan), plan)
+
+
+func _fits_its_atlas(visual: Dictionary, plan: String) -> void:
+	eq(visual.get("format"), "ro", plan + " is drawn from RO layers")
+	check(visual["style_overrides"].has(PLANS[plan]), plan + " draws its own hair")
 	for clip: String in visual["clips"]:
 		check(visual["anims"].has(clip), "the body has every clip: " + clip)
 	for sheet: Dictionary in _sheets(visual):
@@ -142,19 +149,23 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 	await (Engine.get_main_loop() as SceneTree).process_frame
 
 
-func test_the_editor_offers_the_ro_body() -> void:
+func test_the_editor_offers_the_ro_bodies() -> void:
 	var content := _content()
 	var editor := CharacterEditor.new()
 	(Engine.get_main_loop() as SceneTree).root.add_child(editor)
 	editor.setup(content)
-	editor.sex_pick.selected = CharacterEditor.PLANS.find(PLAN)
-	var look := editor.appearance()
-	eq(look["body_plan"], PLAN)
-	eq(look["styles"], {"hair": "base:human_ro_hair_sample"}, "its own sample hair, no face to choose")
-	var c := PortableCharacter.create("Тест", PLAN)
-	c.styles = look["styles"]
-	c.colors = look["colors"]
-	eq(c.check_content(content), PackedStringArray(), "a valid character")
+	for plan: String in PLANS:
+		editor.sex_pick.selected = CharacterEditor.PLANS.find(plan)
+		var look := editor.appearance()
+		eq(look["body_plan"], plan)
+		eq(look["styles"], {"hair": PLANS[plan]}, "its own sample hair, no face to choose")
+		var c := PortableCharacter.create("Тест", plan)
+		c.styles = look["styles"]
+		c.colors = look["colors"]
+		eq(c.check_content(content), PackedStringArray(), plan + ": a valid character")
+		var doll := Art.character_sprite(content, content.visual_of(plan), _look(WorldLibrary.STARTER_OUTFIT, plan))
+		check(doll is RoSprite and doll._layers.size() == 2 + WorldLibrary.STARTER_OUTFIT.size(), plan + " is dressed")
+		doll.free()
 	editor.free()
 
 

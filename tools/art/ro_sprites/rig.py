@@ -23,6 +23,13 @@ Channels (s = L or R, the character's own left and right):
   s_knee         + bends;  s_ankle  + toes up;  s_ankle_roll  + sole outwards
   L_hold         two-hand grip: when not 0, the left fist goes onto the right hand's
                  shaft this many metres along the grip axis (negative: behind the fist)
+  R_tool         when 1, the right fist is placed by the tool it holds rather than by the
+                 arm channels (they only tell which side the elbow bends to):
+  R_tool_x/y/z   where the grip is, metres from the upper chest in its frame (x to the
+                 character's right, y forward, z up), so a turn of the trunk swings the tool
+  R_tool_yaw/pitch       where the handle points from the fist (degrees; yaw + to the left
+                         of forward, pitch + up)
+  R_tool_edge_yaw/pitch  where the blade's edge faces, the same way (kept square to the handle)
   cape           extra backward swing of a cloak (degrees; it already hangs clear of
                  the legs and of a forward bend)
 """
@@ -74,7 +81,8 @@ def _joints():
 
 
 JOINTS = _joints()
-CHANNELS = {j[0] for j in JOINTS} | {"body_x", "body_y", "body_z", "L_hold", "cape"} | {s + "_fist" for s in SIDES}
+TOOL = ["R_tool", "R_tool_x", "R_tool_y", "R_tool_z", "R_tool_yaw", "R_tool_pitch", "R_tool_edge_yaw", "R_tool_edge_pitch"]
+CHANNELS = {j[0] for j in JOINTS} | {"body_x", "body_y", "body_z", "L_hold", "cape"} | {s + "_fist" for s in SIDES} | set(TOOL)
 
 def _rotate(arm, bone, axis, degrees, frame):
 	pb = arm.pose.bones[bone]
@@ -119,6 +127,8 @@ def pose(arm, values, ground_mesh=None):
 			_rotate(arm, bone, axis, v * sign, frame)
 		if name.endswith("_wrist_side") and values.get(name[0] + "_fist"):
 			_fist(arm, name[0], values[name[0] + "_fist"])
+	if values.get("R_tool", 0) >= 0.5:
+		_tool(arm, values)
 	if values.get("L_hold"):
 		_hold(arm, "L", values["L_hold"])
 	if "Cape1" in arm.pose.bones:
@@ -155,13 +165,45 @@ def _hold(arm, s, along):
 	other = bpy.data.objects["grip_" + ("r" if s == "L" else "l")].matrix_world
 	target = to_arm @ (other @ Vector((0, along, 0)))
 	shaft = (to_arm.to_3x3() @ other.to_3x3() @ Y).normalized()
+	_grip_to(arm, s, target, shaft)
+
+
+def _direction(yaw, pitch):
+	y, p = math.radians(yaw), math.radians(pitch)
+	return Vector((-math.sin(y) * math.cos(p), math.cos(y) * math.cos(p), math.sin(p)))
+
+
+def _tool(arm, values):
+	"""Place the right fist by the tool in it (the R_tool channels, in the upper chest's frame)."""
+	f = arm.pose.bones["J_Bip_C_UpperChest"]
+	frame = f.matrix.to_3x3() @ f.bone.matrix_local.to_3x3().inverted()
+	at = f.head + frame @ Vector([values.get("R_tool_" + k, 0) for k in "xyz"])
+	shaft = frame @ _direction(values.get("R_tool_yaw", 0), values.get("R_tool_pitch", 0))
+	edge = frame @ _direction(values.get("R_tool_edge_yaw", 0), values.get("R_tool_edge_pitch", 0))
+	_grip_to(arm, "R", at, shaft, edge)
+
+
+def _grip_to(arm, s, target, shaft, edge=None):
+	"""Bring the s fist's grip to a point (armature space) with its axis along `shaft`; with
+	`edge`, also turned about the shaft so its +X (an axe's edge) faces that way, else the
+	fist may hold the shaft either way round."""
+	to_arm = arm.matrix_world.inverted()
 	grip = bpy.data.objects["grip_" + s.lower()]
 	b = f"J_Bip_{s}_"
 	upper, lower, hand = (arm.pose.bones[b + n] for n in ("UpperArm", "LowerArm", "Hand"))
-	for _ in range(4):
-		g = to_arm @ grip.matrix_world
-		axis = (g.to_3x3() @ Y).normalized()
-		_turn(arm, hand.name, axis, shaft if axis.dot(shaft) >= 0 else -shaft)
+	shaft = shaft.normalized()
+	for _ in range(5):
+		g = (to_arm @ grip.matrix_world).to_3x3()
+		axis = (g @ Y).normalized()
+		if edge is None:
+			_turn(arm, hand.name, axis, shaft if axis.dot(shaft) >= 0 else -shaft)
+		else:
+			_turn(arm, hand.name, axis, shaft)
+			g = (to_arm @ grip.matrix_world).to_3x3()
+			have = g @ X
+			want = edge - shaft * edge.dot(shaft)
+			if want.length > 1e-4:
+				_turn(arm, hand.name, have - shaft * have.dot(shaft), want)
 		offset = (to_arm @ grip.matrix_world).to_translation() - hand.head
 		_reach(arm, upper, lower, hand, target - offset)
 

@@ -173,6 +173,63 @@
       ]
     },
     {
+      "id": "base:human_ro_f",
+      "kind": "body_plan",
+      "feminine": true,
+      "name": "Женский · RO",
+      "body_size": [
+        20,
+        32
+      ],
+      "frame": [
+        48,
+        48
+      ],
+      "directions": 8,
+      "slots": [
+        "back_item",
+        "body",
+        "legs",
+        "feet",
+        "torso",
+        "armor",
+        "belt",
+        "hair_back",
+        "head",
+        "face",
+        "eyes",
+        "hair_front",
+        "headwear",
+        "main_hand",
+        "off_hand"
+      ],
+      "appearance_slots": [
+        "hair"
+      ],
+      "colors": [
+        "skin",
+        "hair",
+        "eyes",
+        "cloth_main",
+        "cloth_accent"
+      ],
+      "health": 20,
+      "unarmed": {
+        "kind": "melee",
+        "damage": 1,
+        "reach": 0.8,
+        "arc": 90,
+        "cooldown_ms": 500
+      },
+      "fall_damage": [
+        0,
+        2,
+        6,
+        12,
+        20
+      ]
+    },
+    {
       "id": "base:human_face_soft",
       "kind": "style",
       "slot": "face",
@@ -206,7 +263,8 @@
       "body_plans": [
         "base:human_m",
         "base:human_f",
-        "base:human_ro_m"
+        "base:human_ro_m",
+        "base:human_ro_f"
       ]
     },
     {
@@ -255,11 +313,19 @@
       ]
     },
     {
-      "id": "base:human_ro_hair_sample",
+      "id": "base:human_ro_hair_tousled",
       "kind": "style",
       "slot": "hair",
       "body_plans": [
         "base:human_ro_m"
+      ]
+    },
+    {
+      "id": "base:human_ro_hair_twintails",
+      "kind": "style",
+      "slot": "hair",
+      "body_plans": [
+        "base:human_ro_f"
       ]
     },
     {

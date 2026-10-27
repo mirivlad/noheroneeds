@@ -12,7 +12,8 @@ extends Node2D
 ## --demo builds a little house through ordinary requests on arrival
 ## (--demo=outside puts the player at the porch, --demo=upstairs goes up the
 ## stairs; the player starts inside); --screenshot=PATH --frames=N;
-## --time=HOUR sets a local world's clock.
+## --time=HOUR sets a local world's clock; --poses=PREFIX photographs the own
+## RO-style character in poses (DevRuns).
 ##
 ## Controls (ADR-0021): what is in the hands and what the cursor points at
 ## decide what a click does (Actions): WASD/arrows walk, Ctrl runs; 1-9 or the

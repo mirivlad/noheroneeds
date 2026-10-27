@@ -3,6 +3,8 @@
 Each SCALE x SCALE block becomes one pixel: opaque when at least half of it is
 covered, coloured with the most frequent opaque colour of the block, so only
 the palette colours of the toon materials survive (no blended in-between tones).
+Every colour counts the same: favouring dark ones made the underwear under the
+clothes win the edges of a hand held against them.
 A one-pixel outline in a darkened colour of the neighbouring pixel is drawn
 around the silhouette, as in Ragnarok Online sprites.
 
@@ -22,9 +24,6 @@ import numpy as np
 from PIL import Image
 
 OUTLINE_DARKEN = 0.42
-# Drawn lines (eyes, brows) are thin: a dark colour counts this many times over.
-LINE_LUMA = 80
-LINE_WEIGHT = 4.0
 
 
 def reduce(img, scale):
@@ -35,12 +34,10 @@ def reduce(img, scale):
 	out = np.zeros((h, w, 4), np.uint8)
 	keys = (blocks[..., 0].astype(np.int64) << 16) | (blocks[..., 1].astype(np.int64) << 8) | blocks[..., 2]
 	cover = opaque.mean(axis=2) >= 0.5
-	lum = blocks[..., 0] * 0.3 + blocks[..., 1] * 0.59 + blocks[..., 2] * 0.11
-	weight = np.where(lum < LINE_LUMA, LINE_WEIGHT, 1.0)
 	for y, x in zip(*np.nonzero(cover)):
 		sel = opaque[y, x]
 		vals, inv = np.unique(keys[y, x][sel], return_inverse=True)
-		c = int(vals[np.argmax(np.bincount(inv, weights=weight[y, x][sel]))])
+		c = int(vals[np.argmax(np.bincount(inv))])
 		out[y, x] = (c >> 16, (c >> 8) & 255, c & 255, 255)
 	return out
 

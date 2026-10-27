@@ -1141,6 +1141,7 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 <!-- ro -->
 # Авторы графики персонажей в стиле Ragnarok Online
 
-Тело — модель VRoid **HairSample_Male** (pixiv Inc., лицензия CC0, указана в метаданных VRM) из
+Тела — модели VRoid **HairSample_Male** и **HairSample_Female** (pixiv Inc., лицензия CC0, указана в
+метаданных VRM) из
 [madjin/vrm-samples](https://github.com/madjin/vrm-samples). Пропорции, лицо, одежда, предметы и
 анимации сделаны в `tools/art/ro_sprites` и отрендерены в пиксели там же.

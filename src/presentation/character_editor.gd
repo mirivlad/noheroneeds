@@ -16,10 +16,10 @@ const HAIR_COLORS := {"#1c2222": "Чёрный", "#421603": "Тёмно-кашт
 const EYE_COLORS := {"#544c2e": "Карие", "#5686ae": "Голубые", "#53b351": "Зелёные", "#8b8979": "Серые"}
 ## One build of each body for now (LPC's muscular body lacks clothes and a bow
 ## shot); old broad bodies are drawn as these and become them when edited.
-## The RO-style body (tools/art/ro_sprites) has its own face drawn on and one
-## sample hairstyle: any hair but "Без волос" is that one.
-const PLANS := ["base:human_m", "base:human_f", "base:human_ro_m"]
-const RO_PLAN := "base:human_ro_m"
+## The RO-style bodies (tools/art/ro_sprites) have their own faces drawn on and one
+## sample hairstyle each: any hair but "Без волос" is that one.
+const PLANS := ["base:human_m", "base:human_f", "base:human_ro_m", "base:human_ro_f"]
+const RO_HAIR := {"base:human_ro_m": "base:human_ro_hair_tousled", "base:human_ro_f": "base:human_ro_hair_twintails"}
 
 var content: ContentRegistry
 var preview := CharacterPreview.new()
@@ -55,14 +55,15 @@ func setup(registry: ContentRegistry, character: PortableCharacter = null) -> vo
 	name_edit.max_length = PortableCharacter.NAME_MAX
 	name_edit.text = character.name if character else ""
 	_field("Имя", name_edit)
-	sex_pick = _choice("Пол", "SexChoice", ["Мужской", "Женский", "Мужской · RO"])
+	sex_pick = _choice("Пол", "SexChoice", ["Мужской", "Женский", "Мужской · RO", "Женский · RO"])
 	face_pick = _choice("Лицо", "FaceChoice", FACES.values())
 	hair_pick = _choice("Причёска", "HairChoice", HAIRS.values())
 	skin_pick = _choice("Кожа", "SkinChoice", SKIN.values())
 	color_pick = _choice("Волосы", "HairColorChoice", HAIR_COLORS.values())
 	eye_pick = _choice("Глаза", "EyeColorChoice", EYE_COLORS.values())
 	if character:
-		sex_pick.selected = 2 if character.body_plan == RO_PLAN else (1 if character.body_plan.begins_with("base:human_f") else 0)
+		sex_pick.selected = PLANS.find(character.body_plan) if RO_HAIR.has(character.body_plan) \
+			else (1 if character.body_plan.begins_with("base:human_f") else 0)
 		face_pick.selected = maxi(0, FACES.keys().find(character.styles.get("face", "")))
 		hair_pick.selected = maxi(0, HAIRS.keys().find(character.styles.get("hair", "")))
 		skin_pick.selected = maxi(0, SKIN.keys().find(character.colors.get("skin", "")))
@@ -89,8 +90,8 @@ func appearance() -> Dictionary:
 	var plan: String = PLANS[sex_pick.selected]
 	var hair: String = HAIRS.keys()[hair_pick.selected]
 	var styles := {"face": FACES.keys()[face_pick.selected], "hair": hair}
-	if plan == RO_PLAN:
-		styles = {"hair": hair if hair == "base:human_hair_bald" else "base:human_ro_hair_sample"}
+	if RO_HAIR.has(plan):
+		styles = {"hair": hair if hair == "base:human_hair_bald" else RO_HAIR[plan]}
 	return {"body_plan": plan, "styles": styles,
 		"colors": {"skin": SKIN.keys()[skin_pick.selected], "hair": HAIR_COLORS.keys()[color_pick.selected],
 			"eyes": EYE_COLORS.keys()[eye_pick.selected]}}

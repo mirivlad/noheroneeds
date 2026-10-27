@@ -29,8 +29,8 @@ COLOURS = {
 # Templates: rows of colour letters ("." is empty) and the (col, row) on the anchor.
 # Eyes are the character's right eye (on the left of the screen when facing the
 # viewer) with the outer corner on the left; the left eye is the mirror image.
-EYE_FULL = (["BBB.", "....", ".LLL", "LIhW", ".IIW", ".ii."], (2, 4))
-EYE_NARROW = (["BB", "..", "LL", "Ih", "Ii", "i."], (1, 4))
+EYE_FULL = (["BBBB.", ".....", ".LLLL", "LIIhW", "LIIiW", ".iii."], (2, 4))
+EYE_NARROW = (["BBB", "...", "LLL", "IIh", "Iii", "ii."], (1, 4))
 MOUTH_FULL = (["MM"], (1, 0))
 MOUTH_NARROW = (["M"], (0, 0))
 FULL, NARROW = 0.6, 0.25  # facing thresholds

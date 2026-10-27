@@ -23,8 +23,8 @@ func show_look(content: ContentRegistry, looks: Dictionary) -> void:
 			doll.queue_free()
 		doll = Art.character_sprite(content, _visual, looks)
 		add_child(doll)
-	# Two screen pixels a texel, whatever the sheet's own scale.
-	doll.scale = Vector2.ONE * 2.0 / float(_visual.get("pixel_scale", 1.0))
+	# Two raster pixels an LPC texel, whatever the sheet's own scale; finer ones (RO) as in the world.
+	doll.scale = Vector2.ONE * 2.0 / maxf(0.5, float(_visual.get("pixel_scale", 1.0)))
 	doll.position = Vector2(custom_minimum_size.x / 2, 122)
 
 

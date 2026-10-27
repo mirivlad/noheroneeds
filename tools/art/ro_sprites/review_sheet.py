@@ -21,8 +21,8 @@ CLIP_NAMES = {"idle": "стойка", "walk": "ходьба", "run": "бег", "
 	"chop": "рубка (топоры)", "mine": "кирка: сверху вниз", "shoot": "выстрел из лука", "cast": "заброс удочки"}
 FONT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "assets", "fonts", "monogram.ttf")
 GRASS = "#4f7a3a"
-CELL = (96, 112)  # frame cell, sprite pixels: wide enough for a swung tool
-FOOT = (48, 92)
+CELL = (128, 150)  # frame cell, sprite pixels: wide enough for a swung tool
+FOOT = (64, 123)
 
 
 def main():

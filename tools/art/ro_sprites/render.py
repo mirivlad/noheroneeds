@@ -24,7 +24,7 @@ anchor looks and the direction to the viewer; visible is false when the body
 covers it.
 
 Usage: blender -b GEAR.blend -P render.py -- OUT_DIR [--layers body linen_shirt ...|all]
-       [--clips idle walk ...|all] [--dirs s se ...] [--px-per-m 58] [--elevation 22] [--scale 8]
+       [--clips idle walk ...|all] [--dirs s se ...] [--px-per-m 77] [--elevation 22] [--scale 8]
 """
 import argparse
 import json
@@ -55,7 +55,7 @@ def main():
 	ap.add_argument("--layers", nargs="+", default=["all"])
 	ap.add_argument("--clips", nargs="+", default=["all"])
 	ap.add_argument("--dirs", nargs="+", default=DIRECTIONS)
-	ap.add_argument("--px-per-m", type=float, default=58)
+	ap.add_argument("--px-per-m", type=float, default=gear.PX_PER_M)
 	ap.add_argument("--elevation", type=float, default=22)
 	ap.add_argument("--scale", type=int, default=8)
 	a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:])
@@ -190,7 +190,7 @@ def string_bow():
 	tips = [Vector((x, h, 0)), Vector((x, -h, 0))]
 	bm = bmesh.new()
 	for a, b in ((tips[0], nock), (nock, tips[1])) if drawn else ((tips[0], tips[1]),):
-		strand(bm, a, b, 0.55 / 58)
+		strand(bm, a, b, 0.55 / gear.PX_PER_M)
 	me = bpy.data.objects["bow_string"].data
 	bm.to_mesh(me)
 	bm.free()

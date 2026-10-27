@@ -39,8 +39,8 @@ FEET = {f"J_Bip_{s}_{b}" for s in "LR" for b in ("Foot", "ToeBase")}
 HEAD_ABOVE_EYES = 0.04
 # How much hair headwear makes room for over the skull, metres.
 HAIR_ROOM = 0.05
-# Smallest width that survives as a pixel: a block of the 8x supersampled render is 1 / 58 m.
-PIXEL = 1 / 58
+# Smallest width that survives as a pixel: a block of the 8x supersampled render is one pixel.
+PIXEL = 1 / gear.PX_PER_M
 
 
 def main():

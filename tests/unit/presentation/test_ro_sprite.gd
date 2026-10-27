@@ -79,7 +79,7 @@ func test_layers_keep_the_feet_and_the_order_of_the_frame() -> void:
 	for layer: Array in doll._layers:
 		var s: Sprite2D = layer[1]
 		eq(s.offset, -Vector2(layer[2]["origin"][0], layer[2]["origin"][1]), "feet at the origin")
-		eq(s.scale, Vector2.ONE * 0.5, "half a texel a pixel")
+		eq(s.scale, Vector2.ONE * 0.25, "a quarter of a world pixel a texel (ADR-0058)")
 	for dir: Vector2 in [Vector2.DOWN, Vector2.RIGHT, Vector2.UP, Vector2(-1, -1)]:
 		doll.turn_to(dir)
 		var drawn := doll.get_children().map(func(n: Node) -> String:

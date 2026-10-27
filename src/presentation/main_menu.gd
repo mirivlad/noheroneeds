@@ -524,7 +524,7 @@ func _doll(body_plan: String, hair: String, styles: Dictionary = {}, colors: Dic
 	var look := {"styles": styles if not styles.is_empty() else {"hair": hair}, "colors": colors,
 		"worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
 	var doll := Art.character_sprite(content, body, look)
-	doll.scale = Vector2.ONE / float(body.get("pixel_scale", 1.0))  # a texel a pixel
+	doll.scale = Vector2.ONE / maxf(0.5, float(body.get("pixel_scale", 1.0)))  # an LPC texel a pixel; finer ones (RO) as in the world
 	doll.position = Vector2(24, 46)
 	box.add_child(doll)
 	var turn := Timer.new()

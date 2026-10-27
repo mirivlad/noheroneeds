@@ -35,8 +35,7 @@ def main():
 	a = ap.parse_args()
 	layers = gear.OUTFITS[a.outfit] if a.outfit else a.layers
 	os.makedirs(a.out, exist_ok=True)
-	cell = max(gear.cell_of(layer)[0] for layer in layers)
-	foot = gear.FOOT + (cell - gear.CELL) // 2
+	cell, foot = max(gear.cell_of(layer) for layer in layers)  # the largest cell holds them all
 	for clip in a.clips:
 		have = [layer for layer in layers if clip in gear.clips_of(layer)]
 		for d in DIRECTIONS:

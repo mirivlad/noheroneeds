@@ -2,7 +2,10 @@ class_name PixelDisplay
 extends Node
 ## Presentation only: simulation cells and WorldView's coordinates stay intact.
 ## The logical raster is 960x540 (ADR-0022): a texel of the LPC pictures is a
-## pixel of it, a world pixel two (the camera's zoom).
+## pixel of it, a world pixel two (the camera's zoom). It is drawn at the
+## screen's own resolution (ADR-0058): the interface and the world keep their
+## size, and pictures finer than its pixel (RO characters, a quarter of a
+## world pixel a texel) keep their detail.
 
 const SIZE := Vector2i(960, 540)
 ## World pixels to the raster's (the camera's zoom at the normal view).
@@ -15,7 +18,7 @@ var _last_size := Vector2i.ZERO
 func setup(window: Window) -> void:
 	_window = window
 	_window.content_scale_size = SIZE
-	_window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+	_window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 	_window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	_window.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	_window.snap_2d_transforms_to_pixel = true

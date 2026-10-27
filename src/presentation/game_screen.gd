@@ -16,8 +16,8 @@ extends Node2D
 ## RO-style character in poses (DevRuns).
 ##
 ## Controls (ADR-0021): what is in the hands and what the cursor points at
-## decide what a click does (Actions): WASD/arrows walk, Ctrl runs; 1-9 or the
-## wheel choose the quick slot in the hands, Q snatches the weapon (and back),
+## decide what a click does (Actions): WASD/arrows walk, Ctrl runs; 1-9 choose
+## the quick slot in the hands (not the wheel: it got in the way; in 3D it zooms), Q snatches the weapon (and back),
 ## I the things to put into the slots, G drops one of what is in the hands;
 ## the left button does the main thing (strike, shoot, dig, fell, look), the
 ## right one opens the list of all that can be done; E the quick one (open,
@@ -613,9 +613,7 @@ func _mouse(b: InputEventMouseButton) -> void:
 		_menu.hide()  # a click past it lets it go, and does nothing else
 		return
 	if b.button_index == MOUSE_BUTTON_WHEEL_UP or b.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		if b.pressed:
-			_choose_slot(posmod(hotbar.selected + (-1 if b.button_index == MOUSE_BUTTON_WHEEL_UP else 1), Hotbar.SLOTS))
-		return
+		return  # the wheel does not turn the quick slots (it got in the way)
 	if client.state != "playing":
 		return
 	if _blueprint != "":
@@ -1317,7 +1315,7 @@ func _update_hud() -> void:
 	if settings.get_value("show_fps"):
 		info.append("%d к/с" % Engine.get_frames_per_second())
 	if settings.get_value("show_hints"):
-		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9/колесо — в руки, Q — оружие, I — вещи, C — персонаж, B — стройка, K — ремёсла, M — карта, L — журнал, Esc — меню")
+		info.append("ЛКМ — действие, ПКМ — все действия, E — быстрое, 1–9 — в руки, Q — оружие, I — вещи, C — персонаж, B — стройка, K — ремёсла, M — карта, L — журнал, Esc — меню")
 	if view is WorldView3D:
 		var v3 := view as WorldView3D
 		info = PackedStringArray(["3D · %d FPS · %d чанков · %d объектов · %.1f мс · очередь %d" % [Engine.get_frames_per_second(), v3._geometry.size(), v3.object_count(), v3._last_build_ms, v3.pending_chunks()]])

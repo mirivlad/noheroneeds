@@ -107,7 +107,7 @@ func camera_input(event: InputEvent) -> bool:
 			if not _rotate:
 				_save_camera()
 			return true
-		if b.ctrl_pressed and b.pressed and b.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		if b.pressed and b.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 			zoom = clampf(zoom * (.9 if b.button_index == MOUSE_BUTTON_WHEEL_UP else 1.1), 12, 48)
 			_save_camera()
 			return true
@@ -635,10 +635,16 @@ func _update_actors(alpha: float, delta: float) -> void:
 		actor.scale = Vector3.ONE * (.6 if e.get("young", false) else 1.0)
 		var held := own_held if id == client.character_id else String(e.get("held", ""))
 		actor.doll.hold(item_picture("" if actor.doll.submerged else held), item_grip(held), "" if actor.doll.submerged else held)
+		# Others' blows (the own are shown at the click): their count, the low bits the direction.
+		var blows := int(e.get("swing", 0))
+		if id != client.character_id and _swing_seen.has(id) and int(_swing_seen[id]) != blows:
+			actor.swing(Vector2.RIGHT.rotated((blows & 7) * PI / 4), swing_kind(held), yaw)
+		_swing_seen[id] = blows
 	for id: String in _actors.keys():
 		if not seen.has(id):
 			(_actors[id] as Node).queue_free()
 			_actors.erase(id)
+			_swing_seen.erase(id)
 
 func _update_item(id: String, e: Dictionary, at: Vector3) -> void:
 	var node := _actors.get(id) as Sprite3D
@@ -715,7 +721,7 @@ func hidden_room() -> Dictionary:
 func swing_own(dir: Vector2) -> void:
 	var actor := _actors.get(client.character_id) as BillboardActor3D
 	if actor:
-		actor.doll.swing(dir.rotated(-yaw), swing_kind(own_held))
+		actor.swing(dir, swing_kind(own_held), yaw)
 
 func burst_at(_at: Vector2, _kind: String, _tint := Color.WHITE) -> void:
 	pass

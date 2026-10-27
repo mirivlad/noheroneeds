@@ -14,8 +14,11 @@ ground point at the same place relative to the body (HELD_CELL, HELD_FOOT).
 """
 from clips import CLIPS
 
-CELL, FOOT = 128, 100
-HELD_CELL, HELD_FOOT = 192, 132
+# Sprite pixels to a metre of the model, and the cells: a frame of a worn layer, and the
+# larger one of a held thing, with the ground point at the same place relative to the body.
+PX_PER_M = 77
+CELL, FOOT = 172, 133
+HELD_CELL, HELD_FOOT = 256, 176
 CARRY = ["idle", "walk", "run", "sit", "pickup", "hurt", "dead"]
 
 # item: (slot, swing clip for held things)

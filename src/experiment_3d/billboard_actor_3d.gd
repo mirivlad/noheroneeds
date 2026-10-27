@@ -2,6 +2,10 @@ class_name BillboardActor3D
 extends Node3D
 ## The original LPC/animal paper doll renders into a transparent viewport.
 ## Animation, equipment layers and palette shaders are reused unchanged.
+## The doll is drawn this many viewport pixels to a world pixel: an LPC texel (half a world
+## pixel) is two, an RO texel (a quarter) one.
+const DOLL_SCALE := 4
+const DOLL_FEET := Vector2(192, 304)
 var viewport := SubViewport.new()
 var picture := Sprite3D.new()
 var doll: CharacterSprite
@@ -17,7 +21,7 @@ var target := {}
 func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary, hit: Dictionary) -> void:
 	looks = appearance.duplicate(true)
 	target = hit
-	viewport.size = Vector2i(192, 192)
+	viewport.size = Vector2i(384, 384)
 	viewport.transparent_bg = true
 	viewport.disable_3d = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -25,11 +29,11 @@ func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary
 	add_child(viewport)
 	doll = Art.character_sprite(registry, visual, appearance)
 	viewport.add_child(doll)
-	doll.scale = Vector2.ONE * 2
-	doll.position = Vector2(96, 152)
+	doll.scale = Vector2.ONE * DOLL_SCALE
+	doll.position = DOLL_FEET
 	picture.texture = viewport.get_texture()
-	picture.pixel_size = 1.0 / (WorldView.CELL * 2)
-	picture.offset = Vector2(0, 56)
+	picture.pixel_size = 1.0 / (WorldView.CELL * DOLL_SCALE)
+	picture.offset = Vector2(0, 112)
 	picture.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	picture.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	picture.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
@@ -58,4 +62,4 @@ func show_actor(at: Vector3, yaw: float, delta: float, exact: bool) -> void:
 	# Rotate the animation's apparent movement, not the authoritative position.
 	doll._face(facing.rotated(-yaw))
 	doll.show_at(animation_at, delta, true)
-	doll.position = Vector2(96, 152)
+	doll.position = DOLL_FEET

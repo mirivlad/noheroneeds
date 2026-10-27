@@ -77,7 +77,7 @@ def visual(body, plan, hair, sheets, orders):
 	index = {layer: k for k, layer in enumerate(CANONICAL)}
 	return {
 		"id": "base:visual/" + plan.split(":")[1], "kind": "visual", "for": plan, "mode": "character", "format": "ro",
-		"pixel_scale": 0.5, **sheets["body"], "rect": [0, 0, *sheets["body"]["frame"]],
+		"pixel_scale": 0.25, **sheets["body"], "rect": [0, 0, *sheets["body"]["frame"]],
 		"clips": {c: {"frames": f, "fps": fps, "loop": loop} for c, (f, fps, loop, _) in CLIPS.items()},
 		"swings": SWINGS,
 		"layers": CANONICAL,

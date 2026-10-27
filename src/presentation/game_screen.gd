@@ -457,6 +457,8 @@ func _process(delta: float) -> void:
 	var t_sim := Time.get_ticks_usec()
 	if _dev:
 		_dev.step(delta)
+		if client == null:  # the dev run took its last picture and closed the game
+			return
 	if _lmb_held and not paused and _blueprint == "" and Time.get_ticks_msec() >= _swing_ready_ms:
 		var held_on := Actions.primary(actions)
 		if String(held_on.get("id", "")) in REPEATED:

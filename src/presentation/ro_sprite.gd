@@ -16,11 +16,11 @@ const ROW_OF_OCTANT := [2, 1, 0, 7, 6, 5, 4, 3]
 const TURN_SLACK := 8.0
 ## Where the right hand is in each row (frame pixels from the feet), for a
 ## thing in the hands with no frames of its own; and whether it is behind.
-const HAND_PX := [Vector2(-12, -36), Vector2(-6, -36), Vector2(2, -36), Vector2(8, -37),
-	Vector2(12, -37), Vector2(6, -37), Vector2(-2, -36), Vector2(-9, -36)]
+const HAND_PX := [Vector2(-16, -48), Vector2(-8, -48), Vector2(3, -48), Vector2(11, -49),
+	Vector2(16, -49), Vector2(8, -49), Vector2(-3, -48), Vector2(-12, -48)]
 const HAND_BEHIND_ROW := [false, false, false, true, true, true, true, false]
 ## How deep a swimmer sits: frame pixels below the water line.
-const RO_SINK_PX := 34
+const RO_SINK_PX := 45
 
 ## Layers of what is in the hands: [slot, Sprite2D, sheet]; and which item.
 var _held_layers: Array = []

@@ -107,7 +107,7 @@ func show_for(own: Dictionary, held: String) -> void:
 		_title.text += ", защита %d" % armor  # off every blow (ADR-0029)
 	preview.show_look(content, look)
 	# Twice the size of the world's: a pixel of the picture is 2x2 on the screen.
-	preview.doll.scale = Vector2.ONE * 2.0 / float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0))
+	preview.doll.scale = Vector2.ONE * 2.0 / maxf(0.5, float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0)))
 	preview.doll.position = Vector2(102, 170)
 	preview.doll.hold(_view.item_picture(held), _view.item_grip(held), held)
 	var worn: Dictionary = look.get("worn", {})

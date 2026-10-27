@@ -36,6 +36,8 @@ var _rotate := false
 var _report_frames := 0
 var _delta_sum := 0.0
 var _max_delta := 0.0
+## Screen pixels to a pixel of the raster: the 3D picture is drawn at the screen's own (ADR-0058).
+var _pixel := 1.0
 
 func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	content = registry
@@ -44,7 +46,6 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	layer.layer = -1
 	add_child(layer)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.stretch = true
 	layer.add_child(panel)
 	panel.add_child(viewport)
 	viewport.own_world_3d = true
@@ -84,7 +85,13 @@ func _notification(what: int) -> void:
 				n.free()
 
 func _resize() -> void:
-	panel.size = get_viewport_rect().size
+	_pixel = _screen_pixel()
+	viewport.size = Vector2i((get_viewport_rect().size * _pixel).round())
+	panel.size = Vector2(viewport.size)
+	panel.scale = Vector2.ONE / _pixel
+
+func _screen_pixel() -> float:
+	return maxf(1.0, get_viewport().get_final_transform().get_scale().x)
 
 func configure_camera(settings: GameSettings) -> void:
 	camera_settings = settings
@@ -130,6 +137,9 @@ func world_direction(screen: Vector2i) -> Vector2i:
 	return Vector2i(0 if absf(d.x) < .38 else signi(int(signf(d.x))), 0 if absf(d.y) < .38 else signi(int(signf(d.y))))
 
 func update_view(alpha: float, delta: float) -> void:
+	# the window can grow with the raster's size the same (no size_changed)
+	if not is_equal_approx(_screen_pixel(), _pixel):
+		_resize()
 	if client.geography and _land == null:
 		# Call the ORIGINAL surface sampler, never a new world generator.
 		_land = SurfaceGenerator.new(client.geography.world_seed, content)
@@ -644,8 +654,8 @@ func screen_point(screen: Vector2) -> Vector2:
 	_cursor = {}
 	if not eye.is_inside_tree() or eye.get_world_3d() == null:
 		return Vector2.ZERO
-	var origin := eye.project_ray_origin(screen)
-	var to := origin + eye.project_ray_normal(screen) * eye.far
+	var origin := eye.project_ray_origin(screen * _pixel)
+	var to := origin + eye.project_ray_normal(screen * _pixel) * eye.far
 	var query := PhysicsRayQueryParameters3D.create(origin, to)
 	query.hit_back_faces = true
 	var own_actor := _actors.get(client.character_id) as BillboardActor3D

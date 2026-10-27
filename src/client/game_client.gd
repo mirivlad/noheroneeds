@@ -368,6 +368,11 @@ func _on_snapshot(m: Dictionary) -> void:
 		if id == character_id:
 			own.merge(fields, true)
 		else:
+			# A creature starts hunting someone: its call (a wolf's howl).
+			var before: Dictionary = entities.get(id, {})
+			if fields.get("hunting", false) and not before.get("hunting", false) and before.has("x"):
+				world_events.append({"type": "chase", "location": location, "part": String(before.get("creature", "")),
+					"cell": Movement.cell_of(Vector2i(int(before["x"]), int(before["y"])))})
 			if fields.get("kind") == "projectile" and not entities.has(id):
 				world_events.append({"type": "shoot", "location": location, "part": String(fields.get("item", "")),
 					"cell": Movement.cell_of(Vector2i(int(fields.get("x", 0)), int(fields.get("y", 0))))})
@@ -392,10 +397,18 @@ func _on_snapshot(m: Dictionary) -> void:
 			if e.has("swing") and warm[i + 4] != int(e["swing"]) and id != character_id and e.has("x"):
 				world_events.append({"type": "swing", "id": id, "octant": warm[i + 4] & 7, "location": location,
 					"part": String(e.get("held", "")), "cell": Movement.cell_of(Vector2i(int(e["x"]), int(e["y"])))})
+				if e.get("kind") == "creature":  # a beast's blow: its growl
+					world_events.append({"type": "attack", "location": location, "part": String(e.get("creature", "")),
+						"cell": Movement.cell_of(Vector2i(int(e["x"]), int(e["y"])))})
 			e["health"] = warm[i + 1]
 			e["max_health"] = warm[i + 2]
 			e["deaths"] = warm[i + 3]
 			e["swing"] = warm[i + 4]
+	# Creatures that died near: a death cry (AudioDirector plays "death" for its kind).
+	for d: Variant in m.get("died", []):
+		if typeof(d) == TYPE_ARRAY and (d as Array).size() == 3:
+			world_events.append({"type": "death", "location": location, "part": String(d[2]),
+				"cell": Movement.cell_of(Vector2i(int(d[0]), int(d[1])))})
 	_latest_snapshot = sid
 	time_rate = int(m["rate"])
 	# The server's clock, unless ours is just ahead by the ticks in flight.

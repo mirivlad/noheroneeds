@@ -1426,6 +1426,19 @@ func swing_own(dir: Vector2) -> void:
 		me.swing(dir, swing_kind(own_held))
 
 
+## The own character draws its bow toward `dir` and holds it (loose_own lets go).
+func draw_own(dir: Vector2) -> void:
+	var me: CharacterSprite = _characters.get(client.character_id)
+	if me:
+		me.pull_string(dir, swing_kind(own_held))
+
+
+func loose_own(dir: Vector2) -> void:
+	var me: CharacterSprite = _characters.get(client.character_id)
+	if me:
+		me.loose(dir)
+
+
 var _items := {}
 var _projectiles := {}
 ## What the own character holds (set by the game at once, before the server knows).
@@ -1576,6 +1589,11 @@ func _at_level(n: Node2D, z: int) -> void:
 		n.modulate = Color.WHITE
 
 
+## How big a thing on the ground is drawn, of its picture (a full picture filled a
+## whole cell: too big beside the people, the author 27.10.2026).
+const GROUND_ITEM_SCALE := 0.6
+
+
 ## A thing on the ground: its picture, standing where it lies.
 func _item(id: String, e: Dictionary) -> Sprite2D:
 	if _items.has(id):
@@ -1588,7 +1606,7 @@ func _item(id: String, e: Dictionary) -> Sprite2D:
 		s.texture = texture(v["atlas_path"])
 		s.region_enabled = true
 		s.region_rect = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], v["rect"][3])
-		s.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0))
+		s.scale = Vector2.ONE * float(v.get("pixel_scale", 1.0)) * GROUND_ITEM_SCALE
 	s.position = Vector2(int(e["x"]), int(e["y"])) / UNITS_PER_PIXEL
 	s.offset = Vector2(0, -4) / s.scale
 	_sorted.add_child(s)

@@ -24,7 +24,7 @@ const PRESENTATION_KINDS := ["visual", "sound"]
 ## What a sound answers to (sounds.json, ADR-0009).
 const SOUND_EVENTS := ["step", "build", "dismantle", "open", "close", "pickup", "drop", "climb", "click", "ambience", "wind",
 	"swing", "hit", "shoot", "fill", "pour", "drink", "eat", "splash", "till", "sow", "craft", "gather", "thunder",
-	"rain", "equip", "sleep", "feed"]
+	"rain", "equip", "sleep", "feed", "voice", "attack", "chase", "death"]
 ## What a structure part is for (ADR-0007). Columns and beams are decoration.
 const STRUCTURE_ROLES := ["wall", "door", "window", "fence", "column", "beam", "ceiling", "roof", "stairs", "furniture", "floor",
 	"rock", "shaft"]
@@ -1246,6 +1246,9 @@ func _check_sound(id: String, d: Dictionary) -> void:
 	var pitch: Variant = d.get("pitch", [1.0, 1.0])
 	d["pitch"] = [float(pitch[0]), float(pitch[1])] if typeof(pitch) == TYPE_ARRAY and (pitch as Array).size() == 2 else [1.0, 1.0]
 	d["loop"] = bool(d.get("loop", false))
+	var every: Variant = d.get("every")  # a beast's call now and then: [lo, hi] seconds
+	if every != null and (typeof(every) != TYPE_ARRAY or (every as Array).size() != 2 or float(every[0]) <= 0 or float(every[1]) < float(every[0])):
+		errors.append("%s: every must be [shortest, longest] seconds" % id)
 	var by_event: Dictionary = sounds.get(target, {})
 	var old: Dictionary = by_event.get(event, {})
 	if old.is_empty() or _pack_order(d["pack"]) >= _pack_order(old["pack"]):

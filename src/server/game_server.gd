@@ -288,6 +288,7 @@ func _step() -> void:
 	for s: Session in _sessions.values():
 		if s.state == "playing":
 			_send_snapshot(s)
+	world.combat.died.clear()
 	_lap("snapshots")
 	tick += 1
 
@@ -620,6 +621,8 @@ func _creature_cold(c: Creature) -> Dictionary:
 		cold["appearance"] = c.looks
 	if c.owner != "":
 		cold["owner"] = c.owner
+	if world.content.get_def(c.kind).has("attack"):  # always told: a client keeps what it was told last
+		cold["hunting"] = c.state == "hunt"
 	if not c.job.is_empty():  # always told, empty too: a client keeps what it was told last
 		cold["profession"] = String(c.job.get("profession", ""))
 		cold["name"] = String(c.job.get("name", ""))
@@ -879,10 +882,19 @@ func _send_snapshot(s: Session) -> void:
 	s.pending[sid] = [sent, s.removing.keys()]
 	if s.pending.size() > SNAPSHOT_HISTORY:
 		s.pending.erase(s.pending.keys().min())
-	_send(s, Transport.Channel.STATE, Protocol.SNAPSHOT, {"id": sid, "tick": tick, "hot": hot.to_byte_array(),
+	var m := {"id": sid, "tick": tick, "hot": hot.to_byte_array(),
 		"warm": warm.to_byte_array(),
 		"entities": changed, "removed": removed.to_byte_array(), "input_ack": s.last_input_seq,
-		"time": world.world_time, "rate": world.time_rate})
+		"time": world.world_time, "rate": world.time_rate}
+	# Creatures that died near (their death cry; the creature is gone at once).
+	var died := []
+	for d: Dictionary in world.combat.died:
+		if d["location"] == my_loc and absi(int(d["x"]) - my_pos.x) <= CREATURE_VIEW.x * Movement.UNIT \
+				and absi(int(d["y"]) - my_pos.y) <= CREATURE_VIEW.y * Movement.UNIT:
+			died.append([int(d["x"]), int(d["y"]), d["kind"]])
+	if not died.is_empty():
+		m["died"] = died
+	_send(s, Transport.Channel.STATE, Protocol.SNAPSHOT, m)
 
 
 func _net_id(s: Session, id: String) -> int:

@@ -55,6 +55,9 @@ const GRIP := Vector2(0, 5)
 var _swing_t := -1.0
 var _swing_kind := ""
 var _swing_dir := Vector2.RIGHT
+## The string held drawn (a bow while the button is held): the blow waits at DRAWN.
+var _drawn := false
+const DRAWN := 0.7
 
 
 ## layers: [[slot, Texture2D], ...] drawn over the body.
@@ -146,11 +149,27 @@ func swinging() -> bool:
 	return _swing_t >= 0.0
 
 
+## Pulls the string toward `dir` and holds it drawn until loose().
+func pull_string(dir: Vector2, kind: String) -> void:
+	swing(dir, kind)
+	_drawn = true
+
+
+## Lets the drawn string go toward `dir`: the shot plays on from the draw.
+func loose(dir: Vector2) -> void:
+	if dir.length() > 0.01:
+		_swing_dir = dir.normalized()
+		_face(dir)
+	_drawn = false
+
+
 ## Moves the swing on: where the body leans (pixels), and the held thing.
 func _swing_step(delta: float) -> Vector2:
 	if _swing_t < 0.0:
 		return Vector2.ZERO
 	_swing_t += delta / SWING_S
+	if _drawn:
+		_swing_t = minf(_swing_t, DRAWN)
 	if _swing_t >= 1.0:
 		_swing_t = -1.0
 		_place_held()

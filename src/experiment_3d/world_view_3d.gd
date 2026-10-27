@@ -68,9 +68,12 @@ func setup(registry: ContentRegistry, game_client: GameClient) -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color("b9c7ce")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("c5d4e0")
+	env.ambient_light_color = Color("aebfcf")
 	env.ambient_light_energy = .3
-	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	# The sun shapes things (a lit side and a shade side), the sky only fills the
+	# shade: a bright, even ambient made trees and walls look flat and washed out.
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.1
 	environment.environment = env
 
 func _ready() -> void:
@@ -155,6 +158,8 @@ func update_view(alpha: float, delta: float) -> void:
 	if _land and client.z >= 0: _refresh_foundations(changed)
 	if terrain and not changed.is_empty():
 		terrain.heights.clear()  # rock dug out (or laid) moves the ground at its corners
+	if not changed.is_empty():
+		_cut_from = Vector2i(1 << 30, 0)  # a roof laid or taken off: the cut again
 	for key: String in changed:
 		var split := key.split("|")
 		if split.size() != 3: continue
@@ -187,6 +192,8 @@ func update_view(alpha: float, delta: float) -> void:
 		_build_row()
 	_last_build_ms = (Time.get_ticks_usec() - start) / 1000.0
 	_update_actors(alpha, delta)
+	if client.z >= 0 or _cut != Rect2i():
+		_update_cutaway()
 	if client.has_position:
 		var p := own_pixel_position(alpha) / CELL
 		var target := Vector3(p.x, elevation(p) + (0 if client.z < 0 else client.z * STOREY), p.y)
@@ -197,8 +204,8 @@ func update_view(alpha: float, delta: float) -> void:
 		eye.position = _follow + offset
 		eye.look_at(_follow, Vector3.UP)
 	var daylight := Daylight.sun(client.world_time) if client.z >= 0 else 0.0
-	sun.light_energy = .12 + daylight * .55 if client.z >= 0 else 0.0
-	environment.environment.ambient_light_energy = .2 + daylight * .15 if client.z >= 0 else .28
+	sun.light_energy = .15 + daylight * .95 if client.z >= 0 else 0.0
+	environment.environment.ambient_light_energy = .14 + daylight * .1 if client.z >= 0 else .28
 	environment.environment.background_color = Color("b9c7ce") * (.35 + daylight * .65) if client.z >= 0 else Color("181b27")
 	_report_frames += 1
 	_delta_sum += delta
@@ -316,7 +323,7 @@ func _begin_chunk(around: Vector2i) -> void:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rock_surface := SurfaceTool.new()
 	rock_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_job = {"rock": rock_surface, "rock_count": 0, "key": best, "chunk": client.chunks[best], "origin": Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE, "row": 0, "root": root, "ground": st, "faces": PackedVector3Array(), "targets": [], "instances": {}, "meshes": {}, "count": 0}
+	_job = {"rock": rock_surface, "rock_count": 0, "key": best, "chunk": client.chunks[best], "origin": Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE, "row": 0, "root": root, "ground": st, "faces": PackedVector3Array(), "targets": [], "instances": {}, "meshes": {}, "parts": {}, "count": 0}
 
 func _build_row() -> void:
 	var c: Chunk = _job["chunk"]
@@ -331,13 +338,14 @@ func _build_row() -> void:
 		var points: Array[Vector3] = []
 		for d: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
 			var at := cell + d
-			# Keep the substrate below laid floors. Coplanar top faces cause
-			# green stripes/z-fighting through boards and bridge decking.
-			var bed := .14 if ground in ["base:wood_floor", "base:stone_floor", "base:bridge"] else 0.0
+			# Keep the substrate below laid floors and any ground drawn by a model
+			# (a cave's floor too). Coplanar top faces cause stripes/z-fighting.
+			var bed := .14 if ground in ["base:wood_floor", "base:stone_floor", "base:bridge"] or models.catalog.has(ground) else 0.0
 			points.append(Vector3(at.x, corner_height(at) + level - bed, at.y))
-		var rock := c.get_cell("structure", x, y)
 		var color := ground_color(ground)
-		_quad(points, color, {"kind": "ground", "id": ground, "cell": cell, "location": client.location})
+		# A way down is a hole in the ground (hole_mesh), not a floor with stairs on it.
+		if content.get_def(c.get_cell("structure", x, y)).get("leads") != "down" and not c.get_props(x, y).get("stairs_down", false):
+			_quad(points, color, {"kind": "ground", "id": ground, "cell": cell, "location": client.location})
 		if models.catalog.has(ground) and not content.get_def(c.get_cell("structure", x, y)).get("role") == "rock":
 			_add_object(cell, ground, "ground", {})
 		for layer: String in ["cover", "structure", "ceiling", "roof"]:
@@ -419,6 +427,10 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		mesh = roof_mesh(cell)
 		basis = Basis.IDENTITY
 		instance_id = "module:" + str(mesh.get_instance_id())
+	elif (d.get("leads") == "down" and layer == "structure") or layer == "transition":
+		mesh = hole_mesh(cell, position3.y - lift, lift)
+		basis = Basis.IDENTITY
+		instance_id = "hole:" + str(cell)
 	elif layer == "ground" and id == "base:bridge":
 		mesh = bridge_mesh(cell)
 		position3.y += .1
@@ -441,6 +453,10 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	else:
 		var entries: Array = _job["instances"].get_or_add(instance_id, [])
 		entries.append(t)
+		# A house's parts, cut away while one is inside it: [cell, a cover (ceiling, roof) or not].
+		var parts: Array = _job["parts"].get_or_add(instance_id, [])
+		var cover := layer in ["ceiling", "roof"]
+		parts.append([cell, cover] if cover or role in ["wall", "window", "door"] else [])
 	_job["count"] += 1
 	var target := {"kind": "part", "id": id, "layer": layer, "cell": cell, "location": client.location}
 	if layer == "transition":
@@ -490,6 +506,49 @@ func bridge_mesh(cell: Vector2i) -> Mesh:
 	st.set_material(buildings.deck)
 	return st.commit()
 
+## A way down (a cave mouth, a shaft): a pit in the ground HOLE_DEPTH deep, its
+## walls rock, steps going down one side, dark at the bottom. Relative to the
+## cell's middle at `middle` (metres) on a level `lift` up.
+const HOLE_DEPTH := 1.4
+
+func hole_mesh(cell: Vector2i, middle: float, lift: float) -> Mesh:
+	var top: Array[Vector3] = []
+	for d: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
+		var h := corner_height(cell + d) if client.z >= 0 else 0.0
+		top.append(Vector3(d.x - .5, h - middle, d.y - .5))
+	var floor_y := minf(minf(top[0].y, top[1].y), minf(top[2].y, top[3].y)) - HOLE_DEPTH
+	var mesh := ArrayMesh.new()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# The four walls, facing in: [top a, top b] of each side, seen from inside.
+	for side: Array in [[1, 0], [3, 1], [2, 3], [0, 2]]:
+		var a: Vector3 = top[side[0]]
+		var b: Vector3 = top[side[1]]
+		_inward(st, [a, b, Vector3(a.x, floor_y, a.z), Vector3(b.x, floor_y, b.z)])
+	# Steps down along the north wall.
+	for i in 3:
+		var y := floor_y + HOLE_DEPTH * (3 - i) / 4.0
+		var z0 := -.5 + i * .3
+		_inward(st, [Vector3(-.5, y, z0 + .3), Vector3(.5, y, z0 + .3), Vector3(-.5, y, z0), Vector3(.5, y, z0)])
+		_inward(st, [Vector3(-.5, y, z0 + .3), Vector3(.5, y, z0 + .3), Vector3(-.5, floor_y, z0 + .3), Vector3(.5, floor_y, z0 + .3)])
+	st.set_material(buildings.rock)
+	st.commit(mesh)
+	var dark := SurfaceTool.new()
+	dark.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_inward(dark, [Vector3(-.5, floor_y, -.5), Vector3(.5, floor_y, -.5), Vector3(-.5, floor_y, .5), Vector3(.5, floor_y, .5)])
+	dark.set_material(models.material(Color("0b0a0d")))
+	dark.commit(mesh)
+	return mesh
+
+## A quad [a, b, c, d] (a-b along the top, c-d below them) with both faces drawn.
+func _inward(st: SurfaceTool, p: Array) -> void:
+	for tri: Array in [[0, 1, 2], [1, 3, 2], [0, 2, 1], [1, 2, 3]]:
+		var n: Vector3 = (p[tri[2]] - p[tri[0]]).cross(p[tri[1]] - p[tri[0]]).normalized()
+		for i: int in tri:
+			st.set_normal(n)
+			st.set_uv(Vector2(p[i].x + p[i].z, p[i].y))
+			st.add_vertex(p[i])
+
 func wall_mask(cell: Vector2i) -> int:
 	var mask := 0
 	var directions := [Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT, Vector2i.DOWN]
@@ -524,7 +583,8 @@ func building_footprint(cell: Vector2i) -> Rect2i:
 		high = high.max(at)
 		for d: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
 			var next := at + d
-			if not seen.has(next) and _cell_layer(next, "ground") in ["base:wood_floor", "base:stone_floor"]:
+			var floor := _cell_layer(next, "ground")
+			if not seen.has(next) and (floor in ["base:wood_floor", "base:stone_floor"] or content.get_def(floor).get("role") == "floor"):
 				seen[next] = true
 				pending.append(next)
 	return Rect2i(low, high - low + Vector2i.ONE) if seen.size() > 1 else Rect2i(cell, Vector2i.ONE)
@@ -559,6 +619,11 @@ func _finish_chunk() -> void:
 			mm.set_instance_transform(i, transforms[i])
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = mm
+		var parts: Array = _job["parts"].get(id, [])
+		if parts.any(func(p: Array) -> bool: return not p.is_empty()):
+			node.set_meta("parts", parts)
+			node.set_meta("transforms", transforms)
+			_cut_away(node)
 		root.add_child(node)
 	if not (_job["faces"] as PackedVector3Array).is_empty():
 		var shape := ConcavePolygonShape3D.new()
@@ -652,7 +717,7 @@ func _update_item(id: String, e: Dictionary, at: Vector3) -> void:
 		node = Sprite3D.new()
 		node.texture = item_picture(String(e.get("item", "")))
 		node.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		node.pixel_size = .04
+		node.pixel_size = .04 * GROUND_ITEM_SCALE * .75  # a thing on the ground, about half a metre
 		node.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 		space.add_child(node)
 		_actors[id] = node
@@ -664,7 +729,7 @@ func _update_item(id: String, e: Dictionary, at: Vector3) -> void:
 		body.add_child(shape)
 		body.set_meta("target", {"kind": "entity", "id": id, "entity": e, "location": client.location})
 		node.add_child(body)
-	node.position = at + Vector3.UP * .22
+	node.position = at + Vector3.UP * .3  # its middle: the picture stands on the ground
 
 func screen_point(screen: Vector2) -> Vector2:
 	_cursor = {}
@@ -711,6 +776,43 @@ func pick_target(point: Vector2) -> Dictionary:
 	var cell := Vector2i(floori(point.x / CELL), floori(point.y / CELL))
 	return {"kind": "ground", "id": ground_at(client.location, cell), "cell": cell, "location": client.location}
 
+## The house one is inside (a roof or a ceiling over one's cell): its rect grown
+## by its walls; its covers are not drawn and its walls stand a sixth of their
+## height (the author, 28.10.2026), so one sees in. Empty when outdoors.
+var _cut := Rect2i()
+var _cut_from := Vector2i(1 << 30, 0)
+
+func _update_cutaway() -> void:
+	var me := Movement.cell_of(client.position) if client.has_position else Vector2i(1 << 30, 0)
+	if me == _cut_from:
+		return
+	_cut_from = me
+	var inside := client.has_position and (_cell_layer(me, "roof") != "" or _cell_layer(me, "ceiling") != "")
+	var cut := building_footprint(me).grow(1) if inside else Rect2i()
+	if cut == _cut:
+		return
+	_cut = cut
+	for root: Node in _geometry.values():
+		for node: Node in root.get_children():
+			if node.has_meta("parts"):
+				_cut_away(node as MultiMeshInstance3D)
+
+## Lays a chunk's house parts as the cut says: whole, or cut away inside it.
+func _cut_away(node: MultiMeshInstance3D) -> void:
+	var parts: Array = node.get_meta("parts")
+	var transforms: Array = node.get_meta("transforms")
+	for i in parts.size():
+		node.multimesh.set_instance_transform(i, cut_transform(transforms[i], parts[i]))
+
+## Where a house part stands as the cut says: as laid; or, in the house one is in,
+## a cover gone and a wall a sixth of its height on its foot.
+func cut_transform(t: Transform3D, part: Array) -> Transform3D:
+	if part.is_empty() or not _cut.has_point(part[0]):
+		return t
+	if part[1]:
+		return Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
+	return t * Transform3D(Basis.from_scale(Vector3(1, 1.0 / 6.0, 1)), Vector3.ZERO)
+
 func hidden_room() -> Dictionary:
 	if client.has_position:
 		var cell := Movement.cell_of(client.position)
@@ -722,6 +824,19 @@ func swing_own(dir: Vector2) -> void:
 	var actor := _actors.get(client.character_id) as BillboardActor3D
 	if actor:
 		actor.swing(dir, swing_kind(own_held), yaw)
+
+func draw_own(dir: Vector2) -> void:
+	var actor := _actors.get(client.character_id) as BillboardActor3D
+	if actor:
+		actor.swing(dir, swing_kind(own_held), yaw)
+		actor.doll._drawn = true
+
+func loose_own(dir: Vector2) -> void:
+	var actor := _actors.get(client.character_id) as BillboardActor3D
+	if actor:
+		if dir.length() > 0.01:
+			actor.facing = dir.normalized()
+		actor.doll.loose(dir.rotated(-yaw))
 
 func burst_at(_at: Vector2, _kind: String, _tint := Color.WHITE) -> void:
 	pass

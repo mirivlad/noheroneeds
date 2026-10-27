@@ -206,6 +206,8 @@ func _swing_step(delta: float) -> Vector2:
 		return Vector2.ZERO
 	var c: Dictionary = _visual["clips"][_swing_clip()]
 	_swing_t += delta * float(c["fps"]) / float(c["frames"])
+	if _drawn:
+		_swing_t = minf(_swing_t, DRAWN)  # the shot clip's string is drawn here
 	if _swing_t >= 1.0:
 		_swing_t = -1.0
 		_place_held()

@@ -85,6 +85,19 @@ func test_a_blow_turns_the_doll_and_it_stays_turned() -> void:
 	eq((actor.doll as RoSprite)._row, 2, "the blow east turned it east, and frames after keep it")
 	actor.queue_free()
 
+func test_the_house_one_is_in_is_cut_away() -> void:
+	var at := Transform3D(Basis.IDENTITY, Vector3(2.5, 1, 2.5))
+	var roof := [Vector2i(2, 2), true]
+	var wall := [Vector2i(2, 2), false]
+	view._cut = Rect2i(1, 1, 3, 3)
+	check(view.cut_transform(at, roof).basis.get_scale().is_zero_approx(), "the roof over one is not drawn")
+	check(is_equal_approx(view.cut_transform(at, wall).basis.get_scale().y, 1.0 / 6.0), "the wall stands a sixth high")
+	eq(view.cut_transform(at, wall).origin, at.origin, "on its foot")
+	eq(view.cut_transform(at, [Vector2i(9, 9), false]), at, "another house stays whole")
+	eq(view.cut_transform(at, []), at, "not a house part: as laid")
+	view._cut = Rect2i()
+	eq(view.cut_transform(at, roof), at, "outdoors again: whole")
+
 func test_lpc_paper_doll_and_equipment_are_reused() -> void:
 	var actor := BillboardActor3D.new()
 	var looks := {"body_plan": "base:human_m", "styles": CharacterLibrary.STYLE_DEFAULTS.duplicate(), "worn": {"torso": "base:linen_shirt"}}

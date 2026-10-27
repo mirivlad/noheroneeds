@@ -107,6 +107,8 @@ var _swing_ready_ms := 0
 ## The left button is held: work and blows go on at their pace (a tree is
 ## felled by holding it, not by a click a blow).
 var _lmb_held := false
+## The bow held drawn (the left button held over a shot).
+var _bow_drawn := false
 const REPEATED := ["gather", "strike_part", "strike", "swing", "till", "sow"]
 var _deaths_seen := -1
 var game: LocalGame
@@ -644,11 +646,22 @@ func _mouse(b: InputEventMouseButton) -> void:
 		return
 	if b.button_index == MOUSE_BUTTON_LEFT:
 		_lmb_held = b.pressed
+		# A bow: drawn while the button is held, the arrow loosed when it is let go.
+		if not b.pressed and _bow_drawn:
+			var shot := Actions.primary(actions)
+			if String(shot.get("id", "")) == "shoot":
+				_do(shot)
+			view.loose_own(_mouse_world() - view.own_pixel_position(1.0))  # let go even before the bow is ready
+			_bow_drawn = false
+			return
 	if not b.pressed:
 		return
 	if b.button_index == MOUSE_BUTTON_LEFT:
 		var p := Actions.primary(actions)
-		if not p.is_empty():
+		if String(p.get("id", "")) == "shoot" and p.get("enabled", true):
+			_bow_drawn = true
+			view.draw_own(_mouse_world() - view.own_pixel_position(1.0))
+		elif not p.is_empty():
 			_do(p)
 	elif b.button_index == MOUSE_BUTTON_RIGHT:
 		_open_menu()
@@ -716,7 +729,10 @@ func _do(a: Dictionary) -> void:
 			var now := Time.get_ticks_msec()
 			if now >= _swing_ready_ms:
 				_swing_ready_ms = now + int(w.get("cooldown_ms", 700 if a["id"] == "gather" else 500))
-				view.swing_own(_mouse_world() - view.own_pixel_position(1.0))
+				if _bow_drawn:
+					view.loose_own(_mouse_world() - view.own_pixel_position(1.0))
+				else:
+					view.swing_own(_mouse_world() - view.own_pixel_position(1.0))
 				if a["id"] != "shoot":
 					audio.play("swing", item, null)
 				if a["id"] in ["gather", "strike_part", "till"]:  # chips off what is worked
@@ -1154,6 +1170,7 @@ func _direction() -> Vector2i:
 
 
 func _update_hud() -> void:
+	minimap.yaw = (view as WorldView3D).yaw if view is WorldView3D else 0.0
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
 		if rid == _places_rid:

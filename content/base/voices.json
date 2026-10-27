@@ -1,0 +1,345 @@
+{
+ "format": 1,
+ "defs": [
+  {
+   "id": "base:sound/voice_cow_voice",
+   "kind": "sound",
+   "for": "base:cow",
+   "event": "voice",
+   "files": [
+    "audio/voice_cow_1.ogg",
+    "audio/voice_cow_2.ogg"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "every": [
+    60,
+    150
+   ]
+  },
+  {
+   "id": "base:sound/voice_cow_death",
+   "kind": "sound",
+   "for": "base:cow",
+   "event": "death",
+   "files": [
+    "audio/voice_cow_1.ogg",
+    "audio/voice_cow_2.ogg"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_sheep_voice",
+   "kind": "sound",
+   "for": "base:sheep",
+   "event": "voice",
+   "files": [
+    "audio/voice_sheep_1.ogg"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "every": [
+    50,
+    130
+   ]
+  },
+  {
+   "id": "base:sound/voice_sheep_death",
+   "kind": "sound",
+   "for": "base:sheep",
+   "event": "death",
+   "files": [
+    "audio/voice_sheep_1.ogg"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_chicken_voice",
+   "kind": "sound",
+   "for": "base:chicken",
+   "event": "voice",
+   "files": [
+    "audio/voice_chicken_1.ogg",
+    "audio/voice_chicken_2.ogg",
+    "audio/voice_chicken_3.ogg"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "every": [
+    40,
+    110
+   ]
+  },
+  {
+   "id": "base:sound/voice_chicken_death",
+   "kind": "sound",
+   "for": "base:chicken",
+   "event": "death",
+   "files": [
+    "audio/voice_chicken_1.ogg",
+    "audio/voice_chicken_2.ogg",
+    "audio/voice_chicken_3.ogg"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_wolf_attack",
+   "kind": "sound",
+   "for": "base:wolf",
+   "event": "attack",
+   "files": [
+    "audio/voice_wolf_growl_1.ogg",
+    "audio/voice_wolf_growl_2.ogg",
+    "audio/voice_wolf_growl_3.ogg"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_wolf_chase",
+   "kind": "sound",
+   "for": "base:wolf",
+   "event": "chase",
+   "files": [
+    "audio/voice_wolf_howl_1.ogg"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_wolf_death",
+   "kind": "sound",
+   "for": "base:wolf",
+   "event": "death",
+   "files": [
+    "audio/voice_death_1.ogg",
+    "audio/voice_death_2.ogg",
+    "audio/voice_death_3.ogg"
+   ],
+   "volume_db": -6.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_bear_attack",
+   "kind": "sound",
+   "for": "base:bear",
+   "event": "attack",
+   "files": [
+    "audio/voice_bear_1.ogg",
+    "audio/voice_bear_2.ogg"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_bear_death",
+   "kind": "sound",
+   "for": "base:bear",
+   "event": "death",
+   "files": [
+    "audio/voice_bear_1.ogg",
+    "audio/voice_bear_2.ogg"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_polar_bear_attack",
+   "kind": "sound",
+   "for": "base:polar_bear",
+   "event": "attack",
+   "files": [
+    "audio/voice_bear_1.ogg",
+    "audio/voice_bear_2.ogg"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_polar_bear_death",
+   "kind": "sound",
+   "for": "base:polar_bear",
+   "event": "death",
+   "files": [
+    "audio/voice_bear_1.ogg",
+    "audio/voice_bear_2.ogg"
+   ],
+   "volume_db": -4.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_deer_voice",
+   "kind": "sound",
+   "for": "base:deer",
+   "event": "voice",
+   "files": [
+    "audio/voice_deer_1.ogg"
+   ],
+   "volume_db": -12.0,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "every": [
+    120,
+    300
+   ]
+  },
+  {
+   "id": "base:sound/voice_deer_death",
+   "kind": "sound",
+   "for": "base:deer",
+   "event": "death",
+   "files": [
+    "audio/voice_death_1.ogg",
+    "audio/voice_death_2.ogg",
+    "audio/voice_death_3.ogg"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_fox_voice",
+   "kind": "sound",
+   "for": "base:fox",
+   "event": "voice",
+   "files": [
+    "audio/voice_fox_1.ogg",
+    "audio/voice_fox_2.ogg"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "every": [
+    120,
+    300
+   ]
+  },
+  {
+   "id": "base:sound/voice_fox_death",
+   "kind": "sound",
+   "for": "base:fox",
+   "event": "death",
+   "files": [
+    "audio/voice_fox_1.ogg",
+    "audio/voice_fox_2.ogg"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_arctic_fox_voice",
+   "kind": "sound",
+   "for": "base:arctic_fox",
+   "event": "voice",
+   "files": [
+    "audio/voice_fox_1.ogg",
+    "audio/voice_fox_2.ogg"
+   ],
+   "volume_db": -14.0,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "every": [
+    120,
+    300
+   ]
+  },
+  {
+   "id": "base:sound/voice_arctic_fox_death",
+   "kind": "sound",
+   "for": "base:arctic_fox",
+   "event": "death",
+   "files": [
+    "audio/voice_fox_1.ogg",
+    "audio/voice_fox_2.ogg"
+   ],
+   "volume_db": -8.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_hare_death",
+   "kind": "sound",
+   "for": "base:hare",
+   "event": "death",
+   "files": [
+    "audio/voice_squeak_1.ogg",
+    "audio/voice_squeak_2.ogg"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  },
+  {
+   "id": "base:sound/voice_cave_rat_death",
+   "kind": "sound",
+   "for": "base:cave_rat",
+   "event": "death",
+   "files": [
+    "audio/voice_squeak_1.ogg",
+    "audio/voice_squeak_2.ogg"
+   ],
+   "volume_db": -10.0,
+   "pitch": [
+    0.92,
+    1.08
+   ]
+  }
+ ]
+}

@@ -112,8 +112,12 @@ func test_digging_needs_a_pick_in_hand_and_gives_what_the_rock_holds() -> void:
 		"no_tool", "an axe does not dig")
 	_req(p, {"type": "hold", "item": "base:pickaxe"})
 	var stone := w.inventory(p).count("base:stone")
-	var r := _req(p, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"})
-	check(r.get("ok", false), "dug: %s" % r)
+	var dig := {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"}
+	var r := _req(p, dig.duplicate())
+	check(r.get("ok", false), "a blow: %s" % r)
+	eq(_req(p, dig.duplicate()).get("reason"), "not_ready", "clicking fast digs no faster than the pick swings")
+	eq(_part("depth:-1", at[0]), rock, "rock takes more than one blow (the author, 27.10.2026)")
+	r = _dig_out(p, dig)
 	eq(_part("depth:-1", at[0]), "", "the cell is open now")
 	check(w.inventory(p).count("base:stone") > stone or rock != "base:rock", "stone from rock")
 	w.close()
@@ -125,8 +129,20 @@ func test_digging_needs_a_pick_in_hand_and_gives_what_the_rock_holds() -> void:
 	_req(q, {"type": "hold", "item": "base:pickaxe"})
 	var c := w.chunk("depth:-1", floori(at[0].x / 32.0), floori(at[0].y / 32.0))
 	c.set_cell("structure", posmod(at[0].x, 32), posmod(at[0].y, 32), "base:iron_ore_rock")
-	_req(q, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"})
+	_dig_out(q, {"type": "gather", "location": "depth:-1", "x": at[0].x, "y": at[0].y, "item": "base:pickaxe"})
 	eq(w.inventory(q).count("base:iron_ore"), 1, "iron ore from its vein")
+
+
+## Blows at the pick's pace until the rock gives (its last answer).
+func _dig_out(actor: String, dig: Dictionary) -> Dictionary:
+	var r := {}
+	for blow in 12:
+		w.tick += 20  # the stone pick's 0.8 s
+		w.combat.step(w.tick)
+		r = _req(actor, dig.duplicate())
+		if r.has("drops"):
+			break
+	return r
 
 
 func test_a_shaft_to_the_next_depth_opens_a_working_with_a_ladder() -> void:

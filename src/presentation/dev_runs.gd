@@ -22,6 +22,8 @@ func _init(screen: GameScreen) -> void:
 
 
 func step(delta: float) -> void:
+	if g._opts.has("hour") and g.game and g._frames == 5:  # dev: the world's clock set to an hour of day one
+		g.game.world.world_time = float(g._opts["hour"]) * Daylight.HOUR_MS
 	if g._opts.has("poses"):
 		_photograph_poses()
 	if g._opts.has("demo") and not g._demo_done and g.client.state == "playing" and g.client.has_position:

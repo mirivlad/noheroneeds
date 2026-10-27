@@ -1,8 +1,8 @@
 class_name HudBoxes
-## The boxes at the top of the screen: one's own state at the left (health,
-## satiety, warmth, energy — a bar and "40/40" each, the row's name a warning
-## when it is low), the world's at the right (season, day, time, weather —
-## with small pixel pictures — and the level one is on).
+## The HUD (UI 2.0): one's needs at the top left (a short bar with its picture
+## each, numbers in the tooltip), the world's at the top right (season, time,
+## weather in a line), the window buttons by the quick slots, the hint at the
+## cursor. Small pixel pictures drawn from letters.
 
 const INK := Color("1a1412")
 const PALETTE := {
@@ -10,8 +10,139 @@ const PALETTE := {
 	"o": Color("f08c32"), "O": Color("c8501e"), "Y": Color("fad246"), "y": Color("e6a028"),
 	"w": Color("f0f8ff"), "c": Color("aad2f0"), "k": Color("c8cdd7"), "K": Color("828796"),
 	"D": Color("5a5c6e"), "B": Color("5096f0"), "m": Color("f0e8c8"), "M": Color("c8be96"), "f": Color("bec3cd"),
+	"r": Color("d84a40"), "R": Color("8c2828"), "e": Color("e8b890"),
 }
 const ICONS := {
+	"health": """
+............
+..RR...RR...
+.RrrR.RrrR..
+RrrrrRrrrrR.
+RrwrrrrrrrR.
+RrrrrrrrrrR.
+.RrrrrrrrR..
+..RrrrrrR...
+...RrrrR....
+....RrR.....
+.....R......
+............""",
+	"satiety": """
+............
+............
+....yyyy....
+..yyYyyYyy..
+.yyyyyyyyyy.
+.yYyyYyyYyy.
+.yyyyyyyyyy.
+.bbbbbbbbbb.
+..bbbbbbbb..
+............
+............
+............""",
+	"warmth": """
+.....o......
+....oo......
+....ooo.....
+...oooo.o...
+..ooYoooo...
+..oYYYooo...
+.ooYYYYooo..
+.ooYYYYYoo..
+.oOYYYYYOo..
+..OOYYYOO...
+...OOOOO....
+............""",
+	"energy": """
+............
+....cccc....
+...ccc......
+..ccc.......
+..cc........
+..cc........
+..cc........
+..ccc.......
+...ccc......
+....cccc....
+............
+............""",
+	"character": """
+....bbbb....
+...bbbbbb...
+...beeeeb...
+...eeeeee...
+....eeee....
+.....ee.....
+...GGGGGG...
+..GGGGGGGG..
+..GGGGGGGG..
+..GGGGGGGG..
+..GGGGGGGG..
+............""",
+	"things": """
+....bbbb....
+...b....b...
+....bbbb....
+..MMMMMMMM..
+.MMMMMMMMMM.
+.MMMbbbbMMM.
+.MMMMbbMMMM.
+.MMMMMMMMMM.
+.MMMMMMMMMM.
+..MMMMMMMM..
+............
+............""",
+	"crafts": """
+............
+..KKKKKK....
+..KkkkkK....
+..KKKKKKb...
+.......bb...
+......bb....
+.....bb.....
+....bb......
+...bb.......
+..bb........
+............
+............""",
+	"build": """
+.....OO.....
+....OOOO....
+...OOOOOO...
+..OOOOOOOO..
+.OOOOOOOOOO.
+..MMMMMMMM..
+..MMMMMMMM..
+..MMbbMMMM..
+..MMbbMMMM..
+..MMbbMMMM..
+............
+............""",
+	"journal": """
+............
+..OOOOOOOO..
+..OmmmmmmO..
+..OmMMMMmO..
+..OmmmmmmO..
+..OmMMMmmO..
+..OmmmmmmO..
+..OmMMMMmO..
+..OmmmmmmO..
+..OOOOOOOO..
+............
+............""",
+	"map": """
+............
+.mmmmmmmmmm.
+.mggmmBBmmm.
+.mgggmBBBmm.
+.mmggmmBBmm.
+.mmmMMmmmmm.
+.mmMmmMmggm.
+.mMmmmmMggm.
+.mmmmmmmmmm.
+............
+............
+............""",
 	"spring": """
 ............
 ............
@@ -184,52 +315,62 @@ class Bar:
 		draw_rect(Rect2(Vector2.ZERO, size), Art.FRAME, false, 1.0)
 
 
-## One's own: a row a need — its name, a bar, so much of so much.
+## One's own (UI 2.0): a short bar a need with its picture; the exact numbers
+## in the tooltip. A need in danger blinks, a word beside it says what is wrong.
 class NeedsBox:
 	extends PanelContainer
 	var _grid := GridContainer.new()
 	var _rows := {}
+	var _texts := {}
 
 	func _init() -> void:
 		theme = Art.theme()
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_theme_stylebox_override("panel", Art.hud_box())
+		mouse_filter = Control.MOUSE_FILTER_STOP  # the tooltip; and no click through to the world
 		_grid.columns = 3
-		_grid.add_theme_constant_override("h_separation", 6)
-		_grid.add_theme_constant_override("v_separation", 0)
+		_grid.add_theme_constant_override("h_separation", 4)
+		_grid.add_theme_constant_override("v_separation", 2)
+		_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_grid)
 
 	## What a row says: its name (or warning) and "so much/so much".
 	func row_text(key: String) -> String:
-		var parts: Array = _rows.get(key, [])
-		return "%s %s" % [(parts[0] as Label).text, (parts[2] as Label).text] if not parts.is_empty() else ""
+		return String(_texts.get(key, ""))
 
 	## Rows: [key, name, value, most, colour, warning ("" — none)], in order.
 	func show_rows(rows: Array) -> void:
 		visible = not rows.is_empty()
+		var tips := PackedStringArray()
+		var blink := 0.55 + 0.45 * sin(Time.get_ticks_msec() / 160.0)
 		for r: Array in rows:
 			if not _rows.has(r[0]):
-				var name := Label.new()
+				var icon := TextureRect.new()
+				icon.texture = HudBoxes.icon(String(r[0])) if HudBoxes.ICONS.has(String(r[0])) else null
+				icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 				var bar := Bar.new()
-				var value := Label.new()
-				value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				value.custom_minimum_size.x = 48
-				for n: Control in [name, bar, value]:
+				bar.custom_minimum_size = Vector2(56, 6)
+				var warn := Label.new()
+				warn.add_theme_color_override("font_color", Art.DANGER)
+				for n: Control in [icon, bar, warn]:
 					n.mouse_filter = Control.MOUSE_FILTER_IGNORE
 					_grid.add_child(n)
-				_rows[r[0]] = [name, bar, value]
+				_rows[r[0]] = [icon, bar, warn]
 			var parts: Array = _rows[r[0]]
-			var warn := String(r[5])
-			(parts[0] as Label).text = warn if warn != "" else String(r[1])
-			for l: Label in [parts[0], parts[2]]:
-				l.add_theme_color_override("font_color", WARN if warn != "" else Art.TEXT)
+			var warn_text := String(r[5])
 			var bar: Bar = parts[1]
 			bar.share = float(r[2]) / maxf(1.0, float(r[3]))
 			bar.color = r[4]
+			bar.modulate.a = blink if warn_text != "" else 1.0
 			bar.queue_redraw()
-			(parts[2] as Label).text = "%d/%d" % [int(r[2]), int(r[3])]
+			(parts[2] as Label).text = warn_text
+			_texts[r[0]] = "%s %d/%d" % [warn_text if warn_text != "" else String(r[1]), int(r[2]), int(r[3])]
+			tips.append("%s: %d из %d%s" % [r[1], int(r[2]), int(r[3]), " — " + warn_text if warn_text != "" else ""])
+		tooltip_text = "\n".join(tips)
 
 
-## The world's: season and day, time and weather, the level.
+## The world's (UI 2.0): the season's picture, the time and the weather's
+## picture in one line; the day, the weather in words and the level in the
+## tooltip; the level a line below only off the surface.
 class ClockBox:
 	extends PanelContainer
 	var season_icon := TextureRect.new()
@@ -240,27 +381,89 @@ class ClockBox:
 
 	func _init() -> void:
 		theme = Art.theme()
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_theme_stylebox_override("panel", Art.hud_box())
+		mouse_filter = Control.MOUSE_FILTER_STOP
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 0)
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(box)
-		for pair: Array in [[season_icon, day], [weather_icon, time]]:
-			var row := HBoxContainer.new()
-			box.add_child(row)
-			for n: Control in pair:
-				n.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				row.add_child(n)
-			(pair[0] as TextureRect).stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-			(pair[0] as TextureRect).custom_minimum_size = Vector2(12, 14)
+		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(row)
+		for n: Control in [season_icon, time, weather_icon, day, level]:
+			n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for n: Control in [season_icon, time, weather_icon]:
+			row.add_child(n)
+		for icon: TextureRect in [season_icon, weather_icon]:
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+			icon.custom_minimum_size = Vector2(12, 14)
+		day.visible = false  # in the tooltip
+		row.add_child(day)
 		level.add_theme_color_override("font_color", Art.TEXT_DIM)
 		box.add_child(level)
 
-	## season: Seasons index; weather: Weather.kind, "" below ground (no sky).
-	func show_time(season: int, day_text: String, time_text: String, weather: String, night: bool, level_text: String) -> void:
+	## season: Seasons index; weather: Weather.kind, "" below ground (no sky);
+	## level_text: "" on the surface.
+	func show_time(season: int, day_text: String, clock: String, weather: String, weather_word: String, night: bool,
+			level_text: String) -> void:
 		season_icon.texture = HudBoxes.icon(SEASON_ICONS[season])
 		day.text = day_text
 		var sky := weather if weather != "clear" or not night else "night"
 		weather_icon.texture = HudBoxes.icon(sky) if weather != "" else null
 		weather_icon.visible = weather != ""
-		time.text = time_text
+		time.text = clock
 		level.text = level_text
+		level.visible = level_text != ""
+		var tip := PackedStringArray([day_text, clock + (", " + weather_word if weather_word != "" else "")])
+		if level_text != "":
+			tip.append(level_text)
+		tooltip_text = "\n".join(tip)
+
+
+## The buttons by the quick slots (UI 2.0): a picture a window, its name and
+## key in the tooltip. `chosen` says which window.
+class WindowButtons:
+	extends HBoxContainer
+	signal chosen(name: String)
+	const WINDOWS := [["character", "Персонаж", "C"], ["things", "Вещи", "I"], ["crafts", "Ремёсла", "K"],
+		["build", "Строительство", "B"], ["journal", "Журнал", "L"], ["map", "Карта", "M"]]
+
+	func _init() -> void:
+		theme = Art.theme()
+		add_theme_constant_override("separation", 2)
+		for w: Array in WINDOWS:
+			var b := Art.icon_button(Art.glyph(ICONS[w[0]], PALETTE, INK, 2), "%s — %s" % [w[1], w[2]])
+			b.name = String(w[0])
+			b.pressed.connect(func() -> void: chosen.emit(String(w[0])))
+			add_child(b)
+
+
+## What is under the cursor and what the left button and E do there (UI 2.0):
+## a small box beside the pointer, never in the way of the mouse.
+class CursorHint:
+	extends PanelContainer
+	var label := Label.new()
+	var text := "":
+		set(v):
+			text = v
+			label.text = v
+			visible = v != ""
+			size = Vector2.ZERO  # to its words
+
+	func _init() -> void:
+		theme = Art.theme()
+		add_theme_stylebox_override("panel", Art.hud_box())
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(label)
+		visible = false
+
+	## Beside `at` (the pointer), wholly within `area`.
+	func follow(at: Vector2, area: Vector2) -> void:
+		var s := get_combined_minimum_size()
+		var p := at + Vector2(14, 18)
+		if p.x + s.x > area.x:
+			p.x = at.x - 6 - s.x
+		if p.y + s.y > area.y:
+			p.y = at.y - 6 - s.y
+		position = p.floor()

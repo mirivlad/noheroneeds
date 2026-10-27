@@ -579,7 +579,7 @@ func test_a_campfire_in_rain_explains_why_it_cannot_be_built() -> void:
 	_move_mouse(_screen(cell))
 	_frames(2)
 	eq(g._plan[0][1], "rain", "the preview knows the server's rain rule")
-	check(g.status.text.contains("под дождём костёр не развести"), "the player sees why: " + g.status.text)
+	check(g.cursor_hint.text.contains("под дождём костёр не развести"), "the player sees why: " + g.cursor_hint.text)
 	_click(_screen(cell))
 	_frames(5)
 	eq(_part(cell), "", "nothing built")

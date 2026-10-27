@@ -15,6 +15,12 @@ const BUTTON_HOT := Color("45343a")
 const BUTTON_DOWN := Color("5a4232")
 const FRAME := Color("6b5440")
 const FRAME_HOT := Color("c8a060")
+## UI 2.0 design tokens (docs/design/UI_UX_2_0.md): the HUD's lighter panel,
+## warnings, what is enough or ready, the step of spacing.
+const HUD_PANEL := Color(0.118, 0.094, 0.141, 0.72)
+const DANGER := Color("ff8a6a")
+const GOOD := Color("8cc864")
+const GAP := 4
 
 static var _textures := {}
 static var _sounds := {}
@@ -356,6 +362,22 @@ static func window_head(title: Label, key: String, close: Callable) -> HBoxConta
 	b.pressed.connect(close)
 	head.add_child(b)
 	return head
+
+
+## The panel of the HUD's boxes (indicators, the hint at the cursor): lighter than a window's.
+static func hud_box() -> StyleBoxFlat:
+	return _box(HUD_PANEL, Color(FRAME, 0.8), GAP)
+
+
+## A square button with a picture and a tooltip (what it does and its key).
+static func icon_button(picture: Texture2D, tip: String) -> Button:
+	var b := Button.new()
+	b.icon = picture
+	b.tooltip_text = tip
+	b.focus_mode = Control.FOCUS_NONE
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.custom_minimum_size = Vector2(32, 32)
+	return b
 
 
 ## A hint under a window's contents: dim, wrapped to `width`.

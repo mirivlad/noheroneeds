@@ -23,6 +23,8 @@ const DEFAULTS := {
 	## The last server joined, "host:port".
 	"last_address": "127.0.0.1:24680",
 	"max_players": 8,
+	## The password of a server one hosts ("" — anyone may come, ADR-0060).
+	"server_password": "",
 	## The character played (file id in the character library).
 	"character": "",
 	## Quick slots of each character (ADR-0021): character id -> [item id, ...].

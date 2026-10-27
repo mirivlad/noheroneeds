@@ -700,6 +700,14 @@ func _update_actors(alpha: float, delta: float) -> void:
 		actor.scale = Vector3.ONE * (.6 if e.get("young", false) else 1.0)
 		var held := own_held if id == client.character_id else String(e.get("held", ""))
 		actor.doll.hold(item_picture("" if actor.doll.submerged else held), item_grip(held), "" if actor.doll.submerged else held)
+		# Hurt: a flinch; fallen: lies a while (ADR-0019).
+		var h := int(e.get("health", e.get("max_health", 0)))
+		if h < int(_hp_seen.get(id, h)):
+			actor.doll.react("dead" if h <= 0 else "hurt", 2.0 if h <= 0 else 0.0)
+		_hp_seen[id] = h
+		if int(e.get("deaths", 0)) > int(_deaths_seen.get(id, e.get("deaths", 0))):
+			actor.doll.react("dead", 2.0)
+		_deaths_seen[id] = int(e.get("deaths", 0))
 		# Others' blows (the own are shown at the click): their count, the low bits the direction.
 		var blows := int(e.get("swing", 0))
 		if id != client.character_id and _swing_seen.has(id) and int(_swing_seen[id]) != blows:
@@ -824,6 +832,11 @@ func swing_own(dir: Vector2) -> void:
 	var actor := _actors.get(client.character_id) as BillboardActor3D
 	if actor:
 		actor.swing(dir, swing_kind(own_held), yaw)
+
+func react_own(clip: String) -> void:
+	var actor := _actors.get(client.character_id) as BillboardActor3D
+	if actor:
+		actor.doll.react(clip)
 
 func draw_own(dir: Vector2) -> void:
 	var actor := _actors.get(client.character_id) as BillboardActor3D

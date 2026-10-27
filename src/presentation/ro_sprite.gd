@@ -40,6 +40,10 @@ var _faced := false
 var _drawn_order := []
 ## Dev (DevRuns --poses): [clip, row, frame] shown whatever the character does; [] lets it be.
 var pinned: Array = []
+## A clip played once (react): its name, how far through (0..1, then held), how long held.
+var _once := ""
+var _once_t := -1.0
+var _once_hold := 0.0
 ## The keep-out sheet of the headwear worn ({} for none): hair inside it is not drawn.
 var _keep_out := {}
 
@@ -114,6 +118,9 @@ func _frame(anim: Dictionary, i: int) -> void:
 	if swinging():
 		clip = _swing_clip()
 		index = mini(int(_swing_t * _frame_count(clip)), _frame_count(clip) - 1)
+	if _once_t >= 0.0 and not swinging():
+		clip = _once
+		index = mini(int(_once_t * _frame_count(clip)), _frame_count(clip) - 1)
 	if not pinned.is_empty():
 		clip = String(pinned[0])
 		_row = int(pinned[1])
@@ -200,8 +207,22 @@ func _swing_clip() -> String:
 	return clip if _visual["clips"].has(clip) else "idle"
 
 
+func react(clip: String, hold := 0.0) -> void:
+	if not _visual.get("clips", {}).has(clip) or (clip != "dead" and _once == "dead" and _once_t >= 0.0):
+		return  # one who fell is not startled up again
+	_once = clip
+	_once_t = 0.0
+	_once_hold = hold
+
+
 ## A swing is its clip, played once at its own pace; the body stays put.
 func _swing_step(delta: float) -> Vector2:
+	if _once_t >= 0.0:
+		var oc: Dictionary = _visual["clips"][_once]
+		_once_t += delta * float(oc["fps"]) / float(oc["frames"])
+		if _once_t >= 1.0 + _once_hold * float(oc["fps"]) / float(oc["frames"]):
+			_once_t = -1.0
+			_once = ""
 	if _swing_t < 0.0:
 		return Vector2.ZERO
 	var c: Dictionary = _visual["clips"][_swing_clip()]

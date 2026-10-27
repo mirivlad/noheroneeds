@@ -235,9 +235,12 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 			if t.start_client(String(cfg["address"]), int(cfg["port"])) != OK:
 				return "не удалось начать подключение к %s:%d" % [cfg["address"], cfg["port"]]
 			client = GameClient.new(t, me, character_file, content)
+			client.password = String(cfg.get("password", ""))
+			client.invite = String(cfg.get("invite", ""))
 		"host":
 			hosted = HostedGame.start(String(cfg["world_path"]), content, me, server_identity, character_file,
-				int(cfg["port"]), int(cfg.get("max_players", 8)), {"seed": WorldLibrary.seed_of(cfg.get("rules", {}))})
+				int(cfg["port"]), int(cfg.get("max_players", 8)), {"seed": WorldLibrary.seed_of(cfg.get("rules", {})),
+				"password": String(cfg.get("password", ""))})
 			if not hosted.ok():
 				return hosted.error
 			WorldLibrary.apply_rules(cfg.get("rules", {}), hosted.world)
@@ -479,7 +482,7 @@ func _process(delta: float) -> void:
 		_perf(t_map - t0, t_sim - t_map, t_drawn - t_view, Time.get_ticks_usec() - t_drawn, delta)
 	if not _reported and client.state in ["disconnected", "rejected"]:
 		_reported = true
-		failed.emit("сервер отказал: " + client.reject_reason if client.state == "rejected" else "связь с сервером потеряна")
+		failed.emit(("сервер отказал: " + Protocol.reason_text(client.reject_reason)) if client.state == "rejected" else "связь с сервером потеряна")
 	if _opts.has("screenshot") and _frames >= int(_opts.get("frames", "120")):
 		get_viewport().get_texture().get_image().save_png(String(_opts["screenshot"]))
 		screenshot_taken.emit()
@@ -1183,6 +1186,7 @@ func _update_hud() -> void:
 			if r.get("ok"):
 				if r.has("thanks"):
 					audio.play("pickup", "", null)
+					view.react_own("pickup")
 					_note = "получено: %d монет" % int(r.get("reward", 0))
 				talk_panel.open_for(r)
 			else:
@@ -1201,6 +1205,7 @@ func _update_hud() -> void:
 			if r.get("ok"):
 				if trade_panel.visible and trade_panel.creature == who:
 					audio.play("pickup", "", null)
+					view.react_own("pickup")
 				trade_panel.open_for(who, r, client.inventory(), client.item_states())
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))

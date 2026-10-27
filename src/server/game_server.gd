@@ -167,6 +167,27 @@ class Session:
 	var map_queue: Array = []
 
 
+## Entry (ADR-0060): with a password the server lets in only those who give it,
+## or the invite of this run (a share link carries it; a new one voids the old).
+## Without a password anyone may come.
+var password := ""
+var invite := ""
+
+
+## A new invite for share links; the old one no longer lets in.
+func new_invite() -> String:
+	invite = _crypto.generate_random_bytes(12).hex_encode()
+	return invite
+
+
+func _admitted(m: Dictionary) -> bool:
+	if password == "":
+		return true
+	if invite != "" and String(m.get("invite", "")) == invite:
+		return true
+	return String(m.get("password", "")) == password
+
+
 func _init(server_world: ServerWorld, net: Transport, server_identity: PlayerIdentity) -> void:
 	world = server_world
 	transport = net
@@ -335,6 +356,8 @@ func _on_message(s: Session, m: Dictionary) -> void:
 		"authed":
 			if t != Protocol.JOIN:
 				return _reject(s, "expected join")
+			if not _admitted(m):
+				return _reject(s, "password")
 			_join(s, m["character"])
 		"playing":
 			match t:

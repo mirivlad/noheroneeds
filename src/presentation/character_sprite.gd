@@ -149,6 +149,12 @@ func swinging() -> bool:
 	return _swing_t >= 0.0
 
 
+## Plays a clip once over standing and walking (a flinch, a fall, a stoop), then
+## holds its last frame `hold` seconds; only bodies with such clips (RoSprite).
+func react(_clip: String, _hold := 0.0) -> void:
+	pass
+
+
 ## Pulls the string toward `dir` and holds it drawn until loose().
 func pull_string(dir: Vector2, kind: String) -> void:
 	swing(dir, kind)

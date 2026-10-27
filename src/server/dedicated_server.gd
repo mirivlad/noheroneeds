@@ -27,7 +27,9 @@ extends Node
 ##   --populate=N         (load tests) N more creatures around the spawn point
 ##   --stop-file=PATH     stop cleanly when this file appears (default: STOP
 ##                        next to the world database; it is removed on start)
-## Prints "LISTENING <port> <server id>" when ready.
+##   --password=TEXT      only those who give it come in (or an invite; ADR-0060)
+## Prints "LISTENING <port> <server id>" when ready, and "INVITE <invite>" for
+## share links (nhn://address:port/invite) when there is a password.
 ##
 ## Stopping: type "stop" in the console, or create the stop file. Godot exits
 ## at once on SIGTERM and ignores SIGINT; that loses nothing acknowledged
@@ -84,6 +86,8 @@ func start(o: Dictionary) -> String:
 	if o.has("populate"):  # load tests: a crowd of creatures around the spawn point
 		_world.creatures.spawn_crowd(int(o["populate"]), 40)
 	_server = GameServer.new(_world, _transport, identity)
+	_server.password = String(o.get("password", ""))
+	_server.new_invite()
 	_stats_every = int(o.get("stats", "0")) * 1000
 	_next_stats = Time.get_ticks_msec() + _stats_every
 	_stop_file = ProjectSettings.globalize_path(String(o.get("stop-file", world_path.get_base_dir().path_join("STOP"))))
@@ -92,6 +96,8 @@ func start(o: Dictionary) -> String:
 	if o.has("console"):
 		_stdin.start(_read_console)
 	print("LISTENING %d %s" % [port, identity.fingerprint])
+	if _server.password != "":
+		print("INVITE %s" % _server.invite)
 	return ""
 
 

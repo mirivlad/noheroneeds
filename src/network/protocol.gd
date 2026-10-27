@@ -31,8 +31,14 @@ class_name Protocol
 ##    carries "needs" (ADR-0032); REQUESTs "craft", "eat", "till", "sow", "feed".
 ## 13: SNAPSHOT may carry "died": [[x, y, creature kind]] of creatures that died
 ##    near this tick; a creature that strikes carries "hunting" (a bool) while
-##    it hunts — for their voices.
+##    it hunts — for their voices. JOIN may carry "password" or "invite" (a
+##    server with a password lets in only with one of them, ADR-0060).
 const VERSION := 13
+
+
+## A refusal's reason as a player reads it.
+static func reason_text(reason: String) -> String:
+	return "неверный пароль, или ссылка на мир устарела" if reason == "password" else reason
 ## Largest message accepted from a client (a character file is the biggest).
 const MAX_CLIENT_MESSAGE := CharacterFile.MAX_BYTES + 4096
 ## Inputs repeated in each INPUT message, so one lost packet loses nothing.

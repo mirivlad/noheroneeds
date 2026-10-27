@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # RO-style 8-way sprite pipeline: base body, gear, layer renders, pixel sprites, drawn face,
-# sample outfits put together and previewed. Everything is written under build/ro_sprites
+# sample outfits put together and previewed, then the game's atlases. Everything but those
+# (content/base/art/ro, content/base/ro_visuals.json) is written under build/ro_sprites
 # (not kept in git).
 # Usage: tools/art/ro_sprites/build.sh [clip...]   (default: all clips of clips.py)
 # BLENDER=/path/to/blender overrides the Blender binary; LAYERS="body boots ..." renders only
@@ -16,6 +17,7 @@ CLIPS=("${@:-all}")
 read -r -a LAYERS <<<"${LAYERS:-$(cd "$T" && python3 -c 'import gear; print(*gear.all_layers())')}"
 
 mkdir -p "$OUT/logs"
+touch "$OUT/.gdignore"  # inside the Godot project: thousands of frames it must not import
 blender() {  # blender LOG ARGS...: fails on a non-zero exit or a Python error in the log
   local log="$1" status=0
   shift
@@ -70,4 +72,8 @@ for outfit in $(cd "$T" && python3 -c 'import gear; print(*gear.OUTFITS)'); do
     python3 "$T/preview.py" "$OUT/outfits/$outfit" "$OUT/preview/$outfit" --zoom 2 "${clips[@]}"
   fi
 done
+# into the game once every layer is there (content/base/art/ro, ro_visuals.json)
+if (cd "$T" && python3 -c "import gear, os, sys; sys.exit(not all(os.path.isdir('$OUT/pixels/' + l) for l in gear.all_layers()))"); then
+  python3 "$T/export_game.py" "$OUT" "$ROOT/content/base"
+fi
 echo "previews: $OUT/preview/<outfit>/<clip>.gif|png"

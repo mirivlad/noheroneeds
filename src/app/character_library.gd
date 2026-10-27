@@ -57,6 +57,16 @@ func create(char_name: String, styles: Dictionary, colors: Dictionary = {}, body
 	for slot: String in STYLE_DEFAULTS:
 		if (content.get_def(STYLE_DEFAULTS[slot]).get("body_plans", []) as Array).has(body_plan):
 			c.styles[slot] = STYLE_DEFAULTS[slot]
+	# A body the defaults do not fit (the RO body's own hair): the first style
+	# for the slot its visual draws, else any that fits it.
+	var drawn: Array = (content.visual_of(body_plan).get("style_overrides", {}) as Dictionary).keys()
+	for slot: Variant in content.get_def(body_plan).get("appearance_slots", []):
+		if not c.styles.has(slot):
+			for id: String in drawn + content.defs.keys():
+				var st: Dictionary = content.get_def(id)
+				if st.get("kind") == "style" and st.get("slot") == slot and (st.get("body_plans", []) as Array).has(body_plan):
+					c.styles[slot] = id
+					break
 	c.styles.merge(styles, true)
 	c.colors = COLOR_DEFAULTS.duplicate()
 	c.colors.merge(colors, true)

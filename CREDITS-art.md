@@ -1137,3 +1137,10 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - Авторы: Charles Sanchez (CharlesGabriel), bluecarrot16; заказ Pierre Vigier
 - Лицензии: CC-BY-SA 3.0 / GPL 3.0
 - https://opengameart.org/content/lpc-monsters
+
+<!-- ro -->
+# Авторы графики персонажей в стиле Ragnarok Online
+
+Тело — модель VRoid **HairSample_Male** (pixiv Inc., лицензия CC0, указана в метаданных VRM) из
+[madjin/vrm-samples](https://github.com/madjin/vrm-samples). Пропорции, лицо, одежда, предметы и
+анимации сделаны в `tools/art/ro_sprites` и отрендерены в пиксели там же.

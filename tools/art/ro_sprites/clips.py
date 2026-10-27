@@ -157,7 +157,7 @@ def chop(t):
 	"""Felling, with both hands on the handle (the left below the right): the axe goes back and
 	up over the right shoulder as the trunk turns away, then comes round and down across the
 	body as it turns into the blow, and bites in front at waist height with the blade only a
-	little off level, as into a standing trunk. Picks and hoes play it too."""
+	little off level, as into a standing trunk."""
 	grip = {"L_hold": -0.08, "R_arm_fwd": 40, "R_arm_down": 60, "R_elbow": 60}
 	ready = {**grip, **tool(0.12, 0.3, -0.3, 0, 40, 0, -50)}
 	wind = {**grip, **tool(0.3, -0.02, 0.22, -150, 35, -70, -10),
@@ -167,6 +167,21 @@ def chop(t):
 	strike = {**grip, **tool(0.1, 0.36, -0.28, 20, -8, 90, -15),
 		"hips_turn": 8, "spine_turn": 12, "chest_turn": 25, "head_turn": -10, "spine_bend": 14,
 		**both("knee", 14), "L_hip": 14, "R_hip": 4}
+	return keyed([(0.0, ready), (0.35, wind), (0.5, wind), (0.62, swing), (0.74, strike), (0.88, strike), (1.0, ready)], t)
+
+
+def mine(t):
+	"""A pick, with both hands on the handle: raised straight up over the head with the point
+	up and the body leaning back, then brought down in front, the trunk bending into the
+	blow and the knees giving, the point driven down into the rock before the feet."""
+	grip = {"L_hold": -0.08, "R_arm_fwd": 40, "R_arm_down": 60, "R_elbow": 60}
+	ready = {**grip, **tool(0.12, 0.3, -0.3, 0, 40, 0, -50)}
+	wind = {**grip, **tool(0.05, 0.12, 0.56, 180, 55, 0, 35),
+		"spine_bend": -8, "head_bend": -10, "R_hip": 4, "L_hip": 10, "L_knee": 6}
+	swing = {**grip, **tool(0.05, 0.32, 0.3, 0, 70, 0, -20),
+		"spine_bend": 6, "L_hip": 12, "L_knee": 8}
+	strike = {**grip, **tool(0.05, 0.42, -0.3, 0, -30, 180, -60),
+		"spine_bend": 24, "head_bend": 10, **both("knee", 20), "L_hip": 24, "R_hip": 10}
 	return keyed([(0.0, ready), (0.35, wind), (0.5, wind), (0.62, swing), (0.74, strike), (0.88, strike), (1.0, ready)], t)
 
 
@@ -215,6 +230,7 @@ CLIPS = {
 	"slash": (6, 16, False, slash),
 	"thrust": (8, 18, False, thrust),
 	"chop": (10, 22, False, chop),
+	"mine": (10, 22, False, mine),
 	"shoot": (12, 22, False, shoot),
 	"cast": (10, 18, False, cast),
 }

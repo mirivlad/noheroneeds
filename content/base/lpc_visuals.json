@@ -209,6 +209,7 @@
    },
    "swings": {
     "chop": "chop",
+    "mine": "chop",
     "thrust": "thrust",
     "draw": "shoot",
     "lunge": "slash",
@@ -2880,6 +2881,7 @@
    },
    "swings": {
     "chop": "chop",
+    "mine": "chop",
     "thrust": "thrust",
     "draw": "shoot",
     "lunge": "slash",

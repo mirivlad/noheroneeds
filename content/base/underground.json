@@ -62,13 +62,13 @@
       "attack": {"kind": "melee", "damage": 2, "reach": 0.8, "arc": 120, "cooldown_ms": 1000}
     },
 
-    {"id": "base:flint_pick", "kind": "item", "name": "Кремнёвое кайло", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"],
+    {"id": "base:flint_pick", "kind": "item", "name": "Кремнёвое кайло", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"], "swing": "mine",
       "weapon": {"kind": "melee", "damage": 2, "reach": 1.0, "arc": 70, "cooldown_ms": 1000, "improvised": true},
       "against": {"stone": 1.5}, "durability": 120},
-    {"id": "base:pickaxe", "kind": "item", "name": "Каменная кирка", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"],
+    {"id": "base:pickaxe", "kind": "item", "name": "Каменная кирка", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"], "swing": "mine",
       "weapon": {"kind": "melee", "damage": 3, "reach": 1.0, "arc": 70, "cooldown_ms": 800, "improvised": true},
       "against": {"stone": 2.0}, "durability": 400, "repair": {"station": "workbench", "materials": {"base:plank": 1, "base:stone": 2}}},
-    {"id": "base:iron_pickaxe", "kind": "item", "name": "Железная кирка", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"],
+    {"id": "base:iron_pickaxe", "kind": "item", "name": "Железная кирка", "stack": 1, "equip_slot": "main_hand", "tools": ["mining"], "swing": "mine",
       "power": 2, "weapon": {"kind": "melee", "damage": 4, "reach": 1.0, "arc": 70, "cooldown_ms": 750, "improvised": true},
       "against": {"stone": 3.0}, "durability": 1200, "repair": {"station": "forge", "materials": {"base:iron_ingot": 1, "base:plank": 1}}},
     {"id": "base:iron_ore", "kind": "item", "name": "Железная руда", "stack": 50},

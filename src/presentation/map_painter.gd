@@ -103,7 +103,9 @@ func color_of(id: String) -> Color:
 		return _colors[id]
 	var c := Color(0.5, 0.5, 0.5)
 	var v := content.visual_of(id)
-	if not v.is_empty():
+	if content.get_def(id).has("map_color"):  # a ground with no picture of its own (a chasm)
+		c = Color(String(content.get_def(id)["map_color"]))
+	elif not v.is_empty():
 		var tex := view.texture(String(v["atlas_path"]))
 		var img := tex.get_image() if tex else null
 		if img:

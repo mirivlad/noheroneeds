@@ -170,6 +170,8 @@ func test_real_mountain_route_is_levels_cliffs_and_ramps() -> void:
 			if view._rock_at(cell):
 				cliffs += 1 if view.terrain.cell(cell) - view.terrain.low(cell + Vector2i.ONE) > 2 else 0
 				continue
+			if view._ground_is(cell, "chasm"):
+				continue  # not walked (ADR-0064)
 			# a walkable cell's own corners: a ramp at most, never a sheer step
 			for d: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN]:
 				steepest = maxf(steepest, absf(view.corner_height(cell + d) - h))
@@ -309,3 +311,27 @@ func test_life_over_the_land() -> void:
 		p.free()
 	check(Effects3D.ambient("fireflies", PackedVector3Array()) == null, "nowhere: nothing")
 	check(Effects3D.ambient("nothing", at) == null, "unknown: nothing")
+
+func test_chasm_walls_and_a_hanging_bridge() -> void:
+	# A chasm three cells across (x 4..6) at row y 2, a bridge over it along x.
+	var c := Chunk.new()
+	for y in 5:
+		for x in 11:
+			c.set_cell("ground", x, y, "base:grass")
+	for y in 5:
+		for x in range(4, 7):
+			c.set_cell("ground", x, y, "base:hanging_bridge" if y == 2 else "base:chasm")
+	client.chunks[ServerWorld.chunk_key("surface", 0, 0)] = c
+	view.terrain = null
+	var edge := view.chasm_mesh(Vector2i(4, 1), 0.0)
+	eq(edge.get_surface_count(), 2, "at the edge: a rock wall toward the land, and the dark bottom")
+	eq(view.chasm_mesh(Vector2i(5, 1), 0.0).get_surface_count(), 1, "in the middle: only the bottom")
+	check(edge.get_aabb().size.y >= WorldView3D.CHASM_DEPTH, "deep: %s" % edge.get_aabb())
+	var span := view.hanging_bridge_mesh(Vector2i(5, 2))
+	eq(span.get_surface_count(), 2, "planks and ropes")
+	check(span.get_aabb().size.x > .9 and span.get_aabb().size.z < 1.0, "it runs along x")
+	var head := view.hanging_bridge_mesh(Vector2i(4, 2))
+	check(head.get_aabb().size.y > span.get_aabb().size.y, "posts where it meets the land")
+	var at := Vector2(5.5, 2.5)
+	check(is_equal_approx(view.elevation(at), view.surface_elevation(at) + WorldView3D.DECK), "feet on its deck")
+	check(view._hollow(Vector2i(5, 2)) and view._hollow(Vector2i(5, 0)) and not view._hollow(Vector2i(3, 2)), "the chasm runs under the bridge")

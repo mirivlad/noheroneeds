@@ -175,6 +175,24 @@ func step(delta: float) -> void:
 								best = at  # "" — water under it
 			if best.x != 1 << 20:
 				cell = best
+		elif String(g._opts["goto"]) == "hanging":  # the nearest hanging bridge's end on land (ADR-0064)
+			var g := g.game.world.generator
+			var best := Vector2i(1 << 20, 0)
+			var way := Vector2i.RIGHT
+			for ky in range(-40, 41):  # a bridge crosses between two neighbouring sites, at their middle
+				for kx in range(-40, 41):
+					for d: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE, Vector2i(1, -1)]:
+						var a := g._chasm_site(Vector2i(kx, ky))
+						var b := g._chasm_site(Vector2i(kx, ky) + d)
+						var mid := Vector2i(((a + b) * 0.5).floor())
+						if Vector2(mid).length() < Vector2(best).length() and g.land_at(mid.x, mid.y)["what"] == "bridge":
+							best = mid
+							way = Vector2i.RIGHT if absf(b.x - a.x) >= absf(b.y - a.y) else Vector2i.DOWN
+			if best.x != 1 << 20:
+				cell = best
+				while g.land_at(cell.x, cell.y)["what"] == "bridge":
+					cell += way
+				cell += way  # on the land beyond its end
 		elif String(g._opts["goto"]).begins_with("biome:"):  # "biome:base:taiga": the nearest middle of one
 			var want := String(g._opts["goto"]).trim_prefix("biome:")
 			var g := g.game.world.generator

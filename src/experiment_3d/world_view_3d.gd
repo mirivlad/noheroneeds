@@ -146,7 +146,7 @@ func update_view(alpha: float, delta: float) -> void:
 	if client.geography and _land == null:
 		# Call the ORIGINAL surface sampler, never a new world generator.
 		_land = SurfaceGenerator.new(client.geography.world_seed, content)
-		terrain = TerrainShape3D.new(_land, _rock_at)
+		terrain = _new_terrain()
 	if client.location != _location:
 		_location = client.location
 		_clear_geometry()
@@ -280,7 +280,8 @@ func _refresh_foundations(changed: Array) -> void:
 	for key: String in _geometry: _queued[key] = true
 
 func elevation(p: Vector2) -> float:
-	var bridge := .18 if client.z >= 0 and _cell_layer(Vector2i(floori(p.x),floori(p.y)), "ground") == "base:bridge" else 0.0
+	var at := Vector2i(floori(p.x), floori(p.y))
+	var bridge := .18 if client.z >= 0 and _cell_layer(at, "ground") == "base:bridge" else (DECK if _ground_is(at, "hanging_bridge") else 0.0)
 	return surface_elevation(p) + bridge
 
 func surface_elevation(p: Vector2) -> float:
@@ -298,12 +299,28 @@ func surface_elevation(p: Vector2) -> float:
 func corner_height(c: Vector2i) -> float:
 	if client.z < 0 or _land == null:
 		return 0.0
-	if terrain == null: terrain = TerrainShape3D.new(_land, _rock_at)
+	if terrain == null: terrain = _new_terrain()
 	return terrain.height(c)
 
 ## Whether a surface cell is rock (a cliff or a crag): the ground stands round it.
 func _rock_at(c: Vector2i) -> bool:
 	return content.get_def(_cell_layer(c, "structure")).get("role") == "rock"
+
+## The land's shape: rock and chasms stand no corner (the ground round them is
+## level to their edge); a hanging bridge sags (ADR-0064).
+func _new_terrain() -> TerrainShape3D:
+	var shape := TerrainShape3D.new(_land, func(c: Vector2i) -> bool: return _rock_at(c) or _ground_is(c, "chasm"))
+	shape.sag = func(c: Vector2i) -> float: return _land.bridge_sag(c.x, c.y) if _ground_is(c, "hanging_bridge") else 0.0
+	return shape
+
+## Whether a cell's ground is the surface generator's `what` ("chasm", "hanging_bridge").
+func _ground_is(c: Vector2i, what: String) -> bool:
+	var id := String(content.get_def(SurfaceGenerator.ID).get(what, ""))
+	return id != "" and client.z >= 0 and _cell_layer(c, "ground") == id
+
+## A chasm's cell or a hanging bridge's (a chasm under it).
+func _hollow(c: Vector2i) -> bool:
+	return _ground_is(c, "chasm") or _ground_is(c, "hanging_bridge")
 
 func corner_normal(c: Vector2i) -> Vector3:
 	return Vector3(corner_height(c + Vector2i.LEFT) - corner_height(c + Vector2i.RIGHT), 2, corner_height(c + Vector2i.UP) - corner_height(c + Vector2i.DOWN)).normalized()
@@ -352,7 +369,11 @@ func _build_row() -> void:
 			points.append(Vector3(at.x, corner_height(at) + level - bed, at.y))
 		var color := ground_color(ground)
 		# A way down is a hole in the ground (hole_mesh), not a floor with stairs on it.
-		if content.get_def(c.get_cell("structure", x, y)).get("leads") != "down" and not c.get_props(x, y).get("stairs_down", false):
+		if _hollow(cell):
+			_add_object(cell, ground, "chasm", {})
+			if _ground_is(cell, "hanging_bridge"):
+				_add_object(cell, ground, "ground", {})
+		elif content.get_def(c.get_cell("structure", x, y)).get("leads") != "down" and not c.get_props(x, y).get("stairs_down", false):
 			_quad(points, color, {"kind": "ground", "id": ground, "cell": cell, "location": client.location})
 		if models.catalog.has(ground) and not content.get_def(c.get_cell("structure", x, y)).get("role") == "rock":
 			_add_object(cell, ground, "ground", {})
@@ -454,6 +475,15 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		mesh = hole_mesh(cell, position3.y - lift, lift)
 		basis = Basis.IDENTITY
 		instance_id = "hole:" + str(cell)
+	elif layer == "chasm":
+		mesh = chasm_mesh(cell, position3.y)
+		basis = Basis.IDENTITY
+		instance_id = "chasm:" + str(cell)
+	elif layer == "ground" and _ground_is(cell, "hanging_bridge"):
+		mesh = hanging_bridge_mesh(cell)
+		position3.y += .1
+		basis = Basis.IDENTITY
+		instance_id = "hanging:" + str(cell)
 	elif layer == "ground" and id == "base:bridge":
 		mesh = bridge_mesh(cell)
 		position3.y += .1
@@ -482,7 +512,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		parts.append([cell, cover] if cover or role in ["wall", "window", "door"] else [])
 	_job["count"] += 1
 	var target := {"kind": "part", "id": id, "layer": layer, "cell": cell, "location": client.location}
-	if layer == "transition":
+	if layer in ["transition", "chasm"]:
 		target = {"kind": "ground", "id": ground_at(client.location, cell), "cell": cell, "location": client.location}
 	if layer == "ground":
 		target = {"kind": "ground", "id": id, "cell": cell, "location": client.location}
@@ -537,6 +567,91 @@ func bridge_mesh(cell: Vector2i) -> Mesh:
 				st.add_vertex(vertex)
 	st.set_material(buildings.deck)
 	return st.commit()
+
+## A chasm (ADR-0064) under a cell CHASM_DEPTH deep below its lowest rim: sheer
+## rock where the land is beside it, dark at the bottom. Relative to `middle`.
+const CHASM_DEPTH := 7.0
+## How high a hanging bridge's deck stands over its cell's ground (feet on it).
+const DECK := .06
+
+func chasm_mesh(cell: Vector2i, middle: float) -> Mesh:
+	var top: Array[Vector3] = []
+	for d: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
+		top.append(Vector3(d.x - .5, corner_height(cell + d) - middle, d.y - .5))
+	var floor_y := minf(minf(top[0].y, top[1].y), minf(top[2].y, top[3].y)) - CHASM_DEPTH
+	var mesh := ArrayMesh.new()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var walls := 0
+	# A wall on each side the land is (seen from inside): [top a, top b, toward].
+	for side: Array in [[1, 0, Vector2i.UP], [3, 1, Vector2i.RIGHT], [2, 3, Vector2i.DOWN], [0, 2, Vector2i.LEFT]]:
+		if _hollow(cell + (side[2] as Vector2i)):
+			continue
+		var a: Vector3 = top[side[0]]
+		var b: Vector3 = top[side[1]]
+		_inward(st, [a, b, Vector3(a.x, floor_y, a.z), Vector3(b.x, floor_y, b.z)])
+		walls += 1
+	if walls > 0:
+		st.set_material(buildings.rock)
+		st.commit(mesh)
+	var dark := SurfaceTool.new()
+	dark.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_inward(dark, [Vector3(-.5, floor_y, -.5), Vector3(.5, floor_y, -.5), Vector3(-.5, floor_y, .5), Vector3(.5, floor_y, .5)])
+	dark.set_material(models.material(Color("0b0a0d")))
+	dark.commit(mesh)
+	return mesh
+
+## A hanging bridge's span over a cell: planks across its way with gaps between,
+## following the deck's sag, and a rope rail each side; posts where it meets the
+## land. Its way runs toward the land or the next bridge cell.
+func hanging_bridge_mesh(cell: Vector2i) -> Mesh:
+	var along_x := _ground_is(cell + Vector2i.RIGHT, "hanging_bridge") or _ground_is(cell + Vector2i.LEFT, "hanging_bridge") \
+		or not (_hollow(cell + Vector2i.RIGHT) and _hollow(cell + Vector2i.LEFT))
+	var u := Vector3.RIGHT if along_x else Vector3.BACK
+	var v := Vector3.BACK if along_x else Vector3.RIGHT
+	var at := Vector2(cell) + Vector2.ONE * .5
+	var mid := surface_elevation(at)
+	# The deck's height at the middles of the cell's two ends along its way (the
+	# mesh stands at the deck over the cell's middle).
+	var ends: Array[float] = []
+	for s: float in [-.5, .5]:
+		ends.append(surface_elevation(at + Vector2(u.x, u.z) * s) - mid)
+	var wood := SurfaceTool.new()
+	wood.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in 5:
+		var f := (i + .5) / 5.0
+		var c := u * (f - .5) + Vector3.UP * lerpf(ends[0], ends[1], f)
+		_slab(wood, c - u * .07, c + u * .07, v, .9, .05)
+	var rope := SurfaceTool.new()
+	rope.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for side: float in [-.45, .45]:
+		var a := u * -.5 + v * side + Vector3.UP * (ends[0] + .75)
+		var b := u * .5 + v * side + Vector3.UP * (ends[1] + .75)
+		_slab(rope, a, b, v, .04, .04)
+		_slab(rope, a - Vector3.UP * .75, a - Vector3.UP * .75 + u * .03, v, .03, -.75)  # a hanger down to the deck
+	for s: int in [-1, 1]:
+		var next := cell + Vector2i(roundi(u.x), roundi(u.z)) * s
+		if not _hollow(next):  # it meets the land: two posts
+			for side: float in [-.45, .45]:
+				var foot := u * (s * .5) + v * side + Vector3.UP * ends[(s + 1) / 2]
+				_slab(wood, foot - Vector3.UP * .1, foot - Vector3.UP * .1 + u * .1, v, .1, -1.1)
+	var mesh := ArrayMesh.new()
+	wood.set_material(models.material(Color("8a6a45")))
+	wood.commit(mesh)
+	rope.set_material(models.material(Color("c9b48a")))
+	rope.commit(mesh)
+	return mesh
+
+## A box from `a` to `b` (its top's middle line), `width` across along `v`,
+## `thick` deep below the top (negative: rising above it).
+func _slab(st: SurfaceTool, a: Vector3, b: Vector3, v: Vector3, width: float, thick: float) -> void:
+	var down := Vector3.DOWN * thick
+	var w := v * width * .5
+	var p := [a - w, b - w, a + w, b + w]
+	var q := [a - w + down, b - w + down, a + w + down, b + w + down]
+	for face: Array in [[p[0], p[1], p[2], p[3]], [q[2], q[3], q[0], q[1]], [p[2], p[3], q[2], q[3]],
+			[p[1], p[0], q[1], q[0]], [p[0], p[2], q[0], q[2]], [p[3], p[1], q[3], q[1]]]:
+		_inward(st, face)
 
 ## A way down (a cave mouth, a shaft): a pit in the ground HOLE_DEPTH deep, its
 ## walls rock, steps going down one side, dark at the bottom. Relative to the

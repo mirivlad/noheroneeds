@@ -119,8 +119,11 @@ func test_clusters_are_joined_and_some_clusters_with_each_other() -> void:
 					apart += 1
 			for r: Dictionary in roads:
 				for at: Vector2i in r["path"]:
-					var land := String(g.land_at(at.x, at.y)["what"])
-					if not check(land != "deep" and land != "rock", "road %s through %s at %s" % [r["id"], land, at]):
+					var here_land := g.land_at(at.x, at.y)
+					var land := String(here_land["what"])
+					# a cliff is cut through: the road is a pass (ADR-0061); crags are gone round
+					var crag := land == "rock" and not g.is_cliff(at.x, at.y, float(here_land["height"]))
+					if not check(land != "deep" and not crag, "road %s through %s at %s" % [r["id"], land, at]):
 						return
 	check(clusters >= 4, "clusters round spawn: %d" % clusters)
 	check(links + apart >= 2, "neighbouring clusters: %d joined, %d not" % [links, apart])

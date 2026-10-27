@@ -24,10 +24,8 @@ func test_height_is_original_surface_sampler_and_has_shared_edges() -> void:
 	for cell: Vector2i in [Vector2i(0, 0), Vector2i(32, 31), Vector2i(-32, -1), Vector2i(100, 180)]:
 		var expected := view.corner_height(cell)
 		check(is_equal_approx(view.elevation(Vector2(cell)), expected), "either chunk's corner agrees")
-		# The fine detail no longer grows into cliffs with the macro relief.
-		var macro := view._land.geography.sample(Geography.HEIGHT, cell.x, cell.y)
-		var detail := float(view._land.land_at(cell.x, cell.y)["height"]) - macro
-		check(is_equal_approx(view.terrain.natural(cell), macro * TerrainShape3D.RELIEF + detail * TerrainShape3D.GRAIN), "same original geography and grain")
+		# The land stands where the generator puts it (ADR-0061), the same on server and client.
+		check(is_equal_approx(view.terrain.cell(cell), view._land.metres_at(cell.x, cell.y)), "same original geography")
 	var at := Vector2(31.25, -32.5)
 	var cell := Vector2i(floori(at.x), floori(at.y))
 	var a := view.corner_height(cell)
@@ -128,20 +126,32 @@ func test_ray_uses_viewports_actual_world_and_content_cells_after_rotation() -> 
 			eq(hit.get("cell"), Vector2i(10, 10) if occluded else cell, "visible cell under 3D ray at yaw %f" % yaw)
 			eq(hit.get("id"), "base:oak" if occluded else target[1], "frontmost content under ray")
 
-func test_real_mountain_route_is_volumetric_and_walkable_without_visual_cliffs() -> void:
+func test_real_mountain_route_is_levels_cliffs_and_ramps() -> void:
 	var at := Vector2i(-231, 816)
+	for cy in range(floori((at.y - 26) / 32.0), floori((at.y + 26) / 32.0) + 1):
+		for cx in range(floori((at.x - 26) / 32.0), floori((at.x + 26) / 32.0) + 1):
+			client.chunks[ServerWorld.chunk_key("surface", cx, cy)] = view._land.generate(cx, cy)
+	view.terrain = null
 	var low := INF
 	var high := -INF
-	var max_step := 0.0
+	var steepest := 0.0
+	var cliffs := 0
 	for y in range(at.y - 24, at.y + 25):
 		for x in range(at.x - 24, at.x + 25):
-			var h := view.corner_height(Vector2i(x,y))
-			low = minf(low,h)
-			high = maxf(high,h)
-			max_step = maxf(max_step, absf(h - view.corner_height(Vector2i(x+1,y))))
-	check(high - low > 25, "real mountain spans over 25 human-scale metres, old span was 5.84")
-	check(max_step < 1, "passable underlying triangles are ramps, not vertical cliffs")
-	var chunk := view._land.generate(floori(at.x/32.0), floori(at.y/32.0))
+			var cell := Vector2i(x, y)
+			var h := view.corner_height(cell)
+			low = minf(low, h)
+			high = maxf(high, h)
+			if view._rock_at(cell):
+				cliffs += 1 if view.terrain.cell(cell) - view.terrain.low(cell + Vector2i.ONE) > 2 else 0
+				continue
+			# a walkable cell's own corners: a ramp at most, never a sheer step
+			for d: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN]:
+				steepest = maxf(steepest, absf(view.corner_height(cell + d) - h))
+	check(high - low > 8, "the mountain rises in levels: %.1f m" % (high - low))
+	check(cliffs > 0, "and drops in cliffs on rock cells: %d" % cliffs)
+	check(steepest < SurfaceGenerator.LEVEL_METRES, "walkable ground is ramps, not sheer: %.2f m a cell" % steepest)
+	var chunk: Chunk = client.chunks[ServerWorld.chunk_key("surface", floori(at.x/32.0), floori(at.y/32.0))]
 	eq(chunk.get_cell("ground", posmod(at.x,32), posmod(at.y,32)), "base:dirt", "actual original mountain road")
 	eq(chunk.get_cell("structure", posmod(at.x,32), posmod(at.y,32)), "", "road has no server rock obstruction")
 
@@ -180,10 +190,26 @@ func test_roof_patches_share_ridge_and_preserve_removed_cell() -> void:
 	client.chunks[ServerWorld.chunk_key("surface",0,0)] = c
 	eq(view._cell_layer(Vector2i(2,1),"roof"),"", "removed roof stays absent in source adapter")
 
+func test_level_ground_and_cliffs() -> void:
+	# A corner stands at the walkable cells round it: a level is flat up to its cliff.
+	view.terrain = TerrainShape3D.new(view._land, func(p: Vector2i) -> bool: return p.x == 0)
+	view.terrain._cells = {Vector2i(-1, -1): 6.0, Vector2i(-1, 0): 6.0, Vector2i(0, -1): 6.0, Vector2i(0, 0): 6.0,
+		Vector2i(1, -1): 3.0, Vector2i(1, 0): 3.0}
+	check(is_equal_approx(view.terrain.height(Vector2i(0, 0)), 6.0), "the upper level's corner, beside the cliff cell")
+	check(is_equal_approx(view.terrain.height(Vector2i(1, 0)), 3.0), "the lower level's corner, on the other side")
+	check(is_equal_approx(view.terrain.low(Vector2i(1, 0)), 3.0), "the cliff's face reaches down to the lower level")
+	# The cliff cell is flush with the level it bounds and drops sheer to the ground below.
+	var cliff := RockCells3D.mesh(Vector2i.ZERO, 6.0, func(_p: Vector2i) -> float: return 3.0,
+		func(_p: Vector2i) -> bool: return false, func(p: Vector2i) -> bool: return p.x < 0, view.buildings.stone)
+	var bounds := cliff.get_aabb()
+	check(is_equal_approx(bounds.end.y, 6.05) and is_equal_approx(bounds.position.y, 3.0), "flush top, face down to the lower level: %s" % bounds)
+
 func test_natural_rock_shared_edges_and_no_brick_gaps() -> void:
 	var c := Vector2i(5,8)
-	var a := RockCells3D.mesh(c, func(_p:Vector2i)->float:return 0, func(_p:Vector2i)->bool:return false, view.buildings.stone)
-	var b := RockCells3D.mesh(c+Vector2i.RIGHT, func(_p:Vector2i)->float:return 0, func(_p:Vector2i)->bool:return false, view.buildings.stone)
+	var none := func(_p: Vector2i) -> bool: return false
+	var ground := func(_p: Vector2i) -> float: return 0.0
+	var a := RockCells3D.mesh(c, 0.0, ground, none, none, view.buildings.stone)
+	var b := RockCells3D.mesh(c+Vector2i.RIGHT, 0.0, ground, none, none, view.buildings.stone)
 	check(a.get_aabb().size.x == 1 and b.get_aabb().size.x == 1, "blocked rock occupies exact cell width")
 	check(RockCells3D.top(c) != RockCells3D.top(c+Vector2i.RIGHT), "natural uneven cap")
 	var va := a.get_faces()

@@ -143,7 +143,7 @@ func update_view(alpha: float, delta: float) -> void:
 	if client.geography and _land == null:
 		# Call the ORIGINAL surface sampler, never a new world generator.
 		_land = SurfaceGenerator.new(client.geography.world_seed, content)
-		terrain = TerrainShape3D.new(_land)
+		terrain = TerrainShape3D.new(_land, _rock_at)
 	if client.location != _location:
 		_location = client.location
 		_clear_geometry()
@@ -153,6 +153,8 @@ func update_view(alpha: float, delta: float) -> void:
 	if changed.has("*"):
 		_clear_geometry()
 	if _land and client.z >= 0: _refresh_foundations(changed)
+	if terrain and not changed.is_empty():
+		terrain.heights.clear()  # rock dug out (or laid) moves the ground at its corners
 	for key: String in changed:
 		var split := key.split("|")
 		if split.size() != 3: continue
@@ -281,8 +283,12 @@ func surface_elevation(p: Vector2) -> float:
 func corner_height(c: Vector2i) -> float:
 	if client.z < 0 or _land == null:
 		return 0.0
-	if terrain == null: terrain = TerrainShape3D.new(_land)
+	if terrain == null: terrain = TerrainShape3D.new(_land, _rock_at)
 	return terrain.height(c)
+
+## Whether a surface cell is rock (a cliff or a crag): the ground stands round it.
+func _rock_at(c: Vector2i) -> bool:
+	return content.get_def(_cell_layer(c, "structure")).get("role") == "rock"
 
 func corner_normal(c: Vector2i) -> Vector3:
 	return Vector3(corner_height(c + Vector2i.LEFT) - corner_height(c + Vector2i.RIGHT), 2, corner_height(c + Vector2i.UP) - corner_height(c + Vector2i.DOWN)).normalized()
@@ -394,7 +400,11 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	var instance_id := model_id
 	var role := String(d.get("role", ""))
 	if role == "rock":
-		mesh = RockCells3D.mesh(cell, func(c: Vector2i) -> float: return corner_height(c) - position3.y + lift, func(c: Vector2i) -> bool: return content.get_def(_cell_layer(c, "structure")).get("role") == "rock", buildings.rock)
+		var floor_y := position3.y - lift
+		mesh = RockCells3D.mesh(cell, (terrain.cell(cell) if client.z >= 0 and terrain else 0.0) - floor_y,
+			func(c: Vector2i) -> float: return (terrain.low(c) if client.z >= 0 and terrain else 0.0) - floor_y,
+			_rock_at, func(c: Vector2i) -> bool: return client.z >= 0 and terrain != null and not _rock_at(c) and terrain.cell(c) >= terrain.cell(cell) - .5,
+			buildings.rock)
 		instance_id = "rock:" + str(cell)
 		basis = Basis.IDENTITY
 	elif role in ["wall", "window", "door"] and not id.contains("rock"):

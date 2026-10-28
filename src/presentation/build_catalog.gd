@@ -3,7 +3,8 @@ extends PanelContainer
 ## The building catalogue (B, ADR-0021): every part one may build, from the
 ## content (no list in the code), in groups; a choice becomes a blueprint
 ## under the cursor. "Разобрать" is a tool of its own here, not a stray
-## right click.
+## right click. UI 2.0: what one carries to build with heads it; each line's
+## tooltip says what it takes against what one has.
 
 signal chosen(part: String)
 const DEMOLISH := "~demolish"
@@ -19,6 +20,14 @@ var _tabs: HFlowContainer
 var _list: ItemList
 var _group := ""
 var _ids: Array[String] = []
+## What one carries of the materials the parts take (UI 2.0: here, not on the HUD).
+var materials := Label.new()
+
+
+func _notification(what: int) -> void:
+	# Made up front but never added (a window never set up): freed too.
+	if what == NOTIFICATION_PREDELETE and is_instance_valid(materials) and materials.get_parent() == null:
+		materials.free()
 
 
 func setup(registry: ContentRegistry, world_view: WorldView) -> void:
@@ -32,6 +41,8 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	var title := Label.new()
 	title.text = "Строительство"
 	box.add_child(Art.window_head(title, "B", hide))
+	materials.add_theme_color_override("font_color", Art.TEXT_DIM)
+	box.add_child(materials)
 	box.add_child(_tabs)
 	_list.custom_minimum_size = Vector2(WIDTH, 260)
 	_list.fixed_icon_size = Vector2i(32, 32)
@@ -45,8 +56,8 @@ func setup(registry: ContentRegistry, world_view: WorldView) -> void:
 	demolish.text = "Разобрать своё: щёлкайте по лишнему"
 	demolish.pressed.connect(func() -> void: chosen.emit(DEMOLISH))
 	box.add_child(demolish)
-	box.add_child(Art.hint("ЛКМ — поставить, протянуть — рядом в ряд; R — повернуть; ПКМ — отменить. "
-		+ "Поставленное лишнее — «Разобрать своё» или ПКМ по детали → «Разобрать».", WIDTH))
+	box.add_child(Art.hint("ЛКМ — поставить, протянуть — в ряд; R — повернуть; ПКМ — отпустить. "
+		+ "Лишнее — «Разобрать своё» или ПКМ по детали → «Разобрать».", WIDTH))
 	var group := ButtonGroup.new()
 	for g: String in groups():
 		var b := Button.new()
@@ -86,8 +97,39 @@ func buildable() -> Array:
 	return out
 
 
+## The materials the parts take, in the order first met.
+func material_ids() -> Array:
+	var out := []
+	for id: String in buildable():
+		for m: String in content.structure_cost(id):
+			if not out.has(m):
+				out.append(m)
+	return out
+
+
+## "доска 120 · камень 30 · …": what one carries of them.
+func materials_text(inventory: Dictionary) -> String:
+	var parts := PackedStringArray()
+	for m: String in material_ids():
+		parts.append("%s %d" % [String(content.get_def(m).get("name", m)).to_lower(), int(inventory.get(m, 0))])
+	return "При себе: " + " · ".join(parts)
+
+
+## A part's picture for a list or the build bar: the top of a tall picture, a cell wide.
+static func icon_of(registry: ContentRegistry, world_view: WorldView, id: String) -> Texture2D:
+	var v := registry.visual_of(id)
+	if v.is_empty():
+		return null
+	var at := AtlasTexture.new()
+	at.atlas = world_view.texture(v["atlas_path"])
+	var px := 1.0 / float(v.get("pixel_scale", 1.0))  # LPC sheets are twice as fine
+	at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], mini(int(v["rect"][3]), int(32 * px)))
+	return at
+
+
 func open(inventory: Dictionary) -> void:
 	_inventory = inventory
+	materials.text = materials_text(inventory)
 	_show(_group if _group != "" else String(groups()[0]), inventory)
 	visible = true
 
@@ -104,20 +146,15 @@ func _show(group: String, inventory: Dictionary) -> void:
 			continue
 		var cost := content.structure_cost(id)
 		var parts := PackedStringArray()
+		var tip := PackedStringArray([String(d.get("name", id))])
 		var enough := true
 		for m: String in cost:
-			parts.append("%s %d" % [String(content.get_def(m).get("name", m)).to_lower(), int(cost[m])])
+			var name := String(content.get_def(m).get("name", m)).to_lower()
+			parts.append("%s %d" % [name, int(cost[m])])
+			tip.append("%s: нужно %d, есть %d" % [name, int(cost[m]), int(inventory.get(m, 0))])
 			enough = enough and int(inventory.get(m, 0)) >= int(cost[m])
-		var v := content.visual_of(id)
-		var icon: Texture2D = null
-		if not v.is_empty():
-			var at := AtlasTexture.new()
-			at.atlas = view.texture(v["atlas_path"])
-			# The top of a tall picture, a cell wide (LPC sheets are twice as fine).
-			var px := 1.0 / float(v.get("pixel_scale", 1.0))
-			at.region = Rect2(v["rect"][0], v["rect"][1], v["rect"][2], mini(int(v["rect"][3]), int(32 * px)))
-			icon = at
-		var i := _list.add_item("%s — %s" % [d.get("name", id), ", ".join(parts)], icon)
+		var i := _list.add_item("%s — %s" % [d.get("name", id), ", ".join(parts)], icon_of(content, view, id))
+		_list.set_item_tooltip(i, "\n".join(tip) + ("" if enough else "\nне хватает"))
 		if not enough:
 			_list.set_item_custom_fg_color(i, Color(Art.TEXT_DIM, 0.6))
 		_ids.append(id)

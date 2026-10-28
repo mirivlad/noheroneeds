@@ -416,6 +416,9 @@ func show_settings() -> void:
 		func(on: bool) -> void: changed.call("show_fps", on))
 	_check("Ходить клавишами (W A S D)", settings.get_value("keyboard_walk")).toggled.connect(
 		func(on: bool) -> void: changed.call("keyboard_walk", on))
+	var auto := _check("Автоудары", settings.get_value("auto_attack"))
+	auto.tooltip_text = "Щелчок по противнику — бить, пока цель не сменится (без этого — один удар; Ctrl+щелчок — всегда до конца)"
+	auto.toggled.connect(func(on: bool) -> void: changed.call("auto_attack", on))
 	_label("Свой сервер", Art.TEXT_DIM)
 	_spin("Порт", 1024, 65535, int(settings.get_value("server_port"))).value_changed.connect(
 		func(v: float) -> void: changed.call("server_port", int(v)))

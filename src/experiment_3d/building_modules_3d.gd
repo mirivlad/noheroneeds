@@ -119,6 +119,40 @@ func campfire() -> Mesh:
 	cache["campfire"] = mesh
 	return mesh
 
+## A stump (the author, 28.10.2026: they lay like logs): a short trunk of bark
+## standing up, its cut lighter on top with a ring, a root or three at its foot.
+func stump() -> Mesh:
+	if cache.has("stump"): return cache["stump"]
+	var mesh := ArrayMesh.new()
+	var trunk := CylinderMesh.new()
+	trunk.top_radius = .2
+	trunk.bottom_radius = .24
+	trunk.height = .34
+	trunk.radial_segments = 8
+	trunk.rings = 1
+	trunk.cap_top = false
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.append_from(trunk, 0, Transform3D(Basis.IDENTITY, Vector3.UP * .17))
+	st.set_material(timber)
+	st.commit(mesh)
+	var cut := CylinderMesh.new()
+	cut.top_radius = .2
+	cut.bottom_radius = .2
+	cut.height = .02
+	cut.radial_segments = 8
+	var top := SurfaceTool.new()
+	top.begin(Mesh.PRIMITIVE_TRIANGLES)
+	top.append_from(cut, 0, Transform3D(Basis.IDENTITY, Vector3.UP * .335))
+	top.set_material(_material(Color("c9a46c")))
+	top.commit(mesh)
+	_box(mesh, Vector3(.24, .03, .24), Vector3.UP * .35, _material(Color("a8804e")), PI / 8)  # the ring
+	for i in 3:
+		var a := i * TAU / 3.0 + .4
+		_box(mesh, Vector3(.22, .08, .09), Vector3(cos(a) * .25, .04, sin(a) * .25), timber, -a)
+	cache["stump"] = mesh
+	return mesh
+
 func opening(window: bool, opened: bool) -> Mesh:
 	var key := "opening:%s:%s" % [window, opened]
 	if cache.has(key): return cache[key]

@@ -498,7 +498,7 @@ func _process(delta: float) -> void:
 		if client == null:  # the dev run took its last picture and closed the game
 			return
 	# The left button held over the ground: one walks after the cursor (RO).
-	if _lmb_held and not paused and _blueprint == "" and not orders.acting() and client.has_position:
+	if _lmb_held and not paused and _blueprint == "" and not _bow_drawn and not orders.acting() and client.has_position:
 		_hold_walk -= delta
 		if _hold_walk <= 0.0:
 			_hold_walk = 0.2
@@ -678,9 +678,10 @@ func _mouse(b: InputEventMouseButton) -> void:
 		return
 	if not b.pressed or b.button_index != MOUSE_BUTTON_LEFT:
 		return
+	_update_target()  # what is under the pointer at the click itself
 	var p := Actions.primary(actions)
 	if String(p.get("id", "")) == "shoot" and p.get("enabled", true):
-		_bow_drawn = true  # a bow shoots from where one stands
+		_bow_drawn = true  # aiming the held button walks nowhere (the keys still walk)
 		view.draw_own(_mouse_world() - view.own_pixel_position(1.0))
 		return
 	_click_order(p)
@@ -690,15 +691,23 @@ func _mouse(b: InputEventMouseButton) -> void:
 ## what the left button does there (walked up to first), else one walks there.
 func _click_order(p: Dictionary) -> void:
 	var talk := actions.filter(func(a: Dictionary) -> bool: return a["id"] == "talk")
+	var strike := actions.filter(func(a: Dictionary) -> bool: return a["id"] == "strike")
+	var q := Actions.quick(actions)
+	view.mark_walk(Vector2i.MAX)  # a new target: the old mark goes
 	if not talk.is_empty():
 		_order(talk[0], target)
-	elif not p.is_empty() and p["id"] != "inspect":
+	elif not p.is_empty() and not p["id"] in ["inspect", "swing"]:  # a blow at the air: the ground is walked to
 		_order(p, target)
+	elif not strike.is_empty():
+		_order(strike[0], target)  # a beast or a foe: struck with what is in the hands
+	elif not q.is_empty() and q["id"] != "inspect":
+		_order(q, target)  # a way up or down, a door, a thing lying: walked up to and used
 	elif client.has_position:
 		var cell: Vector2i = target.get("cell", Movement.cell_of(Vector2i(_mouse_world() * WorldView.UNITS_PER_PIXEL)))
 		if target.get("kind") == "entity":
 			cell = Movement.cell_of(Vector2i(_target_point(target)))
 		orders.walk_to(cell, Movement.cell_of(client.position), client.is_solid)
+		view.mark_walk(cell)  # where one goes glimmers there till the target changes
 
 
 ## Walks up to a target and does an action there: strikes and work again and
@@ -711,8 +720,15 @@ func _order(a: Dictionary, t: Dictionary) -> void:
 	var reach := 1.6
 	if a["id"] == "strike":
 		reach = float(w.get("reach", 0.5)) + 0.6 if w.get("kind") == "melee" else 1.1
-	orders.act_on(t, a, reach, a["id"] == "strike" or a["id"] in REPEATED and t.get("kind") != "ground",
-		Movement.cell_of(client.position), client.is_solid, _target_point(t))
+	elif t.get("kind") == "part" and client.is_solid(t["cell"].x, t["cell"].y):
+		reach = 1.2  # beside it, not across a corner (the line to it meets nothing else)
+	# A blow once (followed till it lands), again and again with Ctrl or auto-attack;
+	# work (chopping, digging) till it is done.
+	var again: bool = Input.is_physical_key_pressed(KEY_CTRL) or bool(settings.get_value("auto_attack")) if a["id"] == "strike" \
+		else a["id"] in REPEATED and t.get("kind") != "ground"
+	orders.act_on(t, a, reach, again, Movement.cell_of(client.position), client.is_solid, _target_point(t))
+	if t.get("kind") == "part":
+		view.mark_walk(t["cell"])
 
 
 ## The move this tick: a walking key's (it ends an order), else the order's;
@@ -721,6 +737,7 @@ func _steer(delta: float) -> Vector2i:
 	var keys := _direction()
 	if keys != Vector2i.ZERO:
 		orders.clear()
+		view.mark_walk(Vector2i.MAX)
 		return keys
 	if not orders.active() or not client.has_position:
 		return Vector2i.ZERO
@@ -771,6 +788,8 @@ func _order_act(t: Dictionary) -> void:
 		return  # the last blow is still being swung
 	var want := String(orders.action.get("id", ""))
 	var aim := Vector2i(_target_point(t))
+	if t.get("kind") == "part":
+		t["aim"] = aim  # the line it is reached along (Reach), for the server
 	var now := Actions.of(content, client, view, hotbar.held(client.inventory()), t, aim)
 	var a: Dictionary = {}
 	for x: Dictionary in now:
@@ -1132,6 +1151,12 @@ func _use_nearest() -> void:
 			if c and content.get_def(c.get_cell("structure", cell.x - cx * 32, cell.y - cy * 32)).get("openable", false):
 				client.request({"type": "use", "location": client.location, "x": cell.x, "y": cell.y})
 				return
+	# A way up or down beside one (a cave's climb out, stairs): up first, as F does.
+	for d: Vector2i in [Vector2i.ZERO, Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0),
+			Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
+		if not _ways_at(me + d).is_empty():
+			_climb_nearest("up")
+			return
 
 
 ## F: the stairs nearest to the player, if any in reach: up (Shift+F: down)
@@ -1540,12 +1565,13 @@ func _update_target() -> void:
 			if Reach.first_solid(client.position, middle, client.is_solid) == target["cell"]:
 				hit = target["cell"]
 				aim = Vector2i(middle)
-		if hit != Reach.NONE:
+		if target.get("kind") == "part" and client.is_solid(target["cell"].x, target["cell"].y) and hit != target["cell"]:
+			# The cell chosen, out of reach or behind another: walked up to and
+			# worked (RO, ADR-0065: rock and ore as a tree).
+			target["aim"] = Vector2i((target["cell"] as Vector2i) * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
+		elif hit != Reach.NONE:
 			target = view.part_target(hit)
 			target["aim"] = aim
-		elif target.get("kind") == "part" and client.is_solid(target["cell"].x, target["cell"].y):
-			target = {"kind": "ground", "id": view.ground_at(client.location, Movement.cell_of(aim)),
-				"cell": Movement.cell_of(aim), "location": client.location}  # out of reach: nothing to dig
 	actions = Actions.of(content, client, view, held, target, aim)
 	_cursor_kind = CursorArt.kind_of(actions) if _blueprint == "" else "corners"
 	_set_cursor()

@@ -149,3 +149,23 @@ func test_a_trader_carries_goods_between_villages() -> void:
 	var back := int(stock.stacks.get(item, 0))  # (it may take some of it back for the other village)
 	eq(e.have(to, item) + back, before + n - 1, "the rest of its load in the village's store")
 	eq(String(c.job["toward"]), from, "and back the other way")
+
+
+## ADR-0066: the land round a village adds to what it makes and needs — a
+## forest's village has wood to make, a steppe's lacks it.
+func test_the_land_round_a_village_counts() -> void:
+	var e := w.economy
+	var s := w.generator.settlements
+	var forest := ""
+	var bare := ""
+	for p: Dictionary in s.plans_near(s.home_plan()["centre"], 3000):
+		var g := e._goods(String(p["id"]))
+		if forest == "" and int(g["makes"].get("base:log", 0)) > 0:
+			forest = String(p["id"])
+		if bare == "" and int(g["needs"].get("base:log", 0)) > 0:
+			bare = String(p["id"])
+	check(forest != "" or bare != "", "the land counts somewhere near")
+	if forest != "":
+		check(e.want(forest, "base:log") > 0, "a forest village makes wood: %s" % str(e._goods(forest)["makes"]))
+	if bare != "":
+		check(e.short(bare).has("base:log") or e.have(bare, "base:log") > 0, "a bare one needs it: %s" % str(e._goods(bare)["needs"]))

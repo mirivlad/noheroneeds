@@ -18,6 +18,17 @@
       ],
       "fields": {"count": [1, 3], "size": [6, 4], "ground": "base:farmland", "crops": {"base:wheat_crop": 2, "base:carrot_crop": 1}},
       "pen": {"size": [7, 5], "fence": "base:wood_fence", "gate": "base:wood_gate", "animals": {"base:sheep": 2, "base:chicken": 3}},
+      "surroundings": {
+        "base:forest": {"makes": {"base:log": 10, "base:plank": 6}},
+        "base:grove": {"makes": {"base:log": 6, "base:plank": 4}},
+        "base:taiga": {"makes": {"base:log": 12, "base:plank": 6}},
+        "base:swamp": {"needs": {"base:plank": 3}},
+        "base:steppe": {"needs": {"base:log": 6, "base:plank": 4}},
+        "base:desert": {"needs": {"base:log": 6, "base:plank": 4, "base:raw_fish": 2}},
+        "base:tundra": {"needs": {"base:log": 5, "base:plank": 3, "base:wheat": 4}},
+        "base:rocky": {"makes": {"base:stone": 10}},
+        "base:mountains": {"makes": {"base:stone": 12}}
+      },
       "ways": [
         {"id": "mining", "name": "Горняцкая", "near": "mountains", "first": "smithy", "buildings": {"smithy": {"weight": 6, "max": 2}},
           "makes": {"base:stone": 20, "base:iron_ore": 6, "base:copper_ore": 4, "base:iron_ingot": 2, "base:copper_ingot": 2},

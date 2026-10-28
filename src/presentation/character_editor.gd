@@ -28,6 +28,10 @@ const TRY_ON := {"Стартовая одежда": {}, "Фетровая шля
 	"Железный шлем": {"headwear": "base:iron_helmet"},
 	"Стражник": {"armor": "base:leather_armor", "headwear": "base:iron_helmet", "back_item": "base:wool_cloak"},
 	"Охотник": {"headwear": "base:fur_hood", "back_item": "base:fur_cloak"}}
+## What the preview does (CharacterPreview.action), and what it may hold to try.
+const ACTIONS := {"Ходьба": "walk", "Стоит": "idle", "Бег": "run", "Удар тем, что в руках": "blow", "Сидит": "sit", "Лежит": "lie"}
+const IN_HANDS := {"Пустые руки": "", "Каменный топор": "base:axe", "Каменная кирка": "base:pickaxe", "Лук": "base:bow",
+	"Копьё": "base:spear", "Мотыга": "base:hoe", "Удочка": "base:fishing_rod"}
 ## The hairstyle an RO body starts with.
 const RO_HAIR := {"base:human_ro_m": "base:human_ro_hair_tousled", "base:human_ro_f": "base:human_ro_hair_twintails"}
 ## RO hair with no colour chosen yet.
@@ -46,6 +50,9 @@ var eye_pick: OptionButton
 var color_wheel := ColorPickerButton.new()
 ## What the preview wears over the starting outfit (TRY_ON).
 var try_pick := OptionButton.new()
+## What the preview does and holds (ACTIONS, IN_HANDS).
+var action_pick := OptionButton.new()
+var hands_pick := OptionButton.new()
 var _fields := VBoxContainer.new()
 ## The hairstyles hair_pick lists now (HAIRS or RO_HAIRS).
 var _hairs: Dictionary = HAIRS
@@ -60,11 +67,18 @@ func setup(registry: ContentRegistry, character: PortableCharacter = null) -> vo
 	var left := VBoxContainer.new()
 	columns.add_child(left)
 	left.add_child(preview)
-	var walk := CheckBox.new()
-	walk.text = "Ходьба"
-	walk.button_pressed = true
-	walk.toggled.connect(func(on: bool) -> void: preview.walking = on)
-	left.add_child(walk)
+	action_pick.name = "ActionChoice"
+	action_pick.tooltip_text = "Что делает (только для просмотра)"
+	for title: String in ACTIONS:
+		action_pick.add_item(title)
+	action_pick.item_selected.connect(func(i: int) -> void: preview.action = String(ACTIONS.values()[i]))
+	left.add_child(action_pick)
+	hands_pick.name = "HandsChoice"
+	hands_pick.tooltip_text = "Что в руках (только для просмотра)"
+	for title: String in IN_HANDS:
+		hands_pick.add_item(title)
+	hands_pick.item_selected.connect(func(i: int) -> void: preview.hold_item(String(IN_HANDS.values()[i])))
+	left.add_child(hands_pick)
 	try_pick.name = "TryOnChoice"
 	try_pick.tooltip_text = "Примерить (только для просмотра)"
 	for title: String in TRY_ON:

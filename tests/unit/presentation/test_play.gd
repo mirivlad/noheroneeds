@@ -392,6 +392,13 @@ func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	check(g.crafts._can[g.crafts._ids[0]], "what can be made here comes first")
 	check(not g.crafts._can.get("base:smelt_iron", false), "no forge, nor knowing how: no iron")
 	check(g.crafts._can["base:saw_planks"], "logs at the workbench: planks")
+	g.crafts.search.text = "бревн"  # by what it takes (UI 2.0)
+	g.crafts.refresh()
+	check(g.crafts._ids.has("base:saw_planks") and g.crafts._ids.all(func(id: String) -> bool: return g.crafts._words_of(id).contains("бревн")),
+		"the search keeps what takes logs: %s" % str(g.crafts._ids))
+	check(g.crafts._about.text.contains("Нужно:"), "the chosen recipe's card: " + g.crafts._about.text)
+	g.crafts.search.text = ""
+	g.crafts.refresh()
 	var before := int(g.client.inventory().get("base:plank", 0))
 	g.crafts.craft.emit("base:saw_planks", 2)
 	_frames_until(func() -> bool: return g._note.begins_with("сделано"))

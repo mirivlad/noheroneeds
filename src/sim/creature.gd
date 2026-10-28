@@ -56,6 +56,9 @@ var say := ""
 var said := 0
 var said_at := -1
 var asleep := false
+## Where a dweller standing at its spot looks (a cell offset: the fire, its
+## work); ZERO — as it walked. Not kept: worked out again each time.
+var face := Vector2i.ZERO
 ## Not saved: the way it walks (cells where it turns) and where it leads.
 var path: Array[Vector2i] = []
 var path_to := NO_TARGET

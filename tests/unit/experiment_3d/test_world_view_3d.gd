@@ -145,11 +145,11 @@ func test_ray_uses_viewports_actual_world_and_content_cells_after_rotation() -> 
 			var p := Vector3(at.x, view.elevation(at) + float(target[2]), at.y)
 			var pixel := view.screen_point(view.eye.unproject_position(p))
 			var hit := view.pick_target(pixel)
-			# From the west the tree stands in front of the door. Picking
-			# must obey depth instead of allowing actions through its crown.
-			var occluded: bool = is_equal_approx(yaw, PI / 2) and target[1] == "base:wood_door"
-			eq(hit.get("cell"), Vector2i(10, 10) if occluded else cell, "visible cell under 3D ray at yaw %f" % yaw)
-			eq(hit.get("id"), "base:oak" if occluded else target[1], "frontmost content under ray")
+			# From the west the tree's crown hangs before the door; it is pointed
+			# at only over its own cell (the author, 28.10.2026: crowns hid the
+			# small things round them), so the door is the door from any side.
+			eq(hit.get("cell"), cell, "the cell under the 3D ray at yaw %f" % yaw)
+			eq(hit.get("id"), target[1], "what is pointed at")
 
 func test_real_mountain_route_is_levels_cliffs_and_ramps() -> void:
 	var at := Vector2i(-231, 816)
@@ -348,3 +348,28 @@ func test_rock_steps_have_faces_between() -> void:
 	var level := func(_n: Vector2i, _c: Vector2i) -> float: return 0.05
 	var flat := RockCells3D.mesh(Vector2i.ZERO, 0.0, func(_p: Vector2i) -> float: return 0.0, rock, flush, view.buildings.stone, level)
 	eq(flat.get_faces().size(), without.get_faces().size(), "none where they stand level")
+
+func test_a_things_pick_box_keeps_to_its_cell() -> void:
+	# A tree's crown 3 m wide over the next cells: pointed at only over its own.
+	var crown := AABB(Vector3(3.5 - 1.6, 0, 7.5 - 1.6), Vector3(3.2, 4.4, 3.2))
+	var box := WorldView3D.pick_box(crown, Vector2i(3, 7))
+	check(box.position.x >= 3.0 and box.end.x <= 4.0 and box.position.z >= 7.0 and box.end.z <= 8.0, "within its cell: %s" % box)
+	check(is_equal_approx(box.size.y, 4.4), "as tall as it is")
+	var post := WorldView3D.pick_box(AABB(Vector3(3.48, 0, 7.48), Vector3(.04, 1, .04)), Vector2i(3, 7))
+	check(post.size.x >= .33 and post.size.z >= .33, "a thin thing wide enough to point at")
+	var pebble := WorldView3D.pick_box(AABB(Vector3(3.4, 0, 7.4), Vector3(.2, .05, .2)), Vector2i(3, 7))
+	check(pebble.size.y >= .25, "a flat thing high enough")
+
+func test_inside_a_house_one_points_past_what_is_cut_away() -> void:
+	view._cut = Rect2i(1, 1, 4, 4)
+	var roof := {"kind": "part", "layer": "roof", "id": "base:thatch_roof", "cell": Vector2i(2, 2)}
+	check(view._cut_off(roof, Vector3(2.5, 2.5, 2.5)), "its roof is passed through")
+	var wall := {"kind": "part", "layer": "structure", "id": "base:wood_wall", "cell": Vector2i(1, 2)}
+	var floor_y := view._floor_at(Vector2(1.5, 2.5))
+	check(view._cut_off(wall, Vector3(1.5, floor_y + 1.5, 2.5)), "a wall above its cut is passed through")
+	check(not view._cut_off(wall, Vector3(1.5, floor_y + .1, 2.5)), "its low sixth is still there")
+	var chest := {"kind": "part", "layer": "structure", "id": "base:chest", "cell": Vector2i(2, 3)}
+	check(not view._cut_off(chest, Vector3(2.5, floor_y + .4, 3.5)), "a chest inside is pointed at")
+	var far_roof := {"kind": "part", "layer": "roof", "id": "base:thatch_roof", "cell": Vector2i(9, 9)}
+	check(not view._cut_off(far_roof, Vector3(9.5, 2.5, 9.5)), "another house's roof is still a roof")
+	view._cut = Rect2i()

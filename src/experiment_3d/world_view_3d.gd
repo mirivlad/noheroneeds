@@ -583,8 +583,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 			_job["faces"].append(t * vertex)
 		for i in triangles.size() / 3: _job["targets"].append(target)
 	else:
-		var bounds: AABB = t * mesh.get_aabb()
-		_add_box_faces(bounds, target)
+		_add_box_faces(pick_box(t * mesh.get_aabb(), cell), target)
 	var ore := id.trim_prefix("base:").trim_suffix("_ore_rock")
 	if id.ends_with("_ore_rock") and ore in ["iron", "copper", "silver", "gold"]:
 		var nugget_id := "base:" + ore + "_outcrop"
@@ -807,6 +806,21 @@ func building_footprint(cell: Vector2i) -> Rect2i:
 				pending.append(next)
 	return Rect2i(low, high - low + Vector2i.ONE) if seen.size() > 1 else Rect2i(cell, Vector2i.ONE)
 
+## What one points at a thing by: its model's box, no wider than its own cell
+## (the author, 28.10.2026: a tree's crown over the next cells hid the
+## mushrooms there) and never too thin to point at.
+static func pick_box(bounds: AABB, cell: Vector2i) -> AABB:
+	var lo := Vector3(maxf(bounds.position.x, cell.x + .05), bounds.position.y, maxf(bounds.position.z, cell.y + .05))
+	var hi := Vector3(minf(bounds.end.x, cell.x + .95), bounds.end.y, minf(bounds.end.z, cell.y + .95))
+	var middle := Vector3(cell.x + .5, 0, cell.y + .5)
+	for axis in [0, 2]:  # a thin thing (a post, a sapling) is pointed at a third of a cell wide
+		if hi[axis] - lo[axis] < .34:
+			lo[axis] = middle[axis] - .17
+			hi[axis] = middle[axis] + .17
+	if hi.y - lo.y < .25:  # and something to point at above the ground
+		hi.y = lo.y + .25
+	return AABB(lo, hi - lo)
+
 func _add_box_faces(box: AABB, target: Dictionary) -> void:
 	for face: Array in [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]:
 		for i in [0, 1, 2, 0, 2, 3]:
@@ -939,8 +953,19 @@ func _update_actors(alpha: float, delta: float) -> void:
 			space.add_child(actor)
 			actor.position = at
 			_actors[id] = actor
+			# Its box for pointing at, as big as its body (a chicken's no taller than a chicken).
+			var body := BodySize.of(content.get_def(String(e.get("creature", "")) if kind == "creature" else String(looks.get("body_plan", ""))))
+			var tall := maxf(.3, float(body["height"]) * STOREY)
+			var half: Vector2i = body["half"]
+			(actor.shape.shape as BoxShape3D).size = Vector3(maxf(.3, half.x * 2.0 / Movement.UNIT + .1), tall, maxf(.3, half.y * 2.0 / Movement.UNIT + .1))
+			actor.shape.position.y = tall / 2.0
 		actor.body.set_meta("target", {"kind": "entity", "id": id, "entity": e, "location": client.location})
 		actor.doll.submerged = (client.in_water(client.position) or client.aboard() != "") if id == client.character_id else (kind == "character" and (client.in_water(Vector2i(int(e.get("x", 0)), int(e.get("y", 0)))) or String(e.get("aboard", "")) != ""))
+		# A dweller standing at its spot looks where it is told (into the fire).
+		var face: Array = e.get("face", [])
+		if face.size() == 2 and (int(face[0]) != 0 or int(face[1]) != 0) \
+				and Vector2(actor.position.x, actor.position.z).distance_to(Vector2(at.x, at.z)) < .05:
+			actor.facing = Vector2(int(face[0]), int(face[1])).normalized()
 		actor.show_actor(at, yaw, delta, id == client.character_id)
 		# Interpolate XZ first, then sample the rendered triangle under the
 		# interpolated feet. Interpolating target Y cuts through convex hills.
@@ -957,6 +982,11 @@ func _update_actors(alpha: float, delta: float) -> void:
 			else:
 				actor.doll.react("")
 		_asleep[id] = asleep
+		# Sitting on the ground (RO's sit) till one gets up.
+		var sits := bool(e.get("sitting", false)) and not asleep
+		if sits != bool(_sitting.get(id, false)):
+			actor.doll.react("sit", 1e6) if sits else actor.doll.react("")
+		_sitting[id] = sits
 		# Hurt: a flinch; fallen: lies a while (ADR-0019).
 		var h := int(e.get("health", e.get("max_health", 0)))
 		if h < int(_hp_seen.get(id, h)):
@@ -986,6 +1016,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 			_swing_seen.erase(id)
 			_said.erase(id)
 			_asleep.erase(id)
+			_sitting.erase(id)
 			_flash.erase(id)
 			_hp_seen.erase(id)
 
@@ -994,6 +1025,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 const SPEECH_S := 4.0
 var _said := {}
 var _asleep := {}
+var _sitting := {}
 
 func _speech(id: String, actor: BillboardActor3D, e: Dictionary, delta: float) -> void:
 	var line := actor.get_node_or_null("Speech") as Label3D
@@ -1065,8 +1097,14 @@ func screen_point(screen: Vector2) -> Vector2:
 	var own_actor := _actors.get(client.character_id) as BillboardActor3D
 	if own_actor:
 		query.exclude = [own_actor.body.get_rid()]
-	var hit := eye.get_world_3d().direct_space_state.intersect_ray(query)
-	if not hit.is_empty():
+	var hit := {}
+	# In the house one is in, what is cut away (its roof, its ceiling, its
+	# walls above their sixth) is passed through: one points at what is inside.
+	for tries in 6:
+		hit = eye.get_world_3d().direct_space_state.intersect_ray(query)
+		if hit.is_empty():
+			break
+		_cursor = {}
 		var body := hit["collider"] as Node
 		if body.has_meta("target"):
 			_cursor = body.get_meta("target")
@@ -1075,6 +1113,12 @@ func screen_point(screen: Vector2) -> Vector2:
 			var face := int(hit.get("face_index", -1))
 			if face >= 0 and face < targets.size():
 				_cursor = targets[face]
+		if not _cut_off(_cursor, hit["position"]):
+			break
+		query.from = (hit["position"] as Vector3) + (to - origin).normalized() * .02
+		_cursor = {}
+		hit = {}
+	if not hit.is_empty():
 		if _cursor.get("roof_group", false):
 			_cursor = _cursor.duplicate()
 			var roof_hit: Vector3 = hit["position"]
@@ -1096,19 +1140,34 @@ func _actor_at(at: Vector2) -> String:
 		var a := _actors[id] as BillboardActor3D
 		if a == null or id == client.character_id or not client.entities.has(id):
 			continue
+		# Its own height and width (its body's size: a chicken low, a cow big).
+		var e: Dictionary = client.entities[id]
+		var body := BodySize.of(content.get_def(String(e.get("creature", "")) if e.get("kind") == "creature" \
+			else String((e.get("appearance", {}) as Dictionary).get("body_plan", ""))))
+		var tall := maxf(.3, float(body["height"]) * STOREY) * a.scale.y
+		var wide := maxf(.18, float(maxi((body["half"] as Vector2i).x, (body["half"] as Vector2i).y)) / Movement.UNIT + .08) * a.scale.x
 		var feet := a.global_position
-		var head := feet + Vector3.UP * 1.6 * a.scale.y
-		if not eye.is_position_in_frustum(feet + Vector3.UP * 0.8):
+		if not eye.is_position_in_frustum(feet + Vector3.UP * tall * .5):
 			continue
 		var f := eye.unproject_position(feet)
-		var h := eye.unproject_position(head)
-		var half := maxf(6.0 * _pixel, absf(f.y - h.y) * 0.22)
-		if Rect2(Vector2(minf(f.x, h.x) - half, minf(f.y, h.y)), Vector2(absf(f.x - h.x) + half * 2.0, absf(f.y - h.y))).has_point(at):
+		var h := eye.unproject_position(feet + Vector3.UP * tall)
+		var half := maxf(4.0 * _pixel, (eye.unproject_position(feet + eye.global_transform.basis.x * wide) - f).length())
+		if Rect2(Vector2(minf(f.x, h.x) - half, minf(f.y, h.y) - 2.0 * _pixel), Vector2(absf(f.x - h.x) + half * 2.0, absf(f.y - h.y) + 4.0 * _pixel)).has_point(at):
 			var d := eye.global_position.distance_squared_to(feet)
 			if d < nearest:
 				nearest = d
 				best = id
 	return best
+
+## Whether a part hit at a point is cut away round the player (not there to point at).
+func _cut_off(t: Dictionary, at: Vector3) -> bool:
+	if _cut == Rect2i() or t.get("kind") != "part" or not _cut.has_point(t.get("cell", Vector2i.MAX)):
+		return false
+	if String(t.get("layer", "")) in ["roof", "ceiling"]:
+		return true
+	var role := String(content.get_def(String(t.get("id", ""))).get("role", ""))
+	var cell: Vector2i = t["cell"]
+	return role in ["wall", "window", "door"] and at.y > _floor_at(Vector2(cell) + Vector2.ONE * .5) + STOREY / 6.0 + .05
 
 func covers_shown(cell: Vector2i) -> bool:
 	return not _cut.has_point(cell)

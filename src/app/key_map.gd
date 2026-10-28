@@ -9,7 +9,7 @@ const ACTIONS := [
 	["up", "Идти вперёд", KEY_W], ["left", "Идти влево", KEY_A], ["down", "Идти назад", KEY_S],
 	["right", "Идти вправо", KEY_D], ["use", "Взаимодействие", KEY_E], ["climb", "Переход (Shift — вниз)", KEY_F],
 	["jump", "Прыжок с края", KEY_J], ["weapon", "Оружие в руки", KEY_Q], ["drop", "Выбросить из рук", KEY_G],
-	["rotate", "Повернуть чертёж", KEY_R], ["things", "Вещи", KEY_I], ["character", "Персонаж", KEY_C],
+	["rotate", "Повернуть чертёж", KEY_R], ["sit", "Сесть / встать", KEY_INSERT], ["things", "Вещи", KEY_I], ["character", "Персонаж", KEY_C],
 	["crafts", "Ремёсла", KEY_K], ["build", "Строительство", KEY_B], ["journal", "Журнал", KEY_L], ["map", "Карта", KEY_M],
 ]
 

@@ -605,6 +605,8 @@ func _key(k: int, shift: bool, alt := false) -> void:
 			_facing = (_facing + 1) % turns.size()
 	elif client.state != "playing":
 		return
+	elif act == "sit":  # RO's sit: energy comes back a little, health twice as fast
+		client.request({"type": "sit"})
 	elif act == "jump":
 		_sound_on_ok[client.request({"type": "jump", "dx": _last_dir.x, "dy": _last_dir.y})] = "climb"
 	elif act == "drop":
@@ -1437,6 +1439,8 @@ func _update_hud() -> void:
 			continue
 		_note = "готово" if r.get("ok") else "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?"))) \
 			+ (" (ещё %d мин)" % ceili(int(r["seconds"]) / 60.0) if r.has("seconds") else "")
+		if r.get("ok") and r.has("sitting"):
+			_note = "вы сели: силы и здоровье возвращаются быстрее" if r["sitting"] else "вы встали"
 		if r.get("ok") and _sound_on_ok.has(rid):
 			var snd: Variant = _sound_on_ok[rid]
 			audio.play(snd[0] if snd is Array else String(snd), snd[1] if snd is Array else "", null)

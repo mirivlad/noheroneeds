@@ -534,6 +534,11 @@ func _update_replica() -> void:
 			r.cold["asleep"] = p.has("asleep")  # lying in a bed, for all to see (ADR-0035)
 			r.cold_size = Cbor.encode_fast(r.cold).size()
 			r.cv += 1
+		if bool(r.cold.get("sitting", false)) != p.has("sitting"):
+			r.cold = r.cold.duplicate()
+			r.cold["sitting"] = p.has("sitting")  # sitting on the ground, for all to see
+			r.cold_size = Cbor.encode_fast(r.cold).size()
+			r.cv += 1
 		if String(r.cold.get("held", "")) != String(p.get("held", "")):
 			r.cold = r.cold.duplicate()
 			r.cold["held"] = String(p.get("held", ""))  # what is in its hands, for all to see
@@ -651,6 +656,7 @@ func _creature_cold(c: Creature) -> Dictionary:
 		cold["name"] = String(c.job.get("name", ""))
 		cold["held"] = c.held
 		cold["asleep"] = c.asleep
+		cold["face"] = [c.face.x, c.face.y]  # where it looks standing (the fire)
 		cold["say"] = c.say
 		cold["said"] = c.said
 	return cold

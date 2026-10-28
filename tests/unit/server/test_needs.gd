@@ -237,3 +237,31 @@ func test_winter_is_colder_and_summer_nights_milder() -> void:
 	check(at.call(Seasons.WINTER, true) < -Needs.NIGHT_CHILL * 2.0, "winter nights much colder")
 	check(at.call(Seasons.WINTER, false) < 0.0, "and winter days cold too")
 	eq(at.call(Seasons.SUMMER, false), Needs.DAY_WARMS, "a summer day warms")
+
+
+## Sitting (RO's sit, Insert): energy comes back a little, health twice as
+## fast; a blow gets one up; asked again, one stands.
+func test_sitting_rests_and_heals_faster() -> void:
+	var a := _player()
+	w.needs.set_energy(a, 40.0)
+	eq(_req(a, {"type": "sit"}).get("sitting"), true, "sat down")
+	check(w.sitting(a), "sitting")
+	_hours(1.0, a)
+	check(w.needs.energy_of(a) > 40.0, "energy comes back sitting: %.1f" % w.needs.energy_of(a))
+	var healed := func(sits: bool) -> int:
+		w.combat.hurt(a, w.combat.health_of(a) - 5, "")
+		if sits:
+			w.present[a]["sitting"] = true  # (a blow gets one up: sat again to measure)
+		w.combat._hurt_at[a] = 0
+		for t in range(1, 300):
+			w.combat.step(t)
+		w.present[a].erase("sitting")
+		return w.combat.health_of(a) - 5
+	var sat: int = healed.call(true)
+	var stood: int = healed.call(false)
+	check(sat > stood and sat > 0, "twice as fast sitting: %d against %d" % [sat, stood])
+	w.present[a]["sitting"] = true
+	w.combat.hurt(a, 1, "")
+	check(not w.sitting(a), "a blow gets one up")
+	_req(a, {"type": "sit"})
+	eq(_req(a, {"type": "sit"}).get("sitting"), false, "asked again: up")

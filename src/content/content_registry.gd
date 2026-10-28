@@ -535,6 +535,18 @@ func _check_settlement(id: String, d: Dictionary) -> void:
 			if typeof(goods) != TYPE_DICTIONARY or (goods as Dictionary).keys().any(func(i: Variant) -> bool:
 					return kind_of(String(i)) != "item" or int(goods[i]) < 1):
 				errors.append("%s: a way's %s is {item: a day, at least 1}" % [id, f])
+	# What the land round a village adds to what it makes and needs (ADR-0066): by biome.
+	var around: Variant = d.get("surroundings", {})
+	if typeof(around) != TYPE_DICTIONARY:
+		errors.append("%s: surroundings is {biome: {makes, needs}}" % id)
+	else:
+		for b: Variant in around:
+			var add: Variant = around[b]
+			if kind_of(String(b)) != "biome" or typeof(add) != TYPE_DICTIONARY \
+					or ["makes", "needs"].any(func(f: String) -> bool:
+						return typeof(add.get(f, {})) != TYPE_DICTIONARY or (add.get(f, {}) as Dictionary).keys().any(func(i: Variant) -> bool:
+							return kind_of(String(i)) != "item" or int(add[f][i]) < 1)):
+				errors.append("%s: surroundings '%s' needs a biome and {makes, needs} of items a day" % [id, b])
 	var houses: Variant = d.get("houses")
 	if typeof(houses) != TYPE_ARRAY or (houses as Array).size() != 2 or int(houses[0]) < 1 or int(houses[1]) < int(houses[0]):
 		errors.append("%s: houses is [least, most], at least one" % id)

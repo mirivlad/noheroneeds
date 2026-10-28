@@ -58,11 +58,50 @@ func way_of(id: String) -> Dictionary:
 
 
 func makes(id: String) -> Dictionary:
-	return way_of(id).get("makes", {})
+	return _goods(id)["makes"]
 
 
 func needs(id: String) -> Dictionary:
-	return way_of(id).get("needs", {})
+	return _goods(id)["needs"]
+
+
+## How far round a village its land is looked at, and how finely (cells).
+const AROUND := 48
+const AROUND_STEP := 8
+var _goods_of := {}
+
+## What a village makes and needs a day: its way of life's, and what the
+## land round it adds (its kind's "surroundings" by biome, as much as that
+## biome is of the land round): a forest village has wood to spare, a steppe
+## one lacks it. Worked out once a village.
+func _goods(id: String) -> Dictionary:
+	if _goods_of.has(id):
+		return _goods_of[id]
+	var w := way_of(id)
+	var out := {"makes": (w.get("makes", {}) as Dictionary).duplicate(), "needs": (w.get("needs", {}) as Dictionary).duplicate()}
+	var plan := _plan(id)
+	var around: Dictionary = world.content.get_def(String(plan.get("kind", ""))).get("surroundings", {}) if not plan.is_empty() else {}
+	if not around.is_empty() and world.generator:
+		var seen := {}
+		var total := 0
+		var c: Vector2i = plan["centre"]
+		for dy in range(-AROUND, AROUND + 1, AROUND_STEP):
+			for dx in range(-AROUND, AROUND + 1, AROUND_STEP):
+				var b := world.generator.biome_id_at(c.x + dx, c.y + dy)
+				if b != "":
+					seen[b] = int(seen.get(b, 0)) + 1
+					total += 1
+		for b: String in seen:
+			if not around.has(b):
+				continue
+			var share := float(seen[b]) / maxf(1.0, float(total))
+			for f: String in ["makes", "needs"]:
+				for item: String in around[b].get(f, {}):
+					var n := roundi(float(around[b][f][item]) * share)
+					if n > 0:
+						out[f][item] = int(out[f].get(item, 0)) + n
+	_goods_of[id] = out
+	return out
 
 
 ## The village's store as it is today (days caught up, neighbours asked).

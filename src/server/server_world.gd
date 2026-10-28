@@ -173,6 +173,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.boats = Boats.new(world)
 	world.growth = Growth.new(world)
 	world.chronicles = Chronicles.new(world)
+	world.economy = VillageEconomy.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	world.weather_seed = absi(hash([world.world_seed, "weather"]))
 	var saved_time := s.read_meta("time")
@@ -257,6 +258,7 @@ func close() -> void:
 	combat.world = null
 	needs.world = null
 	chronicles.world = null
+	economy.world = null
 	knowledge.world = null
 	boats.world = null
 	growth.world = null
@@ -274,6 +276,7 @@ func abandon() -> void:
 	combat.world = null
 	needs.world = null
 	chronicles.world = null
+	economy.world = null
 	knowledge.world = null
 	boats.world = null
 	growth.world = null
@@ -1043,6 +1046,8 @@ var boats: Boats
 var growth: Growth
 ## Villages' chronicles and their dwellers' requests (ADR-0042).
 var chronicles: Chronicles
+## Villages' stores: what they make, need and fetch from each other (ADR-0066).
+var economy: VillageEconomy
 ## World facts to write with the next state batch (set_meta).
 var _pending_meta := {}
 ## Light sources by chunk, worked out when first asked, forgotten on change.
@@ -2765,14 +2770,25 @@ func _trader(actor: String, r: Dictionary) -> Array:
 	if int(c.job.get("stocked", -1)) != day:
 		var stock := inventory("trade|" + c.id)
 		for item: String in stock.stacks.keys():
-			stock.remove(item, int(stock.stacks[item]))
+			var left := int(stock.stacks[item])
+			if String(c.job.get("village", "")) != "" and economy.want(String(c.job["village"]), item) > 0:
+				economy.put(String(c.job["village"]), item, left)  # unsold: back to the village's store
+			stock.remove(item, left)
+		var village := String(c.job.get("village", ""))
 		for item: String in trade.get("sells", {}):
-			# Its own work, as well made as its trade makes things (ADR-0047).
+			# Its own work, as well made as its trade makes things (ADR-0047);
+			# what its village makes or needs comes out of the village's store
+			# (no more than there is, ADR-0066), the rest is its own making.
+			var n := int(trade["sells"][item][0])
+			if village != "" and economy.want(village, item) > 0:
+				n = economy.take(village, item, n)
+			if n <= 0:
+				continue
 			var made := Knowledge.goods_state(trade, content, item, float(absi(hash([world_seed, c.id, day, item])) % 1000) / 1000.0)
 			var copies: Array = []
-			for k in int(trade["sells"][item][0]):
+			for k in n:
 				copies.append(made)
-			stock.add(item, int(trade["sells"][item][0]), copies)
+			stock.add(item, n, copies)
 		_touch_inventory("trade|" + c.id)
 		c.job["stocked"] = day
 		c.job["purse"] = int(trade.get("purse", 0))
@@ -2797,6 +2813,8 @@ func _talk(actor: String, r: Dictionary, what: String) -> Dictionary:
 			out = chronicles.talk(actor, c)
 	if out.get("ok", false) and not out.get("grudge", false):
 		out["teaches"] = _teach_terms(c, actor)
+		if String(c.job.get("village", "")) != "":
+			out["short"] = economy.short(String(c.job["village"]))  # what the village lacks (ADR-0066)
 	return out
 
 
@@ -2871,19 +2889,41 @@ func _learn(actor: String, r: Dictionary) -> Dictionary:
 	return {"ok": false, "reason": "not_taught"}
 
 
-## A dweller's price of the next copy of its goods: as well made as it is.
-func _sell_price(stock: Inventory, trade: Dictionary, item: String) -> int:
-	return maxi(1, roundi(int(trade["sells"][item][1]) * Wear.worth(content, stock.state_of(item, stock.count(item) - 1))))
+## A dweller's price of the next copy of its goods: as well made as it is,
+## dearer as its village lacks it, cheaper as it has plenty (ADR-0066).
+func _sell_price(stock: Inventory, trade: Dictionary, item: String, village := "") -> int:
+	return maxi(1, roundi(int(trade["sells"][item][1]) * Wear.worth(content, stock.state_of(item, stock.count(item) - 1))
+		* _village_factor(village, item)))
+
+
+## What a dweller pays for a thing (its trade's price, as its village lacks it or not).
+func _buy_price(trade: Dictionary, item: String, village := "") -> int:
+	return maxi(1, roundi(int(trade["buys"][item]) * _village_factor(village, item)))
+
+
+func _village_factor(village: String, item: String) -> float:
+	return economy.factor(village, item) if village != "" and economy else 1.0
 
 
 func _goods(c: Creature, trade: Dictionary) -> Dictionary:
 	var stock := inventory("trade|" + c.id)
+	var village := String(c.job.get("village", ""))
 	var sells := {}
 	for item: String in trade.get("sells", {}):
-		sells[item] = [stock.count(item), _sell_price(stock, trade, item) if stock.count(item) > 0 else int(trade["sells"][item][1]),
-			stock.state_of(item, stock.count(item) - 1)]
+		sells[item] = [stock.count(item), _sell_price(stock, trade, item, village) if stock.count(item) > 0 \
+			else roundi(int(trade["sells"][item][1]) * _village_factor(village, item)), stock.state_of(item, stock.count(item) - 1)]
+	var buys := {}
+	for item: String in trade.get("buys", {}):
+		buys[item] = _buy_price(trade, item, village)
+	# What the village lacks (it pays more) and has plenty of (ADR-0066).
+	var short: Array = economy.short(village) if village != "" else []
+	var plenty := []
+	if village != "":
+		for item: String in economy.makes(village):
+			if economy.factor(village, item) <= 0.75:
+				plenty.append(item)
 	return {"ok": true, "profession": String(c.job.get("profession", "")), "sells": sells,
-		"buys": (trade.get("buys", {}) as Dictionary).duplicate(), "purse": int(c.job.get("purse", 0)),
+		"buys": buys, "purse": int(c.job.get("purse", 0)), "short": short, "plenty": plenty,
 		"blueprints": (trade.get("blueprints", {}) as Dictionary).duplicate()}
 
 
@@ -2925,7 +2965,7 @@ func _trade(actor: String, r: Dictionary) -> Dictionary:
 			return {"ok": false, "reason": "not_sold"}
 		if stock.count(item) < n:
 			return {"ok": false, "reason": "sold_out"}
-		var price := _sell_price(stock, trade, item) * n
+		var price := _sell_price(stock, trade, item, String(c.job.get("village", ""))) * n
 		if inv.count(COIN) < price:
 			return {"ok": false, "reason": "no_money"}
 		var after := inv.stacks.duplicate()
@@ -2947,13 +2987,16 @@ func _trade(actor: String, r: Dictionary) -> Dictionary:
 		if from < 0 or from + n > inv.count(item):
 			return {"ok": false, "reason": "not_carried"}
 		var price := 0
+		var each := _buy_price(trade, item, String(c.job.get("village", "")))
 		for i in n:
-			price += maxi(1, roundi(int(trade["buys"][item]) * Wear.value(content, item, inv.state_of(item, from + i))))
+			price += maxi(1, roundi(each * Wear.value(content, item, inv.state_of(item, from + i))))
 		if int(c.job.get("purse", 0)) < price:
 			return {"ok": false, "reason": "no_money_there"}
 		inv.take(item, n, from)
 		give(actor, COIN, price)
 		c.job["purse"] = int(c.job.get("purse", 0)) - price
+		if String(c.job.get("village", "")) != "":
+			economy.put(String(c.job["village"]), item, n)  # what it bought goes into the village's store
 	c.changed()
 	_touch_inventory(actor)
 	_touch_inventory("trade|" + c.id)

@@ -19,10 +19,18 @@
       "fields": {"count": [1, 3], "size": [6, 4], "ground": "base:farmland", "crops": {"base:wheat_crop": 2, "base:carrot_crop": 1}},
       "pen": {"size": [7, 5], "fence": "base:wood_fence", "gate": "base:wood_gate", "animals": {"base:sheep": 2, "base:chicken": 3}},
       "ways": [
-        {"id": "mining", "name": "Горняцкая", "near": "mountains", "first": "smithy", "buildings": {"smithy": {"weight": 6, "max": 2}}},
-        {"id": "fishing", "name": "Рыбацкая", "near": "water", "first": "fisher", "buildings": {"fisher": {"weight": 6, "max": 3}}},
-        {"id": "herding", "name": "Пастушья", "near": "grassland", "first": "herder", "buildings": {"herder": {"weight": 6, "max": 3}}},
-        {"id": "farming", "name": "Земледельческая", "buildings": {"house": {"weight": 8}}}
+        {"id": "mining", "name": "Горняцкая", "near": "mountains", "first": "smithy", "buildings": {"smithy": {"weight": 6, "max": 2}},
+          "makes": {"base:stone": 20, "base:iron_ore": 6, "base:copper_ore": 4, "base:iron_ingot": 2, "base:copper_ingot": 2},
+          "needs": {"base:wheat": 8, "base:bread": 4, "base:log": 6, "base:plank": 6, "base:raw_fish": 3}},
+        {"id": "fishing", "name": "Рыбацкая", "near": "water", "first": "fisher", "buildings": {"fisher": {"weight": 6, "max": 3}},
+          "makes": {"base:raw_fish": 16, "base:perch": 6, "base:cooked_fish": 4},
+          "needs": {"base:wheat": 6, "base:bread": 3, "base:plank": 4, "base:wool": 2}},
+        {"id": "herding", "name": "Пастушья", "near": "grassland", "first": "herder", "buildings": {"herder": {"weight": 6, "max": 3}},
+          "makes": {"base:wool": 8, "base:egg": 10, "base:leather": 3, "base:cloth": 2, "base:milk_bucket": 1},
+          "needs": {"base:wheat": 6, "base:carrot": 4, "base:raw_fish": 2, "base:plank": 2}},
+        {"id": "farming", "name": "Земледельческая", "buildings": {"house": {"weight": 8}},
+          "makes": {"base:wheat": 20, "base:carrot": 12, "base:bread": 6, "base:wheat_seeds": 8, "base:carrot_seeds": 6},
+          "needs": {"base:raw_fish": 3, "base:leather": 1, "base:wool": 2, "base:stone": 3, "base:iron_ingot": 1}}
       ],
       "styles": [
         {"biomes": ["base:tundra", "base:rocky"], "wall": "base:stone_wall", "houses": [3, 5],

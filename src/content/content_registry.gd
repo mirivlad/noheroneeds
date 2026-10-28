@@ -529,6 +529,12 @@ func _check_settlement(id: String, d: Dictionary) -> void:
 				or (w.get("buildings", {}) as Dictionary).keys().any(func(b: Variant) -> bool: return not ids.has(b)) \
 				or (w.has("first") and not ids.has(w["first"])):
 			errors.append("%s: a way has an id, near (water, mountains, grassland or none), its buildings and first building by id" % id)
+		# What a village of this way makes and needs a day (ADR-0066): items, whole counts.
+		for f: String in ["makes", "needs"]:
+			var goods: Variant = w.get(f, {}) if typeof(w) == TYPE_DICTIONARY else {}
+			if typeof(goods) != TYPE_DICTIONARY or (goods as Dictionary).keys().any(func(i: Variant) -> bool:
+					return kind_of(String(i)) != "item" or int(goods[i]) < 1):
+				errors.append("%s: a way's %s is {item: a day, at least 1}" % [id, f])
 	var houses: Variant = d.get("houses")
 	if typeof(houses) != TYPE_ARRAY or (houses as Array).size() != 2 or int(houses[0]) < 1 or int(houses[1]) < int(houses[0]):
 		errors.append("%s: houses is [least, most], at least one" % id)

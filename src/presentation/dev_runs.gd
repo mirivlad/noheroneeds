@@ -13,6 +13,7 @@ var g: GameScreen
 ## the game quits. Without a list: idle, walk and run frames and the whole chop, in n s e ne se.
 const POSE_DIRS := ["n", "s", "e", "ne", "se"]
 var _poses: Array = []
+var _wolf := ""
 var _pose_at := -1
 var _pose_wait := 0
 
@@ -22,6 +23,38 @@ func _init(screen: GameScreen) -> void:
 
 
 func step(delta: float) -> void:
+	if g._opts.has("shoot_debug") and g.game:  # dev: a wolf six cells east, shot at; the arrow's flight printed
+		var w := g.game.world
+		var me := Movement.cell_of(g.client.position)
+		if g._frames == 60:
+			w.grant(g.client.character_id, "base:bow", 1)
+			w.grant(g.client.character_id, "base:arrow", 5)
+			_wolf = w.creatures._spawn("base:wolf", "surface", me + Vector2i(6, 0), {}, 3).id
+		if g._frames == 90:
+			g.hotbar.put(0, "base:bow", -1)
+			g._choose_slot(0)
+		if g._frames == 120:
+			var wolf := w.creatures.get_creature(_wolf)
+			print("SHOOT from ", g.client.position, " at ", wolf.pos if wolf else "-")
+			for dx in range(0, 7):
+				var cell := me + Vector2i(dx, 0)
+				var c := w.chunk("surface", cell.x >> 5, cell.y >> 5)
+				print("  CELL ", cell, " ground ", c.get_cell("ground", cell.x & 31, cell.y & 31), " cover ", c.get_cell("cover", cell.x & 31, cell.y & 31),
+					" structure ", c.get_cell("structure", cell.x & 31, cell.y & 31), " opaque ", Terrain.is_opaque(c, cell.x & 31, cell.y & 31, w.content),
+					" blocked ", Sight._blocked(w, cell, 0.62, 0.64, "surface", me, "surface", me + Vector2i(6, 0)))
+			g.client.hold("base:bow")
+			g.client.request({"type": "attack", "item": "base:bow", "x": wolf.pos.x, "y": wolf.pos.y})
+		if g._frames > 120 and g._frames < 200:
+			for pr: Combat.Projectile in w.combat.projectiles.values():
+				print("  ARROW pos ", Vector2i(pr.pos), " cell ", Movement.cell_of(Vector2i(pr.pos)), " h ", snappedf(pr.h, 0.01), " left ", int(pr.left), " loc ", pr.location)
+			var wolf := w.creatures.get_creature(_wolf)
+			if wolf and g._frames % 10 == 0:
+				print("  WOLF ", wolf.pos, " hp ", wolf.health)
+		if g._frames == 200:
+			for id: String in w.items.keys():
+				var it: Dictionary = w.items[id]
+				if String(it.get("item", "")) == "base:arrow":
+					print("ARROW LIES at ", Movement.cell_of(Vector2i(it["x"], it["y"])))
 	if g._opts.has("audio_debug") and g._frames % 60 == 59:  # dev: what is heard, and from where
 		var a := g.audio
 		var amb := PackedStringArray()

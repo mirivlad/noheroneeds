@@ -45,7 +45,10 @@ func test_on_the_ground_walls_block_and_plants_by_their_height() -> void:
 	_build("surface", Vector2i(4, 0), "base:wood_wall")
 	check(not _sees("surface", Vector2i(0, 0), "surface", Vector2i(8, 0)), "a wall in the way")
 	w.chunk("surface", 5, 5).set_cell("cover", O.x + 4 - 160, O.y + 12 - 160, "base:bush")
-	check(not _sees("surface", Vector2i(0, 12), "surface", Vector2i(8, 12)), "a bush hides one on the ground")
+	# A bush (about 0.9 m, the author 28.10.2026: arrows must fly over it) hides
+	# what is low behind it — a hare, one lying — not one standing.
+	check(not Sight.clear(w, "surface", O + Vector2i(0, 12), "surface", O + Vector2i(8, 12), 0.3, 0.12), "a bush hides a hare on the ground")
+	check(_sees("surface", Vector2i(0, 12), "surface", Vector2i(8, 12)), "a man stands over it")
 
 
 func test_a_window_lets_through_one_standing_at_it_within_its_sector_and_range() -> void:

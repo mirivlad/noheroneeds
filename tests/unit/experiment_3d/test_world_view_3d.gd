@@ -373,3 +373,10 @@ func test_inside_a_house_one_points_past_what_is_cut_away() -> void:
 	var far_roof := {"kind": "part", "layer": "roof", "id": "base:thatch_roof", "cell": Vector2i(9, 9)}
 	check(not view._cut_off(far_roof, Vector3(9.5, 2.5, 9.5)), "another house's roof is still a roof")
 	view._cut = Rect2i()
+
+func test_a_beings_figure_is_its_picture() -> void:
+	var hare := view._figure(content.visual_of("base:hare"))
+	check(hare.y > 0.5, "a hare is pointed at by its picture, taller than its body's 0.5 m: %s" % hare)
+	check(hare.y < 2.0, "but not its whole frame: %s" % hare)
+	var man := view._figure(content.visual_of("base:human_ro_m"))
+	check(man.y > 1.2 and man.y < 2.2, "a person about his height: %s" % man)

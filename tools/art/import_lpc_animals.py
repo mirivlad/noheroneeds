@@ -217,6 +217,20 @@ def build(kind, spec, sheet):
                     feet = max(feet, size - img.height + box[3] - 1)
         out[n] = [x0, 0, size, count[n]]
         x0 += count[n] * size
+    # Every row of an animation stands on the cell's bottom (the author,
+    # 28.10.2026: a fox walking sideways and the hare hung in the air — their
+    # sources draw some rows higher than others): a row is moved down as a
+    # whole, so its frames keep their steps.
+    for n in names:
+        x, _, _, c = out[n]
+        for r in range(4):
+            strip = atlas.crop((x, r * size, x + c * size, (r + 1) * size))
+            box = strip.getchannel("A").point(lambda a: 255 if a > 40 else 0).getbbox()
+            if box and box[3] < size:
+                moved = Image.new("RGBA", strip.size)
+                moved.alpha_composite(strip, (0, size - box[3]))
+                atlas.paste(moved, (x, r * size))
+    feet = size - 1
     return atlas, out, size, feet
 
 

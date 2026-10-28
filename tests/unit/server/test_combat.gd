@@ -347,3 +347,41 @@ func test_game_is_slower_than_a_running_hunter() -> void:
 	for kind: String in ["base:hare", "base:deer", "base:sheep", "base:cow", "base:chicken"]:
 		var d := _content.get_def(kind)
 		check(float(d["run_speed"]) * Movement.WALK < Movement.RUN, "%s runs slower than a character" % kind)
+
+
+## An arrow flies over a bush (the author: arrows fell short by bushes and
+## never hit the sheep); a bush still hides what is low behind it.
+func test_an_arrow_flies_over_a_bush() -> void:
+	w.world_time = 12 * Daylight.HOUR_MS
+	_field()
+	var p := _player("Аня", Vector2i(170, 170))
+	w.grant(p, "base:bow", 1)
+	w.grant(p, "base:arrow", 2)
+	var c := w.chunk("surface", 5, 5)
+	c.set_cell("cover", 173 - 160, 170 - 160, "base:bush")
+	w._changed(ServerWorld.chunk_key("surface", 5, 5))
+	var sheep := w.creatures._spawn("base:sheep", "surface", Vector2i(176, 170), {}, 1)
+	sheep.pos = _at(Vector2i(176, 170))
+	var before := sheep.health
+	check(_attack(p, Vector2i(176, 170), "base:bow").get("ok", false), "shot")
+	_fly(10)
+	check(sheep.health < before, "over the bush into the sheep: %d -> %d" % [before, sheep.health])
+
+
+## Grass does not stop an arrow (the author: arrows fell short at the first tuft).
+func test_an_arrow_flies_over_tall_grass() -> void:
+	w.world_time = 12 * Daylight.HOUR_MS
+	_field()
+	var p := _player("Аня", Vector2i(170, 170))
+	w.grant(p, "base:bow", 1)
+	w.grant(p, "base:arrow", 2)
+	var c := w.chunk("surface", 5, 5)
+	for x in range(171, 176):
+		c.set_cell("cover", x - 160, 170 - 160, "base:tall_grass")
+	w._changed(ServerWorld.chunk_key("surface", 5, 5))
+	var wolf := w.creatures._spawn("base:wolf", "surface", Vector2i(176, 170), {}, 1)
+	wolf.pos = _at(Vector2i(176, 170))
+	var before := wolf.health
+	check(_attack(p, Vector2i(176, 170), "base:bow").get("ok", false), "shot")
+	_fly(10)
+	check(wolf.health < before, "through the grass into the wolf: %d -> %d" % [before, wolf.health])

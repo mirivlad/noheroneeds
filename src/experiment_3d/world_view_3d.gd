@@ -515,6 +515,11 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		mesh = buildings.stump()
 		basis = Basis.IDENTITY
 		instance_id = "module:stump"
+	elif d.get("bed", false) or role == "column" or String(d.get("station", "")) == "forge":
+		# Furniture of its own make (the author: the bed was a cube): turned as laid.
+		mesh = buildings.bed() if d.get("bed", false) else (buildings.column() if role == "column" else buildings.forge())
+		position3.y = elevation(at) + lift  # on the floor (not lifted as the stand-in cube was)
+		instance_id = "module:" + str(mesh.get_instance_id())
 	elif id == "base:campfire":
 		mesh = buildings.campfire()
 		basis = Basis.IDENTITY
@@ -972,15 +977,23 @@ func _update_actors(alpha: float, delta: float) -> void:
 		actor.position.y = elevation(Vector2(actor.position.x, actor.position.z)) + (0 if client.z < 0 else int(e.get("z", client.z)) * STOREY)
 		actor.scale = Vector3.ONE * (.6 if e.get("young", false) else 1.0)
 		var held := own_held if id == client.character_id else String(e.get("held", ""))
-		actor.doll.hold(item_picture("" if actor.doll.submerged else held), item_grip(held), "" if actor.doll.submerged else held)
+		if actor.doll.submerged or bool(e.get("asleep", false)):
+			held = ""  # (nothing in the hands in the water, nor asleep)
+		actor.doll.hold(item_picture(held), item_grip(held), held)
 		_speech(id, actor, e, delta)
 		# Asleep in a bed (ADR-0035): lying, as one who fell lies, until it wakes.
 		var asleep := bool(e.get("asleep", false))
 		if asleep != bool(_asleep.get(id, false)):
 			if asleep:
 				actor.doll.react("dead", 1e6)
+				# Laid on the mattress along the bed it is on, not across it.
+				var bed := Movement.cell_of(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
+				var turns := {"s": 0.0, "w": PI / 2, "n": PI, "e": -PI / 2}
+				# (its head to the headboard: the lying frame's head is at its other end)
+				actor.lie(true, PI + (float(turns.get(String(props_at(bed).get("facing", "s")), 0.0)) if content.get_def(_cell_layer(bed, "structure")).get("bed", false) else 0.0), BED_TOP)
 			else:
 				actor.doll.react("")
+				actor.lie(false)
 		_asleep[id] = asleep
 		# Sitting on the ground (RO's sit) till one gets up.
 		var sits := bool(e.get("sitting", false)) and not asleep
@@ -1025,6 +1038,8 @@ func _update_actors(alpha: float, delta: float) -> void:
 const SPEECH_S := 4.0
 var _said := {}
 var _asleep := {}
+## The top of a bed's mattress over the floor (BuildingModules3D.bed).
+const BED_TOP := .47
 var _sitting := {}
 
 func _speech(id: String, actor: BillboardActor3D, e: Dictionary, delta: float) -> void:
@@ -1140,12 +1155,15 @@ func _actor_at(at: Vector2) -> String:
 		var a := _actors[id] as BillboardActor3D
 		if a == null or id == client.character_id or not client.entities.has(id):
 			continue
-		# Its own height and width (its body's size: a chicken low, a cow big).
+		# Its figure as drawn (a hare small, a cow big): the picture's own
+		# opaque part about its feet (the author: pointing at a hare took the grass).
 		var e: Dictionary = client.entities[id]
-		var body := BodySize.of(content.get_def(String(e.get("creature", "")) if e.get("kind") == "creature" \
-			else String((e.get("appearance", {}) as Dictionary).get("body_plan", ""))))
-		var tall := maxf(.3, float(body["height"]) * STOREY) * a.scale.y
-		var wide := maxf(.18, float(maxi((body["half"] as Vector2i).x, (body["half"] as Vector2i).y)) / Movement.UNIT + .08) * a.scale.x
+		var looks: Dictionary = e.get("appearance", {})
+		if e.get("kind") == "creature" and looks.is_empty():
+			looks = {"body_plan": String(e.get("creature", ""))}
+		var fig := _figure(visual_for(id, looks))
+		var tall := fig.y * a.scale.y
+		var wide := fig.x * a.scale.x
 		var feet := a.global_position
 		if not eye.is_position_in_frustum(feet + Vector3.UP * tall * .5):
 			continue
@@ -1168,6 +1186,30 @@ func _cut_off(t: Dictionary, at: Vector3) -> bool:
 	var role := String(content.get_def(String(t.get("id", ""))).get("role", ""))
 	var cell: Vector2i = t["cell"]
 	return role in ["wall", "window", "door"] and at.y > _floor_at(Vector2(cell) + Vector2.ONE * .5) + STOREY / 6.0 + .05
+
+## A visual's figure in metres: [half its width, its height] of the opaque
+## part of its first frame about its feet; at least a body's. Cached.
+var _figures := {}
+func _figure(v: Dictionary) -> Vector2:
+	var key := "%s|%s" % [v.get("atlas_path", ""), v.get("rect", [])]
+	if _figures.has(key):
+		return _figures[key]
+	var out := Vector2(.3, 1.6)
+	var tex := texture(String(v.get("atlas_path", ""))) if v.has("atlas_path") else null
+	var r: Array = v.get("rect", [])
+	var origin: Array = v.get("origin", [])
+	var img := tex.get_image() if tex else null
+	if img and r.size() == 4 and origin.size() == 2:
+		if img.is_compressed():
+			img.decompress()
+		var frame := img.get_region(Rect2i(int(r[0]), int(r[1]), int(r[2]), int(r[3])))
+		var used := frame.get_used_rect()
+		if used.size.x > 0:
+			var m := float(v.get("pixel_scale", 1.0)) / CELL  # a texel in metres
+			var half := maxf(float(origin[0]) - used.position.x, used.end.x - float(origin[0])) * m
+			out = Vector2(maxf(.15, half), maxf(.25, (float(origin[1]) - used.position.y) * m))
+	_figures[key] = out
+	return out
 
 func covers_shown(cell: Vector2i) -> bool:
 	return not _cut.has_point(cell)

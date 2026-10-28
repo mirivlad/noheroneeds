@@ -103,11 +103,12 @@ static func _traits(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> int
 				and bool(d.get("opaque", String(d.get("role", "")) in ["wall", "door", "window"])):
 			t |= _OPAQUE
 	else:
-		# A plant hides what is behind it by its height, whether one walks
-		# through it (a bush) or not (a tree); "opaque": false a plant that does not.
+		# A plant hides what is behind it (to its height) when it stands in the
+		# way (a tree) or says so (a bush one walks through, "opaque": true) —
+		# never grass: an arrow over the grass flies on (the author, 28.10.2026).
 		var plant := c.get_cell("cover", lx, ly)
 		var pd := content.get_def(plant) if plant != "" else {}
-		if plant != "" and bool(pd.get("opaque", pd.get("solid", false) or float(pd.get("height", 0.0)) >= 0.5)):
+		if plant != "" and bool(pd.get("opaque", pd.get("solid", false))):
 			t |= _OPAQUE
 	c.traits[i] = t
 	return t

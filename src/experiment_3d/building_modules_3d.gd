@@ -119,6 +119,51 @@ func campfire() -> Mesh:
 	cache["campfire"] = mesh
 	return mesh
 
+## A bed (the author, 28.10.2026: it was a cube): a wooden frame on four legs
+## with a headboard to the north, a mattress, a pillow, a blanket over its foot.
+func bed() -> Mesh:
+	if cache.has("bed"): return cache["bed"]
+	var mesh := ArrayMesh.new()
+	for x: float in [-.38, .38]:
+		for z: float in [-.44, .44]:
+			_box(mesh, Vector3(.08, .3, .08), Vector3(x, .15, z), timber)
+	for x: float in [-.38, .38]:
+		_box(mesh, Vector3(.06, .1, .9), Vector3(x, .27, 0), wood)
+	_box(mesh, Vector3(.82, .1, .06), Vector3(0, .27, .44), wood)
+	_box(mesh, Vector3(.84, .5, .07), Vector3(0, .45, -.45), timber)  # the headboard
+	_box(mesh, Vector3(.72, .1, .84), Vector3(0, .35, 0), _material(Color("d8cfb8")))  # the mattress
+	_box(mesh, Vector3(.5, .08, .2), Vector3(0, .44, -.3), _material(Color("efe8d8")))  # the pillow
+	_box(mesh, Vector3(.76, .06, .52), Vector3(0, .42, .16), _material(Color("8a3a32")))  # the blanket
+	cache["bed"] = mesh
+	return mesh
+
+## A post of a building: a squared beam with a foot and a head.
+func column() -> Mesh:
+	if cache.has("column"): return cache["column"]
+	var mesh := ArrayMesh.new()
+	_box(mesh, Vector3(.34, .12, .34), Vector3.UP * .06, stone)
+	_box(mesh, Vector3(.22, 1.8, .22), Vector3.UP * 1.02, timber)
+	_box(mesh, Vector3(.32, .1, .32), Vector3.UP * 1.95, wood)
+	cache["column"] = mesh
+	return mesh
+
+## A forge (it was a barrel): a stone furnace with a glowing mouth to the south
+## and a chimney (its smoke and light are the content's).
+func forge() -> Mesh:
+	if cache.has("forge"): return cache["forge"]
+	var mesh := ArrayMesh.new()
+	_box(mesh, Vector3(.9, .7, .85), Vector3.UP * .35, stone)
+	_box(mesh, Vector3(.95, .08, .9), Vector3.UP * .74, _material(Color("6e6a62")))
+	var glow := StandardMaterial3D.new()
+	glow.albedo_color = Color("ff8a2a")
+	glow.emission_enabled = true
+	glow.emission = Color("ff6a10")
+	glow.emission_energy_multiplier = 2.0
+	_box(mesh, Vector3(.4, .26, .06), Vector3(0, .3, .41), glow)  # the mouth, aglow
+	_box(mesh, Vector3(.3, .7, .3), Vector3(.2, 1.12, -.2), stone)  # the chimney
+	cache["forge"] = mesh
+	return mesh
+
 ## A stump (the author, 28.10.2026: they lay like logs): a short trunk of bark
 ## standing up, its cut lighter on top with a ring, a root or three at its foot.
 func stump() -> Mesh:

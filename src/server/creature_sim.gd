@@ -1061,11 +1061,22 @@ func _plan_of(c: Creature) -> Dictionary:
 func _phase(c: Creature) -> String:
 	var hours: Array = _profession(c).get("hours", [7, 19])
 	var h := Daylight.hour_of(world.world_time)
-	if h >= float(hours[0]) and h < float(hours[1]):
+	# Each its own day (the author, 28.10.2026: all rising and lying down at
+	# once looked like robots): up and to work up to 45 minutes either way,
+	# done up to 35, to bed from 20:00 to 22:30 — the same for it every day.
+	var start := float(hours[0]) + 0.75 * _own(c, 1)
+	var done := float(hours[1]) + 0.6 * _own(c, 2)
+	var bed := EVENING_END + 0.25 + 1.25 * _own(c, 3)
+	if h >= start and h < done:
 		return "work"
-	if h >= float(hours[1]) and h < EVENING_END:
+	if h >= done and h < bed:
 		return "evening"
 	return "night"
+
+
+## A dweller's own lean, -1..1, the same each time (by its seed).
+func _own(c: Creature, salt: int) -> float:
+	return float(absi(hash([c.seed, c.id, salt])) % 2001) / 1000.0 - 1.0
 
 
 ## Where a dweller's day has it: its work, the fire, its bed.
@@ -1166,11 +1177,14 @@ func _dweller(c: Creature, def: Dictionary) -> void:
 	if Vector2(c.cell()).distance_to(Vector2(spot)) <= 1.0:
 		c.path.clear()
 		_dress(c, String(prof.get("holds", "")) if phase == "work" else "", phase == "night")
+		# At the fire one looks into it (the author, 28.10.2026: they stood with their backs to it).
+		_look(c, (_plan_of(c)["fire"] as Vector2i) - c.cell() if phase == "evening" else Vector2i.ZERO)
 		if phase == "work":
 			_work(c, spot, prof)
 		_go(c, phase, Creature.NO_TARGET, false)
 		return
 	_dress(c, "", false)
+	_look(c, Vector2i.ZERO)
 	if c.path_to != spot or c.path.is_empty():
 		c.path = _route(c, spot)
 		c.path_to = spot
@@ -1181,6 +1195,14 @@ func _dweller(c: Creature, def: Dictionary) -> void:
 		return
 	_open_doors(c, c.cell(), c.path[0])
 	_go(c, "walk", c.path[0], false)
+
+
+## Where a dweller looks (seen by all): a change is told; ZERO — as it walks.
+func _look(c: Creature, toward: Vector2i) -> void:
+	var dir := Vector2i(signi(toward.x), signi(toward.y))
+	if c.face != dir:
+		c.face = dir
+		_cold[c.id] = true
 
 
 ## What a dweller holds and whether it sleeps (seen by all): a change is told.

@@ -186,7 +186,7 @@ func step(tick: int) -> void:
 		var animal := world.creatures.get_creature(id)
 		if animal and world.creatures.life.hungry(animal):
 			continue
-		var h := health_of(id) + 1
+		var h := health_of(id) + (2 if world.sitting(id) else 1)  # sitting heals twice as fast (RO)
 		_set_health(id, mini(h, max_health_of(id)))
 		if h >= max_health_of(id):
 			_hurt_at.erase(id)

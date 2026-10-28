@@ -32,6 +32,8 @@ const NIGHT_WARMTH := 0.6
 ## it comes back this much an hour. Below TIRED one does not run.
 const AWAKE_HOURS := 40.0
 const BED_RESTS := 34.0
+## Sitting (RO's sit) energy comes back too, a third as fast as in a bed.
+const SIT_RESTS := 11.0
 const TIRED := 20.0
 ## Swimming (ADR-0050): it tires (a full one swims some three game hours),
 ## the water chills whatever one wears; spent, one drowns — a health every
@@ -193,7 +195,8 @@ func step() -> void:
 		var swimming := world.in_water(id)
 		# Deep water is harder (ADR-0051): it tires and chills by its effort.
 		var effort := world.swim_effort(id) if swimming else 1.0
-		set_energy(id, energy_of(id) + (BED_RESTS if sleeping else (-SWIM_TIRES * effort if swimming else -FULL / AWAKE_HOURS)) * hours)
+		var rests := BED_RESTS if sleeping else (SIT_RESTS if world.sitting(id) else -FULL / AWAKE_HOURS)
+		set_energy(id, energy_of(id) + (-SWIM_TIRES * effort if swimming else rests) * hours)
 		if sleeping and energy_of(id) >= FULL:
 			world.wake(id)
 		var warm := warmth_of(id) + (minf(0.0, warming(id)) - WATER_CHILL * effort if swimming else warming(id)) * hours

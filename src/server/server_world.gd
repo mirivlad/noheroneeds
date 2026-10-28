@@ -1244,7 +1244,7 @@ func _is_pending(key: String) -> bool:
 
 ## What cannot be done swimming (ADR-0050): the hands are for swimming.
 const NOT_SWIMMING := ["build", "dismantle", "attack", "gather", "strike_part", "repair", "mend", "till", "sow", "craft",
-	"draft", "sleep", "climb", "jump", "lock"]
+	"draft", "sleep", "climb", "jump", "lock", "sit"]
 
 
 func _apply(actor: String, r: Dictionary) -> Dictionary:
@@ -1321,6 +1321,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _feed(actor, r)
 		"sleep":
 			return _sleep(actor, r)
+		"sit":
+			return _sit(actor)
 		"fill":
 			return _fill(actor, r)
 		"talk", "promise", "report":
@@ -3115,10 +3117,33 @@ func _sleep(actor: String, r: Dictionary) -> Dictionary:
 	return {"ok": true}
 
 
-## Up from a bed (moved, struck, rested, asked).
+## Sits down where one stands, or gets up (RO's sit, the author 28.10.2026):
+## sitting, energy comes back a little and health twice as fast; a step or a
+## blow gets one up. Not in a bed, a boat or the water.
+func _sit(actor: String) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var p: Dictionary = present[actor]
+	if p.has("sitting"):
+		p.erase("sitting")
+		note_character(actor)
+		return {"ok": true, "sitting": false}
+	if p.has("asleep") or boats.aboard(actor) != "":
+		return {"ok": false, "reason": "not_now"}
+	p["sitting"] = true
+	note_character(actor)
+	return {"ok": true, "sitting": true}
+
+
+func sitting(id: String) -> bool:
+	return present.has(id) and present[id].has("sitting")
+
+
+## Up from a bed or from sitting (moved, struck, rested, asked).
 func wake(id: String) -> void:
-	if present.has(id) and present[id].has("asleep"):
+	if present.has(id) and (present[id].has("asleep") or present[id].has("sitting")):
 		present[id].erase("asleep")
+		present[id].erase("sitting")
 		note_character(id)
 
 

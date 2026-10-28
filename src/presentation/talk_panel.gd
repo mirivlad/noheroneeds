@@ -3,6 +3,8 @@ extends PanelContainer
 ## Talk with a dweller (ADR-0042): who it is, what it asks and where one
 ## stands with it, what its village remembers; to take its request on, to
 ## tell it is done, to trade. The server says it all again after each step.
+## UI 2.0: the dweller's portrait at the left, what it says in a box of its
+## own, where the village stands with one as a bar and a word.
 
 signal promise(creature: String)
 signal report(creature: String)
@@ -10,7 +12,7 @@ signal trade(creature: String)
 ## Learn a recipe from the dweller (ADR-0047).
 signal learn(creature: String, recipe: String)
 
-const WIDTH := 480
+const WIDTH := 400
 var content: ContentRegistry
 ## The dweller talked with (an entity id) while it is open.
 var creature := ""
@@ -28,11 +30,14 @@ var _teach := Button.new()
 var _lessons := ItemList.new()
 var _lesson_ids: Array[String] = []
 var _lesson_ok := {}
+## The dweller as it looks, and the village's trust in one (-3..5 drawn).
+var portrait := CharacterPreview.new()
+var _trust_bar := HudBoxes.Bar.new()
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		for node: Node in [_title, _says, _goal, _trust, _news, _take, _done, _trade, _ask_news, _teach, _lessons]:
+		for node: Node in [_title, _says, _goal, _trust, _news, _take, _done, _trade, _ask_news, _teach, _lessons, portrait, _trust_bar]:
 			if is_instance_valid(node) and node.get_parent() == null:
 				node.free()
 
@@ -44,10 +49,26 @@ func setup(registry: ContentRegistry) -> void:
 	box.add_theme_constant_override("separation", 6)
 	add_child(box)
 	box.add_child(Art.window_head(_title, "E", hide))
-	for l: Label in [_says, _goal, _trust, _news]:
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", Art.GAP * 3)
+	box.add_child(columns)
+	portrait.walking = false
+	columns.add_child(portrait)
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 6)
+	columns.add_child(right)
+	_says.add_theme_stylebox_override("normal", Art.hud_box())
+	for l: Label in [_says, _goal, _news]:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size.x = WIDTH
-		box.add_child(l)
+		right.add_child(l)
+	var trust_row := HBoxContainer.new()
+	_trust_bar.custom_minimum_size = Vector2(80, 6)
+	_trust_bar.color = Art.GOOD
+	trust_row.add_child(_trust)
+	trust_row.add_child(_trust_bar)
+	right.add_child(trust_row)
+	box = right
 	_goal.add_theme_color_override("font_color", Art.TEXT_DIM)
 	_trust.add_theme_color_override("font_color", Art.TEXT_DIM)
 	_news.add_theme_color_override("font_color", Art.TEXT_DIM)
@@ -121,7 +142,10 @@ func show_lessons(lessons: Array) -> void:
 
 ## Shows what the server said ({name, profession, village, request?,
 ## chronicle, grudge?, thanks?, reward?}).
-func open_for(r: Dictionary) -> void:
+func open_for(r: Dictionary, looks := {}) -> void:
+	portrait.visible = not looks.is_empty()
+	if not looks.is_empty():
+		portrait.show_look(content, looks)
 	creature = String(r.get("creature", creature))
 	talk = r
 	var trade_name := String(content.get_def(String(r.get("profession", ""))).get("name", "житель")).to_lower()
@@ -147,7 +171,11 @@ func open_for(r: Dictionary) -> void:
 	_done.text = ("Отдать" if String(req.get("kind", "")) != "hunt" else "Сделано") if state == "ready" else "Ещё не сделано"
 	_trade.visible = not content.get_def(String(r.get("profession", ""))).get("trade", {}).is_empty() and not r.get("grudge", false)
 	show_lessons(r.get("teaches", []))
-	_trust.text = "Деревня к вам: %s (%+d)" % [trust_word(int(r.get("standing", 0)), r.get("grudge", false)), int(r.get("standing", 0))]
+	var standing := int(r.get("standing", 0))
+	_trust.text = "Деревня к вам: %s (%+d)" % [trust_word(standing, r.get("grudge", false)), standing]
+	_trust_bar.share = clampf((float(standing) + 3.0) / 8.0, 0.0, 1.0)
+	_trust_bar.color = Art.DANGER if r.get("grudge", false) or standing < 0 else Art.GOOD
+	_trust_bar.queue_redraw()
 	var lines: Array = r.get("chronicle", [])
 	_news.text = "Деревня помнит:\n" + "\n".join(PackedStringArray(lines.map(func(t: Variant) -> String: return "• " + String(t))))
 	_ask_news.visible = not lines.is_empty()

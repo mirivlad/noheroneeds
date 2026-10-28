@@ -1,16 +1,19 @@
 class_name JournalPanel
 extends PanelContainer
 ## The journal (L, ADR-0042): what one took on to do for dwellers and how far
-## it is, and what the villages one talked in remember.
+## it is, and what the villages one talked in remember. UI 2.0: two tabs,
+## the requests (each with its reward, those ready marked) and the chronicles.
 
 const WIDTH := 520
 var _text := Label.new()
 var _scroll := ScrollContainer.new()
+var tabs := TabBar.new()
+var _journal := {}
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		for node: Node in [_text, _scroll]:
+		for node: Node in [_text, _scroll, tabs]:
 			if is_instance_valid(node) and node.get_parent() == null:
 				node.free()
 
@@ -22,6 +25,11 @@ func setup() -> void:
 	var title := Label.new()
 	title.text = "Журнал"
 	box.add_child(Art.window_head(title, "L", hide))
+	tabs.add_tab("Задания")
+	tabs.add_tab("Летописи деревень")
+	tabs.focus_mode = Control.FOCUS_NONE
+	tabs.tab_changed.connect(func(_t: int) -> void: _show())
+	box.add_child(tabs)
 	_scroll.custom_minimum_size = Vector2(WIDTH, 360)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(_scroll)
@@ -34,15 +42,35 @@ func setup() -> void:
 ## Shows the server's journal ({requests: [{goal, state, reward}],
 ## chronicles: [{village, entries}]}).
 func open_for(j: Dictionary) -> void:
-	var out := PackedStringArray()
-	var requests: Array = j.get("requests", [])
-	out.append("Взялись сделать:" if not requests.is_empty() else "Вы ни за что не взялись. Поговорите с жителями (E).")
-	for r: Dictionary in requests:
-		out.append("• %s%s" % [r.get("goal", ""), "  — готово, можно сказать" if r.get("state") == "ready" else ""])
-	for c: Dictionary in j.get("chronicles", []):
-		out.append("")
-		out.append("Деревня %s помнит:" % c.get("village", ""))
-		for e: Variant in c.get("entries", []):
-			out.append("• " + String(e))
-	_text.text = "\n".join(out)
+	_journal = j
+	_show()
 	visible = true
+
+
+func _show() -> void:
+	var out := PackedStringArray()
+	if tabs.current_tab == 0:
+		var requests: Array = _journal.get("requests", [])
+		if requests.is_empty():
+			out.append("Вы ни за что не взялись. Поговорите с жителями (E).")
+		for r: Dictionary in requests:
+			var ready: bool = r.get("state") == "ready"
+			out.append("%s %s" % ["✓" if ready else "•", r.get("goal", "")])
+			var about := PackedStringArray()
+			if int(r.get("reward", 0)) > 0:
+				about.append("награда: %d монет" % int(r["reward"]))
+			if ready:
+				about.append("готово — скажите тому, кто просил")
+			if not about.is_empty():
+				out.append("   " + ", ".join(about))
+	else:
+		var chronicles: Array = _journal.get("chronicles", [])
+		if chronicles.is_empty():
+			out.append("Деревни пока ничего о вас не помнят.")
+		for c: Dictionary in chronicles:
+			if not out.is_empty():
+				out.append("")
+			out.append("Деревня %s:" % c.get("village", ""))
+			for e: Variant in c.get("entries", []):
+				out.append("• " + String(e))
+	_text.text = "\n".join(out)

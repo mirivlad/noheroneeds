@@ -1158,7 +1158,8 @@ func _update_hud() -> void:
 					view.react_own("pickup")
 					_note = "получено: %d монет" % int(r.get("reward", 0))
 				windows.opening(talk_panel)
-				talk_panel.open_for(r)
+				var who := String(r.get("creature", talk_panel.creature))
+				talk_panel.open_for(r, (client.entities.get(who, {}) as Dictionary).get("appearance", {}))
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			continue

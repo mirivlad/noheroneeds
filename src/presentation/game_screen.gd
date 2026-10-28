@@ -1554,23 +1554,12 @@ func _update_target() -> void:
 	target = view.pick_target(mouse)
 	var aim := Vector2i(mouse * WorldView.UNITS_PER_PIXEL)
 	var held := hotbar.held(client.inventory())
-	if Reach.digs(content, held) and client.has_position:
-		# A pick or an axe works on the first solid thing toward the cursor,
-		# within three cells, not on what the cursor is over (Reach).
-		var hit := Reach.first_solid(client.position, Vector2(aim), client.is_solid)
-		# What the cursor is over (a crown counts as its tree) is taken when the
-		# way to it is clear: the line to its cell meets nothing before it.
-		if target.get("kind") == "part" and client.is_solid(target["cell"].x, target["cell"].y):
-			var middle := Vector2((target["cell"] as Vector2i) * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
-			if Reach.first_solid(client.position, middle, client.is_solid) == target["cell"]:
-				hit = target["cell"]
-				aim = Vector2i(middle)
-		if target.get("kind") == "part" and client.is_solid(target["cell"].x, target["cell"].y) and hit != target["cell"]:
-			# The cell chosen, out of reach or behind another: walked up to and
-			# worked (RO, ADR-0065: rock and ore as a tree).
-			target["aim"] = Vector2i((target["cell"] as Vector2i) * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
-		elif hit != Reach.NONE:
-			target = view.part_target(hit)
+	# What is under the pointer is the target (RO, ADR-0065): the ground is
+	# walked to, never swapped for a rock or a tree nearby; a solid thing chosen
+	# is reached along the line to its middle (Reach), walked up to if far.
+	if target.get("kind") == "part" and client.is_solid(target["cell"].x, target["cell"].y):
+		aim = Vector2i((target["cell"] as Vector2i) * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
+		if Reach.digs(content, held):
 			target["aim"] = aim
 	actions = Actions.of(content, client, view, held, target, aim)
 	_cursor_kind = CursorArt.kind_of(actions) if _blueprint == "" else "corners"

@@ -487,7 +487,10 @@ func test_the_weather_on_the_screen_follows_the_sky() -> void:
 	eq(g.clock_box.season_icon.texture, HudBoxes.icon("spring"), "and its picture")
 
 
-func test_a_pick_aims_at_the_nearest_rock_toward_the_cursor() -> void:
+## What is under the pointer is the target (RO, ADR-0065): the ground beyond
+## rocks is walked to, never swapped for the rock nearest toward the cursor;
+## a rock pointed at, even behind another, is that rock.
+func test_a_pick_takes_what_is_under_the_pointer() -> void:
 	var id := g.client.character_id
 	var me := _me()
 	var c := w.chunk("surface", floori(me.x / 32.0), floori(me.y / 32.0))
@@ -500,14 +503,15 @@ func test_a_pick_aims_at_the_nearest_rock_toward_the_cursor() -> void:
 	_key(KEY_1)
 	_move_mouse(_screen(me + Vector2i(6, 0)))
 	_frames(3)
-	eq(g.target.get("cell"), me + Vector2i(2, 0), "the nearest rock toward the cursor, not what is under it")
+	eq(g.target.get("kind"), "ground", "the ground beyond the rocks: walked to")
+	eq(CursorArt.kind_of(g.actions), "corners")
+	_move_mouse(_screen(me + Vector2i(3, 0)))
+	_frames(3)
+	eq(g.target.get("cell"), me + Vector2i(3, 0), "the rock behind the other, as pointed at")
 	var dig := Actions.primary(g.actions)
 	eq(dig.get("id"), "gather")
-	eq(int(dig["request"]["x"]), me.x + 2)
-	check(dig["request"].has("ax"), "with the line it was aimed along")
-	_move_mouse(_screen(me + Vector2i(0, -6)))
-	_frames(3)
-	check(g.target.get("kind") != "part" or g.target.get("cell") != me + Vector2i(2, 0), "another way: not that rock")
+	eq(int(dig["request"]["x"]), me.x + 3)
+	check(dig["request"].has("ax"), "with the line it is reached along")
 
 
 func test_an_axe_fells_the_tree_pointed_at() -> void:

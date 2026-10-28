@@ -47,6 +47,7 @@ HELD = {
 	"spear": "thrust",
 	"bow": "shoot",
 	"fishing_rod": "cast",
+	"iron_sword": "slash",
 }
 # How a held thing is carried (clips of CARRY): the direction it keeps in the world (the
 # character faces +Y, z is up) while the wrist turns it about the fist's hinge axis, so it

@@ -114,6 +114,33 @@ func test_a_chain_from_ore_to_ingot_and_meat_to_health() -> void:
 	eq(_req(a, {"type": "eat", "item": "base:stone"}).get("reason"), "not_food")
 
 
+func test_an_iron_sword_is_forged_from_materials_and_can_be_held() -> void:
+	var a := _player("Аня")
+	w.grant(a, "base:plank", 1)
+	w.grant(a, "base:cord", 1)
+	w.grant(a, "base:iron_ingot", 3)
+	var craft := {"type": "craft", "recipe": "base:forge_iron_sword", "count": 1}
+	eq(_req(a, craft.duplicate()).get("reason"), "no_station", "a sword needs the forge")
+	w.grant(a, "base:stone", 10)
+	w.grant(a, "base:log", 2)
+	check(_req(a, {"type": "build", "location": "surface", "x": 4, "y": 3, "part": "base:forge"}).get("ok", false), "a forge")
+	eq(_req(a, craft.duplicate()).get("made"), {"base:iron_sword": 1})
+	for item: String in ["base:plank", "base:cord", "base:iron_ingot"]:
+		eq(w.inventory(a).count(item), 0, "forging consumes " + item)
+	check(_req(a, {"type": "hold", "item": "base:iron_sword"}).get("ok", false), "the forged sword can be held")
+	eq(w.held_of(a), "base:iron_sword")
+	w.inventory(a).set_state("base:iron_sword", 0, {"wear": 1200})
+	w.grant(a, "base:iron_ingot", 1)
+	w.grant(a, "base:plank", 1)
+	var mend := _req(a, {"type": "mend", "item": "base:iron_sword", "copy": 0})
+	check(mend.get("ok", false), "the sword is mended at the forge: " + str(mend))
+	eq(mend.get("spent"), {"base:iron_ingot": 1, "base:plank": 1})
+	eq(w.inventory(a).state_of("base:iron_sword", 0), {"repairs": 1}, "the same copy is usable again")
+	var smith := _content.get_def("base:smith")
+	check(smith["teaches"].has("base:forge_iron_sword"), "one can learn the recipe")
+	check(smith["trade"]["sells"].has("base:iron_sword"), "one can buy a sword")
+
+
 func test_malformed_recipes_and_food_are_content_errors() -> void:
 	var item := {"id": "test:x", "kind": "item"}
 	var good := {"id": "test:r", "kind": "recipe", "inputs": {"test:x": 1}, "outputs": {"test:x": 2}, "station": "anvil"}

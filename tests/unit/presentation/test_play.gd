@@ -630,6 +630,7 @@ func test_clicks_walk_dig_and_strike_as_in_ro() -> void:
 	g.hotbar.put(0, "", -1)
 	g.orders.clear()
 	var deer := w.creatures._spawn("base:deer", "surface", _me() + Vector2i(-3, 0), {}, 1)
+	deer.next_think = 1 << 40  # this checks clicks, not a deer wandering off the pointed cell
 	_frames_until(func() -> bool: return g.client.entities.has(deer.id), 10.0)
 	var e: Dictionary = g.client.entities[deer.id]
 	_move_mouse(_screen(Vector2i(int(e["x"]), int(e["y"])) / Movement.UNIT))

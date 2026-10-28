@@ -21,7 +21,7 @@ import hair as hair_paint
 
 ROWS = ["s", "se", "e", "ne", "n", "nw", "w", "sw"]
 CLIP_NAMES = {"idle": "стойка", "walk": "ходьба", "run": "бег", "sit": "сидит", "pickup": "поднять с земли",
-	"hurt": "получил удар", "dead": "падение", "slash": "удар рукой", "thrust": "укол (копьё, мотыга)",
+	"hurt": "получил удар", "dead": "падение", "slash": "рубящий удар (меч)", "thrust": "укол (копьё, мотыга)",
 	"chop": "рубка (топоры)", "mine": "кирка: сверху вниз", "shoot": "выстрел из лука", "cast": "заброс удочки"}
 FONT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "assets", "fonts", "monogram.ttf")
 GRASS = "#4f7a3a"

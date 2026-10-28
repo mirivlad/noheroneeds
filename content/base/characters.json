@@ -193,7 +193,7 @@
       "id": "base:weaponsmithing",
       "kind": "skill",
       "name": "Оружейное дело",
-      "description": "Копья, луки, стрелы",
+      "description": "Мечи, копья, луки, стрелы",
       "trained_by": [
         "craft"
       ],
@@ -392,6 +392,29 @@
         "reach": 1.0,
         "arc": 100,
         "cooldown_ms": 650
+      },
+      "durability": 1200,
+      "repair": {
+        "station": "forge",
+        "materials": {
+          "base:iron_ingot": 1,
+          "base:plank": 1
+        }
+      }
+    },
+    {
+      "id": "base:iron_sword",
+      "kind": "item",
+      "name": "Железный меч",
+      "stack": 1,
+      "equip_slot": "main_hand",
+      "swing": "slash",
+      "weapon": {
+        "kind": "melee",
+        "damage": 8,
+        "reach": 1.2,
+        "arc": 100,
+        "cooldown_ms": 600
       },
       "durability": 1200,
       "repair": {

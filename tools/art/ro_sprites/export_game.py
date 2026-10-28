@@ -46,7 +46,7 @@ BODIES = {"male": "base:human_ro_m", "female": "base:human_ro_f"}
 # The hairstyles as the game's styles (content/base/character_editor.json).
 STYLE_IDS = {layer: "base:human_ro_hair_" + layer[len("hair_"):] for layer in gear.HAIR_LAYERS}
 # Game swings (world_view.gd swing_kind) -> clips.
-SWINGS = {"chop": "chop", "mine": "mine", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "cast"}
+SWINGS = {"chop": "chop", "mine": "mine", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "slash": "slash", "cast": "cast"}
 # Game equipment slots of the layers (content/base character_editor.json).
 SLOTS = {**{layer: "hair" for layer in gear.HAIR_LAYERS}, **gear.WORN, **{item: "main_hand" for item in gear.HELD}}
 # What wins a tie or a cycle of the depth order: from the body outwards.

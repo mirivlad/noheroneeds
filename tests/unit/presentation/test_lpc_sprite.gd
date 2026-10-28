@@ -113,7 +113,7 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 	var doll := view.doll_for("me", _look("base:human_m")) as LpcSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	for case: Array in [["base:axe", "chop", "chop"], ["base:pickaxe", "mine", "chop"],
-			["base:spear", "thrust", "thrust"], ["base:bow", "draw", "shoot"], ["", "lunge", "slash"]]:
+			["base:spear", "thrust", "thrust"], ["base:bow", "draw", "shoot"], ["base:iron_sword", "slash", "slash"], ["", "lunge", "slash"]]:
 		doll.hold(view.item_picture(case[0]), view.item_grip(case[0]), case[0])
 		eq(doll._held_item, case[0], "drawn with frames of its own: " + case[0])
 		check(doll._held == null or not doll._held.visible, "no picture pinned to the hand")

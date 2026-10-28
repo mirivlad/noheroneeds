@@ -648,6 +648,7 @@ ITEMS = {
     "base:copper_ingot": (str(ORE), 96, 352),
     "base:cooked_meat": ("items1_0.png", 256, 192),
     "base:iron_axe": ("items1_0.png", 192, 224),
+    "base:iron_sword": ("items1_0.png", 320, 0),
     "base:iron_pickaxe": ("items1_0.png", 96, 0),
     "base:wheat_seeds": (str(FARM / "farming_fishing.png"), 32, 160),
     "base:carrot_seeds": (str(FARM / "farming_fishing.png"), 32, 192),

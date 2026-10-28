@@ -1124,8 +1124,8 @@ func _update_ghost() -> void:
 
 
 func _direction() -> Vector2i:
-	if pin_panel.visible:
-		return Vector2i.ZERO  # the keys type the code
+	if pin_panel.visible or get_viewport().gui_get_focus_owner() is LineEdit:
+		return Vector2i.ZERO  # the keys type the code, a search, a number
 	if _opts.has("walk"):
 		var p := String(_opts["walk"]).split(",")
 		return Vector2i(int(p[0]), int(p[1]))

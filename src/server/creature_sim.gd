@@ -283,7 +283,73 @@ func _travellers(cx: int, cy: int) -> void:
 			continue
 		var c := _spawn("base:villager", Levels.SURFACE, at, villager_looks(r), r.randi())
 		c.route = {"road": road["key"], "i": i, "step": 1 if r.randf() < 0.5 else -1}
+		# A trader (ADR-0067): a load from where it set out to where it goes.
+		var heading := String(road["to"]) if int(c.route["step"]) > 0 else String(road["from"])
+		var left := String(road["from"]) if int(c.route["step"]) > 0 else String(road["to"])
+		c.job = {"profession": "base:trader", "name": String(world.chronicles.dweller_name(left, 90 + r.randi_range(0, 8))[0]),
+			"purse": TRADER_PURSE, "from": left, "toward": heading}
+		_load(c, left, heading)
 		c.changed()
+
+
+## A trader's purse to start with (ADR-0067).
+const TRADER_PURSE := 80
+
+
+## A trader takes a load at a village for the one it goes to: bought of the
+## village (its coins grow), as much as the purse pays for.
+func _load(c: Creature, at: String, toward: String) -> void:
+	var e := world.economy
+	if e == null or at == "":
+		return
+	var stock := world.inventory("trade|" + c.id)
+	for item: String in e.cargo_for(at, toward):
+		var each := e.price(at, item)
+		var n := mini(int(e.cargo_for(at, toward).get(item, 0)), int(c.job.get("purse", 0)) / maxi(1, each))
+		n = e.take(at, item, n)
+		if n <= 0:
+			continue
+		stock.add(item, n)
+		c.job["purse"] = int(c.job.get("purse", 0)) - n * each
+		e.earn(at, n * each)
+	world.touch_inventory("trade|" + c.id)
+
+
+## A trader at the end of its road: its load goes into the village's store,
+## paid for at the village's price (as much as the village can pay); a big
+## delivery is in the chronicle; then a load back the other way.
+func _arrive(c: Creature, at: String, back: String) -> void:
+	var e := world.economy
+	if e == null or at == "":
+		return
+	var stock := world.inventory("trade|" + c.id)
+	var told := PackedStringArray()
+	var many := 0
+	for item: String in stock.stacks.keys():
+		var n := int(stock.stacks[item])
+		var paid := mini(n * e.price(at, item), e.coins(at))
+		e.put(at, item, n)
+		e.earn(at, -paid)
+		c.job["purse"] = int(c.job.get("purse", 0)) + paid
+		stock.remove(item, n)
+		told.append("%s (%d)" % [String(world.content.get_def(item).get("name", item)).to_lower(), n])
+		many += n
+	if many >= VillageEconomy.TOLD and world.chronicles:
+		world.chronicles.note(at, "Торговец %s привёз из деревни %s: %s." % [String(c.job.get("name", "")),
+			world.chronicles.village_name(String(c.job.get("from", back))), ", ".join(told)])
+	c.job["from"] = at
+	c.job["toward"] = back
+	_load(c, at, back)
+	c.changed()
+
+
+## A traveller's road ({} if it is gone).
+func _road_of(c: Creature) -> Dictionary:
+	var s := world.generator.settlements if world.generator else null
+	var k: Array = c.route.get("road", [])
+	if s == null or k.size() != 4:
+		return {}
+	return s.road_of(int(k[0]), int(k[1]), int(k[2]), int(k[3]))
 
 
 ## A traveller's road path ([] if it is gone).
@@ -337,6 +403,11 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 	if i <= 0 or i >= path.size() - 1:  # at a settlement: back the other way
 		i = clampi(i, 0, path.size() - 1)
 		c.route["step"] = -step
+		if c.job.has("toward"):  # a trader sells its load there and takes one back
+			var road := _road_of(c)
+			var at := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
+			var back := String(road.get("from", "")) if step > 0 else String(road.get("to", ""))
+			_arrive(c, at, back)
 	c.route["i"] = i
 	c.home = path[i]  # where it is about, should it be away a while
 	_go(c, "travel", path[i], false)

@@ -24,6 +24,14 @@ const DEAREST := 2.0
 const CHEAPEST := 0.5
 ## A delivery this big is written in the chronicle.
 const TOLD := 5
+## A village's coins to start with; below POOR it is poor, above RICH rich
+## (ADR-0067: told in its chronicle once, till it mends).
+const START_COINS := 300
+const POOR := 60
+const RICH := 900
+## A trader's load: so many goods, so many of each at most.
+const CARGO_GOODS := 3
+const CARGO_EACH := 8
 
 var world: ServerWorld
 var _stores := {}
@@ -82,7 +90,7 @@ func _store(id: String) -> Dictionary:
 			stock[item] = int(makes(id)[item]) * START_DAYS
 		for item: String in needs(id):
 			stock[item] = int(stock.get(item, 0)) + int(needs(id)[item]) * START_DAYS
-		s = {"day": world.world_time / Daylight.DAY_MS, "stock": stock}
+		s = {"day": world.world_time / Daylight.DAY_MS, "stock": stock, "coins": START_COINS}
 	_stores[id] = s
 	return s
 
@@ -151,6 +159,71 @@ func put(id: String, item: String, n: int) -> void:
 	_save(id)
 
 
+## What a thing is worth in coins anywhere (ADR-0067): the mean of what the
+## trades sell and buy it for; 2 for what none trades.
+var _worth := {}
+func worth(item: String) -> int:
+	if _worth.is_empty():
+		var sums := {}
+		for id: String in world.content.defs:
+			if world.content.kind_of(id) != "profession":
+				continue
+			var t: Dictionary = world.content.get_def(id).get("trade", {})
+			for i: String in t.get("sells", {}):
+				(sums.get_or_add(i, []) as Array).append(int(t["sells"][i][1]))
+			for i: String in t.get("buys", {}):
+				(sums.get_or_add(i, []) as Array).append(int(t["buys"][i]))
+		for i: String in sums:
+			var a: Array = sums[i]
+			_worth[i] = maxi(1, roundi(float(a.reduce(func(x: int, y: int) -> int: return x + y, 0)) / a.size()))
+	return int(_worth.get(item, 2))
+
+
+## A thing's price at a village: its worth, dearer as the village lacks it.
+func price(id: String, item: String) -> int:
+	return maxi(1, roundi(worth(item) * factor(id, item)))
+
+
+func coins(id: String) -> int:
+	return int(store(id).get("coins", START_COINS))
+
+
+## Coins come into a village or go out of it (never below none); a village
+## grown poor or rich is told in its chronicle, once till it mends.
+func earn(id: String, n: int) -> void:
+	var s := store(id)
+	s["coins"] = maxi(0, int(s.get("coins", START_COINS)) + n)
+	var state := "poor" if int(s["coins"]) < POOR else ("rich" if int(s["coins"]) > RICH else "")
+	if state != String(s.get("told", "")):
+		s["told"] = state
+		if state != "" and world.chronicles:
+			world.chronicles.note(id, "Деревня %s беднеет: в казне почти пусто." % world.chronicles.village_name(id) if state == "poor"
+				else "Деревня %s богатеет: торговля идёт хорошо." % world.chronicles.village_name(id))
+	_save(id)
+
+
+## A trader's load from a village toward another: what the other lacks and
+## this one has to spare, else what this one makes most of; {item: count}.
+func cargo_for(from: String, to: String) -> Dictionary:
+	var out := {}
+	var wanted: Array[String] = short(to) if to != "" else []
+	for item: String in wanted:
+		var n := mini(CARGO_EACH, spare(from, item))
+		if n > 0:
+			out[item] = n
+		if out.size() >= CARGO_GOODS:
+			return out
+	var made: Array = makes(from).keys()
+	made.sort_custom(func(a: String, b: String) -> bool: return spare(from, a) > spare(from, b))
+	for item: String in made:
+		if out.size() >= CARGO_GOODS:
+			break
+		var n := mini(CARGO_EACH, maxi(spare(from, item), have(from, item) / 4))
+		if n > 0 and not out.has(item):
+			out[item] = n
+	return out
+
+
 ## The other villages of its cluster (its neighbours, ADR-0054).
 func neighbours(id: String) -> Array[String]:
 	var out: Array[String] = []
@@ -179,10 +252,14 @@ func _fetch(id: String, s: Dictionary) -> void:
 			if lacking <= 0:
 				break
 			var _o := store_quiet(other)
-			var got := mini(lacking, spare(other, item))
+			var each := price(other, item)
+			# Paid for at the seller's price, as many as the buyer can pay for (ADR-0067).
+			var got := mini(mini(lacking, spare(other, item)), int(s.get("coins", START_COINS)) / maxi(1, each))
 			if got <= 0:
 				continue
 			_o["stock"][item] = int(_o["stock"][item]) - got
+			_o["coins"] = int(_o.get("coins", START_COINS)) + got * each
+			s["coins"] = int(s.get("coins", START_COINS)) - got * each
 			_save(other)
 			stock[item] = int(stock.get(item, 0)) + got
 			if got >= TOLD and world.chronicles:

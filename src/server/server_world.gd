@@ -2767,6 +2767,8 @@ func _trader(actor: String, r: Dictionary) -> Array:
 		return [null, "not_now"]
 	if chronicles.bears_grudge(c, actor):
 		return [null, "grudge"]
+	if c.job.has("toward"):  # a trader on the road (ADR-0067): its load, its prices
+		return [c, _road_trade(c)]
 	# Each morning the stock and the purse are as the trade says.
 	var day := world_time / Daylight.DAY_MS
 	if int(c.job.get("stocked", -1)) != day:
@@ -2792,15 +2794,57 @@ func _trader(actor: String, r: Dictionary) -> Array:
 				copies.append(made)
 			stock.add(item, n, copies)
 		_touch_inventory("trade|" + c.id)
+		if c.job.has("stocked") and String(c.job.get("village", "")) != "":
+			# Yesterday's takings (or spendings) are the village's (ADR-0067).
+			economy.earn(String(c.job["village"]), int(c.job.get("purse", 0)) - int(trade.get("purse", 0)))
 		c.job["stocked"] = day
 		c.job["purse"] = int(trade.get("purse", 0))
 		c.changed()
 	return [c, trade]
 
 
+## A trader says where it goes and what it carries (ADR-0067).
+func _trader_talk(actor: String, c: Creature) -> Dictionary:
+	if not present.has(actor):
+		return {"ok": false, "reason": "not_here"}
+	var p: Dictionary = present[actor]
+	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+		return {"ok": false, "reason": "too_far"}
+	var stock := inventory("trade|" + c.id)
+	var load := PackedStringArray()
+	for item: String in stock.stacks:
+		load.append("%s (%d)" % [String(content.get_def(item).get("name", item)).to_lower(), int(stock.stacks[item])])
+	var toward := chronicles.village_name(String(c.job.get("toward", "")))
+	var from := chronicles.village_name(String(c.job.get("from", "")))
+	var says := "Иду из деревни %s в деревню %s. " % [from, toward] + ("Везу: %s. Купить не желаешь?" % ", ".join(load) if not load.is_empty()
+		else "Иду порожним — на месте возьму товар.")
+	return {"ok": true, "creature": c.id, "trader": true, "name": String(c.job.get("name", "Торговец")),
+		"profession": "base:trader", "village": toward, "says": says, "short": economy.short(String(c.job.get("toward", ""))),
+		"chronicle": [], "teaches": []}
+
+
+## A trader's trade (ADR-0067): it sells its load a quarter dearer than where
+## it got it, buys what the village it goes to lacks a fifth cheaper than there.
+func _road_trade(c: Creature) -> Dictionary:
+	var stock := inventory("trade|" + c.id)
+	var from := String(c.job.get("from", ""))
+	var toward := String(c.job.get("toward", ""))
+	var sells := {}
+	for item: String in stock.stacks:
+		sells[item] = [int(stock.stacks[item]), maxi(1, roundi(economy.price(from, item) * 1.25)) if from != "" else economy.worth(item)]
+	var buys := {}
+	if toward != "":
+		for item: String in economy.short(toward):
+			buys[item] = maxi(1, roundi(economy.price(toward, item) * 0.8))
+	return {"sells": sells, "buys": buys, "purse": int(c.job.get("purse", 0))}
+
+
 ## Talk with a dweller (ADR-0042): what it says and asks ("talk"), taking
 ## its request on ("promise"), telling it is done ("report").
 func _talk(actor: String, r: Dictionary, what: String) -> Dictionary:
+	var met := creatures.get_creature(String(r["creature"])) if typeof(r.get("creature")) == TYPE_STRING else null
+	if met != null and met.job.has("toward"):
+		return _trader_talk(actor, met)
 	var found := _dweller(actor, r)
 	if found[0] == null:
 		return {"ok": false, "reason": found[1]}
@@ -2999,6 +3043,8 @@ func _trade(actor: String, r: Dictionary) -> Dictionary:
 		c.job["purse"] = int(c.job.get("purse", 0)) - price
 		if String(c.job.get("village", "")) != "":
 			economy.put(String(c.job["village"]), item, n)  # what it bought goes into the village's store
+		elif c.job.has("toward"):
+			stock.add(item, n)  # a trader carries it on (ADR-0067)
 	c.changed()
 	_touch_inventory(actor)
 	_touch_inventory("trade|" + c.id)

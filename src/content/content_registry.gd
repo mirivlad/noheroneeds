@@ -579,8 +579,8 @@ func _check_settlement(id: String, d: Dictionary) -> void:
 ## which, what it holds while at it, what it says (by situation).
 func _check_profession(id: String, d: Dictionary) -> void:
 	var work := String(d.get("work", ""))
-	if not (work in ["field", "pen", "water"] or (work.begins_with("station:") and work.length() > 8)):
-		errors.append("%s: work is field, pen, water or station:<kind>" % id)
+	if not (work in ["field", "pen", "water", "road"] or (work.begins_with("station:") and work.length() > 8)):
+		errors.append("%s: work is field, pen, water, road (a trader, ADR-0067) or station:<kind>" % id)
 	var hours: Variant = d.get("hours")
 	if typeof(hours) != TYPE_ARRAY or (hours as Array).size() != 2 or float(hours[0]) < 0.0 or float(hours[1]) > 24.0 \
 			or float(hours[0]) >= float(hours[1]):

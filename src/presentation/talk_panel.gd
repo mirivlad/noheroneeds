@@ -149,10 +149,13 @@ func open_for(r: Dictionary, looks := {}) -> void:
 	creature = String(r.get("creature", creature))
 	talk = r
 	var trade_name := String(content.get_def(String(r.get("profession", ""))).get("name", "житель")).to_lower()
-	_title.text = "%s, %s. Деревня %s" % [r.get("name", "Житель"), trade_name, r.get("village", "")]
+	_title.text = "%s, %s. Деревня %s" % [r.get("name", "Житель"), trade_name, r.get("village", "")] if not r.get("trader", false) \
+		else "%s, торговец. Идёт в деревню %s" % [r.get("name", "Торговец"), r.get("village", "")]
 	var req: Dictionary = r.get("request", {})
 	var state := String(req.get("state", ""))
-	if r.get("grudge", false):
+	if r.has("says"):  # a trader on the road (ADR-0067)
+		_says.text = "— " + String(r["says"])
+	elif r.get("grudge", false):
 		_says.text = "— Не о чем мне с тобой говорить. Ступай."
 	elif r.has("thanks"):
 		_says.text = "— %s\nНаграда: %d монет." % [r["thanks"], int(r.get("reward", 0))]
@@ -176,10 +179,11 @@ func open_for(r: Dictionary, looks := {}) -> void:
 	_trust_bar.share = clampf((float(standing) + 3.0) / 8.0, 0.0, 1.0)
 	_trust_bar.color = Art.DANGER if r.get("grudge", false) or standing < 0 else Art.GOOD
 	_trust_bar.queue_redraw()
+	_trust.get_parent().visible = not r.get("trader", false)  # a stranger: no village's trust
 	var short: Array = r.get("short", [])
 	if not short.is_empty() and not r.get("grudge", false):
 		_goal.visible = true
-		_goal.text += ("\n" if _goal.text != "" else "") + "Деревне не хватает: " + ", ".join(PackedStringArray(short.map(
+		_goal.text += ("\n" if _goal.text != "" else "") + ("Там не хватает: " if r.get("trader", false) else "Деревне не хватает: ") + ", ".join(PackedStringArray(short.map(
 			func(i: Variant) -> String: return String(content.get_def(String(i)).get("name", i)).to_lower()))) + " — за это заплатят дороже."
 	var lines: Array = r.get("chronicle", [])
 	_news.text = "Деревня помнит:\n" + "\n".join(PackedStringArray(lines.map(func(t: Variant) -> String: return "• " + String(t))))

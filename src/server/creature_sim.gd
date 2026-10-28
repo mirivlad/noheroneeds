@@ -1187,6 +1187,8 @@ func _work(c: Creature, spot: Vector2i, prof: Dictionary) -> void:
 				toward = c.cell() + Vector2i(Vector2(_toward_water(c)).round())
 			"field":
 				toward = c.cell() + Vector2i(1, 0)
+			"pen":  # to the beast nearest in the pen (else the pen's middle), not away from it
+				toward = _pen_beast(c)
 		world.combat.swung(c.id, toward * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2))
 	if String(prof.get("work", "")) == "pen":
 		var plan := _plan_of(c)
@@ -1198,6 +1200,24 @@ func _work(c: Creature, spot: Vector2i, prof: Dictionary) -> void:
 					if a and a.owner == String(plan["id"]) and not fed_lately(a):
 						a.fed_at = world.world_time
 						life.ate(a)
+
+
+## The cell of the village's beast in its pen nearest a herder, else the pen's middle.
+func _pen_beast(c: Creature) -> Vector2i:
+	var plan := _plan_of(c)
+	var pen: Rect2i = plan["pen"]["rect"]
+	var best := pen.get_center()
+	var nearest := INF
+	for cy in range(floori(pen.position.y / 32.0), floori((pen.end.y - 1) / 32.0) + 1):
+		for cx in range(floori(pen.position.x / 32.0), floori((pen.end.x - 1) / 32.0) + 1):
+			for id: String in in_chunk(Levels.SURFACE, cx, cy):
+				var a := get_creature(id)
+				if a and a.owner == String(plan["id"]) and pen.has_point(a.cell()):
+					var d := Vector2(a.cell() - c.cell()).length_squared()
+					if d < nearest:
+						nearest = d
+						best = a.cell()
+	return best
 
 
 func _toward_water(c: Creature) -> Vector2:

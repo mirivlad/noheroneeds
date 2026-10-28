@@ -22,7 +22,7 @@
         "evening": ["Сегодня улов так себе.", "Зато вода спокойная."], "rain": ["В дождь самый клёв!"], "night": ["Ночью рыба спит, и я с ней."]}},
     {"id": "base:herder", "kind": "profession",
       "teaches": {"base:tan_leather": {"price": 8, "standing": 0}, "base:weave_cloth": {"price": 8, "standing": 0}, "base:sew_shirt": {"price": 10, "standing": 0}, "base:sew_trousers": {"price": 10, "standing": 0}, "base:make_boots": {"price": 15, "standing": 0}, "base:sew_cloak": {"price": 20, "standing": 1}, "base:make_leather_armor": {"price": 35, "standing": 1, "skill": {"base:shoemaking": 15}}},
-      "trade": {"quality": [0.7, 0.85], "blueprints": {"base:make_fur_cloak": 40, "base:make_fur_hood": 25}, "purse": 60, "sells": {"base:wool": [6, 3], "base:egg": [8, 2], "base:milk_bucket": [1, 10], "base:leather": [3, 6], "base:cloth": [2, 8]}, "buys": {"base:wheat": 1, "base:carrot": 1, "base:wheat_seeds": 1}}, "name": "Пастух", "work": "pen", "hours": [6, 19], "holds": "base:wheat",
+      "trade": {"quality": [0.7, 0.85], "blueprints": {"base:make_fur_cloak": 40, "base:make_fur_hood": 25}, "purse": 60, "sells": {"base:wool": [6, 3], "base:egg": [8, 2], "base:milk_bucket": [1, 10], "base:leather": [3, 6], "base:cloth": [2, 8]}, "buys": {"base:wheat": 1, "base:carrot": 1, "base:wheat_seeds": 1}}, "name": "Пастух", "work": "pen", "hours": [6, 19], "holds": "base:bucket",
       "lines": {"greet": ["Овцы сыты — и я доволен.", "Скотину не обижай."],
         "work": ["Ну-ну, не толкайтесь.", "Кому зерна?"],
         "evening": ["Загон закрыт, все на месте."], "rain": ["Овцы дождя не любят."], "night": ["Тихо, животина спит."]}}

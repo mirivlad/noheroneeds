@@ -1,4 +1,5 @@
 shader_type spatial;
+render_mode cull_disabled;  // a face turned inside out never leaves a hole one sees through
 uniform sampler2D rock_texture : source_color, filter_linear_mipmap, repeat_enable;
 varying vec3 rock_at;
 varying vec3 rock_normal;

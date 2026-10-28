@@ -414,6 +414,8 @@ func show_settings() -> void:
 		func(on: bool) -> void: changed.call("show_hints", on))
 	_check("Показывать частоту кадров", settings.get_value("show_fps")).toggled.connect(
 		func(on: bool) -> void: changed.call("show_fps", on))
+	_check("Ходить клавишами (W A S D)", settings.get_value("keyboard_walk")).toggled.connect(
+		func(on: bool) -> void: changed.call("keyboard_walk", on))
 	_label("Свой сервер", Art.TEXT_DIM)
 	_spin("Порт", 1024, 65535, int(settings.get_value("server_port"))).value_changed.connect(
 		func(v: float) -> void: changed.call("server_port", int(v)))

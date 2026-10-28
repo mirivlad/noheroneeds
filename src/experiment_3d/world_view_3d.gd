@@ -102,9 +102,34 @@ func configure_camera(settings: GameSettings) -> void:
 	tilt = clampf(float(settings.values.get("experiment_3d_tilt", 55)), 25, 78)
 	zoom = clampf(float(settings.values.get("experiment_3d_zoom", 16.875)), 12, 48)
 
+## The camera as in RO: the right button dragged turns it (with Shift tilts
+## it), a double right click turns it back north; the wheel zooms. A right
+## click without a drag is not the camera's (the game opens its menu). The
+## middle button drags it too.
+const DRAG_PX := 5.0
+var _right_down := false
+var _dragged := 0.0
+
 func camera_input(event: InputEvent) -> bool:
 	if event is InputEventMouseButton:
 		var b := event as InputEventMouseButton
+		if b.button_index == MOUSE_BUTTON_RIGHT:
+			if b.double_click:
+				yaw = 0.0
+				_save_camera()
+				_right_down = false
+				return true
+			if b.pressed:
+				_right_down = true
+				_dragged = 0.0
+				return true  # the click is told when it is let go without a drag
+			var was := _rotate and _right_down
+			_right_down = false
+			if was or _dragged > DRAG_PX:
+				_rotate = false
+				_save_camera()
+				return true
+			return false
 		if b.button_index == MOUSE_BUTTON_MIDDLE:
 			_rotate = b.pressed
 			if not _rotate:
@@ -114,10 +139,15 @@ func camera_input(event: InputEvent) -> bool:
 			zoom = clampf(zoom * (.9 if b.button_index == MOUSE_BUTTON_WHEEL_UP else 1.1), 12, 48)
 			_save_camera()
 			return true
+	if event is InputEventMouseMotion and _right_down and not _rotate:
+		_dragged += (event as InputEventMouseMotion).relative.length()
+		if _dragged > DRAG_PX:
+			_rotate = true  # a drag, not a click
 	if event is InputEventMouseMotion and _rotate:
 		var m := event as InputEventMouseMotion
-		if m.button_mask & MOUSE_BUTTON_MASK_MIDDLE == 0:
+		if m.button_mask & (MOUSE_BUTTON_MASK_MIDDLE | MOUSE_BUTTON_MASK_RIGHT) == 0:
 			_rotate = false
+			_right_down = false
 			_save_camera()
 			return false
 		if m.shift_pressed:
@@ -306,6 +336,17 @@ func corner_height(c: Vector2i) -> float:
 func _rock_at(c: Vector2i) -> bool:
 	return content.get_def(_cell_layer(c, "structure")).get("role") == "rock"
 
+## The top of a rock cell at one of its corners, metres: flush with its level
+## when it is a level's edge, else a crag (RockCells3D.top).
+func _rock_top(c: Vector2i, corner: Vector2i) -> float:
+	if client.z < 0 or terrain == null:
+		return RockCells3D.top(corner)
+	var ground := terrain.cell(c)
+	for d: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+		if not _rock_at(c + d) and terrain.cell(c + d) >= ground - .5:
+			return ground + .05
+	return ground + RockCells3D.top(corner)
+
 ## The land's shape: rock and chasms stand no corner (the ground round them is
 ## level to their edge); a hanging bridge sags (ADR-0064).
 func _new_terrain() -> TerrainShape3D:
@@ -456,9 +497,23 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		mesh = RockCells3D.mesh(cell, (terrain.cell(cell) if client.z >= 0 and terrain else 0.0) - floor_y,
 			func(c: Vector2i) -> float: return (terrain.low(c) if client.z >= 0 and terrain else 0.0) - floor_y,
 			_rock_at, func(c: Vector2i) -> bool: return client.z >= 0 and terrain != null and not _rock_at(c) and terrain.cell(c) >= terrain.cell(cell) - .5,
-			buildings.rock)
+			buildings.rock, func(n: Vector2i, corner: Vector2i) -> float: return _rock_top(n, corner) - floor_y)
 		instance_id = "rock:" + str(cell)
 		basis = Basis.IDENTITY
+	elif role == "fence" or (role == "door" and float(d.get("height", 1.0)) < 1.0):
+		# A fence of rails between posts, joined to the fences and gates beside;
+		# a gate (a low door) a leaf of boards across its line (the author, 28.10.2026).
+		mesh = buildings.fence(fence_mask(cell)) if role == "fence" else buildings.gate(bool(props.get("open", false)))
+		if role == "fence":
+			basis = Basis.IDENTITY
+		elif not props.has("facing"):
+			var mask := fence_mask(cell)
+			basis = Basis(Vector3.UP, PI / 2 if mask & 10 != 0 and mask & 5 == 0 else 0.0)
+		instance_id = "module:" + str(mesh.get_instance_id())
+	elif id == "base:campfire":
+		mesh = buildings.campfire()
+		basis = Basis.IDENTITY
+		instance_id = "module:campfire"
 	elif role in ["wall", "window", "door"] and not id.contains("rock"):
 		if role == "wall":
 			var mask := wall_mask(cell)
@@ -695,6 +750,17 @@ func _inward(st: SurfaceTool, p: Array) -> void:
 			st.set_normal(n)
 			st.set_uv(Vector2(p[i].x + p[i].z, p[i].y))
 			st.add_vertex(p[i])
+
+## Which sides of a fence's cell a fence or a gate goes on to (bits: east,
+## north, west, south); none — a lone post with rails east and west.
+func fence_mask(cell: Vector2i) -> int:
+	var mask := 0
+	var directions := [Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT, Vector2i.DOWN]
+	for i in 4:
+		var d := content.get_def(_cell_layer(cell + directions[i], "structure"))
+		if d.get("role") == "fence" or (d.get("role") == "door" and float(d.get("height", 1.0)) < 1.0):
+			mask |= 1 << i
+	return mask if mask != 0 else 5
 
 func wall_mask(cell: Vector2i) -> int:
 	var mask := 0
@@ -936,15 +1002,17 @@ func _speech(id: String, actor: BillboardActor3D, e: Dictionary, delta: float) -
 				line.name = "Speech"
 				line.font = Art.font()
 				line.font_size = 32
-				line.outline_size = 10
+				# Read at a glance (the author, 28.10.2026: they were too small).
+				line.outline_size = 14
 				line.modulate = Color(0.1, 0.08, 0.06)
 				line.outline_modulate = Color(0.97, 0.94, 0.86)
-				line.pixel_size = .006
+				line.pixel_size = .0115
 				line.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 				line.no_depth_test = true
 				line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				line.width = 360
-				line.position = Vector3(0, 2.3, 0)
+				line.width = 300
+				line.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+				line.position = Vector3(0, 2.2, 0)
 				actor.add_child(line)
 			line.text = String(e.get("say", ""))
 			line.set_meta("left", SPEECH_S)
@@ -978,6 +1046,13 @@ func screen_point(screen: Vector2) -> Vector2:
 	_cursor = {}
 	if not eye.is_inside_tree() or eye.get_world_3d() == null:
 		return Vector2.ZERO
+	# A being whose figure is under the pointer is what one points at, whatever
+	# stands before or behind it (as in RO: the sprites are what one clicks).
+	var being := _actor_at(screen * _pixel)
+	if being != "":
+		_cursor = {"kind": "entity", "id": being, "entity": client.entities.get(being, {}), "location": client.location}
+		var a := _actors[being] as Node3D
+		return Vector2(a.position.x, a.position.z) * CELL
 	var origin := eye.project_ray_origin(screen * _pixel)
 	var to := origin + eye.project_ray_normal(screen * _pixel) * eye.far
 	var query := PhysicsRayQueryParameters3D.create(origin, to)
@@ -1005,6 +1080,30 @@ func screen_point(screen: Vector2) -> Vector2:
 		return Vector2(p.x, p.z) * CELL
 	# Unknown space is outside loaded chunks, so cannot produce a valid action.
 	return own_pixel_position(1)
+
+## The being (not oneself) whose figure covers a point of the 3D view's
+## pixels — the box from its feet to its head on the screen, a body wide —
+## the nearest to the eye of those; "" for none.
+func _actor_at(at: Vector2) -> String:
+	var best := ""
+	var nearest := INF
+	for id: String in _actors:
+		var a := _actors[id] as BillboardActor3D
+		if a == null or id == client.character_id or not client.entities.has(id):
+			continue
+		var feet := a.global_position
+		var head := feet + Vector3.UP * 1.6 * a.scale.y
+		if not eye.is_position_in_frustum(feet + Vector3.UP * 0.8):
+			continue
+		var f := eye.unproject_position(feet)
+		var h := eye.unproject_position(head)
+		var half := maxf(6.0 * _pixel, absf(f.y - h.y) * 0.22)
+		if Rect2(Vector2(minf(f.x, h.x) - half, minf(f.y, h.y)), Vector2(absf(f.x - h.x) + half * 2.0, absf(f.y - h.y))).has_point(at):
+			var d := eye.global_position.distance_squared_to(feet)
+			if d < nearest:
+				nearest = d
+				best = id
+	return best
 
 func covers_shown(cell: Vector2i) -> bool:
 	return not _cut.has_point(cell)
@@ -1111,7 +1210,7 @@ func popup_at(at: Vector2, text: String, color := Art.TEXT) -> void:
 	l.outline_size = 10
 	l.modulate = color
 	l.outline_modulate = Art.INK
-	l.pixel_size = .007
+	l.pixel_size = .011
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
 	l.position = Vector3(m.x, _floor_at(m) + 2.0, m.y)

@@ -42,7 +42,8 @@ func mesh_for(id: String, definition: Dictionary) -> Mesh:
 				var st := SurfaceTool.new()
 				st.begin(Mesh.PRIMITIVE_TRIANGLES)
 				st.append_from(source, surface, normalize * (part[1] as Transform3D))
-				st.set_material(source.surface_get_material(surface))
+				var own := source.surface_get_material(surface)
+				st.set_material(_foliage(own, float(size[1])) if definition.get("kind") == "plant" else own)
 				st.commit(joined)
 		root.free()
 		mesh = joined
@@ -56,6 +57,25 @@ func mesh_for(id: String, definition: Dictionary) -> Mesh:
 		mesh = box
 	_meshes[key] = mesh
 	return mesh
+
+## A plant's material: its model's colour (and picture) shaded by height,
+## speckled, a shade of its own per plant (foliage.gdshader).
+const FOLIAGE := preload("res://src/experiment_3d/foliage.gdshader")
+func _foliage(own: Material, height: float) -> Material:
+	var key := [own, height]
+	if _materials.has(key):
+		return _materials[key]
+	var m := ShaderMaterial.new()
+	m.shader = FOLIAGE
+	m.set_shader_parameter("height", height)
+	if own is BaseMaterial3D:
+		var b := own as BaseMaterial3D
+		m.set_shader_parameter("albedo", b.albedo_color)
+		if b.albedo_texture:
+			m.set_shader_parameter("albedo_tex", b.albedo_texture)
+			m.set_shader_parameter("has_tex", true)
+	_materials[key] = m
+	return m
 
 func _collect(node: Node3D, parent: Transform3D, parts: Array) -> void:
 	var transform := parent * node.transform

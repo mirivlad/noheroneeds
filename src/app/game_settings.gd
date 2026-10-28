@@ -19,6 +19,8 @@ const DEFAULTS := {
 	"view_zoom": 1.0,
 	"show_fps": false,
 	"show_hints": true,
+	## Walking by keys (W A S D, arrows) beside the mouse; off — as in RO, by the mouse only.
+	"keyboard_walk": false,
 	"server_port": 24680,
 	## The last server joined, "host:port".
 	"last_address": "127.0.0.1:24680",

@@ -115,6 +115,11 @@ var _swing_ready_ms := 0
 ## The left button is held: work and blows go on at their pace (a tree is
 ## felled by holding it, not by a click a blow).
 var _lmb_held := false
+## Playing by the mouse as in RO: what the left button set one to do.
+var orders := ClickOrders.new()
+## Where the menu (right button) was opened on: its actions are done there.
+var _menu_target := {}
+var _hold_walk := 0.0
 ## The bow held drawn (the left button held over a shot).
 var _bow_drawn := false
 const REPEATED := ["gather", "strike_part", "strike", "swing", "till", "sow"]
@@ -465,7 +470,7 @@ func _process(delta: float) -> void:
 	var t0 := Time.get_ticks_usec()
 	painter.refresh()
 	var t_map := Time.get_ticks_usec()
-	client.move = _direction() if not paused and not world_map.visible else Vector2i.ZERO
+	client.move = _steer(delta) if not paused and not world_map.visible else Vector2i.ZERO
 	if client.move != Vector2i.ZERO:
 		_last_dir = client.move
 	# Tired, one does not run (ADR-0035): the server would not let it, so neither does the guess.
@@ -492,10 +497,12 @@ func _process(delta: float) -> void:
 		_dev.step(delta)
 		if client == null:  # the dev run took its last picture and closed the game
 			return
-	if _lmb_held and not paused and _blueprint == "" and Time.get_ticks_msec() >= _swing_ready_ms:
-		var held_on := Actions.primary(actions)
-		if String(held_on.get("id", "")) in REPEATED:
-			_do(held_on)
+	# The left button held over the ground: one walks after the cursor (RO).
+	if _lmb_held and not paused and _blueprint == "" and not orders.acting() and client.has_position:
+		_hold_walk -= delta
+		if _hold_walk <= 0.0:
+			_hold_walk = 0.2
+			orders.walk_to(Movement.cell_of(Vector2i(_mouse_world() * WorldView.UNITS_PER_PIXEL)), Movement.cell_of(client.position), client.is_solid)
 	var t_view := Time.get_ticks_usec()
 	view.update_view(_accum / tick, delta)
 	var t_drawn := Time.get_ticks_usec()
@@ -542,13 +549,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo:
 		var e := event as InputEventKey  # by its place (KeyMap): the same on any layout
-		_key(e.physical_keycode if e.physical_keycode != KEY_NONE else e.keycode, e.shift_pressed)
+		_key(e.physical_keycode if e.physical_keycode != KEY_NONE else e.keycode, e.shift_pressed, e.alt_pressed)
 	elif event is InputEventMouseButton:
 		_mouse(event as InputEventMouseButton)
 
 
-func _key(k: int, shift: bool) -> void:
-	if game and k in [KEY_F6, KEY_F7, KEY_F8]:
+## RO's window keys (Alt+E things, Alt+Q equipment, Alt+S skills — the crafts,
+## Alt+U quests — the journal), beside the game's own (KeyMap).
+const RO_WINDOWS := {KEY_E: "things", KEY_Q: "character", KEY_S: "crafts", KEY_U: "journal"}
+
+
+func _key(k: int, shift: bool, alt := false) -> void:
+	if alt:
+		if RO_WINDOWS.has(k):
+			open_window(String(RO_WINDOWS[k]))
+		return
+	if k >= KEY_F1 and k <= KEY_F9 and not (shift and game and k in [KEY_F6, KEY_F7, KEY_F8]):
+		_choose_slot(k - KEY_F1)  # RO's hotkeys F1–F9: the quick slots
+		return
+	if game and shift and k in [KEY_F6, KEY_F7, KEY_F8]:  # dev: Shift+F6..F8
 		var at := game.world._spawn_way()
 		if k == KEY_F6:
 			var village := game.world.generator.settlements.home_plan()
@@ -617,8 +636,8 @@ func _mouse(b: InputEventMouseButton) -> void:
 	if client.state != "playing":
 		return
 	if _blueprint != "":
-		if b.button_index == MOUSE_BUTTON_RIGHT and b.pressed:
-			_blueprint = ""  # the blueprint is let go
+		if b.button_index == MOUSE_BUTTON_RIGHT and not b.pressed:
+			_blueprint = ""  # the blueprint is let go (a right click; a drag turns the camera)
 			_drag_from = NO_CELL
 		elif b.button_index == MOUSE_BUTTON_LEFT and _blueprint == BuildCatalog.DEMOLISH and b.pressed:
 			var t := view.pick_target(_mouse_world())
@@ -644,6 +663,7 @@ func _mouse(b: InputEventMouseButton) -> void:
 		return
 	if b.button_index == MOUSE_BUTTON_LEFT:
 		_lmb_held = b.pressed
+		_hold_walk = 0.2
 		# A bow: drawn while the button is held, the arrow loosed when it is let go.
 		if not b.pressed and _bow_drawn:
 			var shot := Actions.primary(actions)
@@ -652,17 +672,122 @@ func _mouse(b: InputEventMouseButton) -> void:
 			view.loose_own(_mouse_world() - view.own_pixel_position(1.0))  # let go even before the bow is ready
 			_bow_drawn = false
 			return
-	if not b.pressed:
-		return
-	if b.button_index == MOUSE_BUTTON_LEFT:
-		var p := Actions.primary(actions)
-		if String(p.get("id", "")) == "shoot" and p.get("enabled", true):
-			_bow_drawn = true
-			view.draw_own(_mouse_world() - view.own_pixel_position(1.0))
-		elif not p.is_empty():
-			_do(p)
-	elif b.button_index == MOUSE_BUTTON_RIGHT:
+	# The right button: the menu on a click (a drag turns the camera: the view took it).
+	if b.button_index == MOUSE_BUTTON_RIGHT and not b.pressed:
 		_open_menu()
+		return
+	if not b.pressed or b.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var p := Actions.primary(actions)
+	if String(p.get("id", "")) == "shoot" and p.get("enabled", true):
+		_bow_drawn = true  # a bow shoots from where one stands
+		view.draw_own(_mouse_world() - view.own_pixel_position(1.0))
+		return
+	_click_order(p)
+
+
+## A left click as in RO: a dweller is talked with, a thing or a being gets
+## what the left button does there (walked up to first), else one walks there.
+func _click_order(p: Dictionary) -> void:
+	var talk := actions.filter(func(a: Dictionary) -> bool: return a["id"] == "talk")
+	if not talk.is_empty():
+		_order(talk[0], target)
+	elif not p.is_empty() and p["id"] != "inspect":
+		_order(p, target)
+	elif client.has_position:
+		var cell: Vector2i = target.get("cell", Movement.cell_of(Vector2i(_mouse_world() * WorldView.UNITS_PER_PIXEL)))
+		if target.get("kind") == "entity":
+			cell = Movement.cell_of(Vector2i(_target_point(target)))
+		orders.walk_to(cell, Movement.cell_of(client.position), client.is_solid)
+
+
+## Walks up to a target and does an action there: strikes and work again and
+## again till done; the rest once. Looking needs no walking.
+func _order(a: Dictionary, t: Dictionary) -> void:
+	if a.get("local") == "inspect" or not client.has_position or t.is_empty():
+		_do(a)
+		return
+	var w: Dictionary = content.get_def(hotbar.held(client.inventory())).get("weapon", {})
+	var reach := 1.6
+	if a["id"] == "strike":
+		reach = float(w.get("reach", 0.5)) + 0.6 if w.get("kind") == "melee" else 1.1
+	orders.act_on(t, a, reach, a["id"] == "strike" or a["id"] in REPEATED and t.get("kind") != "ground",
+		Movement.cell_of(client.position), client.is_solid, _target_point(t))
+
+
+## The move this tick: a walking key's (it ends an order), else the order's;
+## and the order's action, once in reach.
+func _steer(delta: float) -> Vector2i:
+	var keys := _direction()
+	if keys != Vector2i.ZERO:
+		orders.clear()
+		return keys
+	if not orders.active() or not client.has_position:
+		return Vector2i.ZERO
+	if not orders.acting():
+		return orders.step(client.position, client.is_solid, delta)
+	var t := _order_target()
+	if t.is_empty():
+		orders.clear()  # it fell, was felled, went away
+		return Vector2i.ZERO
+	var at := _target_point(t)
+	var move := orders.step(client.position, client.is_solid, delta, at)
+	if orders.in_reach(client.position, at):
+		_order_act(t)
+	return move
+
+
+## The order's target as it is now; {} when it is gone.
+func _order_target() -> Dictionary:
+	var t := orders.target
+	match String(t.get("kind", "")):
+		"entity":
+			var e: Variant = client.entities.get(String(t.get("id", "")))
+			if e == null or int((e as Dictionary).get("health", 1)) <= 0:
+				return {}
+			var fresh := t.duplicate()
+			fresh["entity"] = e
+			return fresh
+		"part":
+			var cell: Vector2i = t["cell"]
+			if view._cell_layer(cell, String(t["layer"])) != String(t["id"]):
+				return {}
+			return view.layer_target(cell, String(t["layer"]))
+	return t
+
+
+## Where a target is (simulation units).
+func _target_point(t: Dictionary) -> Vector2:
+	if t.get("kind") == "entity":
+		var e: Dictionary = t.get("entity", {})
+		return Vector2(float(e.get("x", 0)), float(e.get("y", 0)))
+	var cell: Vector2i = t.get("cell", Movement.cell_of(client.position))
+	return Vector2(cell * Movement.UNIT) + Vector2.ONE * Movement.UNIT / 2.0
+
+
+## In reach of the order's target: its action, as it can be done now.
+func _order_act(t: Dictionary) -> void:
+	if Time.get_ticks_msec() < _swing_ready_ms:
+		return  # the last blow is still being swung
+	var want := String(orders.action.get("id", ""))
+	var aim := Vector2i(_target_point(t))
+	var now := Actions.of(content, client, view, hotbar.held(client.inventory()), t, aim)
+	var a: Dictionary = {}
+	for x: Dictionary in now:
+		if x["id"] == want:
+			a = x
+			break
+	if a.is_empty() or not a.get("enabled", true):
+		if not a.is_empty():
+			_note = String(a.get("why", "нельзя"))
+		orders.clear()
+		return
+	var again := orders.repeat
+	if not again:
+		orders.clear()
+	_do(a)
+	if again and _swing_ready_ms <= Time.get_ticks_msec():
+		_swing_ready_ms = Time.get_ticks_msec() + 500  # not every frame
 
 
 ## Every window the same way: in the middle, between the lines at the top
@@ -784,6 +909,7 @@ func _do(a: Dictionary) -> void:
 
 func _open_menu() -> void:
 	_menu_actions = actions.duplicate()
+	_menu_target = target.duplicate()
 	var lines: Array[Dictionary] = []
 	for a: Dictionary in _menu_actions:
 		lines.append({"text": String(a["name"]) + ("  (E)" if a.get("quick", false) else "") + ("  (ЛКМ)" if a.get("primary", false) else ""),
@@ -913,7 +1039,7 @@ func _build_tools(layer: CanvasLayer) -> void:
 	windows.add(_menu, UiWindows.POPUP)
 	_menu.chosen.connect(func(i: int) -> void:
 		if i >= 0 and i < _menu_actions.size():
-			_do(_menu_actions[i]))
+			_order(_menu_actions[i], _menu_target))
 	layer.add_child(_menu)
 
 
@@ -1136,6 +1262,8 @@ var _walk: Array[Key] = [KEY_W, KEY_A, KEY_S, KEY_D]
 func _direction() -> Vector2i:
 	if pin_panel.visible or get_viewport().gui_get_focus_owner() is LineEdit:
 		return Vector2i.ZERO  # the keys type the code, a search, a number
+	if not settings.get_value("keyboard_walk") and not _opts.has("walk"):
+		return Vector2i.ZERO  # as in RO: one walks by the mouse
 	if _opts.has("walk"):
 		var p := String(_opts["walk"]).split(",")
 		return Vector2i(int(p[0]), int(p[1]))

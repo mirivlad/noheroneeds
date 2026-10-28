@@ -22,6 +22,19 @@ func _init(screen: GameScreen) -> void:
 
 
 func step(delta: float) -> void:
+	if g._opts.has("pick_debug") and g._frames % 60 == 59:  # dev: what the ray under each dweller's middle hits
+		var v := g.view as WorldView3D
+		for id: String in v._actors:
+			var a := v._actors[id] as BillboardActor3D
+			if a == null or id == g.client.character_id:
+				continue
+			var at := a.global_position + Vector3.UP * 0.8
+			if not v.eye.is_position_in_frustum(at):
+				continue
+			var screen := v.eye.unproject_position(at) / v._pixel
+			var p := v.screen_point(screen)
+			var hit := v.pick_target(p)
+			print("PICK ", id, " ", (g.client.entities.get(id, {}) as Dictionary).get("kind", ""), " at ", screen.round(), " -> ", hit.get("kind", ""), " ", hit.get("id", ""), " ", hit.get("layer", ""), " cell ", hit.get("cell", ""))
 	if g._opts.has("hour") and g.game and g._frames == 5:  # dev: the world's clock set to an hour of day one
 		g.game.world.world_time = float(g._opts["hour"]) * Daylight.HOUR_MS
 	if g._opts.has("poses"):
@@ -162,6 +175,10 @@ func step(delta: float) -> void:
 				if g.biome_id_at(p["centre"].x, p["centre"].y) == String(g._opts["goto"]).trim_prefix("village@") \
 						and (cell == Vector2i.ZERO or Vector2(p["centre"]).length() < Vector2(cell).length()):
 					cell = (p["fire"] as Vector2i) + Vector2i(2, 0)
+		elif String(g._opts["goto"]) == "pen":  # beside the home village's pen, at its gate
+			var home := g.game.world.generator.settlements.home_plan()
+			if not (home.get("pen", {}) as Dictionary).is_empty():
+				cell = (home["pen"]["gate"] as Vector2i) + Vector2i(0, -2)
 		elif String(g._opts["goto"]) == "cave":  # beside the way down near the spawn point, on the surface
 			cell = g.game.world._spawn_way() + Vector2i(2, 1)
 		elif String(g._opts["goto"]) == "bridge":  # the nearest road over water

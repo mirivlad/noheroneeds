@@ -31,6 +31,8 @@ const DEFAULTS := {
 	"hotbars": {},
 	## Cells of each character's bag (ADR-0041): character id -> [item id or "", ...].
 	"bags": {},
+	## Keys set by the player (KeyMap): action -> physical key; the rest by default.
+	"keys": {},
 }
 
 ## Volume setting -> audio bus (default_bus_layout.tres).

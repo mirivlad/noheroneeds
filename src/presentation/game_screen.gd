@@ -372,6 +372,10 @@ func music_mood() -> String:
 
 ## The view and HUD parts of the player's settings.
 func apply_settings() -> void:
+	if settings:
+		for n in 4:
+			_walk[n] = KeyMap.key(settings, ["up", "left", "down", "right"][n]) as Key
+		window_buttons.show_keys(func(w: String) -> String: return KeyMap.key_name(KeyMap.key(settings, w)))
 	var z := float(settings.get_value("view_zoom"))
 	camera.zoom = Vector2.ONE * z * PixelDisplay.WORLD_SCALE
 
@@ -537,7 +541,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		menu_requested.emit()
 		return
 	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo:
-		_key((event as InputEventKey).keycode, (event as InputEventKey).shift_pressed)
+		var e := event as InputEventKey  # by its place (KeyMap): the same on any layout
+		_key(e.physical_keycode if e.physical_keycode != KEY_NONE else e.keycode, e.shift_pressed)
 	elif event is InputEventMouseButton:
 		_mouse(event as InputEventMouseButton)
 
@@ -564,41 +569,42 @@ func _key(k: int, shift: bool) -> void:
 			_note = "Сначала вернитесь на поверхность через существующий переход (F)"
 		return
 	var slot := k - KEY_1
+	var act := KeyMap.action_of(settings, k)
 	if k >= KEY_1 and k <= KEY_9:
 		_choose_slot(slot)
-	elif k == KEY_Q:
+	elif act == "weapon":
 		_snatch_weapon()
-	elif k in WINDOW_KEYS:
-		open_window(String(WINDOW_KEYS[k]))
+	elif act in WINDOWS:
+		open_window(act)
 	elif k == KEY_MINUS or k == KEY_KP_SUBTRACT:
 		minimap.zoom(1)  # farther out
 	elif k == KEY_EQUAL or k == KEY_KP_ADD:
 		minimap.zoom(-1)
-	elif k == KEY_R and _blueprint != "":
+	elif act == "rotate" and _blueprint != "":
 		var turns := _turns()
 		if not turns.is_empty():
 			_facing = (_facing + 1) % turns.size()
 	elif client.state != "playing":
 		return
-	elif k == KEY_J:
+	elif act == "jump":
 		_sound_on_ok[client.request({"type": "jump", "dx": _last_dir.x, "dy": _last_dir.y})] = "climb"
-	elif k == KEY_G:
+	elif act == "drop":
 		var held := hotbar.held(client.inventory())
 		if held != "":
 			_sound_on_ok[client.request({"type": "drop", "item": held, "count": 1})] = "drop"
-	elif k == KEY_E and chest_panel.visible:
+	elif act == "use" and chest_panel.visible:
 		chest_panel.visible = false
-	elif k == KEY_E and trade_panel.visible:
+	elif act == "use" and trade_panel.visible:
 		trade_panel.visible = false
-	elif k == KEY_E and talk_panel.visible:
+	elif act == "use" and talk_panel.visible:
 		talk_panel.visible = false
-	elif k == KEY_E:
+	elif act == "use":
 		var q := Actions.quick(actions)
 		if not q.is_empty():
 			_do(q)
 		else:
 			_use_nearest()
-	elif k == KEY_F:
+	elif act == "climb":
 		_climb_nearest("down" if shift else "up")
 
 
@@ -665,8 +671,8 @@ func _place_windows() -> void:
 	windows.place(get_viewport_rect().size)
 
 
-## The windows by key and by name (the buttons by the quick slots open them too).
-const WINDOW_KEYS := {KEY_I: "things", KEY_C: "character", KEY_B: "build", KEY_K: "crafts", KEY_M: "map", KEY_L: "journal"}
+## The windows by name: their keys (KeyMap) and the buttons by the quick slots open them.
+const WINDOWS := ["things", "character", "build", "crafts", "map", "journal"]
 
 
 ## Opens a window by its name, or closes it if open (its key, its button).
@@ -1123,6 +1129,10 @@ func _update_ghost() -> void:
 	view.show_plan(_plan)
 
 
+## The walking keys (KeyMap: up, left, down, right), read again with the settings.
+var _walk: Array[Key] = [KEY_W, KEY_A, KEY_S, KEY_D]
+
+
 func _direction() -> Vector2i:
 	if pin_panel.visible or get_viewport().gui_get_focus_owner() is LineEdit:
 		return Vector2i.ZERO  # the keys type the code, a search, a number
@@ -1130,13 +1140,13 @@ func _direction() -> Vector2i:
 		var p := String(_opts["walk"]).split(",")
 		return Vector2i(int(p[0]), int(p[1]))
 	var d := Vector2i.ZERO
-	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
+	if Input.is_physical_key_pressed(_walk[1]) or Input.is_physical_key_pressed(KEY_LEFT):
 		d.x -= 1
-	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
+	if Input.is_physical_key_pressed(_walk[3]) or Input.is_physical_key_pressed(KEY_RIGHT):
 		d.x += 1
-	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
+	if Input.is_physical_key_pressed(_walk[0]) or Input.is_physical_key_pressed(KEY_UP):
 		d.y -= 1
-	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
+	if Input.is_physical_key_pressed(_walk[2]) or Input.is_physical_key_pressed(KEY_DOWN):
 		d.y += 1
 	return view.world_direction(d)
 

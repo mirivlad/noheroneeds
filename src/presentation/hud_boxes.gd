@@ -437,6 +437,11 @@ class WindowButtons:
 			b.pressed.connect(func() -> void: chosen.emit(String(w[0])))
 			add_child(b)
 
+	## The tooltips with each window's key as set now (`key_of`: window -> key name).
+	func show_keys(key_of: Callable) -> void:
+		for w: Array in WINDOWS:
+			(get_node(String(w[0])) as Button).tooltip_text = "%s — %s" % [w[1], key_of.call(String(w[0]))]
+
 
 ## What is under the cursor and what the left button and E do there (UI 2.0):
 ## a small box beside the pointer, never in the way of the mouse.

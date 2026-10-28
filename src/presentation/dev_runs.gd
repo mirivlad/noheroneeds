@@ -306,7 +306,7 @@ func step(delta: float) -> void:
 			"crafts":
 				g.crafts.open()
 			"inventory":
-				g.inventory_panel.show_for(g.client.inventory(), g.hotbar.selected, g.client.item_states())
+				g.open_window("things")
 			"character":
 				g.character_panel.show_for(g.client.own, g.hotbar.held(g.client.inventory()))
 			"trade", "talk":  # the nearest dweller, one stepped up to it

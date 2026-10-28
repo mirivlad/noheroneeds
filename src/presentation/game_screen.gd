@@ -58,8 +58,10 @@ var _note_shown := ""
 var _note_at := 0
 ## Feeding an animal (ADR-0030): how it took it.
 var _feed_rids := {}
-var inventory_panel := InventoryPanel.new()
+## The character window (UI 2.0): the doll and what is worn, and the things
+## (inventory_panel: its part with the cells), opened by I or C alike.
 var character_panel := CharacterPanel.new()
+var inventory_panel: InventoryPanel = character_panel.bag
 var chest_panel := ChestPanel.new()
 ## Trade with a dweller (ADR-0040), and the requests about it: rid -> the dweller.
 var trade_panel := TradePanel.new()
@@ -344,7 +346,7 @@ func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
 		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog, crafts,
-				inventory_panel, character_panel, chest_panel, trade_panel, talk_panel, journal_panel, pin_panel, _menu, weather,
+				character_panel, chest_panel, trade_panel, talk_panel, journal_panel, pin_panel, _menu, weather,
 				needs_box, clock_box, window_buttons, cursor_hint]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
@@ -670,10 +672,7 @@ const WINDOW_KEYS := {KEY_I: "things", KEY_C: "character", KEY_B: "build", KEY_K
 ## Opens a window by its name, or closes it if open (its key, its button).
 func open_window(name: String) -> void:
 	match name:
-		"things":
-			windows.toggle(inventory_panel, func() -> void:
-				inventory_panel.show_for(client.inventory(), hotbar.selected, client.item_states()))
-		"character":
+		"things", "character":
 			windows.toggle(character_panel, func() -> void:
 				character_panel.show_for(client.own, hotbar.held(client.inventory())))
 		"build":
@@ -788,8 +787,6 @@ func _open_menu() -> void:
 
 func _choose_slot(slot: int) -> void:
 	hotbar.choose(slot)
-	if inventory_panel.visible:
-		inventory_panel.show_for(client.inventory(), slot, client.item_states())
 
 
 ## Q: the weapon into the hands at once, and back (Hotbar.snatch).
@@ -797,8 +794,6 @@ func _snatch_weapon() -> void:
 	var note := hotbar.snatch(client.inventory())
 	if note != "":
 		_note = note
-	if inventory_panel.visible:
-		inventory_panel.show_for(client.inventory(), hotbar.selected, client.item_states())
 
 
 ## Cells a drag of the blueprint covers: an area for ceilings and roofs, a
@@ -849,25 +844,21 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_craft_rids[arid] = true
 		_craft_rids_recipe[arid] = String(r.get("recipe", "")))
 	layer.add_child(crafts)
-	inventory_panel.setup(content, view)
+	character_panel.setup(content, view)  # its things part (inventory_panel) too
 	inventory_panel.unslot.connect(func(slot: int) -> void:
 		hotbar.put(slot, "", -1))
-	layer.add_child(inventory_panel)
 	inventory_panel.drop.connect(_drop_item)
 	inventory_panel.wear.connect(_wear_item)
 	inventory_panel.blueprints.connect(func() -> void:
 		windows.opening(crafts)
 		crafts.open("", CraftPanel.SHEETS))
 	inventory_panel.arranged.connect(_save_bag)
-	character_panel.setup(content, view)
 	character_panel.wear.connect(_wear_item)
 	character_panel.take_off.connect(func(slot: String) -> void:
 		if slot == "main_hand":
 			hotbar.put(hotbar.selected, "", -1)
 		else:
 			_sound_on_ok[client.request({"type": "unequip", "slot": slot})] = "equip")
-	character_panel.unslot.connect(func(slot: int) -> void: hotbar.put(slot, "", -1))
-	character_panel.drop.connect(_drop_item)
 	layer.add_child(character_panel)
 	hotbar.select_slot.connect(func(i: int) -> void: _choose_slot(i))
 	hotbar.changed.connect(_save_hotbar)
@@ -909,7 +900,7 @@ func _build_tools(layer: CanvasLayer) -> void:
 		if not new_code:
 			_door_rids[rid] = c)
 	layer.add_child(pin_panel)
-	for w: Control in [inventory_panel, character_panel, catalog, crafts, journal_panel]:
+	for w: Control in [character_panel, catalog, crafts, journal_panel]:
 		windows.add(w, UiWindows.WORK)
 	for w: Control in [chest_panel, trade_panel, talk_panel, pin_panel]:
 		windows.add(w, UiWindows.AT_THING)
@@ -1383,8 +1374,6 @@ func _update_hud() -> void:
 			chest_panel.refresh(inv, client.item_states())
 		if trade_panel.visible:
 			trade_panel.refresh(inv, client.item_states())
-		if inventory_panel.visible:
-			inventory_panel.show_for(inv, hotbar.selected, client.item_states())
 		if crafts.visible:
 			crafts.refresh()
 

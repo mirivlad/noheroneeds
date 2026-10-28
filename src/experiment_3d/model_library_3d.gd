@@ -72,7 +72,10 @@ func _foliage(own: Material, height: float) -> Material:
 		var b := own as BaseMaterial3D
 		m.set_shader_parameter("albedo", b.albedo_color)
 		if b.albedo_texture:
-			m.set_shader_parameter("albedo_tex", b.albedo_texture)
+			# Needles and veins drawn on (tools/art/detail_foliage.py) where there are.
+			var detail := b.albedo_texture.resource_path.replace(".png", "_Detail.png")
+			var picture: Texture2D = load(detail) if detail != b.albedo_texture.resource_path and ResourceLoader.exists(detail) else b.albedo_texture
+			m.set_shader_parameter("albedo_tex", picture)
 			m.set_shader_parameter("has_tex", true)
 	_materials[key] = m
 	return m

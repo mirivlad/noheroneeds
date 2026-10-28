@@ -34,7 +34,7 @@ func test_the_cursor_follows_the_action() -> void:
 	var thing := {"kind": "entity", "id": "i1", "location": "surface", "entity": {"kind": "item", "item": "base:stone", "count": 2}}
 	var grass := {"kind": "ground", "id": "base:grass", "cell": Vector2i(1, 1), "location": "surface"}
 	eq(_kind("base:spear", wolf), "sword", "a weapon strikes")
-	eq(_kind("base:spear", grass, Vector2i(300, 300)), "sword", "or swings at the air")
+	eq(_kind("base:spear", grass, Vector2i(300, 300)), "corners", "the ground with a weapon: walked to (RO, ADR-0065)")
 	eq(_kind("base:axe", _part("base:oak", "cover")), "axe", "an axe fells a tree")
 	eq(_kind("base:pickaxe", _part("base:rock")), "pick", "a pick digs rock")
 	eq(_kind("base:bow", grass, Vector2i(300, 300)), "bow", "a bow shoots")

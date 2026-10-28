@@ -222,6 +222,7 @@ func update_view(alpha: float, delta: float) -> void:
 		_build_row()
 	_last_build_ms = (Time.get_ticks_usec() - start) / 1000.0
 	_update_actors(alpha, delta)
+	_glimmer(delta)
 	_crops_seen += delta
 	if _crops_seen >= 2.0:
 		_crops_seen = 0.0
@@ -510,6 +511,10 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 			var mask := fence_mask(cell)
 			basis = Basis(Vector3.UP, PI / 2 if mask & 10 != 0 and mask & 5 == 0 else 0.0)
 		instance_id = "module:" + str(mesh.get_instance_id())
+	elif id == "base:stump":
+		mesh = buildings.stump()
+		basis = Basis.IDENTITY
+		instance_id = "module:stump"
 	elif id == "base:campfire":
 		mesh = buildings.campfire()
 		basis = Basis.IDENTITY
@@ -1190,6 +1195,49 @@ func loose_own(dir: Vector2) -> void:
 		if dir.length() > 0.01:
 			actor.facing = dir.normalized()
 		actor.doll.loose(dir.rotated(-yaw))
+
+## The cell one was sent to (RO, ADR-0065): the corners of a square on the
+## ground there, glimmering till the target changes.
+var _walk_mark: MeshInstance3D
+var _mark_cell := Vector2i.MAX
+var _mark_t := 0.0
+
+func mark_walk(cell: Vector2i) -> void:
+	_mark_cell = cell
+	if _walk_mark == null:
+		var mesh := ArrayMesh.new()
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		for corner: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+			var c := corner * .42
+			for arm: Vector2 in [Vector2(-corner.x * .22, 0), Vector2(0, -corner.y * .22)]:
+				var a := Vector3(c.x, 0, c.y)
+				var b := Vector3(c.x + arm.x, 0, c.y + arm.y)
+				var side := (b - a).cross(Vector3.UP).normalized() * .04
+				for v: Vector3 in [a - side, b - side, a + side, b - side, b + side, a + side]:
+					st.set_normal(Vector3.UP)
+					st.add_vertex(v)
+		st.commit(mesh)
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		m.albedo_color = Color("faf0d2")
+		m.no_depth_test = true
+		_walk_mark = MeshInstance3D.new()
+		_walk_mark.mesh = mesh
+		_walk_mark.material_override = m
+		_walk_mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		space.add_child(_walk_mark)
+	_walk_mark.visible = cell != Vector2i.MAX
+	if _walk_mark.visible:
+		var at := Vector2(cell) + Vector2.ONE * .5
+		_walk_mark.position = Vector3(at.x, _floor_at(at) + .04, at.y)
+
+func _glimmer(delta: float) -> void:
+	if _walk_mark and _walk_mark.visible:
+		_mark_t += delta
+		(_walk_mark.material_override as StandardMaterial3D).albedo_color.a = 0.45 + 0.45 * sin(_mark_t * 6.0)
 
 ## A short burst at a point of the world (pixels), about chest high (Effects3D.burst).
 func burst_at(at: Vector2, kind: String, tint := Color.WHITE) -> void:

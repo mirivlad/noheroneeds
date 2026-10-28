@@ -3,7 +3,7 @@ class_name CursorArt
 ## leather glove takes a thing lying or plucks by hand, a sword strikes with
 ## its point where it will hit, an axe chops, a pick digs, a bow's sight
 ## shoots, a hammer works at a workbench or a forge, a float fishes, a hoe
-## ploughs, a hand sows; else the corners of a square. Drawn as pixel art in
+## ploughs, a hand sows; else the corners of a square: one walks there (RO). Drawn as pixel art in
 ## the raster's pixels (ADR-0022) and scaled with them, outlined so it shows
 ## on any ground.
 
@@ -193,7 +193,11 @@ static func kind_of(actions: Array[Dictionary]) -> String:
 			return TOOLS.get(String(p.get("tool", "")), "corners")
 	if actions.any(func(a: Dictionary) -> bool: return a["id"] == "pickup"):
 		return "glove"
-	if String(p.get("id", "")) in ["strike", "swing"]:
+	if String(p.get("id", "")) == "strike":
+		return "sword"  # (a blow at the air is no target: the ground is walked to, corners)
+	# A beast or a foe, whatever is in the hands: walked up to and struck (RO, ADR-0065).
+	if actions.any(func(a: Dictionary) -> bool: return a["id"] == "strike") \
+			and not actions.any(func(a: Dictionary) -> bool: return a["id"] == "talk"):
 		return "sword"
 	return "corners"
 

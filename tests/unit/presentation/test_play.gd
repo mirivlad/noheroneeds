@@ -590,3 +590,69 @@ func test_a_campfire_in_rain_explains_why_it_cannot_be_built() -> void:
 	_frames(5)
 	eq(_part(cell), "", "nothing built")
 	eq(int(g.client.inventory().get("base:log", 0)), logs, "nothing spent")
+
+
+## Playing by the mouse as in RO (ADR-0065): the ground clicked is walked to
+## and marked; a far rock clicked with a pick is walked up to and dug; a deer
+## clicked is struck once (followed), with auto-attack again and again.
+func test_clicks_walk_dig_and_strike_as_in_ro() -> void:
+	var id := g.client.character_id
+	var me := _me()
+	var goal := me + Vector2i(4, 3)
+	_click(_screen(goal))
+	check(g.view._walk_mark.visible, "where one goes is marked")
+	_frames_until(func() -> bool: return _me() == goal, 30.0)
+	eq(_me(), goal, "walked there by a click")
+	me = _me()
+	var rock := me + Vector2i(6, 0)
+	var c := w.chunk("surface", floori(rock.x / 32.0), floori(rock.y / 32.0))
+	c.set_cell("structure", posmod(rock.x, 32), posmod(rock.y, 32), "base:rock")
+	w._changed(ServerWorld.chunk_key("surface", floori(rock.x / 32.0), floori(rock.y / 32.0)))
+	w.grant(id, "base:pickaxe", 1)
+	_frames_until(func() -> bool: return g.client.is_solid(rock.x, rock.y) and g.client.inventory().has("base:pickaxe"))
+	g.hotbar.put(0, "base:pickaxe", -1)
+	_key(KEY_1)
+	_move_mouse(_screen(rock))
+	_frames(3)
+	eq(g.target.get("cell"), rock, "the rock chosen, out of reach")
+	eq(CursorArt.kind_of(g.actions), "pick", "a pick's cursor on it")
+	_click(_screen(rock))
+	_frames_until(func() -> bool: return int(w._layer_props(c, "structure", posmod(rock.x, 32), posmod(rock.y, 32)).get("work", 0)) > 0 \
+		or _part(rock) == "", 30.0)
+	check(int(w._layer_props(c, "structure", posmod(rock.x, 32), posmod(rock.y, 32)).get("work", 0)) > 0 or _part(rock) == "",
+		"walked up to the rock and dug it")
+	check(Vector2(_me() - rock).length() < 1.5, "beside it: %s" % (_me() - rock))
+	# A deer: once without auto-attack.
+	g.hotbar.put(0, "", -1)
+	g.orders.clear()
+	var deer := w.creatures._spawn("base:deer", "surface", _me() + Vector2i(-3, 0), {}, 1)
+	_frames_until(func() -> bool: return g.client.entities.has(deer.id), 10.0)
+	var e: Dictionary = g.client.entities[deer.id]
+	_move_mouse(_screen(Vector2i(int(e["x"]), int(e["y"])) / Movement.UNIT))
+	_frames(3)
+	eq(CursorArt.kind_of(g.actions), "sword", "a sword's cursor on a beast, even bare-handed")
+	g._click_order(Actions.primary(g.actions))
+	check(g.orders.acting() and not g.orders.repeat, "one blow, followed till it lands")
+	g.settings.set_value("auto_attack", true)
+	g._click_order(Actions.primary(g.actions))
+	check(g.orders.repeat, "with auto-attack: again and again")
+
+
+## A drawn bow aims: the button held over the ground walks nowhere (the author, 28.10.2026).
+func test_a_drawn_bow_does_not_walk_after_the_cursor() -> void:
+	var id := g.client.character_id
+	w.grant(id, "base:bow", 1)
+	w.grant(id, "base:arrow", 10)
+	_frames_until(func() -> bool: return g.client.inventory().has("base:bow"))
+	g.hotbar.put(0, "base:bow", -1)
+	_key(KEY_1)
+	var me := _me()
+	_move_mouse(_screen(me + Vector2i(5, 0)))
+	_frames(3)
+	_button(_screen(me + Vector2i(5, 0)), MOUSE_BUTTON_LEFT, true)
+	check(g._bow_drawn, "the bow drawn")
+	_move_mouse(_screen(me + Vector2i(5, 3)))
+	_frames(30)
+	eq(_me(), me, "aiming, one stands")
+	_button(_screen(me + Vector2i(5, 3)), MOUSE_BUTTON_LEFT, false)
+	check(not g._bow_drawn, "loosed")

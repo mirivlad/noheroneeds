@@ -1090,8 +1090,9 @@ func _dweller_spot(c: Creature, phase: String) -> Vector2i:
 	if work == "pen" and not (plan["pen"] as Dictionary).is_empty():
 		return (plan["pen"]["gate"] as Vector2i) + Vector2i(0, -1)
 	if work == "water":
-		if not c.job.has("water"):
-			var spot := _water_spot(plan["fire"])
+		var kept: Array = c.job.get("water", [])
+		if kept.is_empty() or not _by_water(Vector2i(int(kept[0]), int(kept[1]))):  # (a spot of old, back from the water: found anew)
+			var spot := _water_spot(plan["fire"], int(c.job.get("home", 0)))
 			c.job["water"] = [spot.x, spot.y]
 			c.changed()
 		var w: Array = c.job["water"]
@@ -1107,24 +1108,36 @@ func _dweller_spot(c: Creature, phase: String) -> Vector2i:
 	return (plan["fire"] as Vector2i) + Vector2i(0, 1)
 
 
-## A dry cell by the water nearest a place (a fisher's), or NO_TARGET.
-func _water_spot(from: Vector2i) -> Vector2i:
-	var gen := world.generator
-	for r in range(2, 70):
+## A cell at the water's very edge near a place (a fisher's: the sand of
+## the shore counts, one stands at the water), the `nth` of those nearest —
+## each fisher its own; NO_TARGET when there is no water near.
+func _water_spot(from: Vector2i, nth := 0) -> Vector2i:
+	var found: Array[Vector2i] = []
+	for r in range(1, 70):
 		for dy in range(-r, r + 1):
 			for dx in range(-r, r + 1):
 				if maxi(absi(dx), absi(dy)) != r:
 					continue
 				var at := from + Vector2i(dx, dy)
-				if not gen.is_wet(at.x, at.y):
-					continue
-				# back toward the village to the first dry cell one can stand on
-				var dir := Vector2(from - at).normalized()
-				for k in range(1, 6):
-					var back := at + Vector2i(Vector2(dir * k).round())
-					if not gen.is_wet(back.x, back.y):
-						return back
-	return Creature.NO_TARGET
+				if _by_water(at):
+					found.append(at)
+		if found.size() > nth * 3:  # far enough apart: every third of the nearest
+			return found[(nth * 3) % found.size()]
+	return found[0] if not found.is_empty() else Creature.NO_TARGET
+
+
+## Whether one can stand on a cell with water one fishes in beside it.
+func _by_water(at: Vector2i) -> bool:
+	if at == Creature.NO_TARGET or _water_at(at) or world.is_solid(Levels.SURFACE, at.x, at.y):
+		return false
+	for d: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		if _water_at(at + d):
+			return true
+	return false
+
+
+func _water_at(at: Vector2i) -> bool:
+	return String(world.generator.land_at(at.x, at.y)["what"]) in ["water", "deep", "shallows"]
 
 
 ## A dweller's day: to work by its trade's hours, by the fire in the
@@ -1221,9 +1234,10 @@ func _pen_beast(c: Creature) -> Vector2i:
 
 
 func _toward_water(c: Creature) -> Vector2:
-	for d: Vector2i in [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1)]:
-		if world.generator.is_wet(c.cell().x + d.x * 2, c.cell().y + d.y * 2):
-			return Vector2(d)
+	for k in [1, 2]:
+		for d: Vector2i in [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1)]:
+			if _water_at(c.cell() + d * k):
+				return Vector2(d)
 	return Vector2(0, 1)
 
 

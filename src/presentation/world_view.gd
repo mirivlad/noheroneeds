@@ -202,6 +202,11 @@ func item_grip(id: String) -> Vector2:
 		float(grip[1]) - float(visual["rect"][3]) / 2.0)
 
 
+## Marks the cell one was sent to (Vector2i.MAX: none); none by default.
+func mark_walk(_cell: Vector2i) -> void:
+	pass
+
+
 ## Effects at a point of the world (chips off what is worked); none by default.
 func burst_at(_at: Vector2, _kind: String, _tint := Color.WHITE) -> void:
 	pass

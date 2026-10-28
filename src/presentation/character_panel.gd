@@ -1,11 +1,11 @@
 class_name CharacterPanel
 extends PanelContainer
-## RPG equipment window (C): the doll, worn slots, and the actual inventory.
+## The character window (UI 2.0; I or C): the doll and what is worn or held
+## at the left, all one carries at the right with the chosen thing's card.
+## The things part (`bag`) is the game's InventoryPanel: its signals are its own.
 
 signal wear(item: String, copy: int)
 signal take_off(slot: String)
-signal drop(item: String, count: int, copy: int)
-signal unslot(slot: int)
 
 const SLOTS := {"headwear": "Голова", "torso": "Торс", "armor": "Доспех", "legs": "Ноги", "feet": "Обувь", "back_item": "Спина", "belt": "Пояс", "main_hand": "В руках"}
 
@@ -46,16 +46,16 @@ func setup(registry: ContentRegistry, view: WorldView) -> void:
 	content = registry
 	_view = view
 	theme = Art.theme()
-	custom_minimum_size = Vector2(456, 0)
 	var box := VBoxContainer.new()
 	add_child(box)
-	box.add_child(Art.window_head(_title, "C", hide))
+	box.add_child(Art.window_head(_title, "I / C", hide))
 	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", Art.GAP * 3)
 	box.add_child(columns)
 	var left := VBoxContainer.new()
-	left.custom_minimum_size.x = 204
+	left.custom_minimum_size.x = 180
 	columns.add_child(left)
-	preview.custom_minimum_size = Vector2(204, 200)
+	preview.custom_minimum_size = Vector2(180, 172)
 	preview.walking = false
 	left.add_child(preview)
 	var grid := GridContainer.new()
@@ -66,24 +66,21 @@ func setup(registry: ContentRegistry, view: WorldView) -> void:
 		b.slot = slot
 		b.panel = self
 		b.name = "Equip_" + slot
-		b.custom_minimum_size = Vector2(99, 52)
+		b.custom_minimum_size = Vector2(88, 42)
 		b.add_theme_font_size_override("font_size", 16)
 		b.clip_text = true
 		var bar := WearBar.new()
 		bar.name = "Wear"
-		bar.position = Vector2(6, 44)
-		bar.size = Vector2(87, 4)
+		bar.position = Vector2(4, 36)
+		bar.size = Vector2(80, 4)
 		b.add_child(bar)
 		b.pressed.connect(func() -> void:
 			if b.item != "":
 				take_off.emit(b.slot))
 		grid.add_child(b)
 		_slots[slot] = b
-	bag.setup(content, view, true)
-	bag.wear.connect(func(item: String, copy: int) -> void: wear.emit(item, copy))
-	bag.take_off.connect(func(slot: String) -> void: take_off.emit(slot))
-	bag.drop.connect(func(item: String, n: int, copy: int) -> void: drop.emit(item, n, copy))
-	bag.unslot.connect(func(slot: int) -> void: unslot.emit(slot))
+	bag.setup(content, view)
+	bag.take_off.connect(func(slot: String) -> void: take_off.emit(slot))  # a worn thing dragged onto the cells
 	columns.add_child(bag)
 	visible = false
 
@@ -108,7 +105,7 @@ func show_for(own: Dictionary, held: String) -> void:
 	preview.show_look(content, look)
 	# Twice the size of the world's: a pixel of the picture is 2x2 on the screen.
 	preview.doll.scale = Vector2.ONE * 2.0 / maxf(0.5, float(content.visual_of(String(look.get("body_plan", ""))).get("pixel_scale", 1.0)))
-	preview.doll.position = Vector2(102, 170)
+	preview.doll.position = Vector2(90, 160)
 	preview.doll.hold(_view.item_picture(held), _view.item_grip(held), held)
 	var worn: Dictionary = look.get("worn", {})
 	for slot: String in _slots:

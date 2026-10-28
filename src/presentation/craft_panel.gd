@@ -9,6 +9,11 @@ extends PanelContainer
 ## sure and whole, or studied for good), "Починка" — worn things to mend at
 ## their stations (ADR-0046). What one can do here and now comes first. The
 ## server decides; this only asks.
+##
+## UI 2.0: a search over the lines (a recipe's name, what it takes and
+## makes), short lines (the name and how many it makes, or why not), and the
+## chosen line's card beside them: what it takes (had / needed), makes, where,
+## the chance and mastery; with no line a skill's card.
 
 signal craft(recipe: String, count: int)
 ## Mend a thing: the request's fields ({"item", "copy"} or {"slot"}).
@@ -40,18 +45,21 @@ var count: SpinBox
 var _note := Label.new()
 var _title := Label.new()
 var _about := Label.new()
+## The search over the lines; what is typed there ("" — all).
+var search := LineEdit.new()
 ## The kind of station the window was opened at ("" — K: every recipe).
 var station := ""
 ## The skill chosen on the left (ALL, SHEETS, MENDING or a skill id).
 var chosen := ALL
-const WIDTH := 470
-const SKILLS_WIDTH := 210
+const SKILLS_WIDTH := 190
+const LIST_WIDTH := 250
+const CARD_WIDTH := 250
 
 
 func _notification(what: int) -> void:
 	# Made up front but never added (a window never set up): freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for node: Node in [_note, _title, _about]:
+		for node: Node in [_note, _title, _about, search]:
 			if is_instance_valid(node) and node.get_parent() == null:
 				node.free()
 
@@ -73,18 +81,28 @@ func setup(registry: ContentRegistry, world_view: WorldView, game_client: GameCl
 		chosen = _skill_ids[i]
 		refresh())
 	columns.add_child(_skills)
-	var right := VBoxContainer.new()
-	columns.add_child(right)
+	var middle := VBoxContainer.new()
+	columns.add_child(middle)
+	search.name = "Search"
+	search.placeholder_text = "Поиск: название, материал…"
+	search.clear_button_enabled = true
+	search.custom_minimum_size.x = LIST_WIDTH
+	search.text_changed.connect(func(_t: String) -> void: refresh())
+	middle.add_child(search)
 	_list = ItemList.new()
 	_list.name = "Recipes"
-	_list.custom_minimum_size = Vector2(WIDTH, 260)
+	_list.custom_minimum_size = Vector2(LIST_WIDTH, 300)
 	_list.fixed_icon_size = Vector2i(32, 32)
 	_list.item_selected.connect(func(_i: int) -> void: _buttons())
 	_list.item_activated.connect(func(_i: int) -> void: _ask(how_many()))
-	right.add_child(_list)
+	middle.add_child(_list)
+	var right := VBoxContainer.new()
+	columns.add_child(right)
+	_about.name = "Card"
 	_about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_about.custom_minimum_size.x = WIDTH
-	_about.add_theme_color_override("font_color", Art.TEXT_DIM)
+	_about.custom_minimum_size = Vector2(CARD_WIDTH, 300)
+	_about.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_about.add_theme_stylebox_override("normal", Art.hud_box())
 	right.add_child(_about)
 	var row := HBoxContainer.new()
 	right.add_child(row)
@@ -173,6 +191,7 @@ func open(at_station := "", on := ALL) -> void:
 	chosen = on
 	_title.text = "Ремёсла и навыки" if station == "" else "Ремёсла — " + String(STATIONS.get(station, station))
 	count.value = 1
+	search.text = ""
 	refresh()
 	visible = true
 
@@ -209,6 +228,9 @@ func refresh() -> void:
 	for id: String in order:
 		if not _can.has(id):
 			_can[id] = why_not(id) == ""
+	var looking := search.text.strip_edges().to_lower()
+	if looking != "":
+		order = order.filter(func(id: String) -> bool: return _words_of(id).contains(looking))
 	order = order.filter(func(id: String) -> bool: return _can[id]) + order.filter(func(id: String) -> bool: return not _can[id])
 	for id: String in order:
 		var at := _list.add_item(_line(id), view.item_picture(_picture_of(id)))
@@ -217,7 +239,6 @@ func refresh() -> void:
 		_ids.append(id)
 		if id == keep:
 			_list.select(at)
-	_about.text = _about_skill()
 	if _list.get_selected_items().is_empty() and not _ids.is_empty():
 		_list.select(0)
 	_buttons()
@@ -281,31 +302,59 @@ func _picture_of(id: String) -> String:
 	return String(outs.keys()[0]) if not outs.is_empty() else ""
 
 
+## A line of the list: the name, and how many can be made (or that it can't).
 func _line(id: String) -> String:
 	if _mends.has(id):
-		return _mend_text(_mends[id])
+		var m: Dictionary = _mends[id]
+		return "Починить: %s%s, %d%%" % [content.get_def(String(m["item"])).get("name", m["item"]), " (надето)" if m.has("slot") else "",
+			floori(Wear.condition(content, String(m["item"]), m["state"]) * 100.0 + 0.5)]
 	if _sheets.has(id):
 		var r := String(_sheets[id]["recipe"])
-		return "Чертёж: %s — %s%s" % [content.get_def(r).get("name", r), _recipe_text(r),
-			"  (уже знаете)" if client.knows(content, r) else ""]
-	var d := content.get_def(id)
-	return "%s: %s  ·  успех %d%%, мастерство %d" % [d.get("name", id), _recipe_text(id),
-		roundi(chance_of(id) * 100.0), client.mastery_level(id)]
+		return "Чертёж: %s%s" % [content.get_def(r).get("name", r), " ✓" if client.knows(content, r) else ""]
+	var n := times(id, client.inventory())
+	return "%s%s" % [content.get_def(id).get("name", id), "  ×%d" % n if bool(_can.get(id, false)) and n > 1 else ""]
 
 
-func _recipe_text(id: String) -> String:
-	var d := content.get_def(id)
-	var parts := PackedStringArray()
-	for item: String in d["inputs"]:
-		parts.append("%s %d" % [_name(item), int(d["inputs"][item])])
+## What a line is found by: its name, what it takes and makes.
+func _words_of(id: String) -> String:
+	var r := String(_sheets[id]["recipe"]) if _sheets.has(id) else (String(_mends[id]["item"]) if _mends.has(id) else id)
+	var d := content.get_def(r)
+	var words := PackedStringArray([String(d.get("name", r))])
+	for key: String in ["inputs", "outputs"]:
+		for item: String in d.get(key, {}):
+			words.append(_name(item))
+	return " ".join(words).to_lower()
+
+
+## The chosen line's card; with none, the chosen skill's.
+func _card(id: String) -> String:
+	if id == "":
+		return _about_skill()
+	if _mends.has(id):
+		return _mend_text(_mends[id]) + "\n\n" + ItemCard.text(content, String(_mends[id]["item"]), _mends[id]["state"])
+	var r := String(_sheets[id]["recipe"]) if _sheets.has(id) else id
+	var d := content.get_def(r)
+	var lines := PackedStringArray([String(d.get("name", r)) + (" — по чертежу" if _sheets.has(id) else "")])
 	var made := PackedStringArray()
 	for item: String in d["outputs"]:
-		made.append("%s %d" % [_name(item), int(d["outputs"][item])])
-	var text := "%s → %s" % [", ".join(parts), ", ".join(made)]
+		made.append("%s ×%d" % [_name(item), int(d["outputs"][item])])
+	lines.append("Получится: " + ", ".join(made))
+	lines.append("Нужно:")
+	for item: String in d["inputs"]:
+		var have := int(client.inventory().get(item, 0))
+		var need := int(d["inputs"][item])
+		lines.append("  %s %d/%d%s" % [_name(item), mini(have, need), need, "" if have >= need else "  — мало"])
 	var where := String(d.get("station", ""))
 	if where != "":
-		text += "  [%s]" % STATIONS.get(where, where)
-	return text
+		lines.append("Где: %s%s" % [STATIONS.get(where, where), "" if station_near(where) else " — нет рядом"])
+	if not _sheets.has(id):
+		lines.append("Удача: %d%%, мастерство: %d" % [roundi(chance_of(r) * 100.0), client.mastery_level(r)])
+		var skill := String(d.get("skill", ""))
+		if skill != "":
+			lines.append("Навык: %s, %d" % [content.get_def(skill).get("name", skill), client.skill_level(skill)])
+	else:
+		lines.append("По чертежу — наверняка и в полную силу; чертёж уйдёт." + (" Уже знаете." if client.knows(content, r) else ""))
+	return "\n".join(lines)
 
 
 func _sheet_lines() -> Array[String]:
@@ -340,6 +389,8 @@ func selected() -> String:
 
 func _buttons() -> void:
 	var id := selected()
+	_about.text = _card(id)
+	_about.add_theme_color_override("font_color", Art.TEXT if id != "" else Art.TEXT_DIM)
 	var ok: bool = id != "" and bool(_can.get(id, false))
 	_make.disabled = not ok
 	_second.visible = false

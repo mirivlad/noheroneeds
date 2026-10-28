@@ -54,12 +54,13 @@ func test_launch_and_hud_bounds() -> void:
 	eq(app.get_window().content_scale_size, PixelDisplay.SIZE)
 	eq(g.camera.zoom, Vector2(2, 2))
 	g._layout_hud()
-	for control: Control in [g.minimap, g.hotbar, g.status]:
-		check(bounds.encloses(control.get_global_rect()), control.get_class() + " on the screen")
-	check(g.hotbar.get_global_rect().end.y <= g.status.position.y, "hotbar above status")
-	check(g.hud.get_global_rect().end.y <= g._info.position.y, "top lines separate")
-	check(g._info.get_global_rect().end.y <= g.minimap.position.y, "minimap below top lines")
-	check(g.hud.clip_text, "bounded HUD lines")
+	for control: Control in [g.minimap, g.hotbar, g.status, g.window_buttons, g.needs_box, g.clock_box, g._info]:
+		check(bounds.encloses(control.get_global_rect()), "%s on the screen: %s" % [control.get_class(), control.get_global_rect()])
+	check(g.status.get_global_rect().end.y <= g.hotbar.position.y, "messages above the quick slots")
+	check(not g.window_buttons.get_global_rect().intersects(g.hotbar.get_global_rect()), "window buttons beside the slots")
+	check(g.clock_box.get_global_rect().end.y <= g.minimap.position.y, "minimap below the clock")
+	check(g._info.get_global_rect().end.x <= g.hotbar.position.x, "the frame rate line clear of the slots")
+	check(not g.build_bar.visible, "the build bar only while building")
 	app.quit()
 	app.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame

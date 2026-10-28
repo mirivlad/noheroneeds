@@ -10,8 +10,12 @@ static func top(c: Vector2i) -> float:
 
 ## base: the cell's ground, relative to the mesh; low(corner): the lowest walkable
 ## ground at a corner, relative; blocked(cell): rock there; flush(cell): a walkable
-## cell beside it on its level (then the rock is that level's edge, no crag).
-static func mesh(cell: Vector2i, base: float, low: Callable, blocked: Callable, flush: Callable, material: Material) -> Mesh:
+## cell beside it on its level (then the rock is that level's edge, no crag);
+## top_of(rock cell, corner): a rock neighbour's top at a shared corner, relative —
+## where it stands lower (a cliff's steps, an edge by a crag) the face between
+## goes down to it, never a gap one sees through.
+static func mesh(cell: Vector2i, base: float, low: Callable, blocked: Callable, flush: Callable, material: Material,
+		top_of := Callable()) -> Mesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var directions := [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
@@ -24,9 +28,15 @@ static func mesh(cell: Vector2i, base: float, low: Callable, blocked: Callable, 
 	var edges := [[0, 1], [1, 3], [3, 2], [2, 0]]
 	var corners := [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]
 	for i in 4:
-		if blocked.call(cell + directions[i]): continue
 		var a := p[edges[i][0]]
 		var b := p[edges[i][1]]
+		if blocked.call(cell + directions[i]):
+			if top_of.is_valid():
+				var ta := minf(float(top_of.call(cell + directions[i], cell + corners[edges[i][0]])), a.y)
+				var tb := minf(float(top_of.call(cell + directions[i], cell + corners[edges[i][1]])), b.y)
+				if a.y - ta > .02 or b.y - tb > .02:
+					_quad(st, [Vector3(a.x, ta, a.z), Vector3(b.x, tb, b.z), a, b])
+			continue
 		var floor_a := Vector3(a.x, minf(float(low.call(cell + corners[edges[i][0]])), a.y), a.z)
 		var floor_b := Vector3(b.x, minf(float(low.call(cell + corners[edges[i][1]])), b.y), b.z)
 		var middle_a := floor_a.lerp(a, .56)

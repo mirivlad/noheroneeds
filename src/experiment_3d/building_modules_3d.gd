@@ -54,6 +54,71 @@ func wall(mask: int, stone_wall := false) -> Mesh:
 	cache[key] = mesh
 	return mesh
 
+## A fence's cell: a post in its middle, two rails to each side it goes on to
+## (`mask` bits: east, north, west, south).
+func fence(mask: int) -> Mesh:
+	var key := "fence:%d" % mask
+	if cache.has(key): return cache[key]
+	var mesh := ArrayMesh.new()
+	for i in 4:
+		if mask & (1 << i) == 0: continue
+		var angle := i * PI / 2
+		var along := Vector3(.25, 0, 0).rotated(Vector3.UP, angle)
+		for h: float in [.32, .62]:
+			_box(mesh, Vector3(.52, .07, .05), along + Vector3.UP * h, wood, angle)
+	_box(mesh, Vector3(.1, .78, .1), Vector3.UP * .39, timber)
+	cache[key] = mesh
+	return mesh
+
+## A gate across a fence's line (along x): two posts, a leaf of upright boards
+## with a brace, swung open about its left post.
+func gate(opened: bool) -> Mesh:
+	var key := "gate:%s" % opened
+	if cache.has(key): return cache[key]
+	var mesh := ArrayMesh.new()
+	for x: float in [-.45, .45]:
+		_box(mesh, Vector3(.11, .9, .11), Vector3(x, .45, 0), timber)
+	var angle := -PI / 2 if opened else 0.0
+	var hinge := Vector3(-.39, 0, 0)
+	for i in 6:
+		var local := Vector3(.065 + i * .13, .4, 0).rotated(Vector3.UP, angle)
+		_box(mesh, Vector3(.11, .64, .04), hinge + local, wood, angle)
+	for h: float in [.2, .6]:
+		_box(mesh, Vector3(.78, .06, .04), hinge + Vector3(.39, h, .04).rotated(Vector3.UP, angle), timber, angle)
+	# The brace, corner to corner.
+	var brace := Basis(Vector3.UP, angle) * Basis(Vector3.BACK, atan2(.4, .7))
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var box := BoxMesh.new()
+	box.size = Vector3(.82, .05, .035)
+	st.append_from(box, 0, Transform3D(brace, hinge + Vector3(.39, .4, .065).rotated(Vector3.UP, angle)))
+	st.set_material(timber)
+	st.commit(mesh)
+	cache[key] = mesh
+	return mesh
+
+## A campfire: logs leaned together in a ring of stones (its flames and smoke
+## are particles, Effects3D).
+func campfire() -> Mesh:
+	if cache.has("campfire"): return cache["campfire"]
+	var mesh := ArrayMesh.new()
+	for i in 9:  # the ring of stones
+		var a := i * TAU / 9.0
+		_box(mesh, Vector3(.16, .1 + .03 * (i % 3), .13), Vector3(cos(a) * .4, .05, sin(a) * .4), stone, -a)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in 5:  # logs leaned to the middle, a little apart
+		var a := i * TAU / 5.0 + .3
+		var lean := Basis(Vector3.UP, -a) * Basis(Vector3.BACK, -.9)  # the inner end up
+		var log := BoxMesh.new()
+		log.size = Vector3(.5, .07, .07)
+		st.append_from(log, 0, Transform3D(lean, Vector3(cos(a) * .14, .15, sin(a) * .14)))
+	st.set_material(timber)
+	st.commit(mesh)
+	_box(mesh, Vector3(.3, .03, .3), Vector3.UP * .015, _material(Color("2a2420")))  # ash
+	cache["campfire"] = mesh
+	return mesh
+
 func opening(window: bool, opened: bool) -> Mesh:
 	var key := "opening:%s:%s" % [window, opened]
 	if cache.has(key): return cache[key]

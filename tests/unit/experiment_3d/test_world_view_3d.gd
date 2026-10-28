@@ -335,3 +335,16 @@ func test_chasm_walls_and_a_hanging_bridge() -> void:
 	var at := Vector2(5.5, 2.5)
 	check(is_equal_approx(view.elevation(at), view.surface_elevation(at) + WorldView3D.DECK), "feet on its deck")
 	check(view._hollow(Vector2i(5, 2)) and view._hollow(Vector2i(5, 0)) and not view._hollow(Vector2i(3, 2)), "the chasm runs under the bridge")
+
+func test_rock_steps_have_faces_between() -> void:
+	# Two rock cells side by side, the east one a metre lower: the face between
+	# them goes down to it (no gap one sees through).
+	var rock := func(p: Vector2i) -> bool: return p == Vector2i(1, 0)
+	var flush := func(p: Vector2i) -> bool: return p.y != 0
+	var lower := func(_n: Vector2i, _c: Vector2i) -> float: return -0.95
+	var with_step := RockCells3D.mesh(Vector2i.ZERO, 0.0, func(_p: Vector2i) -> float: return 0.0, rock, flush, view.buildings.stone, lower)
+	var without := RockCells3D.mesh(Vector2i.ZERO, 0.0, func(_p: Vector2i) -> float: return 0.0, rock, flush, view.buildings.stone)
+	check(with_step.get_faces().size() > without.get_faces().size(), "a face down to the lower rock beside")
+	var level := func(_n: Vector2i, _c: Vector2i) -> float: return 0.05
+	var flat := RockCells3D.mesh(Vector2i.ZERO, 0.0, func(_p: Vector2i) -> float: return 0.0, rock, flush, view.buildings.stone, level)
+	eq(flat.get_faces().size(), without.get_faces().size(), "none where they stand level")

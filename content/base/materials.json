@@ -20,7 +20,7 @@
     {"id": "base:leather", "kind": "item", "name": "Кожа", "stack": 20},
     {"id": "base:wool", "kind": "item", "name": "Шерсть", "stack": 50},
     {"id": "base:cloth", "kind": "item", "name": "Ткань", "stack": 20},
-    {"id": "base:bucket", "kind": "item", "name": "Ведро", "stack": 1},
+    {"id": "base:bucket", "kind": "item", "name": "Ведро", "stack": 1, "swing": "thrust"},
     {"id": "base:seedling", "kind": "item", "name": "Саженец", "stack": 10, "seedling": "base:sapling"},
     {"id": "base:raft", "kind": "item", "name": "Плот", "stack": 1, "durability": 120,
       "repair": {"station": "workbench", "materials": {"base:cord": 1}}, "vessel": {"seats": 1, "speed": 40}},

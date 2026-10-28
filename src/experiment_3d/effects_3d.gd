@@ -8,6 +8,7 @@ static var _dot: QuadMesh
 static var _puff: QuadMesh
 static var _mist: QuadMesh
 static var _glow: QuadMesh
+static var _flame: QuadMesh
 
 
 ## A thing that keeps giving off (sparks, smoke, embers); null if unknown.
@@ -28,6 +29,15 @@ static func of(kind: String) -> CPUParticles3D:
 			p.mesh = _dot_mesh()
 			_rise(p, .06, 30.0, .4, .75, Vector3(0, .4, 0))
 			p.color_ramp = _ramp(Color(1, 0.8, 0.35, 1), Color(1, 0.3, 0.1, 0))
+		"flames":
+			p.amount = 16
+			p.lifetime = 0.6
+			p.mesh = _flame_mesh()
+			_rise(p, .12, 12.0, .4, .8, Vector3(0, .6, 0))
+			p.scale_amount_min = 0.7
+			p.scale_amount_max = 1.2
+			p.scale_amount_curve = _shrink()
+			p.color_ramp = _ramp3(Color(1, 0.9, 0.5, 0.9), Color(1, 0.55, 0.15, 0.8), Color(0.9, 0.25, 0.05, 0))
 		"smoke":
 			p.amount = 12
 			p.lifetime = 2.6
@@ -170,6 +180,13 @@ static func _ramp3(a: Color, b: Color, c: Color) -> Gradient:
 	return g
 
 
+static func _shrink() -> Curve:
+	var c := Curve.new()
+	c.add_point(Vector2(0, 1.0))
+	c.add_point(Vector2(1, 0.3))
+	return c
+
+
 static func _grow() -> Curve:
 	var c := Curve.new()
 	c.add_point(Vector2(0, 0.5))
@@ -211,6 +228,14 @@ static func _glow_mesh() -> QuadMesh:
 		_glow = _quad(.25, (_puff_mesh().material as StandardMaterial3D).albedo_texture)
 		(_glow.material as StandardMaterial3D).blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	return _glow
+
+
+## A tongue of flame: a soft patch of light added to what is behind, 30 cm.
+static func _flame_mesh() -> QuadMesh:
+	if _flame == null:
+		_flame = _quad(.3, (_puff_mesh().material as StandardMaterial3D).albedo_texture)
+		(_flame.material as StandardMaterial3D).blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	return _flame
 
 
 static func _quad(size: float, texture: Texture2D) -> QuadMesh:

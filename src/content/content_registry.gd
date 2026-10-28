@@ -12,7 +12,7 @@ const PACK_FORMAT := 1
 ## Fields only a player sees (texts). They, "visual" and "sound" definitions
 ## are left out of the rules fingerprint (ADR-0009): translations, texture
 ## and sound packs never stop anyone from joining.
-## "effects": what a thing gives off on the screen ({sparks|smoke|embers: [x, y]
+## "effects": what a thing gives off on the screen ({flames|sparks|smoke|embers: [x, y]
 ## world pixels from its cell's bottom middle}).
 ## "ambient": life over a ground or plant (fireflies, mist, drift, leaves).
 ## "winter": the ground it is drawn as in winter (under snow).

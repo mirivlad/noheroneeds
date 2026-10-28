@@ -32,7 +32,6 @@ signal failed(reason: String)
 signal screenshot_taken
 
 ## Shown in the HUD: the common building materials.
-const MATERIALS := ["base:plank", "base:stone", "base:log"]
 ## Most cells one drag of a blueprint builds at once.
 const DRAG_MAX := 64
 
@@ -141,7 +140,10 @@ var _reported := false
 ## The world, in 3D (ADR-0063: the 2D view is gone).
 var view := WorldView3D.new()
 var camera := Camera2D.new()
-var hud := Label.new()
+## The build bar above the quick slots while a blueprint is chosen (UI 2.0).
+var build_bar := HudBoxes.BuildBar.new()
+var _bar_part := ""
+var _bar_picture: Texture2D
 var status := Label.new()
 ## The second HUD line: hosting address, frame rate, control hints.
 var _info := Label.new()
@@ -285,7 +287,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	weather.setup(client, view)
 	weather.lightning.connect(func() -> void: audio.play("thunder", "", null))
 	layer.add_child(weather)  # first: under everything else on the screen
-	for l: Label in [hud, status, _info]:
+	for l: Label in [status, _info]:
 		l.add_theme_font_override("font", Art.font())
 		l.add_theme_font_size_override("font_size", 16)
 		l.add_theme_color_override("font_color", Art.TEXT)
@@ -294,13 +296,12 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 		layer.add_child(l)
 	layer.add_child(needs_box)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hud.visible = false  # the materials: while building
+	layer.add_child(build_bar)
 	window_buttons.chosen.connect(func(w: String) -> void:
 		if client and client.state == "playing":
 			open_window(w))
 	layer.add_child(window_buttons)
 	layer.add_child(clock_box)
-	hud.position = Vector2(6, 2)
 	_info.position = Vector2(6, 16)
 	_info.add_theme_color_override("font_color", Art.TEXT_DIM)
 	_build_tools(layer)
@@ -345,7 +346,7 @@ func _exit_tree() -> void:
 func _notification(what: int) -> void:
 	# Parts made up front but never added (a start that failed) are freed too.
 	if what == NOTIFICATION_PREDELETE:
-		for n: Node in [view, camera, hud, status, _info, audio, minimap, world_map, hotbar, catalog, crafts,
+		for n: Node in [view, camera, build_bar, status, _info, audio, minimap, world_map, hotbar, catalog, crafts,
 				character_panel, chest_panel, trade_panel, talk_panel, journal_panel, pin_panel, _menu, weather,
 				needs_box, clock_box, window_buttons, cursor_hint]:
 			if is_instance_valid(n) and n.get_parent() == null:
@@ -428,15 +429,14 @@ func _layout_hud() -> void:
 	window_buttons.position = Vector2(hotbar.position.x + slots.x + 8, hotbar.position.y + floorf((slots.y - buttons.y) / 2.0))
 	status.size = Vector2(viewport_size.x - 12, 18)
 	status.position = Vector2(6, hotbar.position.y - 22)
-	var left := needs_box.position.x + needs_box.get_combined_minimum_size().x + 8
-	hud.position = Vector2(left, 4)
+	var bar := build_bar.get_combined_minimum_size()
+	build_bar.position = Vector2(floorf((viewport_size.x - bar.x) / 2.0), status.position.y - bar.y - 2)
 	_info.position = Vector2(6, viewport_size.y - 18)
-	for label: Label in [hud, _info, status]:
+	for label: Label in [_info, status]:
 		label.clip_text = true
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		label.custom_minimum_size.x = 0
 		label.add_theme_constant_override("outline_size", 2)
-	hud.size = Vector2(maxf(40, clock_box.position.x - 8 - left), 18)
 	_info.size = Vector2(maxf(40, hotbar.position.x - 12), 18)
 	windows.top = maxf(needs_box.position.y + needs_box.get_combined_minimum_size().y, clock_box.position.y + clock_box.size.y) + 4
 	windows.bottom = viewport_size.y - status.position.y
@@ -1289,9 +1289,6 @@ func _update_hud() -> void:
 	var state: String = {"playing": "", "connecting": "подключение…", "joining": "вход…", "disconnected": "нет связи",
 		"rejected": "отказ: " + client.reject_reason}.get(client.state, client.state)
 	var inv := client.inventory()
-	var bag := PackedStringArray()
-	for id: String in MATERIALS:
-		bag.append("%s %d" % [content.get_def(id).get("name", id), int(inv.get(id, 0))])
 	var level := "" if client.z == 0 else ("Этаж %+d" % client.z if client.z > 0 else "Глубина −%d" % -client.z)
 	if client.has_time:
 		var sky := Weather.kind(client.weather_seed, client.world_time, client.weather_place(), client.climate()) if client.z >= 0 else ""
@@ -1304,8 +1301,6 @@ func _update_hud() -> void:
 	_deaths_seen = deaths if client.own.has("deaths") else _deaths_seen
 	needs_box.show_rows(_need_rows())
 	_layout_top()
-	hud.text = "  ".join(bag)
-	hud.visible = catalog.visible or _blueprint != ""  # what there is to build with, while building
 	var info := PackedStringArray()
 	if hosted:
 		info.append("сервер: порт %d%s" % [hosted.port, _lan_address()])
@@ -1325,23 +1320,24 @@ func _update_hud() -> void:
 	if held != "" and content.get_def(held).get("weapon", {}).get("kind") == "ranged":
 		ammo = "стрел: %d" % int(inv.get(String(content.get_def(held)["weapon"]["ammo"]), 0))
 	var doing := ""
+	var building := ""
 	if _blueprint == BuildCatalog.DEMOLISH:
-		doing = "РАЗБОРКА: ЛКМ — разобрать своё, ПКМ — отпустить"
+		building = "Разборка: ЛКМ — разобрать своё · ПКМ — закончить"
 	elif _blueprint != "":
-		doing = "чертёж: " + String(content.get_def(_blueprint).get("name", _blueprint))
+		# The build bar: the part, its turn, how many go down and what they take.
+		building = String(content.get_def(_blueprint).get("name", _blueprint))
 		if not _turns().is_empty():
-			doing += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
+			building += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
 		var ok := _plan.filter(func(p: Array) -> bool: return p[1] == "").size()
 		var cost := content.structure_cost(_blueprint)
 		var parts := PackedStringArray()
 		for m: String in cost:
-			parts.append("%s %d/%d" % [String(content.get_def(m).get("name", m)).to_lower(), int(cost[m]) * ok, int(inv.get(m, 0))])
-		doing += "  %d из %d  %s" % [ok, _plan.size(), ", ".join(parts)]
-		for p: Array in _plan:
+			parts.append("%s %d из %d" % [String(content.get_def(m).get("name", m)).to_lower(), int(cost[m]) * ok, int(inv.get(m, 0))])
+		building += "  ·  поставится %d из %d  ·  %s  ·  ЛКМ — поставить, ПКМ — отпустить" % [ok, _plan.size(), ", ".join(parts)]
+		for p: Array in _plan:  # at the cursor: why not, where it cannot go
 			if p[1] != "":
-				doing += "  нельзя: " + String(REASONS.get(p[1], p[1]))
+				doing = "нельзя: " + String(REASONS.get(p[1], p[1]))
 				break
-		doing += "  ПКМ — отпустить"
 	elif not _over_ui():
 		# What is under the cursor, then what the left button and E do there.
 		var p := Actions.primary(actions)
@@ -1356,6 +1352,13 @@ func _update_hud() -> void:
 		var what := Actions.describe(content, target, client.character_id)
 		doing = what + (" — " if what != "" and not does.is_empty() else "") + " · ".join(does)
 	cursor_hint.text = doing if settings.get_value("show_hints") or _blueprint != "" else ""
+	if _blueprint != _bar_part:
+		_bar_part = _blueprint
+		_bar_picture = BuildCatalog.icon_of(content, view, _blueprint) if _blueprint not in ["", BuildCatalog.DEMOLISH] else null
+	build_bar.show_plan(_bar_picture, building)
+	if build_bar.visible:  # centred over the messages, as wide as its words
+		var bar := build_bar.get_combined_minimum_size()
+		build_bar.position = Vector2(floorf((get_viewport_rect().size.x - bar.x) / 2.0), status.position.y - bar.y - 2)
 	cursor_hint.follow(get_viewport().get_mouse_position(), get_viewport_rect().size)
 	# A message shows a while, then fades; the connection's state stays.
 	if note != _note_shown:

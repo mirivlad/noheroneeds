@@ -60,7 +60,7 @@ func test_launch_and_hud_bounds() -> void:
 	check(not g.window_buttons.get_global_rect().intersects(g.hotbar.get_global_rect()), "window buttons beside the slots")
 	check(g.clock_box.get_global_rect().end.y <= g.minimap.position.y, "minimap below the clock")
 	check(g._info.get_global_rect().end.x <= g.hotbar.position.x, "the frame rate line clear of the slots")
-	check(g.hud.clip_text and not g.hud.visible, "bounded materials line, shown only while building")
+	check(not g.build_bar.visible, "the build bar only while building")
 	app.quit()
 	app.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame

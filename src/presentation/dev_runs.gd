@@ -299,7 +299,7 @@ func step(delta: float) -> void:
 	if g._opts.has("open_map") and g._frames == int(g._opts.get("frames", "120")) - 30:  # dev: a picture of the map
 		g.world_map.open()
 		g._places_rid = g.client.request({"type": "places"})
-	if g._opts.has("ui") and g._frames == int(g._opts.get("frames", "120")) - (40 if String(g._opts["ui"]) in ["trade", "talk"] else 8):  # dev: a picture of a panel
+	if g._opts.has("ui") and g._frames == int(g._opts.get("frames", "120")) - (40 if String(g._opts["ui"]) in ["trade", "talk", "journal"] else 8):  # dev: a picture of a panel
 		match String(g._opts["ui"]):
 			"catalog":
 				g.catalog.open(g.client.inventory())
@@ -307,6 +307,8 @@ func step(delta: float) -> void:
 				g.crafts.open()
 			"inventory":
 				g.open_window("things")
+			"journal":
+				g.open_window("journal")
 			"character":
 				g.character_panel.show_for(g.client.own, g.hotbar.held(g.client.inventory()))
 			"trade", "talk":  # the nearest dweller, one stepped up to it

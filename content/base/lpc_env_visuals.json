@@ -2638,13 +2638,32 @@
    "variants": 1
   },
   {
+   "id": "base:visual/iron_sword",
+   "kind": "visual",
+   "for": "base:iron_sword",
+   "mode": "item",
+   "atlas": "art/lpc_env/items.png",
+   "rect": [
+    640,
+    0,
+    32,
+    32
+   ],
+   "origin": [
+    0,
+    32
+   ],
+   "pixel_scale": 0.5,
+   "variants": 1
+  },
+  {
    "id": "base:visual/iron_pickaxe",
    "kind": "visual",
    "for": "base:iron_pickaxe",
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    640,
+    672,
     0,
     32,
     32
@@ -2663,7 +2682,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    672,
+    704,
     0,
     32,
     32
@@ -2682,7 +2701,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    704,
+    736,
     0,
     32,
     32
@@ -2701,7 +2720,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    736,
+    768,
     0,
     32,
     32
@@ -2720,7 +2739,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    768,
+    800,
     0,
     32,
     32
@@ -2739,7 +2758,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    800,
+    832,
     0,
     32,
     32
@@ -2758,7 +2777,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    832,
+    864,
     0,
     32,
     32
@@ -2777,7 +2796,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    864,
+    896,
     0,
     32,
     32
@@ -2796,7 +2815,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    896,
+    928,
     0,
     32,
     32
@@ -2815,7 +2834,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    928,
+    960,
     0,
     32,
     32
@@ -2834,7 +2853,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    960,
+    992,
     0,
     32,
     32
@@ -2853,7 +2872,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    992,
+    1024,
     0,
     32,
     32
@@ -2872,7 +2891,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1024,
+    1056,
     0,
     32,
     32
@@ -2891,7 +2910,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1056,
+    1088,
     0,
     32,
     32
@@ -2910,7 +2929,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1088,
+    1120,
     0,
     32,
     32
@@ -2929,7 +2948,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1120,
+    1152,
     0,
     32,
     32
@@ -2948,7 +2967,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1152,
+    1184,
     0,
     32,
     32
@@ -2967,7 +2986,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1184,
+    1216,
     0,
     32,
     32
@@ -2986,7 +3005,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1216,
+    1248,
     0,
     32,
     32
@@ -3005,7 +3024,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1248,
+    1280,
     0,
     32,
     32
@@ -3024,7 +3043,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1280,
+    1312,
     0,
     32,
     32
@@ -3043,7 +3062,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1312,
+    1344,
     0,
     32,
     32
@@ -3062,7 +3081,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1344,
+    1376,
     0,
     32,
     32
@@ -3081,7 +3100,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1376,
+    1408,
     0,
     32,
     32
@@ -3100,7 +3119,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1408,
+    1440,
     0,
     32,
     32
@@ -3119,7 +3138,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1440,
+    1472,
     0,
     32,
     32
@@ -3138,7 +3157,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1472,
+    1504,
     0,
     32,
     32
@@ -3157,7 +3176,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1504,
+    1536,
     0,
     32,
     32
@@ -3176,7 +3195,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1536,
+    1568,
     0,
     32,
     32
@@ -3195,7 +3214,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1568,
+    1600,
     0,
     32,
     32
@@ -3214,7 +3233,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1600,
+    1632,
     0,
     32,
     32
@@ -3233,7 +3252,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1632,
+    1664,
     0,
     32,
     32
@@ -3252,7 +3271,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1664,
+    1696,
     0,
     32,
     32
@@ -3271,7 +3290,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1696,
+    1728,
     0,
     32,
     32
@@ -3290,7 +3309,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1728,
+    1760,
     0,
     32,
     32
@@ -3309,7 +3328,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1760,
+    1792,
     0,
     32,
     32
@@ -3328,7 +3347,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1792,
+    1824,
     0,
     32,
     32
@@ -3347,7 +3366,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1824,
+    1856,
     0,
     32,
     32
@@ -3366,7 +3385,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1856,
+    1888,
     0,
     32,
     32
@@ -3385,7 +3404,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1888,
+    1920,
     0,
     32,
     32
@@ -3404,7 +3423,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1920,
+    1952,
     0,
     32,
     32
@@ -3423,7 +3442,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1952,
+    1984,
     0,
     32,
     32
@@ -3442,7 +3461,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    1984,
+    2016,
     0,
     32,
     32
@@ -3461,7 +3480,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    2016,
+    2048,
     0,
     32,
     32
@@ -3480,7 +3499,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    2048,
+    2080,
     0,
     32,
     32
@@ -3499,7 +3518,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    2080,
+    2112,
     0,
     32,
     32
@@ -3518,7 +3537,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    2112,
+    2144,
     0,
     32,
     32
@@ -3537,7 +3556,7 @@
    "mode": "item",
    "atlas": "art/lpc_env/items.png",
    "rect": [
-    2144,
+    2176,
     0,
     32,
     32

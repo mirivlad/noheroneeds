@@ -28,7 +28,7 @@ FRAME = 64
 # Our name -> LPC's. Frames counted from the sources.
 ANIMS = {"idle": "idle", "walk": "walk", "run": "run", "slash": "slash", "thrust": "thrust", "shoot": "shoot"}
 # Oversize LPC animations (custom_animation in a sheet definition): our name, frame size.
-CUSTOM = {"tool_axe": ("chop", 128), "walk_128": ("walk", 128), "tool_rod": ("fish", 128)}
+CUSTOM = {"tool_axe": ("chop", 128), "walk_128": ("walk", 128), "slash_128": ("slash", 128), "tool_rod": ("fish", 128)}
 # Animations a layer plays with the columns of another (LPC's custom timelines):
 # ours -> (theirs, its column for each frame). The rod's cast is the thrust.
 BORROWED = {"fish": ("thrust", [0, 1, 2, 3, 4, 5, 4, 4, 4, 5, 4, 2, 3])}
@@ -96,6 +96,7 @@ HELD = {
     "base:fishing_rod": (D + "tools/tool_rod.json", None),
     "base:spear": (D + "weapons/polearm/weapon_polearm_spear.json", "medium"),
     "base:bow": (D + "weapons/ranged/bow/weapon_ranged_bow_normal.json", "medium"),
+    "base:iron_sword": (D + "weapons/sword/weapon_sword_longsword_alt.json", "longsword_alt"),
 }
 # How each swing of ADR-0021 is played, and its frames (columns of the LPC
 # animation in order). The axe's is LPC's own tool_axe timeline.
@@ -109,7 +110,7 @@ BODY_ANIMATIONS = {
     "chop": {"frames": [5, 5, 4, 4, 3, 1, 0, 0, 0, 0], "fps": 22},
     "fish": {"frames": list(range(13)), "fps": 18},
 }
-SWINGS = {"chop": "chop", "mine": "chop", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "cast": "fish"}
+SWINGS = {"chop": "chop", "mine": "chop", "thrust": "thrust", "draw": "shoot", "lunge": "slash", "slash": "slash", "cast": "fish"}
 # A thing in the hands without frames for an animation: what the body does instead.
 FALLBACK = {"idle": ["walk", 0], "run": ["walk", -1], "slash": ["chop", -1]}
 

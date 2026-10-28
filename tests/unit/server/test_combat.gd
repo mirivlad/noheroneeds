@@ -82,6 +82,18 @@ func _items_at(cell: Vector2i) -> Dictionary:
 	return out
 
 
+func test_an_iron_sword_strikes_as_a_weapon_and_is_not_a_chopping_tool() -> void:
+	w.world_time = 12 * Daylight.HOUR_MS
+	var p := _player("Аня", Vector2i(170, 170))
+	w.grant(p, "base:iron_sword", 1)
+	var deer := w.creatures._spawn("base:deer", "surface", Vector2i(171, 170), {}, 1)
+	eq(_attack(p, Vector2i(172, 170), "base:iron_sword").get("hit"), deer.id)
+	eq(deer.health, 2, "a sword deals eight damage")
+	eq(w.inventory(p).state_of("base:iron_sword", 0), {"wear": 1}, "a hit wears the held copy")
+	eq(_attack(p, Vector2i(172, 170), "base:iron_sword").get("reason"), "not_ready", "a blow has its cooldown")
+	check(not _content.get_def("base:iron_sword").has("tools"), "a sword is no axe or pick")
+
+
 func test_a_blow_hits_within_reach_and_arc_and_not_through_walls() -> void:
 	w.world_time = 12 * Daylight.HOUR_MS
 	var p := _player("Аня", Vector2i(170, 170))

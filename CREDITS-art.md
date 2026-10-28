@@ -292,6 +292,12 @@
 - https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
 - https://opengameart.org/content/lpc-walk-animations-for-bows
 
+## weapon/sword/longsword_alt
+
+- Авторы: Pierre Vigier and DCSS artists (see https://github.com/crawl/tiles/blob/master/ARTISTS.md)
+- Лицензии: OGA-BY 3.0
+- https://opengameart.org/content/lpc-dcss-swords
+
 <!-- environment -->
 # Авторы графики окружения
 

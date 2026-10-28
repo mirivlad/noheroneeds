@@ -598,6 +598,16 @@ def fishing_rod():
 	return [k.done()]
 
 
+def iron_sword():
+	"""A one-handed sword: a corded grip, a pommel, a crossguard, a straight blade to a point."""
+	k = Kit("iron_sword")
+	k.rod(-0.1, 0.1, 0.016, pal.CORD)
+	k.rod(-0.14, -0.09, 0.024, pal.IRON_DARK)
+	k.plate([(-0.09, 0.1), (0.09, 0.1), (0.09, 0.135), (-0.09, 0.135)], 0.03, pal.IRON_DARK, edge=1)
+	k.plate([(-0.024, 0.135), (0.024, 0.135), (0.02, 0.76), (0, 0.84), (-0.02, 0.76)], 0.012, pal.IRON, edge=1)
+	return [k.done()]
+
+
 BOW_HALF, BOW_DEPTH = gear.BOW_HALF, gear.BOW_DEPTH
 
 
@@ -640,6 +650,7 @@ BUILD = {
 	"wool_cloak": wool_cloak, "fur_cloak": fur_cloak,
 	"flint_axe": flint_axe, "axe": axe, "iron_axe": iron_axe, "flint_pick": flint_pick, "pickaxe": pickaxe,
 	"iron_pickaxe": iron_pickaxe, "hoe": hoe, "spear": spear, "bow": bow, "fishing_rod": fishing_rod,
+	"iron_sword": iron_sword,
 }
 
 main()

@@ -31,7 +31,7 @@ const TRY_ON := {"Стартовая одежда": {}, "Фетровая шля
 ## What the preview does (CharacterPreview.action), and what it may hold to try.
 const ACTIONS := {"Ходьба": "walk", "Стоит": "idle", "Бег": "run", "Удар тем, что в руках": "blow", "Сидит": "sit", "Лежит": "lie"}
 const IN_HANDS := {"Пустые руки": "", "Каменный топор": "base:axe", "Каменная кирка": "base:pickaxe", "Лук": "base:bow",
-	"Копьё": "base:spear", "Мотыга": "base:hoe", "Удочка": "base:fishing_rod"}
+	"Копьё": "base:spear", "Мотыга": "base:hoe", "Удочка": "base:fishing_rod", "Железный меч": "base:iron_sword"}
 ## The hairstyle an RO body starts with.
 const RO_HAIR := {"base:human_ro_m": "base:human_ro_hair_tousled", "base:human_ro_f": "base:human_ro_hair_twintails"}
 ## RO hair with no colour chosen yet.

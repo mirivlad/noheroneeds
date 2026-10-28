@@ -1,6 +1,37 @@
 extends TestCase
 
 
+func test_the_editor_swings_a_sword_on_every_body_without_giving_it_to_the_character() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	eq(content.errors, PackedStringArray())
+	var editor := CharacterEditor.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(editor)
+	editor.setup(content)
+	editor.preview.set_process(false)
+	for plan: String in CharacterEditor.PLANS:
+		var i := CharacterEditor.PLANS.find(plan)
+		editor.sex_pick.select(i)
+		editor.sex_pick.item_selected.emit(i)
+		i = CharacterEditor.IN_HANDS.values().find("base:iron_sword")
+		editor.hands_pick.select(i)
+		editor.hands_pick.item_selected.emit(i)
+		i = CharacterEditor.ACTIONS.values().find("blow")
+		editor.action_pick.select(i)
+		editor.action_pick.item_selected.emit(i)
+		editor.preview._process(0.31)
+		var doll := editor.preview.doll
+		eq(doll._held_item, "base:iron_sword", plan + " holds the sword")
+		eq(doll._swing_kind, "slash", plan + " slashes, rather than chopping")
+		check(doll.swinging(), plan + " plays the blow")
+		var layers: Array = doll.get("_held_layers")
+		check(layers.any(func(l: Array) -> bool: return (l[1] as Sprite2D).visible), plan + " draws its sword frames")
+		check(not editor.appearance().has("held"), "trying a sword gives no starting weapon")
+		editor.preview.action = "idle"
+		editor.preview._process(1.0)
+	editor.free()
+	await (Engine.get_main_loop() as SceneTree).process_frame
+
+
 func test_edit_keeps_identity_progress_and_signed_file() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	var path := tmp_dir()

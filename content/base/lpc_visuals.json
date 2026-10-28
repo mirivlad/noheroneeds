@@ -213,6 +213,7 @@
     "thrust": "thrust",
     "draw": "shoot",
     "lunge": "slash",
+    "slash": "slash",
     "cast": "fish"
    },
    "fallback": {
@@ -2670,6 +2671,71 @@
        "z": 141
       }
      ]
+    },
+    "base:iron_sword": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_sword_longsword_alt_walk_longsword_alt_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_sword_longsword_alt_walk_behind_longsword_alt_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/weapon_sword_longsword_alt_slash_longsword_alt_slash.png",
+       "anims": {
+        "slash": [
+         0,
+         0,
+         128,
+         13
+        ],
+        "chop": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_sword_longsword_alt_slash_behind_longsword_alt_slash.png",
+       "anims": {
+        "slash": [
+         0,
+         0,
+         128,
+         13
+        ],
+        "chop": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 9
+      }
+     ]
     }
    }
   },
@@ -2885,6 +2951,7 @@
     "thrust": "thrust",
     "draw": "shoot",
     "lunge": "slash",
+    "slash": "slash",
     "cast": "fish"
    },
    "fallback": {
@@ -5340,6 +5407,71 @@
         ]
        },
        "z": 141
+      }
+     ]
+    },
+    "base:iron_sword": {
+     "layer": "main_hand",
+     "sheets": [
+      {
+       "atlas": "art/lpc/weapon_sword_longsword_alt_walk_longsword_alt_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_sword_longsword_alt_walk_behind_longsword_alt_walk.png",
+       "anims": {
+        "walk": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 9
+      },
+      {
+       "atlas": "art/lpc/weapon_sword_longsword_alt_slash_longsword_alt_slash.png",
+       "anims": {
+        "slash": [
+         0,
+         0,
+         128,
+         13
+        ],
+        "chop": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 140
+      },
+      {
+       "atlas": "art/lpc/weapon_sword_longsword_alt_slash_behind_longsword_alt_slash.png",
+       "anims": {
+        "slash": [
+         0,
+         0,
+         128,
+         13
+        ],
+        "chop": [
+         0,
+         0,
+         128,
+         13
+        ]
+       },
+       "z": 9
       }
      ]
     }

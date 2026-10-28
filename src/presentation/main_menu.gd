@@ -419,9 +419,61 @@ func show_settings() -> void:
 		func(v: float) -> void: changed.call("server_port", int(v)))
 	_spin("Игроков не больше", 1, 64, int(settings.get_value("max_players"))).value_changed.connect(
 		func(v: float) -> void: changed.call("max_players", int(v)))
+	# The keys (UI 2.0, KeyMap): a click on one, then the new key; Esc leaves it.
+	var keys := VBoxContainer.new()
+	columns.add_child(keys)
+	_into = keys
+	_label("Клавиши", Art.TEXT_DIM)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("v_separation", 1)
+	keys.add_child(grid)
+	for a: Array in KeyMap.ACTIONS:
+		var what := Label.new()
+		what.text = String(a[1])
+		grid.add_child(what)
+		var b := Button.new()
+		b.name = "Key_" + String(a[0])
+		b.text = KeyMap.key_name(KeyMap.key(settings, String(a[0])))
+		b.custom_minimum_size = Vector2(72, 0)
+		b.tooltip_text = "Щёлкните и нажмите новую клавишу (Esc — оставить)"
+		b.focus_mode = Control.FOCUS_NONE
+		b.pressed.connect(func() -> void:
+			rebinding = String(a[0])
+			b.text = "…")
+		grid.add_child(b)
+	var reset := Button.new()
+	reset.text = "Клавиши как было"
+	reset.pressed.connect(func() -> void:
+		settings.set_value("keys", {})
+		_keys_changed())
+	keys.add_child(reset)
 	_into = _body
 	_gap()
 	_button("Назад", show_start)
+
+
+## The action whose key is being set (the next key pressed), "" — none.
+var rebinding := ""
+
+
+func _input(event: InputEvent) -> void:
+	if rebinding == "" or not (event is InputEventKey) or not event.pressed or (event as InputEventKey).echo:
+		return
+	get_viewport().set_input_as_handled()
+	var e := event as InputEventKey
+	var k := e.physical_keycode if e.physical_keycode != KEY_NONE else e.keycode
+	if k != KEY_ESCAPE:
+		KeyMap.bind(settings, rebinding, k)
+	rebinding = ""
+	_keys_changed()
+
+
+func _keys_changed() -> void:
+	settings.save()
+	settings.apply()
+	settings_changed.emit()
+	show_settings()
 
 
 # --- helpers -----------------------------------------------------------------

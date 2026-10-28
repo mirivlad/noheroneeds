@@ -105,6 +105,19 @@ func _ready() -> void:
 		var screen := String(_opts.get("menu", ""))
 		if screen != "" and menu.has_method("show_" + screen):
 			menu.call("show_" + screen)
+		if _opts.has("preview"):  # dev: the editor's preview doing a thing, holding one ("blow,base:axe")
+			var p := String(_opts["preview"]).split(",")
+			for ed: Node in menu.find_children("*", "CharacterEditor", true, false):
+				var editor := ed as CharacterEditor
+				editor.sex_pick.selected = 2
+				editor._plan_changed()
+				var ai := CharacterEditor.ACTIONS.values().find(p[0])
+				editor.action_pick.select(ai)
+				editor.action_pick.item_selected.emit(ai)
+				if p.size() > 1:
+					var hi := CharacterEditor.IN_HANDS.values().find(p[1])
+					editor.hands_pick.select(hi)
+					editor.hands_pick.item_selected.emit(hi)
 
 
 var _frames := 0

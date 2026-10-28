@@ -124,6 +124,10 @@ func props_at(cell: Vector2i) -> Dictionary:
 
 ## How a blow with a thing looks (CharacterSprite.swing).
 func swing_kind(held: String) -> String:
+	return swing_of(content, held)
+
+
+static func swing_of(content: ContentRegistry, held: String) -> String:
 	if held != "" and content.get_def(held).has("swing"):
 		return String(content.get_def(held)["swing"])  # a tool's own motion (a hoe thrusts)
 	var w: Dictionary = content.get_def(held).get("weapon", {}) if held != "" else {}

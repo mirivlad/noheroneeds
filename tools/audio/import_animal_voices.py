@@ -71,15 +71,15 @@ CUTS = {
 
 # creature: [(event, cut, volume_db, every)]
 VOICES = {
-    "base:cow": [("voice", "cow", -10.0, [60, 150]), ("death", "cow", -6.0, None)],
-    "base:sheep": [("voice", "sheep", -10.0, [50, 130]), ("death", "sheep", -6.0, None)],
-    "base:chicken": [("voice", "chicken", -14.0, [40, 110]), ("death", "chicken", -8.0, None)],
+    "base:cow": [("voice", "cow", -6.0, [25, 70]), ("death", "cow", -6.0, None)],
+    "base:sheep": [("voice", "sheep", -6.0, [20, 60]), ("death", "sheep", -6.0, None)],
+    "base:chicken": [("voice", "chicken", -9.0, [15, 45]), ("death", "chicken", -8.0, None)],
     "base:wolf": [("attack", "wolf_growl", -6.0, None), ("chase", "wolf_howl", -4.0, None), ("death", "death", -6.0, None)],
     "base:bear": [("attack", "bear", -4.0, None), ("death", "bear", -4.0, None)],
     "base:polar_bear": [("attack", "bear", -4.0, None), ("death", "bear", -4.0, None)],
-    "base:deer": [("voice", "deer", -12.0, [120, 300]), ("death", "death", -8.0, None)],
-    "base:fox": [("voice", "fox", -14.0, [120, 300]), ("death", "fox", -8.0, None)],
-    "base:arctic_fox": [("voice", "fox", -14.0, [120, 300]), ("death", "fox", -8.0, None)],
+    "base:deer": [("voice", "deer", -8.0, [50, 130]), ("death", "death", -8.0, None)],
+    "base:fox": [("voice", "fox", -9.0, [50, 130]), ("death", "fox", -8.0, None)],
+    "base:arctic_fox": [("voice", "fox", -9.0, [50, 130]), ("death", "fox", -8.0, None)],
     "base:hare": [("death", "squeak", -10.0, None)],
     "base:cave_rat": [("death", "squeak", -10.0, None)],
 }

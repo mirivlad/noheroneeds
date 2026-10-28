@@ -10,14 +10,14 @@
     "audio/voice_cow_1.ogg",
     "audio/voice_cow_2.ogg"
    ],
-   "volume_db": -10.0,
+   "volume_db": -6.0,
    "pitch": [
     0.92,
     1.08
    ],
    "every": [
-    60,
-    150
+    25,
+    70
    ]
   },
   {
@@ -43,14 +43,14 @@
    "files": [
     "audio/voice_sheep_1.ogg"
    ],
-   "volume_db": -10.0,
+   "volume_db": -6.0,
    "pitch": [
     0.92,
     1.08
    ],
    "every": [
-    50,
-    130
+    20,
+    60
    ]
   },
   {
@@ -77,14 +77,14 @@
     "audio/voice_chicken_2.ogg",
     "audio/voice_chicken_3.ogg"
    ],
-   "volume_db": -14.0,
+   "volume_db": -9.0,
    "pitch": [
     0.92,
     1.08
    ],
    "every": [
-    40,
-    110
+    15,
+    45
    ]
   },
   {
@@ -217,14 +217,14 @@
    "files": [
     "audio/voice_deer_1.ogg"
    ],
-   "volume_db": -12.0,
+   "volume_db": -8.0,
    "pitch": [
     0.92,
     1.08
    ],
    "every": [
-    120,
-    300
+    50,
+    130
    ]
   },
   {
@@ -252,14 +252,14 @@
     "audio/voice_fox_1.ogg",
     "audio/voice_fox_2.ogg"
    ],
-   "volume_db": -14.0,
+   "volume_db": -9.0,
    "pitch": [
     0.92,
     1.08
    ],
    "every": [
-    120,
-    300
+    50,
+    130
    ]
   },
   {
@@ -286,14 +286,14 @@
     "audio/voice_fox_1.ogg",
     "audio/voice_fox_2.ogg"
    ],
-   "volume_db": -14.0,
+   "volume_db": -9.0,
    "pitch": [
     0.92,
     1.08
    ],
    "every": [
-    120,
-    300
+    50,
+    130
    ]
   },
   {

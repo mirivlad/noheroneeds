@@ -467,3 +467,35 @@ class CursorHint:
 		if p.y + s.y > area.y:
 			p.y = at.y - 6 - s.y
 		position = p.floor()
+
+
+## The build bar (UI 2.0) above the quick slots while a blueprint is chosen:
+## the part's picture, its name and turn, how many go down, what they take
+## against what one has, and the keys.
+class BuildBar:
+	extends PanelContainer
+	var picture := TextureRect.new()
+	var label := Label.new()
+
+	func _init() -> void:
+		theme = Art.theme()
+		add_theme_stylebox_override("panel", Art.hud_box())
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(row)
+		picture.custom_minimum_size = Vector2(24, 24)
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		for n: Control in [picture, label]:
+			n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row.add_child(n)
+		visible = false
+
+	## "" hides it.
+	func show_plan(part_picture: Texture2D, text: String) -> void:
+		visible = text != ""
+		picture.texture = part_picture
+		picture.visible = part_picture != null
+		label.text = text
+		size = Vector2.ZERO  # to its words

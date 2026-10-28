@@ -22,6 +22,22 @@ func _init(screen: GameScreen) -> void:
 
 
 func step(delta: float) -> void:
+	if g._opts.has("audio_debug") and g._frames % 60 == 59:  # dev: what is heard, and from where
+		var a := g.audio
+		var amb := PackedStringArray()
+		for path: String in a._amb:
+			var p: AudioStreamPlayer = a._amb[path][0]
+			amb.append("%s %s %.1fdB" % [path.get_file(), "on" if p.playing else "off", p.volume_db])
+		var near := 0
+		for v: AudioStreamPlayer2D in a._voices:
+			if v.playing:
+				near += 1
+		var cam := g.get_viewport().get_camera_2d()
+		print("AUDIO amb=[", ", ".join(amb), "] forest=%.2f voices_playing=%d calls=%d cam=%s cam_pos=%s me=%s" % [a.forest_share, near,
+			a._calls.size(), cam != null, cam.global_position if cam else Vector2.ZERO, g.view.own_pixel_position(1.0)])
+		for v: AudioStreamPlayer2D in a._voices:
+			if v.playing:
+				print("  VOICE ", v.stream.resource_name.get_file() if v.stream else "?", " at ", v.global_position, " vol ", v.volume_db)
 	if g._opts.has("pick_debug") and g._frames % 60 == 59:  # dev: what the ray under each dweller's middle hits
 		var v := g.view as WorldView3D
 		for id: String in v._actors:

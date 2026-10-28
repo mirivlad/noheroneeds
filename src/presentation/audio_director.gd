@@ -24,7 +24,9 @@ extends Node2D
 ## hears. Ambience plays on its own bus.
 
 const VOICES := 16
-const HEARING := 420.0
+## How far a sound carries, in screen pixels of the 2D listener (the camera,
+## zoomed twice): about 22 cells (the author heard no beast at all at 13).
+const HEARING := 700.0
 ## Ambience: how far around the player the ground is sampled (cells).
 const AMB_RADIUS := 9
 const AMB_EVERY := 0.5
@@ -136,7 +138,7 @@ func _beasts_call(delta: float) -> void:
 		here[id] = true
 		var every: Array = d["every"]
 		if not _calls.has(id):
-			_calls[id] = _clock + _rng.randf_range(float(every[0]) * 0.5, float(every[1]))
+			_calls[id] = _clock + _rng.randf_range(float(every[0]) * 0.25, float(every[1]) * 0.6)
 		elif _clock >= float(_calls[id]):
 			_calls[id] = _clock + _rng.randf_range(float(every[0]), float(every[1]))
 			if not e.get("asleep", false):
@@ -144,6 +146,17 @@ func _beasts_call(delta: float) -> void:
 	for id: String in _calls.keys():
 		if not here.has(id):
 			_calls.erase(id)
+
+
+## Whether a tree stands on a cell (a tall solid plant).
+func _tree_at(location: String, cell: Vector2i) -> bool:
+	var cx := floori(cell.x / float(Chunk.SIZE))
+	var cy := floori(cell.y / float(Chunk.SIZE))
+	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	if c == null:
+		return false
+	var d := content.get_def(c.get_cell("cover", cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE))
+	return bool(d.get("solid", false)) and float(d.get("height", 0.0)) >= 2.0
 
 
 ## A character's foot came down at a point (pixels).
@@ -234,6 +247,7 @@ func _listen_around() -> void:
 	var forest := 0
 	var winds := {}
 	var wind_defs := {}
+	var forest_amb: Dictionary = content.sounds.get("base:forest_floor", {}).get("ambience", {})
 	for dy in range(-AMB_RADIUS, AMB_RADIUS + 1, 2):
 		for dx in range(-AMB_RADIUS, AMB_RADIUS + 1, 2):
 			var g := view.ground_at(where, me + Vector2i(dx, dy))
@@ -247,6 +261,12 @@ func _listen_around() -> void:
 			counts[path] = int(counts.get(path, 0)) + 1
 			defs[path] = d
 			if g in ["base:forest_floor", "base:moss"]:
+				forest += 1
+			elif _tree_at(where, me + Vector2i(dx, dy)) and not forest_amb.is_empty():
+				# Trees on grass are a forest too (its birds, the woodpecker).
+				var fp: String = (forest_amb["paths"] as PackedStringArray)[0]
+				counts[fp] = int(counts.get(fp, 0)) + 1
+				defs[fp] = forest_amb
 				forest += 1
 			var wd: Dictionary = content.sounds.get(g, {}).get("wind", {})
 			if not wd.is_empty():

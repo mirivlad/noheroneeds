@@ -92,11 +92,12 @@ func refresh(inventory: Dictionary, states := {}) -> void:
 	_their_ids.clear()
 	var sells: Dictionary = goods.get("sells", {})
 	for id: String in _sorted(sells.keys()):
-		var i := _theirs.add_item("%s ×%d — %d" % [content.get_def(id).get("name", id), int(sells[id][0]), int(sells[id][1])],
-			view.item_picture(id))
+		var cheap: bool = (goods.get("plenty", []) as Array).has(id)
+		var i := _theirs.add_item("%s ×%d — %d%s" % [content.get_def(id).get("name", id), int(sells[id][0]), int(sells[id][1]),
+			"  ↓ вдоволь" if cheap else ""], view.item_picture(id))
 		# How well its goods are made (ADR-0047): the card of the next one.
 		var made: Dictionary = sells[id][2] if (sells[id] as Array).size() > 2 and typeof(sells[id][2]) == TYPE_DICTIONARY else {}
-		_theirs.set_item_tooltip(i, ItemCard.text(content, id, made))
+		_theirs.set_item_tooltip(i, ItemCard.text(content, id, made) + ("\nВ деревне этого вдоволь: дешевле" if cheap else ""))
 		if int(sells[id][0]) <= 0 or int(inventory.get(COIN, 0)) < int(sells[id][1]):
 			_theirs.set_item_custom_fg_color(i, Color(Art.TEXT_DIM, 0.6))
 		_their_ids.append(id)
@@ -125,7 +126,11 @@ func refresh(inventory: Dictionary, states := {}) -> void:
 					_mine.set_item_custom_fg_color(at, Color(Art.TEXT_DIM, 0.6))
 				_mine_ids.append("copy|%s|%d" % [id, k])
 			continue
-		var i := _mine.add_item("%s ×%d — %d" % [content.get_def(id).get("name", id), have, int(buys[id])], view.item_picture(id))
+		var wanted: bool = (goods.get("short", []) as Array).has(id)
+		var i := _mine.add_item("%s ×%d — %d%s" % [content.get_def(id).get("name", id), have, int(buys[id]), "  ↑ нужно деревне" if wanted else ""],
+			view.item_picture(id))
+		if wanted:
+			_mine.set_item_tooltip(i, "Деревне этого не хватает: платят дороже")
 		if have <= 0 or int(goods.get("purse", 0)) < int(buys[id]):
 			_mine.set_item_custom_fg_color(i, Color(Art.TEXT_DIM, 0.6))
 		_mine_ids.append(id)

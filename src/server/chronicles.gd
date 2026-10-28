@@ -231,6 +231,14 @@ func _happen(id: String, story: String, vars: Dictionary, at: int) -> void:
 	_save(id)
 
 
+## A line of the village's life written now, as it is (a delivery from a
+## neighbour, ADR-0066).
+func note(id: String, text: String) -> void:
+	var v := of(id)
+	(v["entries"] as Array).append({"at": world.world_time, "text": text})
+	_save(id)
+
+
 func _lost_key(cell: Vector2i) -> String:
 	return ServerWorld.chunk_key(Levels.depth_id(-1), floori(cell.x / float(Chunk.SIZE)), floori(cell.y / float(Chunk.SIZE)))
 

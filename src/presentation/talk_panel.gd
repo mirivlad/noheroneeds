@@ -176,6 +176,11 @@ func open_for(r: Dictionary, looks := {}) -> void:
 	_trust_bar.share = clampf((float(standing) + 3.0) / 8.0, 0.0, 1.0)
 	_trust_bar.color = Art.DANGER if r.get("grudge", false) or standing < 0 else Art.GOOD
 	_trust_bar.queue_redraw()
+	var short: Array = r.get("short", [])
+	if not short.is_empty() and not r.get("grudge", false):
+		_goal.visible = true
+		_goal.text += ("\n" if _goal.text != "" else "") + "Деревне не хватает: " + ", ".join(PackedStringArray(short.map(
+			func(i: Variant) -> String: return String(content.get_def(String(i)).get("name", i)).to_lower()))) + " — за это заплатят дороже."
 	var lines: Array = r.get("chronicle", [])
 	_news.text = "Деревня помнит:\n" + "\n".join(PackedStringArray(lines.map(func(t: Variant) -> String: return "• " + String(t))))
 	_ask_news.visible = not lines.is_empty()

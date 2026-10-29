@@ -22,7 +22,7 @@ const ID := "base:surface"
 ## 8: pebbles (flint) on shores (ADR-0053).
 ## 9: villages in clusters, roads by the land (ADR-0054).
 ## 10: rugged land in levels with cliffs between them and passes (ADR-0061).
-const VERSION := 11
+const VERSION := 12  # forest bandit camps, only in newly generated chunks
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -218,6 +218,19 @@ func generate(cx: int, cy: int) -> Chunk:
 				c.set_cell("ground", lx, ly, _shore)  # a little water at its edge is made land
 			if spec.has("props"):
 				c.set_props(lx, ly, (spec["props"] as Dictionary).duplicate(true))
+	for camp: Dictionary in settlements.camps.plans_touching(cx, cy):
+		for at: Vector2i in camp["cells"]:
+			var local := at - Vector2i(cx, cy) * Chunk.SIZE
+			if local.x < 0 or local.y < 0 or local.x >= Chunk.SIZE or local.y >= Chunk.SIZE:
+				continue
+			var spec: Dictionary = camp["cells"][at]
+			for layer: String in ["cover", "structure"]:
+				c.set_cell(layer, local.x, local.y, String(spec.get(layer, "")))
+			if spec.has("props"):
+				c.set_props(local.x, local.y, spec["props"].duplicate(true))
+		var middle: Vector2i = camp["centre"] - Vector2i(cx, cy) * Chunk.SIZE
+		if middle.x >= 0 and middle.y >= 0 and middle.x < Chunk.SIZE and middle.y < Chunk.SIZE:
+			c.meta["bandit_camp"] = camp["id"]
 	if underground and underground.way_down_surface != "":
 		var mouth := underground.entrance_at(-1, cx, cy)
 		if mouth != UndergroundGenerator.NONE:

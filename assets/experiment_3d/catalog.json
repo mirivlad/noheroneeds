@@ -655,5 +655,14 @@
       1
     ],
     "keep_aspect": false
+  },
+  "base:bandit_shelter": {
+    "path": "bandits/shelter.glb",
+    "size": [
+      2.4,
+      1.9,
+      2.5
+    ],
+    "keep_aspect": true
   }
 }

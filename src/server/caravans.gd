@@ -133,24 +133,55 @@ func _save_contract(actor: String) -> void:
 	world.operation_fact("escort|" + actor, JSON.stringify(contract(actor)))
 
 
+## Resolve the actual road, never infer a journey from two display names.
+## Older/debug traders may have empty roads or stale origin/destination fields.
+func journey(c: Creature) -> Dictionary:
+	var road := world.creatures._road_of(c)
+	if road.get("path", []).size() < 2 or String(road.get("from", "")) == "" \
+			or String(road.get("to", "")) == "" or road["from"] == road["to"]:
+		return {}
+	var forward := int(c.route.get("step", 1)) > 0
+	var from := String(road["from"] if forward else road["to"])
+	var toward := String(road["to"] if forward else road["from"])
+	if c.job.get("from", "") != from or c.job.get("toward", "") != toward:
+		c.job["from"] = from
+		c.job["toward"] = toward
+		world.operation_creature(c)
+	return road
+
+
+func destination(c: Creature) -> String:
+	var toward := String(c.job.get("toward", ""))
+	var name := world.chronicles.village_name(toward)
+	if name == world.chronicles.village_name(String(c.job.get("from", ""))):
+		var plan := world.generator.settlements.plan_by_id(toward)
+		if not plan.is_empty():
+			var at: Vector2i = plan["centre"]
+			return "%s (%d, %d)" % [name, at.x, at.y]
+	return name
+
+
 func offer(actor: String, c: Creature) -> Dictionary:
 	var current := contract(actor)
 	if current.get("state", "") == "active":
 		return current.duplicate(true)
+	var valid := not journey(c).is_empty()
 	return {"state": "offered", "trader": c.id, "rate": DAILY_PAY,
-		"destination": world.chronicles.village_name(String(c.job.get("toward", ""))),
-		"can_hire": int(c.job.get("purse", 0)) >= DAILY_PAY}
+		"destination": destination(c) if valid else "", "reason": "" if valid else "no_route",
+		"can_hire": valid and int(c.job.get("purse", 0)) >= DAILY_PAY}
 
 
 func hire_player(actor: String, c: Creature) -> Dictionary:
 	if contract(actor).get("state", "") == "active":
 		return {"ok": false, "reason": "escort_active"}
+	if journey(c).is_empty():
+		return {"ok": false, "reason": "no_route"}
 	if int(c.job.get("purse", 0)) < DAILY_PAY:
 		return {"ok": false, "reason": "no_money_there"}
 	c.job["purse"] = int(c.job["purse"]) - DAILY_PAY
 	(c.job.get_or_add("player_guards", []) as Array).append(actor)
 	_contracts[actor] = {"state": "active", "trader": c.id, "name": String(c.job.get("name", "Торговец")),
-		"destination": world.chronicles.village_name(String(c.job.get("toward", ""))), "rate": DAILY_PAY,
+		"destination": destination(c), "rate": DAILY_PAY,
 		"escrow": DAILY_PAY, "elapsed": 0, "paid": 0, "last": world.world_time, "accompanying": true}
 	_seen_online[actor] = world.tick
 	_save_contract(actor)
@@ -177,6 +208,9 @@ func step() -> void:
 			else:
 				s["accompanying"] = false
 				_save_contract(actor)
+			continue
+		if journey(driver).is_empty():
+			finish(actor, "no_route")
 			continue
 		var p: Dictionary = world.present[actor]
 		var nearby: bool = p["location"] == driver.location and Vector2(p["pos"]).distance_to(Vector2(driver.pos)) <= 18 * Movement.UNIT

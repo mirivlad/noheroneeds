@@ -188,6 +188,8 @@ func open_for(r: Dictionary, looks := {}) -> void:
 		if active:
 			_goal.text += "\nДоговор с %s действует. Выплачено: %d монет. Подробности и отказ — в журнале (L)." % [
 				terms.get("name", "торговцем"), int(terms.get("paid", 0))]
+		elif terms.get("reason", "") == "no_route":
+			_goal.text = "Торговец сейчас никуда не отправляется и не нанимает охрану."
 		elif not terms.get("can_hire", false):
 			_goal.text += "\nСейчас у торговца не хватает денег на оплату."
 		_take.visible = not active

@@ -89,9 +89,12 @@ func test_bandit_colours_equipment_and_escort_contract_reach_two_clients() -> vo
 	bandit.job = {"camp": "network-fixture", "name": "Разбойник"}
 	world.combat.equip_creature(bandit, "base:bow")
 	var trader := world.creatures._spawn("base:villager", "surface", near + Vector2i(1, 0), CreatureSim.villager_looks(rng), 8)
-	var home := String(world.generator.settlements.home_plan()["id"])
-	trader.job = {"profession": "base:trader", "name": "Гордей", "purse": 500, "from": home, "toward": home}
-	trader.route = {"road": [], "step": 1}
+	var s := world.generator.settlements
+	var district := s._district_of(0, s.home_plan()["centre"])
+	var road: Dictionary = s.roads_of(0, district.x, district.y)[0]
+	trader.job = {"profession": "base:trader", "name": "Гордей", "purse": 500, "from": road["from"], "toward": road["to"]}
+	trader.route = {"road": road["key"], "step": 1}
+	world.creatures._schedule(trader, world.tick + 10000)  # protocol fixture stays within conversation reach
 	world.caravans.hire(trader, 30)
 	_run(35, [a, b])
 	for client: GameClient in [a, b]:

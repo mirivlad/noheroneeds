@@ -975,7 +975,14 @@ func _update_actors(alpha: float, delta: float) -> void:
 			var heading: Array = e.get("caravan_heading", [0, 1])
 			if heading.size() == 2:
 				actor.facing = Vector2(float(heading[0]), float(heading[1])).normalized()
+		var asleep := bool(e.get("asleep", false))
+		var bed := Movement.cell_of(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
+		var in_bed: bool = asleep and content.get_def(_cell_layer(bed, "structure")).get("bed", false)
+		if in_bed:
+			var directions := {"s": Vector2.DOWN, "w": Vector2.LEFT, "n": Vector2.UP, "e": Vector2.RIGHT}
+			actor.facing = directions.get(String(props_at(bed).get("facing", "s")), Vector2.DOWN)
 		actor.show_actor(at, yaw, delta, id == client.character_id)
+		actor.lie(in_bed, BED_TOP)
 		# Interpolate XZ first, then sample the rendered triangle under the
 		# interpolated feet. Interpolating target Y cuts through convex hills.
 		actor.position.y = elevation(Vector2(actor.position.x, actor.position.z)) + (0 if client.z < 0 else int(e.get("z", client.z)) * STOREY)
@@ -986,23 +993,19 @@ func _update_actors(alpha: float, delta: float) -> void:
 		actor.doll.hold(item_picture(held), item_grip(held), held)
 		_speech(id, actor, e, delta)
 		# Asleep in a bed (ADR-0035): lying, as one who fell lies, until it wakes.
-		var asleep := bool(e.get("asleep", false))
 		if asleep != bool(_asleep.get(id, false)):
 			if asleep:
 				actor.doll.react("dead", 1e6)
-				# Laid on the mattress along the bed it is on, not across it.
-				var bed := Movement.cell_of(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
-				var turns := {"s": 0.0, "w": PI / 2, "n": PI, "e": -PI / 2}
-				# (its head to the headboard: the lying frame's head is at its other end)
-				actor.lie(true, PI + (float(turns.get(String(props_at(bed).get("facing", "s")), 0.0)) if content.get_def(_cell_layer(bed, "structure")).get("bed", false) else 0.0), BED_TOP)
 			else:
 				actor.doll.react("")
-				actor.lie(false)
 		_asleep[id] = asleep
 		# Sitting on the ground (RO's sit) till one gets up.
 		var sits: bool = (bool(e.get("sitting", false)) or (String(e.get("horse", "")) != "" and String(e.get("caravan_type", "cart")) == "cart")) and not asleep
 		if sits != bool(_sitting.get(id, false)):
-			actor.doll.react("sit", 1e6) if sits else actor.doll.react("")
+			if sits:
+				actor.doll.react("sit", 1e6)
+			elif not asleep:
+				actor.doll.react("")
 		_sitting[id] = sits
 		# Hurt: a flinch; fallen: lies a while (ADR-0019).
 		var h := int(e.get("health", e.get("max_health", 0)))
@@ -1037,10 +1040,8 @@ func _update_actors(alpha: float, delta: float) -> void:
 		if e.get("profession", "") == "base:trader":
 			var in_cart: bool = horse_id != "" and String(e.get("caravan_type", "cart")) == "cart"
 			actor.show_cart(in_cart)
-			if in_cart:
+			if in_cart and not bool(e.get("asleep", false)):
 				actor.picture.position = Vector3(actor.facing.x * .59, .8, actor.facing.y * .59)
-			else:
-				actor.picture.position = Vector3.ZERO
 		var driver_id := String(e.get("caravan_driver", ""))
 		if driver_id != "":
 			var driver := _actors.get(driver_id) as BillboardActor3D

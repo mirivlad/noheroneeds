@@ -22,8 +22,11 @@ func before_each() -> void:
 	w.enter("key", pc)
 	actor = pc.character_id
 	trader = w.creatures._spawn("base:villager", "surface", Vector2i(170, 170), {}, 3)
-	var home := String(w.generator.settlements.home_plan()["id"])
-	trader.job = {"profession": "base:trader", "purse": 100, "name": "Гордей", "from": home, "toward": home}
+	var s := w.generator.settlements
+	var district := s._district_of(0, s.home_plan()["centre"])
+	var road: Dictionary = s.roads_of(0, district.x, district.y)[0]
+	trader.route = {"road": road["key"], "i": 0, "step": 1}
+	trader.job = {"profession": "base:trader", "purse": 100, "name": "Гордей", "from": road["from"], "toward": road["to"]}
 	w.move_character(actor, trader.pos + Vector2i(256, 0))
 
 
@@ -46,6 +49,30 @@ func _time(hours: float) -> void:
 	w.tick += Movement.TICK_RATE
 	w.world_time += int(hours * Daylight.HOUR_MS)
 	w.caravans.step()
+
+
+func test_trader_without_a_real_journey_cannot_hire_a_player() -> void:
+	trader.route = {"road": [], "step": 1}
+	trader.job["toward"] = trader.job["from"]
+	var offer := w.caravans.offer(actor, trader)
+	check(not offer.get("can_hire", true), "no paid escort from A to A without a road")
+	var result := _request({"type": "escort_hire", "creature": trader.id})
+	eq(result.get("reason"), "no_route")
+	eq(int(trader.job["purse"]), 100, "invalid employment does not reserve money")
+	check(w.caravans.contract(actor).get("state", "") != "active", "no stuck contract")
+
+
+func test_stale_route_labels_are_repaired_from_the_road_and_invalid_contracts_end() -> void:
+	var expected := String(trader.job["toward"])
+	trader.job["toward"] = trader.job["from"]
+	check(w.caravans.hire_player(actor, trader).get("ok", false), "the real road remains usable")
+	eq(String(trader.job["toward"]), expected, "same origin/destination labels cannot override the road")
+	_time(12)
+	trader.route = {"road": [], "step": 1}
+	_time(1)
+	eq(w.caravans.contract(actor)["state"], "no_route", "a legacy invalid contract is settled")
+	eq(w.inventory(actor).count("base:coin"), 6, "already earned pay is retained")
+	eq(int(trader.job["purse"]), 94, "unearned reserve returns to the employer")
 
 
 func test_contract_pays_by_game_days_and_finishes_proportionally() -> void:
@@ -133,6 +160,7 @@ func test_old_unloaded_employer_cannot_end_a_new_contract() -> void:
 	w.creatures.creatures.erase(trader.id)
 	w.caravans.finish(actor, "left")
 	var other := w.creatures._spawn("base:villager", "surface", Vector2i(170, 170), {}, 99)
+	other.route = trader.route.duplicate(true)
 	other.job = {"profession": "base:trader", "purse": 100, "from": trader.job["from"], "toward": trader.job["toward"]}
 	check(w.caravans.hire_player(actor, other).get("ok", false), "a new employer")
 	w.creatures.creatures[trader.id] = trader

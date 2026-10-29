@@ -28,8 +28,10 @@ func step(delta: float) -> void:
 		if g._frames == 50:
 			_bandit_scene(String(g._opts["bandit_debug"]))
 		if g._frames == 100 and _preview_trader != "" and g._opts["bandit_debug"] == "contract":
+			g.game.world.move_character(g.client.character_id, g.game.world.creatures.get_creature(_preview_trader).pos + Vector2i(256, 0))
 			g._talk_rids[g.client.request({"type": "talk", "creature": _preview_trader})] = _preview_trader
 		if g._frames == 150 and _preview_trader != "" and g._opts["bandit_debug"] == "contract":
+			g.game.world.move_character(g.client.character_id, g.game.world.creatures.get_creature(_preview_trader).pos + Vector2i(256, 0))
 			g.talk_panel._take.pressed.emit()
 		if g._frames == 220 and _preview_trader != "" and g._opts["bandit_debug"] == "contract":
 			g.talk_panel.hide()
@@ -477,7 +479,14 @@ func _bandit_scene(mode: String) -> void:
 		g.view.zoom = 25
 		print("BANDIT_PREVIEW ", found["id"], " centre=", found["centre"], " members=", w.bandits.state(found["id"])["members"].size())
 		return
-	var at := Movement.cell_of(g.client.position) + Vector2i(-2, -3)
+	var s := w.generator.settlements
+	var district := s._district_of(0, s.home_plan()["centre"])
+	var roads := s.roads_of(0, district.x, district.y)
+	if roads.is_empty():
+		return
+	var road: Dictionary = roads[0]
+	var path: Array = road["path"]
+	var at: Vector2i = path[path.size() / 2]
 	for y in range(at.y - 8, at.y + 9):
 		for x in range(at.x - 8, at.x + 9):
 			var chunk := w.chunk("surface", x >> 5, y >> 5)
@@ -487,9 +496,8 @@ func _bandit_scene(mode: String) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 41
 	var trader := w.creatures._spawn("base:villager", "surface", at, CreatureSim.villager_looks(rng), 41)
-	var home := String(w.generator.settlements.home_plan()["id"])
-	trader.job = {"profession": "base:trader", "name": "Гордей", "purse": 800, "from": home, "toward": home}
-	trader.route = {"road": [], "step": 1}
+	trader.job = {"profession": "base:trader", "name": "Гордей", "purse": 800, "from": road["from"], "toward": road["to"]}
+	trader.route = {"road": road["key"], "i": path.size() / 2, "step": 1}
 	w.creatures._make_caravan(trader, "cart")
 	w.caravans.hire(trader, 60)
 	_preview_trader = trader.id
@@ -497,8 +505,7 @@ func _bandit_scene(mode: String) -> void:
 		w.world_time = Daylight.DAY_MS + 22 * Daylight.HOUR_MS
 	else:
 		w.world_time = Daylight.DAY_MS + 12 * Daylight.HOUR_MS
-	if mode == "contract":
-		w.move_character(g.client.character_id, trader.pos + Vector2i(256, 0))
+	w.move_character(g.client.character_id, trader.pos + Vector2i(256, 0))
 	g.view.zoom = 16
 
 

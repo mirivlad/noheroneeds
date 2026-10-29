@@ -106,32 +106,8 @@ func show_actor(at: Vector3, yaw: float, delta: float, exact: bool) -> void:
 	doll.show_at(animation_at, delta, true)
 	doll.position = DOLL_FEET
 
-## Lying flat on a bed (the author, 28.10.2026: one asleep sank into it and lay
-## across it): the doll's picture laid face up on the mattress, along `along`
-## (the bed's turn about the up axis), `height` over the feet; not turned to
-## the camera. lie(false) stands it up again.
-var _flat: StandardMaterial3D
-var _paper: Material
-func lie(on: bool, along := 0.0, height := 0.0) -> void:
-	if on:
-		if _flat == null:
-			_paper = picture.material_override
-			_flat = StandardMaterial3D.new()
-			_flat.albedo_texture = viewport.get_texture()
-			_flat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-			_flat.alpha_scissor_threshold = .5
-			_flat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-			_flat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		picture.material_override = _flat
-		picture.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-		# The lying frame's body is about the feet: centred there, not above.
-		picture.offset = Vector2(0, 112 - 10)
-		picture.rotation = Vector3(-PI / 2, along + PI / 2, 0)
-		picture.position = Vector3(0, height, 0)
-	else:
-		if _paper:
-			picture.material_override = _paper
-		picture.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		picture.offset = Vector2(0, 112)
-		picture.rotation = Vector3.ZERO
-		picture.position = Vector3.ZERO
+## The lying frames already contain perspective, just like the standing
+## ones. Keep the camera-facing card and lift only a sleeper on a mattress;
+## projecting the image onto a horizontal plane flattens it a second time.
+func lie(on: bool, height := 0.0) -> void:
+	picture.position = Vector3(0, height if on else 0.0, 0)

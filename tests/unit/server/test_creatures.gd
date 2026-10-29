@@ -328,6 +328,34 @@ func test_caravan_horse_does_not_walk_through_a_tree() -> void:
 	check(not hit_tree, "the horse's server body never enters the blocked cell")
 
 
+func test_pack_caravan_finishes_a_diagonal_detour_from_off_centre() -> void:
+	w.close()
+	w = ServerWorld.open(tmp_dir().path_join("ccc.db"), _content, {"seed": 4061418915})
+	for y in range(-1, 2):
+		for x in range(-1, 2):
+			w.chunk("surface", x, y)
+	var trader := _spawn("base:villager", Vector2i(27, 3))
+	trader.job = {"profession": "base:trader"}
+	# The actual stuck return leg in the author's world ccc. Its fractional
+	# position matters: cell-centre-only tests did not reproduce the corner.
+	trader.pos = Vector2i(7008, 992)
+	trader.face = Vector2i(-1, -1)
+	w.creatures._make_caravan(trader, "pack")
+	trader.route = {"road": [0, 0, 0, 0], "i": 38, "step": -1}
+	var goal := Vector2i(26, 2)
+	trader.path = [goal]
+	w.creatures._go(trader, "detour", goal, false)
+	w.world_time = 12 * Daylight.HOUR_MS
+	for i in 200:
+		w.creatures._move(trader)
+		if trader.target == Creature.NO_TARGET:
+			if trader.cell() == goal:
+				break
+			w.creatures._traveller(trader, _content.get_def(trader.kind))
+	eq(trader.target, Creature.NO_TARGET, "a diagonal step must finish instead of seesawing across the target")
+	eq(trader.cell(), goal)
+
+
 func test_caravan_cart_does_not_clip_a_tree_beside_the_driver() -> void:
 	_field()
 	var tree := Vector2i(172, 171)

@@ -629,7 +629,9 @@ func journal(actor: String) -> Dictionary:
 			if r["state"] == "open" and (r["takers"] as Dictionary).has(actor):
 				requests.append(shown(id, r, actor))
 		chronicles.append({"village": v["name"], "entries": told(v)})
-	return {"ok": true, "requests": requests, "chronicles": chronicles}
+	var contract := world.caravans.contract(actor)
+	return {"ok": true, "requests": requests, "chronicles": chronicles,
+		"escorts": [contract.duplicate(true)] if not contract.is_empty() else []}
 
 
 func _read_known(actor: String) -> Dictionary:

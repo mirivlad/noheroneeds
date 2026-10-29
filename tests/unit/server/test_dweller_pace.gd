@@ -54,7 +54,11 @@ func test_at_the_fire_they_look_into_it() -> void:
 	var fire: Vector2i = plan["fire"]
 	var by_fire := 0
 	for c: Creature in w.creatures.creatures.values():
-		if String(c.job.get("village", "")) != String(plan["id"]) or Vector2(c.cell()).distance_to(Vector2(fire)) > 4.0:
+		# Their individual bedtimes differ. At the end of this interval some
+		# are already walking to bed past the fire; only people resting here
+		# should face it, rather than the direction in which they are walking.
+		if String(c.job.get("village", "")) != String(plan["id"]) or c.state != "evening" \
+				or Vector2(c.cell()).distance_to(Vector2(fire)) > 4.0:
 			continue
 		by_fire += 1
 		var toward := fire - c.cell()

@@ -119,7 +119,12 @@ func armor_of(id: String) -> int:
 			total += Wear.armor(world.content, String(worn[slot][0]), worn[slot][1])
 		return total
 	var c := world.creatures.get_creature(id)
-	return int(world.content.get_def(c.kind).get("armor", 0)) if c else 0
+	if c == null:
+		return 0
+	var total := int(world.content.get_def(c.kind).get("armor", 0))
+	for slot: String in c.looks.get("worn", {}):
+		total += Wear.armor(world.content, String(c.looks["worn"][slot]), c.job.get("armor_states", {}).get(slot, {}))
+	return total
 
 
 ## The health a blow of `damage` takes from `target`: less its armour, but a
@@ -141,17 +146,26 @@ func heal(id: String, amount: int) -> void:
 ## Takes `amount` of health from `target` (a character or a creature) for
 ## `attacker`; it remembers who did it; at nothing it dies.
 func hurt(target: String, amount: int, attacker: String) -> void:
+	world.caravans.player_attacked(target, attacker)
 	world.wake(target)  # a blow wakes one (ADR-0035)
 	var left := health_of(target) - amount
 	_hurt_at[target] = _tick
 	var c := world.creatures.get_creature(target)
 	if c:
+		world.caravans.betrayed(attacker, c)
+		for slot: String in c.looks.get("worn", {}):
+			var item := String(c.looks["worn"][slot])
+			if int(world.content.get_def(item).get("armor", 0)) > 0:
+				var states: Dictionary = c.job.get_or_add("armor_states", {})
+				states[slot] = Wear.used(states.get(slot, {}))
+				c.changed()
 		var who := attacker
 		var at := _position(attacker)
 		if at != NO_POS:
 			c.memory[who] = {"pos": Movement.cell_of(at), "time": world.world_time, "what": "attacker"}
 			world.creatures.kin_struck(c, who, Movement.cell_of(at))
 			world.creatures.caravan_attacked(c, who, at)
+			world.bandits.attacked(c, who, at)
 		world.creatures.alarm(c)
 	if left > 0:
 		_set_health(target, left)
@@ -187,6 +201,8 @@ func step(tick: int) -> void:
 		var animal := world.creatures.get_creature(id)
 		if animal and world.creatures.life.hungry(animal):
 			continue
+		if animal and animal.kind == "base:bandit" and world.world_time - int(animal.job.get("ate_at", 0)) > Daylight.HOUR_MS * 6:
+			continue
 		var h := health_of(id) + (2 if world.sitting(id) else 1)  # sitting heals twice as fast (RO)
 		_set_health(id, mini(h, max_health_of(id)))
 		if h >= max_health_of(id):
@@ -219,6 +235,23 @@ var died: Array[Dictionary] = []
 
 func _creature_dies(c: Creature, killer := "") -> void:
 	world.bandits.died(c)
+	world.caravans.apply_refund(c)
+	world.caravans.finish_for(c, "dead")
+	if c.job.has("camp"):
+		var haul := world.inventory("haul|" + c.id)
+		for item: String in haul.stacks.keys():
+			world.place_item(c.location, c.pos, item, haul.count(item), "", 0, haul.take(item, haul.count(item)))
+		world.touch_inventory("haul|" + c.id)
+	if c.job.has("weapon"):
+		world.place_item(c.location, c.pos, String(c.job["weapon"]), 1, "", 0, [c.job.get("weapon_state", {})])
+		var gear := world.inventory("gear|" + c.id)
+		for item: String in gear.stacks.keys():
+			world.place_item(c.location, c.pos, item, gear.count(item), "", 0, gear.take(item, gear.count(item)))
+		world.touch_inventory("gear|" + c.id)
+		for slot: String in c.looks.get("worn", {}):
+			world.place_item(c.location, c.pos, String(c.looks["worn"][slot]), 1, "", 0, [c.job.get("armor_states", {}).get(slot, {})])
+		if c.job.get("profession", "") != "base:trader" and int(c.job.get("purse", 0)) > 0:
+			world.place_item(c.location, c.pos, "base:coin", int(c.job["purse"]))
 	died.append({"location": c.location, "x": c.pos.x, "y": c.pos.y, "kind": c.kind})
 	var drops: Dictionary = world.content.get_def(c.kind).get("drops", {})
 	var hunter := world.creatures.get_creature(killer)
@@ -239,6 +272,10 @@ func _creature_dies(c: Creature, killer := "") -> void:
 		world.place_item(c.location, c.pos, String(e["item"]), int(e["count"]), "", 0, e.get("states", []))
 	c.stomach.clear()
 	if c.job.get("profession", "") == "base:trader":
+		var fuel := world.inventory("supplies|" + c.id)
+		for item: String in fuel.stacks.keys():
+			world.place_item(c.location, c.pos, item, fuel.count(item), "", 0, fuel.take(item, fuel.count(item)))
+		world.touch_inventory("supplies|" + c.id)
 		# A caravan's stock is real inventory, not a second copy in the cart.
 		# Drop each stack with its states before deleting the trader.
 		var stock := world.inventory("trade|" + c.id)
@@ -312,21 +349,102 @@ func attack(actor: String, r: Dictionary) -> Dictionary:
 
 ## A creature strikes `target` if it is within its reach and seen: true if hit.
 func creature_attack(c: Creature, target: String) -> bool:
-	var w: Dictionary = world.content.get_def(c.kind).get("attack", {})
+	var w := creature_weapon(c)
 	if w.is_empty() or _tick < int(_ready_at.get(c.id, 0)):
 		return false
 	var at := _position(target)
 	if at == NO_POS or _location(target) != c.location:
 		return false
-	var reach := float(w["reach"]) * Movement.UNIT + float(size_of(c.id)["radius"]) \
+	var ranged: bool = w.get("kind") == "ranged"
+	var reach := float(w.get("range", 0) if ranged else w.get("reach", 0)) * Movement.UNIT + float(size_of(c.id)["radius"]) \
 		- float(BodySize.HUMAN["radius"]) + float(size_of(target)["radius"])
 	if Vector2(c.pos).distance_to(Vector2(at)) > reach \
 			or not Sight.clear(world, c.location, c.cell(), c.location, Movement.cell_of(at),
 				float(size_of(c.id)["eye"]), float(size_of(target)["body"])):
 		return false
 	_ready_at[c.id] = _tick + _ticks(float(w["cooldown_ms"]))
+	if ranged:
+		if not _clear_shot(c, at):
+			return false
+		var shot := _shoot(c.id, {"pos": c.pos, "location": c.location}, w, at, world.levels.z(c.location), "gear|" + c.id)
+		if not shot.get("ok", false):
+			return false
+		_wear_creature_weapon(c)
+		swung(c.id, at)
+		return true
 	swung(c.id, at)
-	return _blow(c.id, c.location, c.pos, at, w) == target
+	var hit := _blow(c.id, c.location, c.pos, at, w)
+	if hit != "":
+		_wear_creature_weapon(c)
+	return hit == target
+
+
+## Equipped NPC weapons use the same content, condition and ammunition as
+## players. Animals without equipment retain their natural attacks.
+func creature_weapon(c: Creature) -> Dictionary:
+	var item := String(c.job.get("weapon", ""))
+	if item == "":
+		return world.content.get_def(c.kind).get("attack", {})
+	var state: Dictionary = c.job.get("weapon_state", {})
+	if Wear.broken(world.content, item, state):
+		return {}
+	var w: Dictionary = world.content.get_def(item).get("weapon", {}).duplicate()
+	if not w.is_empty():
+		w["damage"] = Wear.damage(world.content, item, state, int(w["damage"]))
+		w["cooldown_ms"] = float(w["cooldown_ms"]) * Wear.pace(world.content, item, state)
+	return w
+
+
+func equip_creature(c: Creature, weapon: String, helmet := false) -> void:
+	if c.job.has("weapon"):
+		return
+	c.job["weapon"] = weapon
+	c.held = weapon
+	if helmet:
+		(c.looks.get_or_add("worn", {}) as Dictionary)["headwear"] = "base:iron_helmet"
+	if world.content.get_def(weapon).get("weapon", {}).get("kind") == "ranged":
+		world.inventory("gear|" + c.id).add("base:arrow", 20)
+		world.touch_inventory("gear|" + c.id)
+	world.operation_creature(c)
+	world.creatures._cold[c.id] = true
+
+
+func _wear_creature_weapon(c: Creature) -> void:
+	if not c.job.has("weapon"):
+		return
+	c.job["weapon_state"] = Wear.used(c.job.get("weapon_state", {}))
+	world.operation_creature(c)
+
+
+func allied(a: String, b: String) -> bool:
+	var first := world.creatures.get_creature(a)
+	var second := world.creatures.get_creature(b)
+	if first == null:
+		return false
+	if second == null:
+		if world.present.has(b):
+			var escort := world.caravans.contract(b)
+			return escort.get("state", "") == "active" and escort.get("trader", "") == first.job.get("guard_driver", "")
+		return false
+	var camp := String(first.job.get("camp", ""))
+	if camp != "" and camp == String(second.job.get("camp", "")):
+		return true
+	var driver := String(first.job.get("guard_driver", first.job.get("caravan_driver", first.id)))
+	return driver == String(second.job.get("guard_driver", second.job.get("caravan_driver", second.id)))
+
+
+func _clear_shot(c: Creature, at: Vector2i) -> bool:
+	var ray := Vector2(at - c.pos)
+	var length := ray.length()
+	var dir := ray.normalized()
+	for id: String in _targets_near(c.id, c.location, c.pos, length):
+		if not allied(c.id, id):
+			continue
+		var offset := Vector2(_position(id) - c.pos)
+		var along := offset.dot(dir)
+		if along > 0 and along < length and absf(offset.cross(dir)) < float(size_of(id)["radius"]) + ARROW_MARGIN:
+			return false
+	return true
 
 
 ## Someone struck (or shot, or worked with a tool) toward `toward` (movement
@@ -358,6 +476,8 @@ func _blow(attacker: String, location: String, from: Vector2i, aim: Vector2i, w:
 	var best := ""
 	var best_d := INF
 	for id: String in _targets_near(attacker, location, from, reach):
+		if allied(attacker, id):
+			continue
 		var v := Vector2(_position(id) - from)
 		var d := v.length()
 		var body := float(size_of(id)["radius"])
@@ -426,16 +546,17 @@ func _ticks(ms: float) -> int:
 
 # --- arrows ------------------------------------------------------------------------
 
-func _shoot(actor: String, p: Dictionary, w: Dictionary, aim: Vector2i, aim_z: int) -> Dictionary:
+func _shoot(actor: String, p: Dictionary, w: Dictionary, aim: Vector2i, aim_z: int, ammo_owner := "") -> Dictionary:
 	var ammo := String(w["ammo"])
-	if world.inventory(actor).count(ammo) <= 0:
+	var owner := actor if ammo_owner == "" else ammo_owner
+	if world.inventory(owner).count(ammo) <= 0:
 		return {"ok": false, "reason": "no_ammo"}
 	var from: Vector2i = p["pos"]
 	var dir := Vector2(aim - from)
 	if dir == Vector2.ZERO:
 		return {"ok": false, "reason": "bad_request"}
-	world.inventory(actor).remove(ammo, 1)
-	world.touch_inventory(actor)
+	world.inventory(owner).remove(ammo, 1)
+	world.touch_inventory(owner)
 	var pr := Projectile.new()
 	pr.id = Uuid.v4()
 	pr.location = String(p["location"])

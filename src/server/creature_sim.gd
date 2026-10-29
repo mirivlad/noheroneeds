@@ -122,6 +122,8 @@ func _index(c: Creature, old_key := "") -> void:
 
 
 func add(c: Creature) -> void:
+	if c.job.has("weapon"):
+		c.held = String(c.job["weapon"])
 	if c.health < 0:
 		c.health = int(world.content.get_def(c.kind).get("health", 5))
 	if world.content.get_def(c.kind).has("life"):
@@ -294,7 +296,7 @@ func _travellers(cx: int, cy: int) -> void:
 		var heading := String(road["to"]) if int(c.route["step"]) > 0 else String(road["from"])
 		var left := String(road["from"]) if int(c.route["step"]) > 0 else String(road["to"])
 		c.job = {"profession": "base:trader", "name": String(world.chronicles.dweller_name(left, 90 + r.randi_range(0, 8))[0]),
-			"purse": TRADER_PURSE, "from": left, "toward": heading}
+			"purse": TRADER_PURSE * (1 << int(c.rand(915) * 4)), "from": left, "toward": heading}
 		_make_caravan(c)
 		_load(c, left, heading)
 		c.changed()
@@ -311,6 +313,10 @@ func _make_caravan(c: Creature, variant := "") -> void:
 	horse.changed()
 	c.job["horse"] = horse.id
 	c.job["caravan_type"] = kind
+	if not c.job.get("camp_supplies", false):
+		world.inventory("supplies|" + c.id).add("base:log", 4)
+		world.touch_inventory("supplies|" + c.id)
+		c.job["camp_supplies"] = true
 	var initial := c.face if c.face != Vector2i.ZERO else Vector2i.DOWN
 	var road_path: Array = _route_path(c) if not c.route.is_empty() else []
 	var i := clampi(int(c.route.get("i", 0)), 0, maxi(0, road_path.size() - 1))
@@ -341,8 +347,6 @@ func _make_caravan(c: Creature, variant := "") -> void:
 				break
 	c.changed()
 	_move_caravan_horse(c)
-	if c.rand(913) < 0.4:
-		_make_caravan_guard(c)
 	world.operation_creature(horse)
 	world.operation_creature(c)
 	_cold[c.id] = true
@@ -354,38 +358,15 @@ func _make_caravan(c: Creature, variant := "") -> void:
 func _make_caravan_guard(c: Creature) -> void:
 	if c.job.has("guard"):
 		return
-	var r := RandomNumberGenerator.new()
-	r.seed = c.seed + 913
-	var heading: Array = c.job.get("caravan_heading", [0, 1])
-	var side := Vector2i(-signi(int(heading[1])), signi(int(heading[0])))
-	var place := c.cell() + side * 2
-	if not _free(c.location, place):
-		place = c.cell() - side * 2
-	if not _free(c.location, place):
-		place = c.cell()
-	var guard := _spawn("base:caravan_guard", c.location, place, villager_looks(r), r.randi())
-	guard.job = {"guard_driver": c.id}
-	guard.held = "base:iron_sword"
-	guard.changed()
+	var guard := world.caravans.spawn_guard(c)
+	world.caravans.guards(c).append(guard.id)
 	c.job["guard"] = guard.id
-	c.changed()
-	world.operation_creature(guard)
 	world.operation_creature(c)
 
 
-## An escort responds to an attack on either the trader or its horse.
+## Every escort member hears an attack on the trader, horse or a guard.
 func caravan_attacked(victim: Creature, attacker: String, at: Vector2i) -> void:
-	var driver := victim
-	if victim.job.has("caravan_driver"):
-		driver = get_creature(String(victim.job["caravan_driver"]))
-	if driver == null:
-		return
-	var guard := get_creature(String(driver.job.get("guard", "")))
-	if guard == null or guard.location != victim.location:
-		return
-	guard.memory[attacker] = {"pos": Movement.cell_of(at), "time": world.world_time, "what": "attacker"}
-	guard.changed()
-	alarm(guard)
+	world.caravans.attacked(victim, attacker, at)
 
 
 func _caravan_lost(id: String) -> bool:
@@ -473,15 +454,26 @@ func _load(c: Creature, at: String, toward: String) -> void:
 	if e == null or at == "":
 		return
 	var stock := world.inventory("trade|" + c.id)
+	var fuel := world.inventory("supplies|" + c.id)
+	var fuel_price := e.price(at, "base:log")
+	var buy_fuel := mini(maxi(0, 4 - fuel.count("base:log")), int(c.job.get("purse", 0)) / maxi(1, fuel_price))
+	buy_fuel = e.take(at, "base:log", buy_fuel)
+	if buy_fuel > 0:
+		fuel.add("base:log", buy_fuel)
+		world.touch_inventory("supplies|" + c.id)
+		c.job["purse"] = int(c.job.get("purse", 0)) - buy_fuel * fuel_price
+		e.earn(at, buy_fuel * fuel_price)
+	var escort_budget := world.caravans.reserve(c)
 	for item: String in e.cargo_for(at, toward):
 		var each := e.price(at, item)
-		var n := mini(int(e.cargo_for(at, toward).get(item, 0)), int(c.job.get("purse", 0)) / maxi(1, each))
+		var n := mini(int(e.cargo_for(at, toward).get(item, 0)), maxi(0, int(c.job.get("purse", 0)) - escort_budget) / maxi(1, each))
 		n = e.take(at, item, n)
 		if n <= 0:
 			continue
 		stock.add(item, n)
 		c.job["purse"] = int(c.job.get("purse", 0)) - n * each
 		e.earn(at, n * each)
+	world.caravans.hire(c, escort_budget)
 	world.touch_inventory("trade|" + c.id)
 	world.operation_creature(c)
 	world.operation_facts()
@@ -491,6 +483,7 @@ func _load(c: Creature, at: String, toward: String) -> void:
 ## unsold goods stay on the cart. A big delivery is in the chronicle, then it
 ## takes a load back the other way.
 func _arrive(c: Creature, at: String, back: String) -> void:
+	world.caravans.finish_for(c, "arrived")
 	var e := world.economy
 	if e == null or at == "":
 		return
@@ -541,6 +534,7 @@ func _route_path(c: Creature) -> Array:
 ## A traveller walks its road from one settlement to the other and back,
 ## by day; runs from who hurts it; stands the night by the way.
 func _traveller(c: Creature, def: Dictionary) -> void:
+	world.caravans.apply_refund(c)
 	# Older worlds already have traders. Outfit each one once; a horse that died
 	# leaves an empty id and must never be silently recreated.
 	if c.job.get("profession", "") == "base:trader" and not c.job.has("horse"):
@@ -561,13 +555,16 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 		c.changed()
 	var attacker := _attacker(c, 12.0)
 	if not attacker.is_empty():
+		_dress(c, "", false)
 		var away := _away_from(c, attacker[0], 16.0)
 		if away != Creature.NO_TARGET:
 			_go(c, "flee", away, true)
 			return
 	if Daylight.is_night(world.world_time):
-		_go(c, "rest", Creature.NO_TARGET, false)
+		world.caravans.rest(c)
 		return
+	if c.job.has("camp_spot"):
+		world.caravans.break_camp(c)
 	if c.state == "detour":
 		if c.target != Creature.NO_TARGET:
 			return
@@ -706,17 +703,7 @@ func remove(id: String) -> void:
 		world.operation_creature(horse)
 		_cold[horse.id] = true
 		alarm(horse)
-	var guarded := get_creature(String(c.job.get("guard_driver", "")))
-	if guarded != null and String(guarded.job.get("guard", "")) == c.id:
-		guarded.job["guard"] = ""
-		guarded.changed()
-		world.operation_creature(guarded)
-	var guard := get_creature(String(c.job.get("guard", "")))
-	if guard != null and String(guard.job.get("guard_driver", "")) == c.id:
-		guard.job.erase("guard_driver")
-		guard.changed()
-		world.operation_creature(guard)
-		alarm(guard)
+	world.caravans.removed(c)
 	life.drop(id)
 	(_by_chunk.get(_chunk_of(c), {}) as Dictionary).erase(id)
 	(_by_kind.get(_chunk_of(c), {}).get(c.kind, {}) as Dictionary).erase(id)
@@ -847,9 +834,11 @@ func _think(c: Creature, tick: int) -> void:
 	if c.job.has("guard_driver") and get_creature(String(c.job["guard_driver"])) == null \
 			and _caravan_lost(String(c.job["guard_driver"])):
 		c.job.erase("guard_driver")
-		c.held = ""
+		c.job["retired"] = true
 		c.changed()
 		_cold[c.id] = true
+	if c.kind == "base:caravan_guard" and c.job.has("weapon"):
+		c.held = String(c.job["weapon"])
 	if c.job.has("caravan_driver"):
 		# Its driver moves it; it stays linked even while its chunk is away.
 		_movers.erase(c.id)
@@ -868,10 +857,14 @@ func _think(c: Creature, tick: int) -> void:
 		_move_caravan_horse(c)
 	c.last_time = now
 	_perceive(c, def)
-	if _fight_back(c, def):
-		pass
-	elif c.kind == "base:bandit":
+	if c.kind == "base:caravan_guard" and c.job.has("guard_driver"):
+		world.combat.equip_creature(c, "base:iron_sword", true)
+	if c.kind == "base:bandit":
 		world.bandits.think(c)
+	elif _fight_back(c, def):
+		pass
+	elif c.job.get("retired", false):
+		_go(c, "rest", Creature.NO_TARGET, false)
 	elif c.job.has("guard_driver"):
 		_guard_caravan(c)
 	elif c.owner != "" and def.has("tame"):
@@ -891,13 +884,21 @@ func _guard_caravan(c: Creature) -> void:
 	if driver == null or driver.location != c.location:
 		_go(c, "rest", Creature.NO_TARGET, false)
 		return
-	if c.cell().distance_to(driver.cell()) > 2.0:
-		if c.path_to != driver.cell() or c.path.is_empty():
-			c.path = _route(c, driver.cell())
-			c.path_to = driver.cell()
+	var roster := world.caravans.guards(driver)
+	var index := maxi(0, roster.find(c.id))
+	var target := driver.cell() + Vector2i(-2 if index % 2 == 0 else 2, 1 + index / 2)
+	if driver.job.has("camp_spot"):
+		var watch := index == int(world.world_time / (Daylight.HOUR_MS * 3)) % maxi(1, roster.size())
+		_dress(c, String(c.job.get("weapon", "base:iron_sword")), not watch and c.cell().distance_to(target) <= 1)
+	else:
+		_dress(c, String(c.job.get("weapon", "base:iron_sword")), false)
+	if c.cell().distance_to(driver.cell()) > 2.0 or (roster.size() > 1 and c.cell().distance_to(target) > 1):
+		if c.path_to != target or c.path.is_empty():
+			c.path = _route(c, target)
+			c.path_to = target
 		while not c.path.is_empty() and c.path[0] == c.cell():
 			c.path.pop_front()
-		_go(c, "follow", c.path[0] if not c.path.is_empty() else driver.cell(), false)
+		_go(c, "follow", c.path[0] if not c.path.is_empty() else target, false)
 	else:
 		c.path.clear()
 		_go(c, "rest", Creature.NO_TARGET, false)
@@ -931,7 +932,7 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 	c.memory.clear()
 	c.target = Creature.NO_TARGET
 	c.running = false
-	if not c.route.is_empty() or c.job.has("camp"):
+	if not c.route.is_empty() or c.job.has("camp") or c.kind == "base:caravan_guard":
 		# A caravan must resume from its real road position, not teleport home
 		# (possibly leaving its horse and cargo in another chunk).
 		c.path.clear()
@@ -1022,6 +1023,9 @@ func _watched_kinds(kind: String) -> Dictionary:
 	if _watch.has(kind):
 		return _watch[kind]
 	var kinds := {}
+	if kind == "base:bandit":
+		for watched: String in ["base:hare", "base:deer", "base:villager", "base:caravan_guard", "base:horse"]:
+			kinds[watched] = "animal"
 	for prey: String in world.content.get_def(kind).get("life", {}).get("prey", []):
 		kinds[prey] = "animal"
 	for id: String in world.content.defs:
@@ -1110,11 +1114,30 @@ func _fight_back(c: Creature, def: Dictionary) -> bool:
 		if away != Creature.NO_TARGET:
 			_go(c, "flee", away, true)
 			return true
-	if world.combat.creature_attack(c, attacker[2]):
-		_go(c, "attack", Creature.NO_TARGET, false)
-	else:
-		_go(c, "hunt", attacker[0], true)
+	_engage(c, String(attacker[2]), attacker[0])
 	return true
+
+
+func _engage(c: Creature, target: String, at: Vector2i) -> void:
+	_dress(c, String(c.job.get("weapon", c.held)), false)
+	var w := world.combat.creature_weapon(c)
+	var ranged: bool = w.get("kind") == "ranged"
+	var distance := c.cell().distance_to(at)
+	if w.is_empty() or (ranged and world.inventory("gear|" + c.id).count(String(w["ammo"])) <= 0):
+		var away := _away_from(c, at, 8.0)
+		_go(c, "flee", away, true)
+		return
+	if ranged and distance < 3:
+		var away := _away_from(c, at, 5.0)
+		if away != Creature.NO_TARGET:
+			_go(c, "flee", away, false)
+			return
+	if world.combat.creature_attack(c, target):
+		_go(c, "attack", Creature.NO_TARGET, false)
+	elif ranged and distance < float(w.get("range", 0)) and Sight.clear(world, c.location, c.cell(), c.location, at):
+		_go(c, "aim", Creature.NO_TARGET, false)
+	else:
+		_go(c, "hunt", at, true)
 
 
 ## Villagers: go about near home by day, stop to look at someone who comes

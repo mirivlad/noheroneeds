@@ -280,6 +280,7 @@ func _step() -> void:
 	if tick % TICK_RATE == 0:
 		world.needs.step()
 		world.chronicles.step()
+		world.caravans.step()
 	_lap("combat")
 	world.commit_async(wait_for_disk)
 	world.flush_state(STATE_ROWS_PER_TICK)
@@ -654,7 +655,7 @@ func _creature_cold(c: Creature) -> Dictionary:
 	if not c.job.is_empty():  # always told, empty too: a client keeps what it was told last
 		cold["profession"] = String(c.job.get("profession", ""))
 		cold["name"] = String(c.job.get("name", ""))
-		cold["held"] = "base:iron_sword" if c.kind == "base:caravan_guard" and c.job.has("guard_driver") else c.held
+		cold["held"] = c.held
 		cold["asleep"] = c.asleep
 		cold["face"] = [c.face.x, c.face.y]  # where it looks standing (the fire)
 		cold["say"] = c.say

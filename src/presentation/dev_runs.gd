@@ -16,6 +16,7 @@ var _poses: Array = []
 var _wolf := ""
 var _pose_at := -1
 var _pose_wait := 0
+var _preview_trader := ""
 
 
 func _init(screen: GameScreen) -> void:
@@ -23,6 +24,17 @@ func _init(screen: GameScreen) -> void:
 
 
 func step(delta: float) -> void:
+	if g._opts.has("bandit_debug") and g.game:
+		if g._frames == 50:
+			_bandit_scene(String(g._opts["bandit_debug"]))
+		if g._frames == 100 and _preview_trader != "" and g._opts["bandit_debug"] == "contract":
+			g._talk_rids[g.client.request({"type": "talk", "creature": _preview_trader})] = _preview_trader
+		if g._frames == 150 and _preview_trader != "" and g._opts["bandit_debug"] == "contract":
+			g.talk_panel._take.pressed.emit()
+		if g._frames == 220 and _preview_trader != "" and g._opts["bandit_debug"] == "contract":
+			g.talk_panel.hide()
+			g._journal_rids[g.client.request({"type": "journal"})] = true
+			print("ESCORT_PREVIEW ", g.game.world.caravans.contract(g.client.character_id))
 	if g._opts.has("caravan_debug") and g.game and g._frames == 60:
 		# A reproducible in-game view of a trader and horse, without changing
 		# a player's world: use with a separate --profile_dir and --screenshot.
@@ -440,6 +452,54 @@ func step(delta: float) -> void:
 		for y in range(-3, 0):
 			for x in range(-2, 1):
 				g.client.request({"type": "build", "location": g.client.location, "x": x, "y": y, "part": "base:wood_ceiling"})
+
+
+## Real world data and normal NPC behaviour, in an explicitly isolated dev profile.
+func _bandit_scene(mode: String) -> void:
+	var w := g.game.world
+	if mode == "camp":
+		var found := {}
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				var plan := w.generator.settlements.camps.of_cluster(0, dx, dy)
+				if not plan.is_empty() and (found.is_empty() or (plan["centre"] as Vector2i).length_squared() < (found["centre"] as Vector2i).length_squared()):
+					found = plan
+		if found.is_empty():
+			push_error("No forest bandit camp in preview districts")
+			return
+		var bounds: Rect2i = (found["bounds"] as Rect2i).grow(8)
+		for cy in range(bounds.position.y >> 5, (bounds.end.y >> 5) + 1):
+			for cx in range(bounds.position.x >> 5, (bounds.end.x >> 5) + 1):
+				w.chunk("surface", cx, cy)
+		var at: Vector2i = found["centre"] + Vector2i(12, 0)
+		w.move_character(g.client.character_id, at * 256 + Vector2i(128, 128))
+		w.world_time = Daylight.DAY_MS + 12 * Daylight.HOUR_MS
+		g.view.zoom = 25
+		print("BANDIT_PREVIEW ", found["id"], " centre=", found["centre"], " members=", w.bandits.state(found["id"])["members"].size())
+		return
+	var at := Movement.cell_of(g.client.position) + Vector2i(-2, -3)
+	for y in range(at.y - 8, at.y + 9):
+		for x in range(at.x - 8, at.x + 9):
+			var chunk := w.chunk("surface", x >> 5, y >> 5)
+			chunk.set_cell("cover", x & 31, y & 31, "")
+			chunk.set_cell("structure", x & 31, y & 31, "")
+			w._changed(ServerWorld.chunk_key("surface", x >> 5, y >> 5))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 41
+	var trader := w.creatures._spawn("base:villager", "surface", at, CreatureSim.villager_looks(rng), 41)
+	var home := String(w.generator.settlements.home_plan()["id"])
+	trader.job = {"profession": "base:trader", "name": "Гордей", "purse": 800, "from": home, "toward": home}
+	trader.route = {"road": [], "step": 1}
+	w.creatures._make_caravan(trader, "cart")
+	w.caravans.hire(trader, 60)
+	_preview_trader = trader.id
+	if mode == "night":
+		w.world_time = Daylight.DAY_MS + 22 * Daylight.HOUR_MS
+	else:
+		w.world_time = Daylight.DAY_MS + 12 * Daylight.HOUR_MS
+	if mode == "contract":
+		w.move_character(g.client.character_id, trader.pos + Vector2i(256, 0))
+	g.view.zoom = 16
 
 
 func _photograph_poses() -> void:

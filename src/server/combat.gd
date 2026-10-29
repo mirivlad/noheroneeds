@@ -218,6 +218,7 @@ var died: Array[Dictionary] = []
 
 
 func _creature_dies(c: Creature, killer := "") -> void:
+	world.bandits.died(c)
 	died.append({"location": c.location, "x": c.pos.x, "y": c.pos.y, "kind": c.kind})
 	var drops: Dictionary = world.content.get_def(c.kind).get("drops", {})
 	var hunter := world.creatures.get_creature(killer)

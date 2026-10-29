@@ -20,6 +20,23 @@ func _look(worn := WorldLibrary.STARTER_OUTFIT, plan := PLAN) -> Dictionary:
 	return {"body_plan": plan, "styles": {"hair": PLANS[plan]}, "colors": {}, "worn": worn.duplicate()}
 
 
+func test_bandit_red_shirt_does_not_recolour_skin_or_other_clothes() -> void:
+	var content := _content()
+	for plan: String in PLANS:
+		var looks := _look(WorldLibrary.STARTER_OUTFIT, plan)
+		looks["colors"]["shirt"] = Bandits.SHIRT
+		var doll := Art.character_sprite(content, content.visual_of(plan), looks) as RoSprite
+		var found := false
+		for layer: Array in doll._layers:
+			if layer[0] == "torso":
+				found = true
+				eq((layer[1] as Sprite2D).modulate, Color(Bandits.SHIRT), "red cloth on either body")
+			else:
+				eq((layer[1] as Sprite2D).modulate, Color.WHITE, "only the shirt is tinted")
+		check(found, "shirt layer present")
+		doll.free()
+
+
 func _sheets(visual: Dictionary) -> Array:
 	var sheets := [visual]
 	for group: String in ["style_overrides", "worn_overrides", "held_overrides"]:

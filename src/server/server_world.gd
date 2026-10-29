@@ -177,6 +177,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.growth = Growth.new(world)
 	world.chronicles = Chronicles.new(world)
 	world.economy = VillageEconomy.new(world)
+	world.bandits = Bandits.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	world.weather_seed = absi(hash([world.world_seed, "weather"]))
 	var saved_time := s.read_meta("time")
@@ -262,6 +263,7 @@ func close() -> void:
 	needs.world = null
 	chronicles.world = null
 	economy.world = null
+	bandits.world = null
 	knowledge.world = null
 	boats.world = null
 	growth.world = null
@@ -280,6 +282,7 @@ func abandon() -> void:
 	needs.world = null
 	chronicles.world = null
 	economy.world = null
+	bandits.world = null
 	knowledge.world = null
 	boats.world = null
 	growth.world = null
@@ -1089,6 +1092,7 @@ var growth: Growth
 var chronicles: Chronicles
 ## Villages' stores: what they make, need and fetch from each other (ADR-0066).
 var economy: VillageEconomy
+var bandits: Bandits
 ## World facts to write with the next state batch (set_meta).
 var _pending_meta := {}
 ## Light sources by chunk, worked out when first asked, forgotten on change.

@@ -25,9 +25,9 @@ for pack in manifest['packs']:
 catalog = json.loads((ROOT/'assets/experiment_3d/catalog.json').read_text())
 used = {entry['path'] for entry in catalog.values()}
 models = {str(Path(name).relative_to('assets/experiment_3d')) for name in manifest['files'] if name.endswith('.gltf')}
-assert used == models, (used-models, models-used)
-for name in ('cart', 'packs'):
- path = ROOT/'assets/experiment_3d/caravan'/f'{name}.glb'
+assert used - {'bandits/shelter.glb'} == models, (used-models, models-used)
+for name, relative in [('cart', 'caravan/cart.glb'), ('packs', 'caravan/packs.glb'), ('shelter', 'bandits/shelter.glb')]:
+ path = ROOT/'assets/experiment_3d'/relative
  assert not path.is_symlink() and path.is_file(), str(path)
  data = path.read_bytes()
  magic, version, length = struct.unpack_from('<4sII', data, 0)
@@ -41,3 +41,4 @@ for name in ('cart', 'packs'):
   assert {f'Wheel{i}' for i in range(4)} <= {n.get('name') for n in doc.get('nodes', [])}
 print(f'ASSETS_VERIFIED: {len(manifest["packs"])} CC0 packs, {len(models)} used models, {len(manifest["files"])} source files')
 print('CARAVAN_MODELS_VERIFIED: cart and packs, embedded dependencies, four wheels')
+print('BANDIT_SHELTER_VERIFIED: original Blender model, embedded dependencies')

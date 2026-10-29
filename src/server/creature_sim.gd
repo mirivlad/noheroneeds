@@ -145,6 +145,8 @@ func take_rows(location: String, rows: Array) -> void:
 
 ## A chunk came into memory: give a surface chunk its animals once.
 func on_chunk_ready(location: String, cx: int, cy: int, c: Chunk) -> void:
+	if location == Levels.SURFACE and c.meta.has("bandit_camp"):
+		world.bandits.populate(String(c.meta["bandit_camp"]))
 	var wild := (location == Levels.SURFACE and world.generator != null) \
 		or (Levels.is_depth(location) and world.underground != null)
 	var had := int(c.meta.get("fauna", 0))
@@ -868,6 +870,8 @@ func _think(c: Creature, tick: int) -> void:
 	_perceive(c, def)
 	if _fight_back(c, def):
 		pass
+	elif c.kind == "base:bandit":
+		world.bandits.think(c)
 	elif c.job.has("guard_driver"):
 		_guard_caravan(c)
 	elif c.owner != "" and def.has("tame"):
@@ -927,7 +931,7 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 	c.memory.clear()
 	c.target = Creature.NO_TARGET
 	c.running = false
-	if not c.route.is_empty():
+	if not c.route.is_empty() or c.job.has("camp"):
 		# A caravan must resume from its real road position, not teleport home
 		# (possibly leaving its horse and cargo in another chunk).
 		c.path.clear()

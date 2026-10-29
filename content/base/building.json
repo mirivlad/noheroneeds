@@ -1,6 +1,8 @@
 {
   "format": 1,
   "defs": [
+    {"id": "base:bandit_shelter", "kind": "structure", "role": "furniture", "name": "Лесной шалаш", "solid": false,
+     "cost": {"base:log": 4}, "durability": 300, "material": "wood"},
     {"id": "base:wood_floor", "kind": "ground", "name": "Дощатый пол"},
     {"id": "base:bridge", "kind": "ground", "name": "Мост"},
     {"id": "base:stone_floor", "kind": "ground", "name": "Каменный пол"},

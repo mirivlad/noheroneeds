@@ -56,6 +56,8 @@ func _init(body: Texture2D, visual: Dictionary, layers: Array = [], looks: Dicti
 ## The body gets its skin colour; hair its colour and the cut of the headwear worn.
 func _add_layer(slot: String, tex: Texture2D, sheet := {}) -> void:
 	super(slot, tex, sheet)
+	if slot == "torso" and look.get("colors", {}).has("shirt"):
+		(_layers[-1][1] as Sprite2D).modulate = Color(String(look["colors"]["shirt"]))
 	if slot == "body":
 		var skin := ShaderMaterial.new()
 		skin.shader = SKIN_SHADER

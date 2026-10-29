@@ -1152,6 +1152,10 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - https://opengameart.org/content/lpc-monsters
 
 <!-- ro -->
+Лесной шалаш разбойников — оригинальная модель проекта, построенная в Blender
+скриптом `tools/art/build_bandit_shelter.py`; распространяется на условиях
+лицензии проекта GPL-3.0-or-later.
+
 # Авторы графики персонажей в стиле Ragnarok Online
 
 Тела и причёски — модели VRoid **HairSample_Male**, **HairSample_Female**, **Sendagaya Shibu**,

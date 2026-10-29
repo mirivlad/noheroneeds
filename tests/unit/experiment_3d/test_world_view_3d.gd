@@ -137,6 +137,11 @@ func test_caravan_renders_a_sitting_driver_horse_and_turning_wheels() -> void:
 	view._update_actors(1, .1)
 	check(driver.wheel_angle > 0, "the wheels turn when the wagon moves")
 	check(absf((wheels[0] as Node3D).rotation.x) > .01, "the model's wheel rotates")
+	client.entities["driver"]["asleep"] = true
+	view._update_actors(1, .1)
+	eq((driver.doll as RoSprite)._once, "dead", "leaving the seated pose does not cancel sleep")
+	eq(driver.picture.position, Vector3.ZERO, "the sleeping trader is on the ground beside the cart")
+	client.entities["driver"]["asleep"] = false
 	client.entities["driver"]["horse"] = ""
 	view._update_actors(1, .1)
 	check(not driver.cart.visible, "the cart is hidden when the horse is lost")
@@ -159,6 +164,22 @@ func test_pack_caravan_shows_panniers_and_a_walking_trader() -> void:
 	client.entities["horse"]["pack"] = false
 	view._update_actors(1, .1)
 	check(not horse.packs.visible, "the panniers disappear when the horse is released")
+
+func test_sleeping_sprite_keeps_its_perspective_when_the_camera_turns() -> void:
+	var looks := {"body_plan": "base:human_ro_m", "styles": {}, "worn": {}}
+	client.entities = {"sleeper": {"kind": "creature", "creature": "base:villager", "appearance": looks,
+		"asleep": true, "face": [1, 0], "x": 0, "y": 0}}
+	for turn in 4:
+		view.yaw = turn * PI / 2
+		view._update_actors(1, .1)
+		var actor := view._actors["sleeper"] as BillboardActor3D
+		eq(actor.picture.billboard, BaseMaterial3D.BILLBOARD_ENABLED, "the already projected body faces the camera")
+		eq(actor.picture.rotation, Vector3.ZERO, "no second projection onto the ground")
+		eq(actor.picture.position, Vector3.ZERO, "ground sleepers are not lifted onto an imaginary bed")
+		eq((actor.doll as RoSprite)._row, RoSprite.ROW_OF_OCTANT[posmod(-turn * 2, 8)], "lying direction follows camera yaw")
+	client.entities["sleeper"]["asleep"] = false
+	view._update_actors(1, .1)
+	eq((view._actors["sleeper"].doll as RoSprite)._once, "", "waking restores the ordinary pose")
 
 func test_ray_uses_viewports_actual_world_and_content_cells_after_rotation() -> void:
 	var chunk := Chunk.new()

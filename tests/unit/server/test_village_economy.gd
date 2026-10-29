@@ -355,6 +355,12 @@ func _check_caravan_route(road: Dictionary, path: Array, obstruction: Vector2i, 
 	var destination := String(road["to"])
 	var before := w.economy.have(destination, "base:iron_sword")
 	w.world_time = 12 * Daylight.HOUR_MS
+	var pc := PortableCharacter.create("Охранник", "base:human_ro_m")
+	w.enter("escort-" + variant, pc)
+	w.move_character(pc.character_id, trader.pos)
+	check(w.caravans.hire_player(pc.character_id, trader).get("ok", false) == false, "a penniless employer cannot hire")
+	trader.job["purse"] = 100
+	check(w.caravans.hire_player(pc.character_id, trader).get("ok", false), "a real inter-village journey hires an escort")
 	var steps := 0
 	var crossed_tree := false
 	var horse := w.creatures.get_creature(String(trader.job["horse"]))
@@ -362,6 +368,7 @@ func _check_caravan_route(road: Dictionary, path: Array, obstruction: Vector2i, 
 		if trader.target == Creature.NO_TARGET:
 			w.creatures._traveller(trader, w.content.get_def(trader.kind))
 		w.creatures._move(trader)
+		w.move_character(pc.character_id, trader.pos)
 		if obstruction in BodySize.cells(horse.pos, BodySize.of(w.content.get_def(horse.kind))["half"]):
 			crossed_tree = true
 		steps += 1
@@ -372,6 +379,7 @@ func _check_caravan_route(road: Dictionary, path: Array, obstruction: Vector2i, 
 	check(int(trader.route["step"]) == -1, "%s went around the obstruction and travelled the whole road (%d cells, %d ticks, at %s, tree %s)" % [variant, path.size(), steps, trader.cell(), obstruction])
 	check(not crossed_tree, "the horse never entered the tree's cell")
 	eq(w.economy.have(destination, "base:iron_sword"), before + 2, "%s: the destination receives the cargo" % variant)
+	eq(w.caravans.contract(pc.character_id).get("state"), "arrived", "arrival automatically settles the escort contract")
 	if int(trader.route["step"]) != -1:
 		return
 	steps = 0

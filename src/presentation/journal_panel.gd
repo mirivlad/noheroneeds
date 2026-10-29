@@ -59,7 +59,7 @@ func _show() -> void:
 	if tabs.current_tab == 0:
 		for c: Dictionary in escorts:
 			var statuses := {"active": "действует", "arrived": "прибытие", "dead": "торговец погиб", "left": "завершён вами",
-				"funds": "у торговца закончились деньги", "betrayed": "нарушен нападением на караван"}
+				"funds": "у торговца закончились деньги", "betrayed": "нарушен нападением на караван", "no_route": "маршрут недоступен, договор завершён"}
 			out.append("Охрана: %s → %s — %s." % [c.get("name", "Торговец"), c.get("destination", ""), statuses.get(c.get("state", ""), "завершён")])
 			out.append("Ставка: %d монет за сутки. Выплачено: %d. В текущих сутках отработано: %.1f ч." % [
 				int(c.get("rate", 0)), int(c.get("paid", 0)), float(c.get("elapsed", 0)) / Daylight.HOUR_MS])

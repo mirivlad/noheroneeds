@@ -553,6 +553,10 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 	if guard_id != "" and get_creature(guard_id) == null and _caravan_lost(guard_id):
 		c.job["guard"] = ""
 		c.changed()
+	if world.caravans.journey(c).is_empty():
+		world.caravans.finish_for(c, "no_route")
+		_go(c, "idle", Creature.NO_TARGET, false)
+		return
 	var attacker := _attacker(c, 12.0)
 	if not attacker.is_empty():
 		_dress(c, "", false)
@@ -565,10 +569,13 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 		return
 	if c.job.has("camp_spot"):
 		world.caravans.break_camp(c)
+	if _tick < c.route_retry:
+		_go(c, "blocked", Creature.NO_TARGET, false)
+		return
 	if c.state == "detour":
 		if c.target != Creature.NO_TARGET:
 			return
-		while not c.path.is_empty() and c.path[0] == c.cell():
+		while not c.path.is_empty() and c.pos == c.path[0] * Movement.UNIT + Vector2i(128, 128):
 			c.path.pop_front()
 		if not c.path.is_empty():
 			_go(c, "detour", c.path[0], false)
@@ -585,24 +592,24 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 	var best := INF
 	for k in path.size():
 		var dist := Vector2(path[k]).distance_squared_to(Vector2(c.cell()))
-		if dist < best:
+		if dist < best or (is_equal_approx(dist, best) and absi(k - int(c.route.get("i", 0))) < absi(near - int(c.route.get("i", 0)))):
 			best = dist
 			near = k
 	if best > 2.0:
 		if c.path_to != path[near] or c.path.is_empty():
-			c.path = _route(c, path[near])
+			c.path = _caravan_route(c, path[near]) if horse_id != "" else _route(c, path[near])
 			c.path_to = path[near]
 		while not c.path.is_empty() and c.path[0] == c.cell():
 			c.path.pop_front()
 		if not c.path.is_empty():
-			_go(c, "travel", c.path[0], false)
+			_go(c, "detour" if horse_id != "" else "travel", c.path[0], false)
 			return
 	c.path.clear()
 	var step := int(c.route.get("step", 1))
-	var i := near + step * 6
+	var i := _road_waypoint(path, near, step)
 	var end := path.size() - 1 if step > 0 else 0
 	if (step > 0 and i >= end) or (step < 0 and i <= end):
-		if near != end:
+		if path[near] != path[end]:
 			i = end  # finish the road before transferring goods
 		else:
 			c.route["step"] = -step
@@ -611,10 +618,30 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 				var at := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
 				var back := String(road.get("from", "")) if step > 0 else String(road.get("to", ""))
 				_arrive(c, at, back)
-			i = clampi(near - step * 6, 0, path.size() - 1)
+			i = _road_waypoint(path, near, -step)
 	c.route["i"] = i
 	c.home = path[i]  # where it is about, should it be away a while
 	_go(c, "travel", path[i], false)
+
+
+## Look ahead only along a straight part of the road. Skipping six cells
+## across a bend cuts the inside corner through rocks, walls and trees.
+func _road_waypoint(path: Array, near: int, step: int) -> int:
+	var i := near
+	var direction := Vector2i.ZERO
+	var distance := 0
+	while distance < 6:
+		var next := i + step
+		if next < 0 or next >= path.size():
+			break
+		var delta: Vector2i = path[next] - path[i]
+		if delta != Vector2i.ZERO:
+			if direction != Vector2i.ZERO and delta != direction:
+				break
+			direction = delta
+			distance += 1
+		i = next
+	return i
 
 
 ## A crowd for load tests (server option --populate=N): n creatures within
@@ -887,18 +914,24 @@ func _guard_caravan(c: Creature) -> void:
 	var roster := world.caravans.guards(driver)
 	var index := maxi(0, roster.find(c.id))
 	var target := driver.cell() + Vector2i(-2 if index % 2 == 0 else 2, 1 + index / 2)
+	if not _fits(c, target):
+		target = _spot_near(c, target, 3, c.seed)
+		if target == Creature.NO_TARGET:
+			target = driver.cell()
 	if driver.job.has("camp_spot"):
 		var watch := index == int(world.world_time / (Daylight.HOUR_MS * 3)) % maxi(1, roster.size())
 		_dress(c, String(c.job.get("weapon", "base:iron_sword")), not watch and c.cell().distance_to(target) <= 1)
 	else:
 		_dress(c, String(c.job.get("weapon", "base:iron_sword")), false)
 	if c.cell().distance_to(driver.cell()) > 2.0 or (roster.size() > 1 and c.cell().distance_to(target) > 1):
-		if c.path_to != target or c.path.is_empty():
+		if c.path.is_empty() or c.path_to.distance_to(target) > 3:
 			c.path = _route(c, target)
+			if c.path.is_empty() and target != driver.cell():
+				c.path = _route(c, driver.cell())
 			c.path_to = target
-		while not c.path.is_empty() and c.path[0] == c.cell():
+		while not c.path.is_empty() and c.pos == c.path[0] * Movement.UNIT + Vector2i(128, 128):
 			c.path.pop_front()
-		_go(c, "follow", c.path[0] if not c.path.is_empty() else target, false)
+		_go(c, "follow", c.path[0] if not c.path.is_empty() else Creature.NO_TARGET, false)
 	else:
 		c.path.clear()
 		_go(c, "rest", Creature.NO_TARGET, false)
@@ -909,7 +942,7 @@ func _behave(c: Creature, def: Dictionary) -> void:
 		"prey":
 			_prey(c, def)
 		"villager":
-			if not c.route.is_empty():
+			if not c.route.is_empty() or c.job.get("profession", "") == "base:trader":
 				_traveller(c, def)
 			elif not c.job.is_empty():
 				_dweller(c, def)
@@ -1709,10 +1742,14 @@ func _route(c: Creature, goal: Vector2i) -> Array[Vector2i]:
 
 ## A short detour for a caravan: each step must leave room for both trader
 ## and horse. It uses only loaded cells and is bounded locally.
-func _caravan_route(c: Creature, goal: Vector2i) -> Array[Vector2i]:
+func _caravan_route(c: Creature, goal: Vector2i, margin := 8) -> Array[Vector2i]:
 	var start := c.cell()
-	var box := Rect2i(start, Vector2i.ONE).merge(Rect2i(goal, Vector2i.ONE)).grow(8)
-	if box.size.x > 40 or box.size.y > 40:
+	var centre := start * Movement.UNIT + Vector2i(128, 128)
+	var heading: Array = c.job.get("caravan_heading", [0, 1])
+	var align := c.pos != centre and _caravan_departure_fits(c, centre, Vector2i(int(heading[0]), int(heading[1])))
+	var origin := centre if align else c.pos
+	var box := Rect2i(start, Vector2i.ONE).merge(Rect2i(goal, Vector2i.ONE)).grow(margin)
+	if box.size.x > 64 or box.size.y > 64:
 		return []
 	var came := {start: start}
 	var queue: Array[Vector2i] = [start]
@@ -1727,10 +1764,13 @@ func _caravan_route(c: Creature, goal: Vector2i) -> Array[Vector2i]:
 			var next := at + d
 			if came.has(next) or not box.has_point(next) or not _fits(c, next):
 				continue
-			var centre := next * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
-			if not _caravan_cart_fits(c, centre, d) or not _caravan_horse_fits(c, centre, d):
+			var next_centre := next * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
+			if c.job.get("caravan_type", "cart") == "pack" and not _caravan_horse_fits(c, next_centre, Vector2i.ZERO):
 				continue
-			if at == start and (not _caravan_cart_fits(c, c.pos + d * 8, d) or not _caravan_horse_fits(c, c.pos + d * 8, d)):
+			if at == start:
+				if _departure_heading(c, next_centre, d, origin) == Vector2i.ZERO:
+					continue
+			elif not _caravan_cart_fits(c, next_centre, d) or not _caravan_horse_fits(c, next_centre, d):
 				continue
 			came[next] = at
 			queue.append(next)
@@ -1741,7 +1781,56 @@ func _caravan_route(c: Creature, goal: Vector2i) -> Array[Vector2i]:
 	while at != start:
 		out.push_front(at)
 		at = came[at]
+	if align:
+		out.push_front(start)
 	return out
+
+
+## The first edge starts at the real fractional position, not at the cell
+## centre used by the search. Check the same bounded steps as movement:
+## checking only its first few pixels can pick the same blocked turn forever.
+func _caravan_departure_fits(c: Creature, goal: Vector2i, heading: Vector2i, origin := Creature.NO_TARGET) -> bool:
+	var at := c.pos if origin == Creature.NO_TARGET else origin
+	var speed := int(float(world.content.get_def(c.kind)["speed"]) * Movement.WALK)
+	for i in 40:
+		var delta := goal - at
+		if delta == Vector2i.ZERO:
+			return true
+		var next := _waypoint_step(c, at, goal, speed)
+		if next == at or not _caravan_cart_fits(c, next, heading) or not _caravan_horse_fits(c, next, heading):
+			return false
+		at = next
+	return false
+
+
+## Back out with the existing harness orientation when there is no room
+## to turn in place. The next waypoint can turn once the whole caravan fits.
+func _departure_heading(c: Creature, goal: Vector2i, preferred: Vector2i, origin: Vector2i) -> Vector2i:
+	var saved: Array = c.job.get("caravan_heading", [0, 1])
+	for heading: Vector2i in [preferred, Vector2i(int(saved[0]), int(saved[1]))]:
+		if _caravan_cart_fits(c, goal, heading) and _caravan_horse_fits(c, goal, heading) \
+				and _caravan_departure_fits(c, goal, heading, origin):
+			return heading
+	return Vector2i.ZERO
+
+
+func _waypoint_step(c: Creature, at: Vector2i, goal: Vector2i, speed: int) -> Vector2i:
+	var d := goal - at
+	var step := roundi(speed * .7071) if d.x != 0 and d.y != 0 else speed
+	var solid := _solid_in(c.location)
+	var half := _movement_half(c, at)
+	var next := Movement._axis(at, clampi(d.x, -step, step), true, solid, half)
+	return Movement._axis(next, clampi(d.y, -step, step), false, solid, half)
+
+
+## A trader leading a broad horse must leave enough room to turn it. Old
+## saves can already stand closer to a wall; let those walk out normally.
+func _movement_half(c: Creature, at: Vector2i) -> Vector2i:
+	var half := _half(c.kind)
+	if c.job.get("caravan_type", "cart") == "pack" and String(c.job.get("horse", "")) != "" and _caravan_horse_fits(c, at, Vector2i.ZERO):
+		var horse := _half("base:horse")
+		return Vector2i(maxi(half.x, horse.x), maxi(half.y, horse.y))
+	return half
 
 
 func _door(location: String, cell: Vector2i) -> bool:
@@ -1835,6 +1924,16 @@ func _go(c: Creature, state: String, target_cell: Vector2i, run: bool) -> void:
 			_cold[c.id] = true  # it starts or stops hunting: heard (its howl)
 		c.state = state
 		c.target = target
+		c.path_heading = Vector2i.ZERO
+		if state == "detour":
+			var direction := target_cell - c.cell()
+			if direction == Vector2i.ZERO:
+				var saved: Array = c.job.get("caravan_heading", [0, 1])
+				direction = Vector2i(int(saved[0]), int(saved[1]))
+			c.path_heading = Vector2i(signi(direction.x), signi(direction.y))
+			var turn := _departure_heading(c, target, c.path_heading, c.pos)
+			if turn != Vector2i.ZERO:
+				c.path_heading = turn
 		c.running = run
 		c.stuck = 0
 		c.changed()
@@ -1850,16 +1949,13 @@ func _move(c: Creature) -> void:
 		_movers.erase(c.id)
 		return
 	var d := c.target - c.pos
+	var precise: bool = c.state == "detour" or (c.state == "follow" and c.job.has("guard_driver"))
 	var detour_axis := Vector2i.ZERO
-	if c.state == "detour" and not c.path.is_empty():
-		var cell_delta := c.path[0] - c.cell()
-		if cell_delta != Vector2i.ZERO:
-			detour_axis = Vector2i(signi(cell_delta.x), signi(cell_delta.y))
-		else:
-			var heading: Array = c.job.get("caravan_heading", [0, 1])
-			detour_axis = Vector2i(int(heading[0]), int(heading[1]))
-	var arrived := (absi(d.x) < 48 and absi(d.y) < 48) if detour_axis == Vector2i.ZERO or (detour_axis.x != 0 and detour_axis.y != 0) \
-		else (absi(d.x) < 48 if detour_axis.x != 0 else absi(d.y) < 48)
+	if c.state == "detour":
+		if c.path_heading == Vector2i.ZERO:
+			c.path_heading = Vector2i(signi(d.x), signi(d.y))
+		detour_axis = c.path_heading
+	var arrived := d == Vector2i.ZERO if precise else (absi(d.x) < 48 and absi(d.y) < 48)
 	if arrived:
 		c.target = Creature.NO_TARGET
 		c.running = false
@@ -1871,12 +1967,15 @@ func _move(c: Creature) -> void:
 	var speed := int(float(def["run_speed"] if c.running else def["speed"]) * Movement.WALK)
 	var dx := signi(d.x) if absi(d.x) > 24 else 0
 	var dy := signi(d.y) if absi(d.y) > 24 else 0
-	if detour_axis != Vector2i.ZERO:
-		dx = detour_axis.x
-		dy = detour_axis.y
+	# Approach the waypoint in both coordinates. Forcing a diagonal from an
+	# off-centre position overshoots one axis and can seesaw forever at trees.
+	# Keep the harness heading while making the small alignment correction.
+	var heading := detour_axis if detour_axis != Vector2i.ZERO else Vector2i(dx, dy)
 	var old_key := _chunk_of(c)
-	var np := Movement.step_at(c.pos, dx, dy, _solid_in(c.location), speed, _half(c.kind))
-	if np != c.pos and (not _caravan_cart_fits(c, np, Vector2i(dx, dy)) or not _caravan_horse_fits(c, np, Vector2i(dx, dy))):
+	var np := Movement.step_at(c.pos, dx, dy, _solid_in(c.location), speed, _movement_half(c, c.pos))
+	if precise:
+		np = _waypoint_step(c, c.pos, c.target, speed)
+	if np != c.pos and (not _caravan_cart_fits(c, np, heading) or not _caravan_horse_fits(c, np, heading)):
 		np = c.pos
 	if np == c.pos:
 		c.stuck += 1
@@ -1884,11 +1983,30 @@ func _move(c: Creature) -> void:
 			if not c.route.is_empty() and String(c.job.get("horse", "")) != "":
 				var goal := Movement.cell_of(c.target)
 				var detour := _caravan_route(c, goal)
+				if detour.is_empty():
+					# The intended road cell may itself be blocked. Rejoin beyond
+					# it, allowing a wider trip off the road within loaded terrain.
+					var road := _route_path(c)
+					for offset in [0, 3, 6, 12]:
+						if road.is_empty():
+							break
+						var index := clampi(int(c.route.get("i", 0)) + int(c.route.get("step", 1)) * offset, 0, road.size() - 1)
+						goal = road[index]
+						detour = _caravan_route(c, goal, 16)
+						if not detour.is_empty():
+							c.route["i"] = index
+							break
 				if not detour.is_empty():
 					c.path = detour
 					c.path_to = goal
 					_go(c, "detour", c.path[0], false)
 					return
+				c.route_retry = _tick + Movement.TICK_RATE
+				c.path.clear()
+				c.path_to = Creature.NO_TARGET
+			if c.job.has("guard_driver"):
+				c.path.clear()
+				c.path_to = Creature.NO_TARGET
 			c.target = Creature.NO_TARGET
 			c.running = false
 			_movers.erase(c.id)
@@ -1898,7 +2016,7 @@ func _move(c: Creature) -> void:
 	c.stuck = 0
 	c.pos = np
 	_moved[c.id] = true
-	_move_caravan_horse(c, Vector2i(dx, dy))
+	_move_caravan_horse(c, heading)
 	var key := _chunk_of(c)
 	if key != old_key:
 		_index(c, old_key)

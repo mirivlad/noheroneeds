@@ -2890,10 +2890,13 @@ func _trader_talk(actor: String, c: Creature) -> Dictionary:
 	var load := PackedStringArray()
 	for item: String in stock.stacks:
 		load.append("%s (%d)" % [String(content.get_def(item).get("name", item)).to_lower(), int(stock.stacks[item])])
-	var toward := chronicles.village_name(String(c.job.get("toward", "")))
+	var travelling := not caravans.journey(c).is_empty()
+	var toward := caravans.destination(c) if travelling else ""
 	var from := chronicles.village_name(String(c.job.get("from", "")))
-	var says := "Иду из деревни %s в деревню %s. " % [from, toward] + ("Везу: %s. Купить не желаешь?" % ", ".join(load) if not load.is_empty()
+	var says := ("Иду из деревни %s в деревню %s. " % [from, toward] if travelling else "Сейчас никуда не отправляюсь. Охрана не нужна. ") + ("Везу: %s. Купить не желаешь?" % ", ".join(load) if not load.is_empty()
 		else "Иду порожним — на месте возьму товар.")
+	if travelling and c.job.has("camp_spot"):
+		says += " Сейчас ночлег; утром продолжим путь."
 	return {"ok": true, "creature": c.id, "trader": true, "name": String(c.job.get("name", "Торговец")),
 		"profession": "base:trader", "village": toward, "says": says, "short": economy.short(String(c.job.get("toward", ""))),
 		"chronicle": [], "teaches": [], "escort": caravans.offer(actor, c)}

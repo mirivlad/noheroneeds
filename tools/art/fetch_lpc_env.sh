@@ -55,6 +55,7 @@ get "$ANIMALS/LPC_Spiders.zip" "$F/LPC_Spiders.zip" fce56f13629d2aa8be48f1ef904f
 get "$ANIMALS/lpc-monsters.zip" "$F/lpc-monsters.zip" 2c591d0e0c89dd579f84fb10ac9b24b97836941d6881abb5db85dc257892878f
 get "$ANIMALS/wolfsheet1_0.png" "$F/wolfsheet1_0.png" 35037f84c065844cb974d7d692875115b4c6ebf34e242921991351f370e1fa4f
 get "$ANIMALS/rabbit_3.png" "$F/rabbit_3.png" 89da7327cb5662ac1f8ef14ec7c00d38218827582bc0f273e1cea873ce570ae1
+get "$ANIMALS/horse-brown.png" "$F/horse-brown_0.png" 47def2e844587c82fec6b67417e2ce891295170227bdd06c526253a347a7f1fe  # LPC Horses, bluecarrot16
 mkdir -p "$ANIMALS/farm"
 for line in "chicken_eat c02621f1096d46dba0f11b6358e4ee8901e76b4ea57f58c6e2cd8cd514e63b06" \
     "chicken_walk 9f2e5b54f283a6e9b4a0e0439a548844b6ce1a20f34e719ae944206e4e206ebe" \

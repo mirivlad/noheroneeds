@@ -1100,7 +1100,14 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 # Авторы графики зверей
 
 Звери и чудища — из наборов LPC на OpenGameArt, собраны в листы игры
-`tools/art/import_lpc_animals.py` (кадры переложены, рисунок не менялся; поринг — перекрашенный слизень).
+`tools/art/import_lpc_animals.py` (кадры переложены; поринг — перекрашенный слизень,
+у лошади удалён одиночный посторонний пиксель).
+
+## [LPC] Horses (лошадь)
+
+- Авторы: bluecarrot16
+- Лицензии: CC-BY 3.0 / CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0 / OGA-BY 3.0
+- https://opengameart.org/content/lpc-horses
 
 ## [LPC] bears, deer, lions and more (олень, медведи, лиса, песец)
 

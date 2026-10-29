@@ -5,12 +5,14 @@ extends TestCase
 
 var w: ServerWorld
 var home: String
+var _db := ""
 
 
 func before_each() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	eq(content.errors, PackedStringArray())
-	w = ServerWorld.open(tmp_dir().path_join("world.db"), content, {"seed": 12345})
+	_db = tmp_dir().path_join("world.db")
+	w = ServerWorld.open(_db, content, {"seed": 12345})
 	home = String(w.generator.settlements.home_plan()["id"])
 
 
@@ -149,6 +151,240 @@ func test_a_trader_carries_goods_between_villages() -> void:
 	var back := int(stock.stacks.get(item, 0))  # (it may take some of it back for the other village)
 	eq(e.have(to, item) + back, before + n - 1, "the rest of its load in the village's store")
 	eq(String(c.job["toward"]), from, "and back the other way")
+
+
+func test_a_trader_keeps_goods_a_village_cannot_afford() -> void:
+	var e := w.economy
+	var other: String = e.neighbours(home)[0]
+	var trader := w.creatures._spawn("base:villager", "surface", Vector2i.ZERO, {}, 7)
+	trader.job = {"profession": "base:trader", "purse": 0, "from": other, "toward": home}
+	var stock := w.inventory("trade|" + trader.id)
+	var item := "base:iron_sword"
+	stock.add(item, 5)
+	var before := e.have(home, item)
+	var price := e.price(home, item)
+	e.store(home)["coins"] = price * 2
+	w.creatures._arrive(trader, home, other)
+	eq(e.have(home, item), before + 2, "the village receives only the goods it can pay for")
+	eq(stock.count(item), 3, "the unpaid goods stay on the cart")
+
+
+func test_caravan_purchase_commits_stock_purse_and_village_together() -> void:
+	var other: String = w.economy.neighbours(home)[0]
+	var trader := w.creatures._spawn("base:villager", "surface", Vector2i.ZERO, {}, 7)
+	trader.job = {"profession": "base:trader", "purse": 200, "from": home, "toward": other}
+	w.creatures._make_caravan(trader, "cart")
+	w.economy.earn(home, 0)
+	check(w.sync(), "the starting state is on disk")
+	var old_fact := w.store.read_meta("economy|" + home)
+	w.creatures._load(trader, home, other)
+	var stock := w.inventory("trade|" + trader.id)
+	check(not stock.stacks.is_empty(), "the trader purchased a load")
+	var expected_purse := int(trader.job["purse"])
+	var expected_coins := w.economy.coins(home)
+	check(not w.creatures.ready_to_unload(ServerWorld.chunk_key("surface", 0, 0)), "the trader's chunk waits for its pending operation")
+	# The periodic state flush may run while operation writes are backpressured.
+	# It must not publish the new purse or village fact without the cargo.
+	w.flush_state()
+	w.writer.wait_idle()
+	var before_rows := w.store.entities_in_chunk("surface", 0, 0)
+	var before: Dictionary = before_rows.filter(func(row: Dictionary) -> bool: return row["id"] == trader.id)[0]
+	var old_trader: Dictionary = Cbor.decode(before["data"]).value
+	eq(int(old_trader["job"]["purse"]), 200, "the independent flush did not write the new purse")
+	eq(w.store.read_meta("economy|" + home), old_fact, "nor the new village balance")
+	eq(w.store.get_inventory("trade|" + trader.id).size(), 0, "nor the cargo")
+	w.commit_async(true)
+	w.writer.wait_idle()
+	w.poll()
+	var after_rows := w.store.entities_in_chunk("surface", 0, 0)
+	var after: Dictionary = after_rows.filter(func(row: Dictionary) -> bool: return row["id"] == trader.id)[0]
+	var saved_trader: Dictionary = Cbor.decode(after["data"]).value
+	var saved_stock := Inventory.from_data(Cbor.decode(w.store.get_inventory("trade|" + trader.id)).value)
+	var saved_village: Dictionary = JSON.parse_string(w.store.read_meta("economy|" + home))
+	eq(int(saved_trader["job"]["purse"]), expected_purse, "the transaction wrote the purse")
+	eq(saved_stock.stacks, stock.stacks, "the same transaction wrote the cargo")
+	eq(int(saved_village["coins"]), expected_coins, "and the village balance")
+
+
+func test_existing_trader_gains_a_caravan_without_losing_its_cargo() -> void:
+	var s := w.generator.settlements
+	var district := s._district_of(0, s.home_plan()["centre"])
+	var roads := s.roads_of(0, district.x, district.y)
+	if not check(not roads.is_empty(), "a road exists"):
+		return
+	var road: Dictionary = roads[0]
+	var path: Array = road["path"]
+	var at: Vector2i = path[path.size() / 2]
+	w.chunk("surface", at.x >> 5, at.y >> 5)
+	var trader := w.creatures._spawn("base:villager", "surface", at, {}, 7)
+	trader.route = {"road": road["key"], "i": path.size() / 2, "step": 1}
+	trader.job = {"profession": "base:trader", "purse": 30, "from": road["from"], "toward": road["to"]}
+	trader.changed()
+	w.inventory("trade|" + trader.id).add("base:plank", 3)
+	w.touch_inventory("trade|" + trader.id)
+	var trader_id := trader.id
+	check(w.sync(), "the old trader and its stock are saved")
+	w.close()
+	w = ServerWorld.open(_db, w.content)
+	w.chunk("surface", at.x >> 5, at.y >> 5)
+	trader = w.creatures.get_creature(trader_id)
+	if not check(trader != null and not trader.job.has("horse"), "the old save has no caravan fields"):
+		return
+	w.world_time = 12 * Daylight.HOUR_MS
+	w.creatures._traveller(trader, w.content.get_def(trader.kind))
+	var horse_id := String(trader.job.get("horse", ""))
+	var horse := w.creatures.get_creature(horse_id)
+	if not check(horse != null, "the existing trader receives one horse"):
+		return
+	eq(w.inventory("trade|" + trader_id).count("base:plank"), 3, "the old cargo remains intact")
+	var horse_cell := horse.cell()
+	check(w.sync(), "the new relationship is saved")
+	w.close()
+	w = ServerWorld.open(_db, w.content)
+	w.chunk("surface", at.x >> 5, at.y >> 5)
+	w.chunk("surface", horse_cell.x >> 5, horse_cell.y >> 5)
+	trader = w.creatures.get_creature(trader_id)
+	eq(String(trader.job.get("horse", "")), horse_id, "reloading keeps the original horse id")
+	check(w.creatures.get_creature(horse_id) != null, "the same horse is restored")
+	eq(w.inventory("trade|" + trader_id).count("base:plank"), 3, "and the cargo is not duplicated")
+
+
+func test_caravan_delivers_when_it_reaches_the_end_of_the_road() -> void:
+	var s := w.generator.settlements
+	var district := s._district_of(0, s.home_plan()["centre"])
+	var roads := s.roads_of(0, district.x, district.y)
+	if not check(not roads.is_empty(), "a road exists"):
+		return
+	var road: Dictionary = roads[0]
+	var path: Array = road["path"]
+	if not check(path.size() > 8, "the road has enough cells"):
+		return
+	var start: Vector2i = path[-4]
+	var finish: Vector2i = path[-1]
+	for p: Vector2i in path.slice(path.size() - 8):
+		w.chunk("surface", p.x >> 5, p.y >> 5)
+	var trader := w.creatures._spawn("base:villager", "surface", start, {}, 7)
+	trader.route = {"road": road["key"], "i": path.size() - 4, "step": 1}
+	trader.job = {"profession": "base:trader", "name": "Савва", "purse": 0,
+		"from": String(road["from"]), "toward": String(road["to"])}
+	w.creatures._make_caravan(trader, "cart")
+	var stock := w.inventory("trade|" + trader.id)
+	stock.add("base:iron_sword", 2)
+	var before := w.economy.have(String(road["to"]), "base:iron_sword")
+	w.world_time = 12 * Daylight.HOUR_MS
+	w.creatures._traveller(trader, w.content.get_def(trader.kind))
+	eq(w.economy.have(String(road["to"]), "base:iron_sword"), before, "no sale before arrival")
+	eq(int(trader.route["step"]), 1, "still heading to the destination")
+	for i in 200:
+		w.creatures._move(trader)
+		if trader.target == Creature.NO_TARGET:
+			break
+	eq(trader.cell(), finish, "the wagon reaches the road's end")
+	w.creatures._traveller(trader, w.content.get_def(trader.kind))
+	eq(w.economy.have(String(road["to"]), "base:iron_sword"), before + 2, "the cargo arrives in the village store")
+	eq(int(trader.route["step"]), -1, "then the caravan turns back")
+
+
+func test_caravan_chooses_a_pack_horse_when_the_nearby_road_is_too_narrow() -> void:
+	var s := w.generator.settlements
+	var district := s._district_of(0, s.home_plan()["centre"])
+	var roads := s.roads_of(0, district.x, district.y)
+	if not check(not roads.is_empty(), "a road exists"):
+		return
+	var road: Dictionary = roads[0]
+	var path: Array = road["path"]
+	if not check(path.size() > 15, "the road has enough cells"):
+		return
+	for p: Vector2i in path.slice(0, 15):
+		for dy in range(-5, 6):
+			for dx in range(-5, 6):
+				var at := p + Vector2i(dx, dy)
+				var chunk := w.chunk("surface", at.x >> 5, at.y >> 5)
+				chunk.set_cell("ground", at.x & 31, at.y & 31, "base:grass")
+				chunk.set_cell("cover", at.x & 31, at.y & 31, "")
+				chunk.set_cell("structure", at.x & 31, at.y & 31, "")
+	var open := w.creatures._spawn("base:villager", "surface", path[0], {}, 7)
+	while open.rand(914) < .3:
+		open.seed += 1  # this trader would normally choose a cart
+	open.route = {"road": road["key"], "i": 0, "step": 1}
+	open.job = {"profession": "base:trader"}
+	w.creatures._make_caravan(open)
+	eq(open.job.get("caravan_type"), "cart", "a clear road permits the cart")
+	var blocked: Vector2i = path[4]
+	w.chunk("surface", blocked.x >> 5, blocked.y >> 5).set_cell("cover", blocked.x & 31, blocked.y & 31, "base:oak")
+	var narrow := w.creatures._spawn("base:villager", "surface", path[0], {}, open.seed)
+	narrow.route = {"road": road["key"], "i": 0, "step": 1}
+	narrow.job = {"profession": "base:trader"}
+	w.creatures._make_caravan(narrow)
+	eq(narrow.job.get("caravan_type"), "pack", "the same trader uses a pack horse when a tree blocks the cart")
+
+
+func test_caravan_travels_the_road_between_villages() -> void:
+	var s := w.generator.settlements
+	var district := s._district_of(0, s.home_plan()["centre"])
+	var roads := s.roads_of(0, district.x, district.y)
+	if not check(not roads.is_empty(), "a road exists"):
+		return
+	var road: Dictionary = roads[0]
+	var path: Array = road["path"]
+	if not check(path.size() > 8, "the road has enough cells"):
+		return
+	var chunks := {}
+	for p: Vector2i in path:
+		for dy in [-1, 0, 1]:
+			for dx in [-1, 0, 1]:
+				var key := Vector2i((p.x >> 5) + dx, (p.y >> 5) + dy)
+				if not chunks.has(key):
+					w.chunk("surface", key.x, key.y)
+					chunks[key] = true
+	# A tree has fallen across the road after it was generated. The caravan
+	# must get around it without driving the horse through the blocked cell.
+	var obstruction: Vector2i = path[path.size() / 2]
+	w.chunk("surface", obstruction.x >> 5, obstruction.y >> 5).set_cell("cover", obstruction.x & 31, obstruction.y & 31, "base:oak")
+	for variant: String in ["cart", "pack"]:
+		_check_caravan_route(road, path, obstruction, variant)
+
+
+func _check_caravan_route(road: Dictionary, path: Array, obstruction: Vector2i, variant: String) -> void:
+	var trader := w.creatures._spawn("base:villager", "surface", path[0], {}, 7)
+	trader.route = {"road": road["key"], "i": 0, "step": 1}
+	trader.job = {"profession": "base:trader", "name": "Савва", "purse": 0,
+		"from": String(road["from"]), "toward": String(road["to"])}
+	w.creatures._make_caravan(trader, variant)
+	w.inventory("trade|" + trader.id).add("base:iron_sword", 2)
+	var destination := String(road["to"])
+	var before := w.economy.have(destination, "base:iron_sword")
+	w.world_time = 12 * Daylight.HOUR_MS
+	var steps := 0
+	var crossed_tree := false
+	var horse := w.creatures.get_creature(String(trader.job["horse"]))
+	while int(trader.route["step"]) == 1 and steps < path.size() * 90:
+		if trader.target == Creature.NO_TARGET:
+			w.creatures._traveller(trader, w.content.get_def(trader.kind))
+		w.creatures._move(trader)
+		if obstruction in BodySize.cells(horse.pos, BodySize.of(w.content.get_def(horse.kind))["half"]):
+			crossed_tree = true
+		steps += 1
+	if int(trader.route["step"]) != -1:
+		print("CARAVAN_STUCK cell=", trader.cell(), " target=", trader.target, " state=", trader.state, " path=", trader.path,
+			" horse=", horse.cell(), " heading=", trader.job.get("caravan_heading"), " route_i=", trader.route.get("i"),
+			" road=", path.slice(maxi(0, int(trader.route.get("i", 0)) - 8), mini(path.size(), int(trader.route.get("i", 0)) + 8)))
+	check(int(trader.route["step"]) == -1, "%s went around the obstruction and travelled the whole road (%d cells, %d ticks, at %s, tree %s)" % [variant, path.size(), steps, trader.cell(), obstruction])
+	check(not crossed_tree, "the horse never entered the tree's cell")
+	eq(w.economy.have(destination, "base:iron_sword"), before + 2, "%s: the destination receives the cargo" % variant)
+	if int(trader.route["step"]) != -1:
+		return
+	steps = 0
+	while int(trader.route["step"]) == -1 and steps < path.size() * 90:
+		if trader.target == Creature.NO_TARGET:
+			w.creatures._traveller(trader, w.content.get_def(trader.kind))
+		w.creatures._move(trader)
+		if obstruction in BodySize.cells(horse.pos, BodySize.of(w.content.get_def(horse.kind))["half"]):
+			crossed_tree = true
+		steps += 1
+	check(int(trader.route["step"]) == 1, "%s returns to its starting village (%d ticks, at %s)" % [variant, steps, trader.cell()])
+	check(not crossed_tree, "%s avoids the tree on the return too" % variant)
+	eq(String(trader.job.get("from", "")), String(road["from"]), "the return delivery is processed at the starting village")
 
 
 ## ADR-0066: the land round a village adds to what it makes and needs — a

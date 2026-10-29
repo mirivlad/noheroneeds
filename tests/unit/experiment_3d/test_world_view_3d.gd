@@ -117,6 +117,49 @@ func test_lpc_paper_doll_and_equipment_are_reused() -> void:
 		actor.show_actor(Vector3(10, 2, 1), 0, .016, false)
 	check(actor.doll._walk > .1, "remote walk continues between snapshots")
 
+func test_caravan_renders_a_sitting_driver_horse_and_turning_wheels() -> void:
+	var looks := {"body_plan": "base:human_ro_m", "styles": {}, "worn": {}}
+	client.entities = {
+		"driver": {"kind": "creature", "creature": "base:villager", "appearance": looks,
+			"profession": "base:trader", "horse": "horse", "caravan_heading": [1, 0], "x": 0, "y": 0},
+		"horse": {"kind": "creature", "creature": "base:horse", "caravan_driver": "driver",
+			"x": 2 * Movement.UNIT, "y": 0}}
+	view._update_actors(1, .1)
+	var driver := view._actors["driver"] as BillboardActor3D
+	var horse := view._actors["horse"] as BillboardActor3D
+	check(driver.cart != null and driver.cart.visible, "the imported Blender cart is shown")
+	var wheels := driver.cart.find_children("Wheel*", "Node3D", true, false)
+	eq(wheels.size(), 4, "all four wheels are separate nodes")
+	eq((driver.doll as RoSprite)._once, "sit", "the driver sits on the bench")
+	check(horse.doll is LpcSprite, "the actual horse uses its LPC sprite")
+	client.entities["driver"]["x"] = Movement.UNIT
+	client.entities["horse"]["x"] = 3 * Movement.UNIT
+	view._update_actors(1, .1)
+	check(driver.wheel_angle > 0, "the wheels turn when the wagon moves")
+	check(absf((wheels[0] as Node3D).rotation.x) > .01, "the model's wheel rotates")
+	client.entities["driver"]["horse"] = ""
+	view._update_actors(1, .1)
+	check(not driver.cart.visible, "the cart is hidden when the horse is lost")
+	eq((driver.doll as RoSprite)._once, "", "the trader gets up")
+
+func test_pack_caravan_shows_panniers_and_a_walking_trader() -> void:
+	var looks := {"body_plan": "base:human_ro_m", "styles": {}, "worn": {}}
+	client.entities = {
+		"driver": {"kind": "creature", "creature": "base:villager", "appearance": looks,
+			"profession": "base:trader", "horse": "horse", "caravan_type": "pack", "caravan_heading": [1, 0], "x": 0, "y": 0},
+		"horse": {"kind": "creature", "creature": "base:horse", "caravan_driver": "driver", "pack": true,
+			"x": -roundi(CreatureSim.PACK_HORSE_DISTANCE * Movement.UNIT), "y": 0}}
+	view._update_actors(1, .1)
+	var driver := view._actors["driver"] as BillboardActor3D
+	var horse := view._actors["horse"] as BillboardActor3D
+	check(driver.cart == null, "a pack caravan has no wagon")
+	eq((driver.doll as RoSprite)._once, "", "the trader walks rather than sitting")
+	check(horse.packs != null and horse.packs.visible, "the horse carries the Blender panniers")
+	client.entities["horse"]["caravan_driver"] = ""
+	client.entities["horse"]["pack"] = false
+	view._update_actors(1, .1)
+	check(not horse.packs.visible, "the panniers disappear when the horse is released")
+
 func test_ray_uses_viewports_actual_world_and_content_cells_after_rotation() -> void:
 	var chunk := Chunk.new()
 	for y in Chunk.SIZE:

@@ -84,6 +84,13 @@ ANIMALS = {
         "alternates": ["spiders/LPC_Spiders/spider05.png", "spiders/LPC_Spiders/spider09.png"],
         "attack": "attack", "fps": 10,
     },
+    # LPC Horses: the second set of four rows is walk, the first is gallop.
+    "base:horse": {
+        "anims": lambda p: {"walk": grid(p, 128, 128, {"n": 4, "w": 5, "s": 6, "e": 7}, range(4)),
+                            "idle": grid(p, 128, 128, {"n": 4, "w": 5, "s": 6, "e": 7}, [0]),
+                            "run": grid(p, 128, 128, {"n": 0, "w": 1, "s": 2, "e": 3}, range(4))},
+        "sheet": "horse-brown.png", "attack": "walk", "fps": 6,
+    },
     # Farm animals (rows n, w, s, e): walking and grazing, the head down.
     "base:sheep": {
         "anims": lambda p: {"walk": grid(p, 128, 128, FARM_ROWS, range(4)), "idle": grid(p, 128, 128, FARM_ROWS, [0]),
@@ -152,6 +159,8 @@ ANIMALS = {
     },
 }
 CREDITS_ANIMALS = [
+    ("[LPC] Horses (лошадь)", "bluecarrot16", "CC-BY 3.0 / CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0 / OGA-BY 3.0",
+     "https://opengameart.org/content/lpc-horses"),
     ("[LPC] bears, deer, lions and more (олень, медведи, лиса, песец)", "tapatilorenzo", "CC-BY 4.0",
      "https://opengameart.org/content/lpc-bears-deer-lions-and-more"),
     ("Giant rat, mushroom walker (пещерная крыса, грибовик), из того же набора", "Sevarihk", "CC-BY 4.0",
@@ -193,6 +202,11 @@ def build(kind, spec, sheet):
     def frame(path, rect):
         if path not in sources:
             img = Image.open(SRC / path).convert("RGBA")
+            if path == "horse-brown.png":
+                # One stray opaque pixel lies at the bottom-left of the first
+                # south-facing walk frame. It is not part of the horse, but
+                # otherwise prevents the importer from aligning its feet.
+                img.putpixel((0, 6 * 128 + 127), (0, 0, 0, 0))
             sources[path] = turn_hue(img, spec["hue"]) if "hue" in spec else img
         x, y, w, h = rect
         return sources[path].crop((x, y, x + w, y + h))
@@ -264,13 +278,15 @@ def main():
         })
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     text = CREDITS.read_text(encoding="utf-8") if CREDITS.exists() else ""
+    ro = "\n<!-- ro -->" + text.split("<!-- ro -->", 1)[1] if "<!-- ro -->" in text else ""
     text = text.split(ANIMAL_CREDITS_START)[0].rstrip() + "\n\n"
     lines = [ANIMAL_CREDITS_START, "# Авторы графики зверей", "",
              "Звери и чудища — из наборов LPC на OpenGameArt, собраны в листы игры",
-             "`tools/art/import_lpc_animals.py` (кадры переложены, рисунок не менялся; поринг — перекрашенный слизень).", ""]
+             "`tools/art/import_lpc_animals.py` (кадры переложены; поринг — перекрашенный слизень,",
+             "у лошади удалён одиночный посторонний пиксель).", ""]
     for name, who, lic, url in CREDITS_ANIMALS:
         lines += ["## " + name, "", "- Авторы: " + who, "- Лицензии: " + lic, "- " + url, ""]
-    CREDITS.write_text(text + "\n".join(lines), encoding="utf-8")
+    CREDITS.write_text(text + "\n".join(lines) + ro, encoding="utf-8")
     print("%d animal visuals" % len(defs))
 
 

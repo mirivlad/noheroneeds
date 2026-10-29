@@ -33,6 +33,12 @@
       "fills": {"base:bucket": "base:milk_bucket"}, "fill_hours": 12
     },
     {
+      "id": "base:horse", "kind": "creature", "size": {"half": [0.6, 0.3], "height": 1.3}, "name": "Лошадь", "behavior": "prey",
+      "speed": 0.8, "run_speed": 1.6, "sight": 9, "dark_sight": 0.4, "hearing": 8,
+      "flee_distance": 5, "home_radius": 10, "think_ticks": 12, "memory_s": 30,
+      "health": 20, "drops": {"base:raw_meat": 4, "base:hide": 2}
+    },
+    {
       "id": "base:chicken", "kind": "creature", "size": {"half": [0.12, 0.1], "height": 0.3}, "name": "Курица", "behavior": "prey", "fauna_since": 3,
       "life": {"mature_hours": 48, "breed_hours": 36, "forage": ["base:grass", "base:grass_dead"], "food_cells": 128},
       "speed": 0.7, "run_speed": 1.2, "sight": 7, "dark_sight": 0.3, "hearing": 7,
@@ -46,6 +52,13 @@
       "speed": 0.55, "run_speed": 1.3, "sight": 10, "dark_sight": 0.3, "hearing": 8,
       "flee_distance": 0, "home_radius": 8, "think_ticks": 20, "memory_s": 60,
       "health": 15
+    },
+    {
+      "id": "base:caravan_guard", "kind": "creature", "name": "Охранник обоза", "behavior": "villager",
+      "body_plan": "base:human_ro_m", "speed": 0.8, "run_speed": 1.3, "sight": 10, "dark_sight": 0.3, "hearing": 8,
+      "flee_distance": 0, "home_radius": 8, "think_ticks": 10, "memory_s": 60,
+      "health": 20, "attack": {"kind": "melee", "damage": 4, "reach": 1.0, "arc": 90, "cooldown_ms": 1200},
+      "reaction": {"hurt": "fight", "kin": false}
     },
     {
       "id": "base:wolf", "kind": "creature", "size": {"half": [0.35, 0.2], "height": 0.5}, "name": "Волк", "many": "волки", "behavior": "predator",

@@ -60,6 +60,9 @@ var _entities := {}
 var _dirty_chunks := {}
 var _dirty_inventories := {}
 var _dirty_entities := {}
+## Entities and facts which must commit together with inventory operations.
+var _operation_entities := {}
+var _operation_meta := {}
 ## "actor|request_id" -> result, for requests processed in this session
 var _results := {}
 ## [actor, request_id, result] applied but not yet handed to the writer
@@ -705,6 +708,7 @@ func take_item(id: String, into: Inventory) -> Dictionary:
 func remove_entity(id: String, location: String, cell: Vector2i) -> void:
 	_entities.erase(id)
 	_dirty_entities.erase(id)
+	_operation_entities.erase(id)
 	_removed_items[id] = chunk_key(location, cell.x >> 5, cell.y >> 5)
 
 
@@ -920,6 +924,30 @@ func set_entity(id: String, location: String, x: int, y: int, kind: String, data
 	_dirty_entities[id] = true
 
 
+## Include a creature's current state in the same batch as a trade or death,
+## rather than allowing the independent position flush to write it first.
+func operation_creature(c: Creature) -> void:
+	creatures._save(c)
+	_operation_entities[c.id] = true
+
+
+func entity_operation_pending(id: String) -> bool:
+	return _operation_entities.has(id)
+
+
+## Facts changed by the operation must travel in that batch too (village
+## stores, chronicles, and any other facts already pending in this tick).
+func operation_facts() -> void:
+	for key: String in _pending_meta.keys():
+		_operation_meta[key] = _pending_meta[key]
+		_pending_meta.erase(key)
+
+
+func operation_fact(key: String, value: String) -> void:
+	_pending_meta.erase(key)
+	_operation_meta[key] = value
+
+
 func handle(actor: String, request: Dictionary) -> void:
 	var rid := rs(request, "request_id")
 	if rid == "":
@@ -948,12 +976,23 @@ func handle(actor: String, request: Dictionary) -> void:
 func commit_async(force := false) -> void:
 	if _pending.is_empty() and _dirty_chunks.is_empty() and _dirty_inventories.is_empty() \
 			and _dirty_characters.is_empty() and _dirty_items.is_empty() and _removed_items.is_empty() \
+			and _operation_entities.is_empty() and _operation_meta.is_empty() \
 			and levels.dirty.is_empty() and levels.removed.is_empty() \
 			and _prune_before < 0:
 		return
 	if not force and writer.queued_operations() >= max_batches_in_flight:
 		return
 	var b := StoreWriter.Batch.new()
+	for id: String in _operation_entities:
+		if not _entities.has(id):
+			continue
+		var e: Array = _entities[id]
+		b.entities.append([id, e[0], floori(float(e[1]) / Chunk.SIZE), floori(float(e[2]) / Chunk.SIZE), e[3], (e[4] as Dictionary).duplicate(true)])
+		_dirty_entities.erase(id)
+	_operation_entities.clear()
+	for key: String in _operation_meta:
+		b.meta.append([key, _operation_meta[key]])
+	_operation_meta.clear()
 	for key: String in _dirty_chunks:
 		var p := key.split("|")
 		b.chunks.append([p[0], int(p[1]), int(p[2]), (_chunks[key] as Chunk).snapshot()])
@@ -978,6 +1017,8 @@ func commit_async(force := false) -> void:
 	b.removed_entities = _removed_items.keys()
 	var touched: Array = _dirty_chunks.keys()
 	for e: Array in b.items:
+		touched.append(chunk_key(e[1], e[2], e[3]))
+	for e: Array in b.entities:
 		touched.append(chunk_key(e[1], e[2], e[3]))
 	touched.append_array(_removed_items.values())
 	_removed_items.clear()
@@ -1056,13 +1097,18 @@ var _lights_by_chunk := {}
 
 ## A world fact written with the next state batch (meta).
 func note_fact(key: String, value: String) -> void:
-	_pending_meta[key] = value
+	if _operation_meta.has(key):
+		_operation_meta[key] = value
+	else:
+		_pending_meta[key] = value
 
 
 ## A world fact as it is now: noted and not yet written, or as kept.
 func fact(key: String) -> String:
 	if _pending_meta.has(key):
 		return String(_pending_meta[key])
+	if _operation_meta.has(key):
+		return String(_operation_meta[key])
 	return store.read_meta(key) if store else ""
 
 
@@ -1198,6 +1244,8 @@ func flush_state(limit := -1) -> void:
 				"health": int(p.get("health", 0)), "deaths": int(p.get("deaths", 0)), "satiety": float(p.get("satiety", Needs.FULL)), "warmth": float(p.get("warmth", Needs.FULL)), "energy": float(p.get("energy", Needs.FULL))}])
 		_dirty_world_characters.erase(id)
 	for id: String in _dirty_entities.keys():
+		if _operation_entities.has(id):
+			continue
 		if limit >= 0 and b.entities.size() >= limit:
 			break
 		var e: Array = _entities[id]
@@ -1205,6 +1253,8 @@ func flush_state(limit := -1) -> void:
 		var cy := floori(float(e[2]) / Chunk.SIZE)
 		b.entities.append([id, e[0], cx, cy, e[3], (e[4] as Dictionary).duplicate(true)])
 		_dirty_entities.erase(id)
+	if b.entities.is_empty() and b.world_characters.is_empty() and b.meta.is_empty():
+		return
 	var batch_id := writer.submit(b)
 	for e: Array in b.entities:  # their chunks may unload only once this is on disk
 		_written_by[chunk_key(e[1], e[2], e[3])] = batch_id
@@ -3038,16 +3088,19 @@ func _trade(actor: String, r: Dictionary) -> Dictionary:
 			price += maxi(1, roundi(each * Wear.value(content, item, inv.state_of(item, from + i))))
 		if int(c.job.get("purse", 0)) < price:
 			return {"ok": false, "reason": "no_money_there"}
-		inv.take(item, n, from)
+		var sold := inv.take(item, n, from)
 		give(actor, COIN, price)
 		c.job["purse"] = int(c.job.get("purse", 0)) - price
 		if String(c.job.get("village", "")) != "":
 			economy.put(String(c.job["village"]), item, n)  # what it bought goes into the village's store
 		elif c.job.has("toward"):
-			stock.add(item, n)  # a trader carries it on (ADR-0067)
+			stock.add(item, n, sold)  # a trader carries the same copies on (ADR-0067)
 	c.changed()
 	_touch_inventory(actor)
 	_touch_inventory("trade|" + c.id)
+	if c.job.has("toward"):
+		operation_creature(c)
+		operation_facts()
 	return _goods(c, trade)
 
 

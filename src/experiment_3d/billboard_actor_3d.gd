@@ -17,6 +17,39 @@ var placed := false
 var animation_at := Vector2.ZERO
 var looks := {}
 var target := {}
+var cart: Node3D
+var cart_tried := false
+var packs: Node3D
+var packs_tried := false
+var wheel_angle := 0.0
+
+## The wagon is made in Blender; its front points along local -Z.
+func show_cart(on: bool) -> void:
+	if on and cart == null and not cart_tried:
+		cart_tried = true
+		var scene := load("res://assets/experiment_3d/caravan/cart.glb") as PackedScene
+		if scene:
+			cart = scene.instantiate() as Node3D
+			add_child(cart)
+	if cart:
+		cart.visible = on
+		if on:
+			cart.rotation.y = atan2(-facing.x, -facing.y)
+			for wheel: Node in cart.find_children("Wheel*", "Node3D", true, false):
+				(wheel as Node3D).rotation.x = wheel_angle
+
+func show_packs(on: bool) -> void:
+	if on and packs == null and not packs_tried:
+		packs_tried = true
+		var scene := load("res://assets/experiment_3d/caravan/packs.glb") as PackedScene
+		if scene:
+			packs = scene.instantiate() as Node3D
+			add_child(packs)
+	if packs:
+		packs.visible = on
+		if on:
+			packs.rotation.y = atan2(-facing.x, -facing.y)
+
 
 func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary, hit: Dictionary,
 		made: CharacterSprite = null) -> void:
@@ -64,6 +97,7 @@ func show_actor(at: Vector3, yaw: float, delta: float, exact: bool) -> void:
 	var horizontal := Vector2(position.x, position.z)
 	if placed and horizontal.distance_squared_to(previous) > .00001:
 		facing = (horizontal - previous).normalized()
+		wheel_angle += horizontal.distance_to(previous) / .39
 		animation_at += (horizontal - previous).rotated(-yaw) * WorldView.CELL
 	previous = horizontal
 	placed = true

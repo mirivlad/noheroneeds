@@ -256,3 +256,24 @@ python3 tools/experiment_3d/verify_assets.py
 Менять рост персонажа через `ModelLibrary3D` нельзя: это другой конвейер.
 Новые glTF требуют записи зависимостей, лицензии и хешей; смена модели мира
 не должна менять ID, симуляцию или сохранения без отдельного основания.
+
+### Караваны
+
+Собственные модели телеги и вьючных сумок создаёт Blender-скрипт; они не входят
+в `manifest.json` сторонних CC0-наборов. Файлы `.blend` — промежуточные,
+воспроизводимый источник — скрипт; игровые GLB находятся в
+`assets/experiment_3d/caravan/`. При сборке `build/caravan/.gdignore` не даёт
+Godot импортировать промежуточные `.blend`.
+
+```bash
+blender -b -P tools/art/build_caravan_cart.py -- build/caravan/cart.blend assets/experiment_3d/caravan/cart.glb
+python3 tools/experiment_3d/verify_assets.py
+```
+
+Скрипт сохраняет и `packs.blend`/`packs.glb`; телега содержит четыре отдельные
+вращающиеся детали `Wheel0`…`Wheel3`. Лошадь — LPC-атлас из
+`import_lpc_animals.py`. У исходного коричневого листа есть одиночный мусорный
+пиксель на краю первого южного кадра: импортёр удаляет его до выравнивания ног.
+Иначе лошадь кажется сдвинутой вверх и перекрывает телегу. Проверять положение
+в игре с направлениями `--caravan_debug=s`, `--caravan_debug=e` и вариантами
+`--caravan_debug=pack`, `--caravan_debug=pack_s` с отдельным `--profile`.

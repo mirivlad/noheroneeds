@@ -654,11 +654,21 @@ func _creature_cold(c: Creature) -> Dictionary:
 	if not c.job.is_empty():  # always told, empty too: a client keeps what it was told last
 		cold["profession"] = String(c.job.get("profession", ""))
 		cold["name"] = String(c.job.get("name", ""))
-		cold["held"] = c.held
+		cold["held"] = "base:iron_sword" if c.kind == "base:caravan_guard" and c.job.has("guard_driver") else c.held
 		cold["asleep"] = c.asleep
 		cold["face"] = [c.face.x, c.face.y]  # where it looks standing (the fire)
 		cold["say"] = c.say
 		cold["said"] = c.said
+	# Empty values must also be sent when a horse is unharnessed.
+	if c.kind == "base:horse":
+		cold["caravan_driver"] = String(c.job.get("caravan_driver", ""))
+		cold["pack"] = bool(c.job.get("pack", false))
+	if c.kind == "base:caravan_guard" and c.job.is_empty():
+		cold["held"] = ""
+	if c.job.get("profession", "") == "base:trader":
+		cold["horse"] = String(c.job.get("horse", ""))
+		cold["caravan_type"] = String(c.job.get("caravan_type", "cart"))
+		cold["caravan_heading"] = c.job.get("caravan_heading", [0, 1])
 	return cold
 
 

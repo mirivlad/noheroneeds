@@ -450,6 +450,83 @@
    ]
   },
   {
+   "id": "base:visual/horse",
+   "kind": "visual",
+   "for": "base:horse",
+   "mode": "character",
+   "format": "lpc",
+   "atlas": "art/lpc_animals/horse.png",
+   "anims": {
+    "idle": [
+     0,
+     0,
+     128,
+     1
+    ],
+    "walk": [
+     128,
+     0,
+     128,
+     4
+    ],
+    "run": [
+     640,
+     0,
+     128,
+     4
+    ]
+   },
+   "z": 10,
+   "rect": [
+    0,
+    0,
+    128,
+    128
+   ],
+   "origin": [
+    64,
+    127
+   ],
+   "pixel_scale": 0.5,
+   "rows": [
+    "n",
+    "w",
+    "s",
+    "e"
+   ],
+   "animations": {
+    "idle": {
+     "frames": [
+      0
+     ],
+     "fps": 3
+    },
+    "walk": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 6
+    },
+    "run": {
+     "frames": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fps": 9
+    }
+   },
+   "swings": {
+    "lunge": "walk"
+   },
+   "variants": 1,
+   "alternates": []
+  },
+  {
    "id": "base:visual/sheep",
    "kind": "visual",
    "for": "base:sheep",

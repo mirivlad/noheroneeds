@@ -151,6 +151,7 @@ func hurt(target: String, amount: int, attacker: String) -> void:
 		if at != NO_POS:
 			c.memory[who] = {"pos": Movement.cell_of(at), "time": world.world_time, "what": "attacker"}
 			world.creatures.kin_struck(c, who, Movement.cell_of(at))
+			world.creatures.caravan_attacked(c, who, at)
 		world.creatures.alarm(c)
 	if left > 0:
 		_set_health(target, left)
@@ -236,6 +237,17 @@ func _creature_dies(c: Creature, killer := "") -> void:
 	for e: Dictionary in c.stomach:
 		world.place_item(c.location, c.pos, String(e["item"]), int(e["count"]), "", 0, e.get("states", []))
 	c.stomach.clear()
+	if c.job.get("profession", "") == "base:trader":
+		# A caravan's stock is real inventory, not a second copy in the cart.
+		# Drop each stack with its states before deleting the trader.
+		var stock := world.inventory("trade|" + c.id)
+		for item: String in stock.stacks.keys():
+			var n := stock.count(item)
+			world.place_item(c.location, c.pos, item, n, "", 0, stock.take(item, n))
+		world.touch_inventory("trade|" + c.id)
+		var purse := int(c.job.get("purse", 0))
+		if purse > 0:
+			world.place_item(c.location, c.pos, "base:coin", purse)
 	swings.erase(c.id)
 	_hurt_at.erase(c.id)
 	world.creatures.remove(c.id)

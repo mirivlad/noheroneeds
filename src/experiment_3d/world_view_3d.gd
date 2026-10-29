@@ -971,6 +971,10 @@ func _update_actors(alpha: float, delta: float) -> void:
 		if face.size() == 2 and (int(face[0]) != 0 or int(face[1]) != 0) \
 				and Vector2(actor.position.x, actor.position.z).distance_to(Vector2(at.x, at.z)) < .05:
 			actor.facing = Vector2(int(face[0]), int(face[1])).normalized()
+		if String(e.get("horse", "")) != "":
+			var heading: Array = e.get("caravan_heading", [0, 1])
+			if heading.size() == 2:
+				actor.facing = Vector2(float(heading[0]), float(heading[1])).normalized()
 		actor.show_actor(at, yaw, delta, id == client.character_id)
 		# Interpolate XZ first, then sample the rendered triangle under the
 		# interpolated feet. Interpolating target Y cuts through convex hills.
@@ -996,7 +1000,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 				actor.lie(false)
 		_asleep[id] = asleep
 		# Sitting on the ground (RO's sit) till one gets up.
-		var sits := bool(e.get("sitting", false)) and not asleep
+		var sits: bool = (bool(e.get("sitting", false)) or (String(e.get("horse", "")) != "" and String(e.get("caravan_type", "cart")) == "cart")) and not asleep
 		if sits != bool(_sitting.get(id, false)):
 			actor.doll.react("sit", 1e6) if sits else actor.doll.react("")
 		_sitting[id] = sits
@@ -1022,6 +1026,29 @@ func _update_actors(alpha: float, delta: float) -> void:
 		if id != client.character_id and _swing_seen.has(id) and int(_swing_seen[id]) != blows:
 			actor.swing(Vector2.RIGHT.rotated((blows & 7) * PI / 4), swing_kind(held), yaw)
 		_swing_seen[id] = blows
+	# Arrange the wagon and driver after both actors have been updated,
+	# regardless of iteration order. The horse's position is server-authoritative.
+	for id: String in entities:
+		var e: Dictionary = entities[id]
+		var actor := _actors.get(id) as BillboardActor3D
+		if actor == null:
+			continue
+		var horse_id := String(e.get("horse", ""))
+		if e.get("profession", "") == "base:trader":
+			var in_cart: bool = horse_id != "" and String(e.get("caravan_type", "cart")) == "cart"
+			actor.show_cart(in_cart)
+			if in_cart:
+				actor.picture.position = Vector3(actor.facing.x * .59, .8, actor.facing.y * .59)
+			else:
+				actor.picture.position = Vector3.ZERO
+		var driver_id := String(e.get("caravan_driver", ""))
+		if driver_id != "":
+			var driver := _actors.get(driver_id) as BillboardActor3D
+			if driver:
+				actor.facing = driver.facing
+				actor.doll._face(actor.facing.rotated(-yaw))
+		if e.get("creature", "") == "base:horse":
+			actor.show_packs(bool(e.get("pack", false)))
 	for id: String in _actors.keys():
 		if not seen.has(id):
 			(_actors[id] as Node).queue_free()

@@ -2,6 +2,7 @@
 """Check the vendored source roster, CC0 records and all glTF dependencies."""
 import hashlib
 import json
+import struct
 from pathlib import Path
 from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,4 +26,18 @@ catalog = json.loads((ROOT/'assets/experiment_3d/catalog.json').read_text())
 used = {entry['path'] for entry in catalog.values()}
 models = {str(Path(name).relative_to('assets/experiment_3d')) for name in manifest['files'] if name.endswith('.gltf')}
 assert used == models, (used-models, models-used)
+for name in ('cart', 'packs'):
+ path = ROOT/'assets/experiment_3d/caravan'/f'{name}.glb'
+ assert not path.is_symlink() and path.is_file(), str(path)
+ data = path.read_bytes()
+ magic, version, length = struct.unpack_from('<4sII', data, 0)
+ assert magic == b'glTF' and version == 2 and length == len(data), str(path)
+ json_size, chunk_type = struct.unpack_from('<I4s', data, 12)
+ assert chunk_type == b'JSON', str(path)
+ doc = json.loads(data[20:20 + json_size])
+ for resource in doc.get('buffers', []) + doc.get('images', []):
+  assert not resource.get('uri'), (str(path), resource.get('uri'))
+ if name == 'cart':
+  assert {f'Wheel{i}' for i in range(4)} <= {n.get('name') for n in doc.get('nodes', [])}
 print(f'ASSETS_VERIFIED: {len(manifest["packs"])} CC0 packs, {len(models)} used models, {len(manifest["files"])} source files')
+print('CARAVAN_MODELS_VERIFIED: cart and packs, embedded dependencies, four wheels')

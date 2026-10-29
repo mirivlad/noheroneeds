@@ -23,6 +23,25 @@ func _init(screen: GameScreen) -> void:
 
 
 func step(delta: float) -> void:
+	if g._opts.has("caravan_debug") and g.game and g._frames == 60:
+		# A reproducible in-game view of a trader and horse, without changing
+		# a player's world: use with a separate --profile_dir and --screenshot.
+		var w := g.game.world
+		var me := Movement.cell_of(g.client.position)
+		var at := me + Vector2i(-2, -3)
+		for y in range(at.y - 4, at.y + 5):
+			for x in range(at.x - 4, at.x + 5):
+				var chunk := w.chunk("surface", x >> 5, y >> 5)
+				chunk.set_cell("cover", x & 31, y & 31, "")
+				w._changed(ServerWorld.chunk_key("surface", x >> 5, y >> 5))
+		var r := RandomNumberGenerator.new()
+		r.seed = 9
+		var trader := w.creatures._spawn("base:villager", "surface", at, CreatureSim.villager_looks(r), 9)
+		trader.job = {"profession": "base:trader", "name": "Савва", "purse": 80}
+		trader.route = {"road": [], "step": 1}
+		trader.face = Vector2i.RIGHT if g._opts["caravan_debug"] in ["e", "pack"] else Vector2i.DOWN
+		w.creatures._make_caravan(trader, "pack" if g._opts["caravan_debug"] in ["pack", "pack_s"] else "cart")
+		g.view.zoom = 12
 	if g._opts.has("shoot_debug") and g.game:  # dev: a wolf six cells east, shot at; the arrow's flight printed
 		var w := g.game.world
 		var me := Movement.cell_of(g.client.position)

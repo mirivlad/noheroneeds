@@ -171,3 +171,13 @@ func test_night_camp_uses_fuel_and_only_removes_its_own_fire() -> void:
 func world_replace_fire(chunk: Chunk, at: Vector2i) -> void:
 	chunk.set_cell("structure", posmod(at.x, 32), posmod(at.y, 32), "base:chest")
 	chunk.set_props(posmod(at.x, 32), posmod(at.y, 32), {"owner": actor, "store": "players"})
+
+
+func test_caravan_already_at_a_village_does_not_pitch_a_new_roadside_fire() -> void:
+	var village := w.generator.settlements.home_plan()
+	trader.pos = (village["fire"] as Vector2i) * 256 + Vector2i(128, 128)
+	w.creatures._make_caravan(trader, "cart")
+	w.caravans.rest(trader)
+	check(trader.asleep, "the traveller rests in the village")
+	check(not trader.job.has("campfire"), "temporary camps belong to journeys away from villages")
+	eq(w.inventory("supplies|" + trader.id).count("base:log"), 4, "no fuel spent pitching a camp inside a village")

@@ -275,9 +275,17 @@ func player_attacked(actor: String, attacker: String) -> void:
 func rest(c: Creature) -> void:
 	if not c.job.has("camp_spot"):
 		var spot := c.cell()
+		var in_village := false
+		for village: String in [String(c.job.get("from", "")), String(c.job.get("toward", ""))]:
+			var plan := world.generator.settlements.plan_by_id(village)
+			if not plan.is_empty() and (plan["bounds"] as Rect2i).grow(6).has_point(c.cell()):
+				in_village = true
+		c.job["rest_in_village"] = in_village
 		var heading: Array = c.job.get("caravan_heading", [0, 1])
 		var direction := Vector2i(int(heading[0]), int(heading[1]))
 		for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			if in_village:
+				break
 			var candidate := c.cell() + d * 4
 			var at := candidate * Movement.UNIT + Vector2i(128, 128)
 			if world.creatures._free(c.location, candidate) and world.creatures._caravan_cart_fits(c, at, direction) \
@@ -291,7 +299,7 @@ func rest(c: Creature) -> void:
 	if c.cell().distance_to(spot) > 1:
 		world.bandits.walk_to(c, spot, "camp")
 		return
-	if not c.job.has("campfire"):
+	if not c.job.has("campfire") and not c.job.get("rest_in_village", false):
 		var fuel := world.inventory("supplies|" + c.id)
 		for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var at := c.cell() + d * 3
@@ -337,5 +345,6 @@ func break_camp(c: Creature) -> void:
 			world._changed(ServerWorld.chunk_key(c.location, x >> 5, y >> 5))
 	c.job.erase("campfire")
 	c.job.erase("camp_spot")
+	c.job.erase("rest_in_village")
 	world.creatures._dress(c, "", false)
 	world.operation_creature(c)

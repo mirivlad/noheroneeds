@@ -70,9 +70,12 @@ func test_a_day_at_work_an_evening_by_the_fire_a_night_in_bed() -> void:
 			at_work += 1
 			check(c.held == String(_content.get_def(String(c.job["profession"])).get("holds", "")), "its tool in its hands")
 	check(at_work >= _dwellers().size() - 1, "at work by mid-morning: %d of %d" % [at_work, _dwellers().size()])
-	_live(19.5, 1600)
+	# Individual shifts end as late as 19:36, and the earliest bedtime is
+	# 20:00. At 19:45 everyone is actually in their evening phase.
+	_live(19.75, 1600)
 	var by_fire := 0
 	for c: Creature in _dwellers():
+		eq(w.creatures._phase(c), "evening", "after every shift, before any bedtime")
 		if Vector2(c.cell()).distance_to(Vector2(plan["fire"])) <= 4.0:
 			by_fire += 1
 			eq(c.held, "", "nothing in the hands of an evening")

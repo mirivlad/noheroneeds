@@ -9,6 +9,7 @@ extends PanelContainer
 signal promise(creature: String)
 signal report(creature: String)
 signal trade(creature: String)
+signal escort(creature: String)
 ## Learn a recipe from the dweller (ADR-0047).
 signal learn(creature: String, recipe: String)
 
@@ -76,7 +77,11 @@ func setup(registry: ContentRegistry) -> void:
 	var row := HBoxContainer.new()
 	box.add_child(row)
 	_take.text = "Взяться"
-	_take.pressed.connect(func() -> void: promise.emit(creature))
+	_take.pressed.connect(func() -> void:
+		if talk.has("escort"):
+			escort.emit(creature)
+		else:
+			promise.emit(creature))
 	_done.text = "Готово"
 	_done.pressed.connect(func() -> void: report.emit(creature))
 	_trade.text = "Торговать"
@@ -169,9 +174,26 @@ func open_for(r: Dictionary, looks := {}) -> void:
 		_goal.visible = true
 		_goal.text = "Обещает: %d монет." % int(req["reward"])
 	_take.visible = state == "offered"
+	_take.disabled = false
+	_take.text = "Взяться"
 	_done.visible = state in ["doing", "ready"]
 	_done.disabled = state != "ready"
 	_done.text = ("Отдать" if String(req.get("kind", "")) != "hunt" else "Сделано") if state == "ready" else "Ещё не сделано"
+	if r.has("escort"):
+		var terms: Dictionary = r["escort"]
+		var active: bool = terms.get("state", "") == "active"
+		_goal.visible = true
+		_goal.text = "Охрана до деревни %s: %d монет за игровые сутки.\nОплачивается сопровождение и ночлег рядом с караваном; отсутствие не оплачивается." % [
+			terms.get("destination", ""), int(terms.get("rate", 0))]
+		if active:
+			_goal.text += "\nДоговор с %s действует. Выплачено: %d монет. Подробности и отказ — в журнале (L)." % [
+				terms.get("name", "торговцем"), int(terms.get("paid", 0))]
+		elif not terms.get("can_hire", false):
+			_goal.text += "\nСейчас у торговца не хватает денег на оплату."
+		_take.visible = not active
+		_take.disabled = not terms.get("can_hire", false)
+		_take.text = "Наняться в охрану"
+		_done.visible = false
 	_trade.visible = not content.get_def(String(r.get("profession", ""))).get("trade", {}).is_empty() and not r.get("grudge", false)
 	show_lessons(r.get("teaches", []))
 	var standing := int(r.get("standing", 0))

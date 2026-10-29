@@ -169,6 +169,7 @@ var _build_view: ClientBuildView
 
 ## What the server's refusals mean, for people.
 const REASONS := {
+	"escort_active": "у вас уже есть договор охраны — условия и завершение в журнале",
 	"young_animal": "детёныш ещё не вырос", "hungry_animal": "сначала накормите животное",
 	"occupied": "место занято", "blocked": "мешает вода, стена или дерево", "someone_there": "там кто-то стоит",
 	"materials": "не хватает материалов", "too_far": "слишком далеко", "no_floor": "здесь нет пола",
@@ -1034,6 +1035,8 @@ func _build_tools(layer: CanvasLayer) -> void:
 	talk_panel.setup(content)
 	talk_panel.promise.connect(func(who: String) -> void:
 		_talk_rids[client.request({"type": "promise", "creature": who})] = who)
+	talk_panel.escort.connect(func(who: String) -> void:
+		_talk_rids[client.request({"type": "escort_hire", "creature": who})] = who)
 	talk_panel.report.connect(func(who: String) -> void:
 		_talk_rids[client.request({"type": "report", "creature": who})] = who)
 	talk_panel.learn.connect(func(who: String, recipe: String) -> void:
@@ -1045,6 +1048,8 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_trade_rids[client.request({"type": "trade_look", "creature": who})] = who)
 	layer.add_child(talk_panel)
 	journal_panel.setup()
+	journal_panel.leave_escort.connect(func() -> void:
+		_journal_rids[client.request({"type": "escort_leave"})] = true)
 	layer.add_child(journal_panel)
 	pin_panel.setup()
 	pin_panel.entered.connect(func(c: Vector2i, pin: String, new_code: bool) -> void:

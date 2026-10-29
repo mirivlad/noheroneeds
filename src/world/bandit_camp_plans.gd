@@ -125,9 +125,18 @@ func _layout(id: String, centre: Vector2i, road: Array, raid_at: Vector2i, water
 	if rng.randf() < .5:
 		shelters.append(centre + Vector2i(4, 4))
 	for at: Vector2i in shelters:
+		# Real wooden sides and back; the south entrance and central sleeping
+		# aisle stay passable. No invisible footprint that outlives a broken hut.
+		for y in range(-2, 3):
+			for x in range(-1, 2):
+				var wall := absi(x) == 1 or y == -2
+				cells[at + Vector2i(x, y)] = {"structure": "base:wood_wall" if wall else "", "cover": "", "props": {"camp": id}}
+		for y in range(3, 6):
+			for x in range(-1, 2):
+				cells[at + Vector2i(x, y)] = {"structure": "", "cover": ""}
 		cells[at] = {"structure": "base:bandit_shelter", "cover": "", "props": {"camp": id, "facing": "s"}}
 	var chest := centre + Vector2i(2, -1)
 	cells[chest] = {"structure": "base:chest", "cover": "", "props": {"camp": id, "store": "camp|" + id}}
 	cells[centre] = {"structure": "base:campfire", "cover": "", "props": {"camp": id}}
 	return {"id": id, "centre": centre, "bounds": bounds, "cells": cells, "shelters": shelters,
-		"chest": chest, "water": water, "road": road, "raid_at": raid_at, "population": rng.randi_range(6, 10)}
+		"chest": chest, "water": water, "road": road, "raid_at": raid_at, "population": rng.randi_range(6, mini(10, shelters.size() * 3))}

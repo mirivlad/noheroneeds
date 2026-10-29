@@ -40,30 +40,33 @@ def pole(name, start, end, radius, mat):
     return obj
 
 
-# A-frame with an open entrance. Sleeping space is underneath, not a solid cube.
-for y in (-1.0, 1.0):
-    for x in (-1.05, 1.05):
-        pole("forked support", (x, y, 0), (0, y, 1.8), .06, bark)
-pole("ridge", (0, -1.16, 1.8), (0, 1.16, 1.8), .075, bark)
+# Raised thatch on a rough timber shack. Its bottom edge clears a standing
+# RO human; normal game wood walls supply the physical sides/back. The
+# five-cell length accommodates three sleeping places along a central aisle.
+for y in (-2.35, 2.35):
+    for x in (-1.5, 1.5):
+        pole("upright", (x, y, 0), (x, y, 2.0), .065, bark)
+        pole("rafter", (x, y, 2.0), (0, y, 2.9), .06, bark)
+pole("ridge", (0, -2.5, 2.9), (0, 2.5, 2.9), .075, bark)
 for side in (-1, 1):
     for row in range(7):
         t = (row + .5) / 7
-        x, z = side * (1.12 * t), 1.82 * (1 - t)
-        pole("thatch lath", (x, -1.08, z), (x, 1.08, z), .035, bark)
+        x, z = side * (1.6 * t), 2.0 + .9 * (1 - t)
+        pole("thatch lath", (x, -2.45, z), (x, 2.45, z), .035, bark)
         # Separate thick strips make the thatch silhouette rough and readable.
-        for col in range(12):
-            y = -1.1 + col * .2
+        for col in range(25):
+            y = -2.4 + col * .2
             bpy.ops.mesh.primitive_cube_add(size=1, location=(x, y, z + .045))
             obj = bpy.context.object
             obj.name = "bundle of reeds"
-            obj.scale = (.28, .23, .09 + .012 * ((col + row) % 3))
-            obj.rotation_euler.y = side * math.atan2(1.82, 1.12)
+            obj.scale = (.34, .23, .09 + .012 * ((col + row) % 3))
+            obj.rotation_euler.y = side * math.atan2(.9, 1.6)
             obj.data.materials.append(straw[(col + row) % len(straw)])
-for x in (-.65, 0, .65):
-    pole("back woven branches", (x, 1.02, .05), (x * .1, 1.02, 1.6), .035, bark)
-for y in (-.8, .8):
+for x in (-1.0, 0, 1.0):
+    pole("back woven branches", (x, 2.4, 2), (x * .1, 2.4, 2.8), .035, bark)
+for y in (-2.2, 2.2):
     for x in (-.6, .6):
-        pole("ridge binding", (x * .1, y - .08, 1.66), (-x * .1, y + .08, 1.86), .025, cord)
+        pole("ridge binding", (x * .1, y - .08, 2.76), (-x * .1, y + .08, 2.96), .025, cord)
 
 bpy.ops.object.select_all(action="SELECT")
 bpy.context.view_layer.objects.active = bpy.context.selected_objects[0]

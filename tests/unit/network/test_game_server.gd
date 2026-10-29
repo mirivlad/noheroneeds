@@ -75,6 +75,43 @@ func test_two_players_join_and_see_each_other() -> void:
 	check(a.chunks.size() >= 9, "ground around arrived: %d chunks" % a.chunks.size())
 
 
+func test_bandit_colours_equipment_and_escort_contract_reach_two_clients() -> void:
+	var a := _client("owner", _character("Аня"))
+	var b := _client("other", _character("Боря"))
+	_run(35, [a, b])
+	var near := Movement.cell_of(_server_pos(a))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 13
+	var looks := CreatureSim.villager_looks(rng)
+	looks["colors"]["shirt"] = Bandits.SHIRT
+	var bandit := world.creatures._spawn("base:bandit", "surface", near + Vector2i(5, 0), looks, 7)
+	# An inactive fixture camp keeps this protocol test separate from combat.
+	bandit.job = {"camp": "network-fixture", "name": "Разбойник"}
+	world.combat.equip_creature(bandit, "base:bow")
+	var trader := world.creatures._spawn("base:villager", "surface", near + Vector2i(1, 0), CreatureSim.villager_looks(rng), 8)
+	var home := String(world.generator.settlements.home_plan()["id"])
+	trader.job = {"profession": "base:trader", "name": "Гордей", "purse": 500, "from": home, "toward": home}
+	trader.route = {"road": [], "step": 1}
+	world.caravans.hire(trader, 30)
+	_run(35, [a, b])
+	for client: GameClient in [a, b]:
+		var seen: Dictionary = client.entities.get(bandit.id, {})
+		eq(seen.get("appearance", {}).get("colors", {}).get("shirt"), Bandits.SHIRT, "red shirt reaches both observers")
+		eq(seen.get("held"), "base:bow", "the actual weapon, not a fixed sword")
+		for id: String in world.caravans.guards(trader):
+			var guard: Dictionary = client.entities.get(id, {})
+			eq(guard.get("appearance", {}).get("worn", {}).get("headwear"), "base:iron_helmet")
+	var hired := a.request({"type": "escort_hire", "creature": trader.id})
+	_run(35, [a, b])
+	check(a.results.get(hired, {}).get("ok", false), "hire through the actual request/ack protocol")
+	var journal := a.request({"type": "journal"})
+	_run(30, [a, b])
+	eq(a.results.get(journal, {}).get("escorts", [{}])[0].get("state"), "active")
+	world.combat.hurt(bandit.id, 1000, "")
+	_run(35, [a, b])
+	check(not a.entities.has(bandit.id) and not b.entities.has(bandit.id), "both clients see the same death")
+
+
 func test_animal_growth_and_hunger_reach_the_client() -> void:
 	var a := _client("owner", _character("Аня"))
 	_run(30, [a])

@@ -178,6 +178,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.chronicles = Chronicles.new(world)
 	world.economy = VillageEconomy.new(world)
 	world.bandits = Bandits.new(world)
+	world.caravans = Caravans.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	world.weather_seed = absi(hash([world.world_seed, "weather"]))
 	var saved_time := s.read_meta("time")
@@ -264,6 +265,7 @@ func close() -> void:
 	chronicles.world = null
 	economy.world = null
 	bandits.world = null
+	caravans.world = null
 	knowledge.world = null
 	boats.world = null
 	growth.world = null
@@ -283,6 +285,7 @@ func abandon() -> void:
 	chronicles.world = null
 	economy.world = null
 	bandits.world = null
+	caravans.world = null
 	knowledge.world = null
 	boats.world = null
 	growth.world = null
@@ -1093,6 +1096,7 @@ var chronicles: Chronicles
 ## Villages' stores: what they make, need and fetch from each other (ADR-0066).
 var economy: VillageEconomy
 var bandits: Bandits
+var caravans: Caravans
 ## World facts to write with the next state batch (set_meta).
 var _pending_meta := {}
 ## Light sources by chunk, worked out when first asked, forgotten on change.
@@ -1383,6 +1387,20 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 			return _talk(actor, r, rs(r, "type"))
 		"journal":
 			return chronicles.journal(actor) if present.has(actor) else {"ok": false, "reason": "not_here"}
+		"escort_hire":
+			var found := _trader(actor, r)
+			if found[0] == null:
+				return {"ok": false, "reason": found[1]}
+			var trader: Creature = found[0]
+			if not trader.job.has("toward") or trader.memory.get(actor, {}).get("what") == "attacker":
+				return {"ok": false, "reason": "not_now"}
+			var hired := caravans.hire_player(actor, trader)
+			return _trader_talk(actor, trader) if hired.get("ok", false) else hired
+		"escort_leave":
+			if not present.has(actor):
+				return {"ok": false, "reason": "not_here"}
+			caravans.finish(actor, "left")
+			return chronicles.journal(actor)
 		"places":
 			return _places(actor)
 		"trade_look":
@@ -2105,7 +2123,7 @@ func _gather(actor: String, r: Dictionary) -> Dictionary:
 ## "chance" of a catch, better at dawn and dusk, less where much was taken
 ## lately (its "stock", back one every "restock_hours"); a catch is one of
 ## "pick" by weight. The ground stays; what was taken is in its props.
-func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dictionary, skill := 1.0) -> Dictionary:
+func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dictionary, skill := 1.0, into := "") -> Dictionary:
 	var props := _layer_props(c, "ground", at[3], at[4]).duplicate()
 	var taken := maxf(0.0, float(props.get("taken", 0.0))
 		- float(world_time - int(props.get("at", world_time))) / (float(g["restock_hours"]) * Daylight.HOUR_MS))
@@ -2131,7 +2149,11 @@ func _gather_by_luck(actor: String, c: Chunk, at: Array, thing: String, g: Dicti
 	props["at"] = world_time
 	_set_layer_props(c, "ground", at[3], at[4], props)
 	_changed(chunk_key(at[0], at[1], at[2]))
-	give(actor, got, 1)
+	if into == "":
+		give(actor, got, 1)
+	else:
+		inventory(into).add(got, 1)
+		touch_inventory(into)
 	return {"ok": true, "thing": thing, "bite": true, "drops": {got: 1}}
 
 
@@ -2874,7 +2896,7 @@ func _trader_talk(actor: String, c: Creature) -> Dictionary:
 		else "Иду порожним — на месте возьму товар.")
 	return {"ok": true, "creature": c.id, "trader": true, "name": String(c.job.get("name", "Торговец")),
 		"profession": "base:trader", "village": toward, "says": says, "short": economy.short(String(c.job.get("toward", ""))),
-		"chronicle": [], "teaches": []}
+		"chronicle": [], "teaches": [], "escort": caravans.offer(actor, c)}
 
 
 ## A trader's trade (ADR-0067): it sells its load a quarter dearer than where

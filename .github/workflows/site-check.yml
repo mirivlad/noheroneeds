@@ -1,18 +1,65 @@
 name: Website checks
 on:
   push:
-    branches: [feat/game-site-wiki]
-    paths: ["site/**", ".github/workflows/site-check.yml"]
   pull_request:
-    paths: ["site/**", ".github/workflows/site-check.yml"]
+  workflow_call:
+    inputs:
+      release_version:
+        type: string
+        default: ''
 permissions:
   contents: read
 jobs:
-  site:
+  documentation:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Validate website data and links
-        run: python3 -m unittest discover -s site/tests -v
-      - name: Check browser JavaScript syntax
-        run: node --check site/assets/site.js
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Verify published release history
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 tools/site/sync_releases.py
+      - name: Documentation and release preflight
+        shell: bash
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
+        run: |
+          if [[ ! "$BASE_REF" =~ ^[0-9a-f]{40}$ || "$BASE_REF" == 0000000000000000000000000000000000000000 ]]; then
+            BASE_REF=$(git merge-base origin/main HEAD)
+          fi
+          args=(--base "$BASE_REF" --published build/published-releases.json)
+          if [[ -n "$RELEASE_VERSION" ]]; then args+=(--release "v${RELEASE_VERSION#v}" --unpublished); fi
+          python3 tools/site/check.py "${args[@]}"
+      - name: Generator, policy and link tests
+        run: |
+          python3 -m pip install -r tools/site/requirements.txt
+          python3 -m unittest discover -s tools/site/tests -v
+      - name: Verify the real published snapshot without deploying it
+        run: python3 tools/site/publish.py --out build/published-site
+      - name: Browser checks
+        run: |
+          npm ci --prefix site
+          cd site
+          npx playwright install --with-deps chromium
+          npm run check
+          npm test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wiki-preview-${{ github.run_id }}-${{ github.job }}
+          path: |
+            build/site/
+            build/published-site/
+            site/test-results/
+            site/playwright-report/

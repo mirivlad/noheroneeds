@@ -1,0 +1,99 @@
+{
+  "releases": [
+    {
+      "published_at": "2026-10-21T13:26:53Z",
+      "tag": "v0.1.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.1.0"
+    },
+    {
+      "published_at": "2026-10-21T13:39:30Z",
+      "tag": "v0.2.1",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.2.1"
+    },
+    {
+      "published_at": "2026-10-21T13:57:41Z",
+      "tag": "v0.3.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.3.0"
+    },
+    {
+      "published_at": "2026-10-21T19:15:20Z",
+      "tag": "v0.4.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.4.0"
+    },
+    {
+      "published_at": "2026-10-21T19:45:27Z",
+      "tag": "v0.5.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.5.0"
+    },
+    {
+      "published_at": "2026-10-21T20:03:10Z",
+      "tag": "v0.6.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.6.0"
+    },
+    {
+      "published_at": "2026-10-21T20:16:59Z",
+      "tag": "v0.7.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.7.0"
+    },
+    {
+      "published_at": "2026-10-21T20:24:03Z",
+      "tag": "v0.8.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.8.0"
+    },
+    {
+      "published_at": "2026-10-21T21:02:44Z",
+      "tag": "v0.9.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.9.0"
+    },
+    {
+      "published_at": "2026-10-21T23:27:42Z",
+      "tag": "v0.11.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.11.0"
+    },
+    {
+      "published_at": "2026-10-25T01:43:56Z",
+      "tag": "v0.12.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.12.0"
+    },
+    {
+      "published_at": "2026-10-25T02:18:03Z",
+      "tag": "v0.12.1",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.12.1"
+    },
+    {
+      "published_at": "2026-10-28T13:52:37Z",
+      "tag": "v0.13.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.13.0"
+    },
+    {
+      "published_at": "2026-10-28T14:54:33Z",
+      "tag": "v0.14.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.14.0"
+    },
+    {
+      "published_at": "2026-10-28T15:37:42Z",
+      "tag": "v0.14.1",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.14.1"
+    },
+    {
+      "published_at": "2026-10-28T21:16:33Z",
+      "tag": "v0.14.2",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.14.2"
+    },
+    {
+      "published_at": "2026-10-29T06:51:41Z",
+      "tag": "v0.15.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.15.0"
+    },
+    {
+      "published_at": "2026-10-29T12:29:36Z",
+      "tag": "v0.16.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.16.0"
+    },
+    {
+      "published_at": "2026-10-30T03:38:02Z",
+      "tag": "v0.17.0",
+      "url": "https://github.com/mirivlad/noheroneeds/releases/tag/v0.17.0"
+    }
+  ]
+}

@@ -47,3 +47,40 @@ func test_join_move_and_build_over_enet() -> void:
 
 func _pos(world: ServerWorld, client: GameClient) -> Vector2i:
 	return world.present[client.character_id]["pos"] if world.present.has(client.character_id) else Vector2i.ZERO
+
+
+func test_huge_plan_is_transferred_over_enet() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var plan := WorldPlan.generate(431, "huge", "cold")
+	var world := ServerWorld.open(tmp_dir().path_join("world.db"), content, {"world_plan": plan.to_dict()})
+	var st := ENetTransport.new()
+	var port := 0
+	for p in range(41000, 41050):
+		if st.start_server(p, 8) == OK:
+			port = p
+			break
+	if not check(port != 0, "a free port"):
+		world.close()
+		return
+	var keys := ProjectSettings.globalize_path("user://test_keys/")
+	var server := GameServer.new(world, st, PlayerIdentity.load_or_create(keys + "server"))
+	var c := PortableCharacter.create("Аня", "base:human_m")
+	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
+	var owner := PlayerIdentity.load_or_create(keys + "owner")
+	var ct := ENetTransport.new()
+	ct.start_client("127.0.0.1", port)
+	var client := GameClient.new(ct, owner, CharacterFile.export_signed(c, owner, content), content)
+	var deadline := Time.get_ticks_msec() + 15000
+	while Time.get_ticks_msec() < deadline and client.state != "playing":
+		server.step()
+		client.step()
+		OS.delay_msec(5)
+	eq(client.state, "playing", client.reject_reason)
+	if client.geography is PlannedGeography:
+		eq((client.geography as PlannedGeography).plan.to_dict(), plan.to_dict(), "the full saved plan arrives over ENet")
+	else:
+		check(false, "planned geography arrived")
+	ct.close()
+	server.shutdown()
+	st.close()
+	world.close()

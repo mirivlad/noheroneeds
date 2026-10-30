@@ -155,7 +155,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		var supplied: Variant = options.get("world_plan")
 		var new_plan: WorldPlan = WorldPlan.from_dict(supplied) if supplied is Dictionary else null
 		if supplied == null and bool(options.get("require_planned", false)):
-			new_plan = WorldPlan.generate(int(options.get("seed", randi())), "single_continent", "temperate")
+			new_plan = WorldPlan.generate(int(options.get("seed", randi())), "single_continent", "temperate", registry)
 		if supplied != null and new_plan == null:
 			open_error = "неверный глобальный план мира"
 			s.close()

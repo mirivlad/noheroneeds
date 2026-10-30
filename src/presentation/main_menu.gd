@@ -203,7 +203,7 @@ func show_world_form(mode: String) -> void:
 		var seed_number := WorldLibrary.seed_of({"seed": seed_edit.text})
 		var presets := ["single_continent", "small", "medium", "large", "huge"]
 		var climates := ["hot", "temperate", "cold"]
-		state["plan"] = WorldPlan.generate(seed_number, presets[size_pick.selected], climates[climate_pick.selected])
+		state["plan"] = WorldPlan.generate(seed_number, presets[size_pick.selected], climates[climate_pick.selected], content)
 		state["valid"] = state["plan"] != null
 		create_button.disabled = not state["valid"]
 		if state["valid"]:

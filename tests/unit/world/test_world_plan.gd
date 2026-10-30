@@ -227,3 +227,23 @@ func test_climate_changes_generated_biomes_and_vegetation() -> void:
 	check(cold_snow > hot_snow, "cold climate increases snowy tundra")
 	check(hot_desert > cold_desert, "hot climate increases dry biomes")
 	check(content.get_def("base:tundra")["cover_density"] != content.get_def("base:steppe")["cover_density"], "these biomes carry different vegetation")
+
+
+func test_preview_colors_are_the_stored_biomes_and_water() -> void:
+	var plan := WorldPlan.generate(19, "small", "cold")
+	var image := WorldPreview.map_image(plan)
+	var land_seen := false
+	var water_seen := false
+	for k in plan.size.x * plan.size.y:
+		var p := Vector2i(k % plan.size.x, k / plan.size.x)
+		if plan.value(0, p) < 0.0:
+			eq(image.get_pixel(p.x, p.y), Color("195474"), "sea color represents sea")
+			water_seen = true
+		elif plan.lake[k] <= 0.0 and plan.river[k] <= 0.0:
+			var biome: String = plan.biome_ids[plan.biomes[k]]
+			var color := Color(String(WorldPreview.BIOME_COLORS.get(biome, "7f9e69")))
+			eq(image.get_pixel(p.x, p.y), color, "land color represents its stored biome")
+			land_seen = true
+		if land_seen and water_seen:
+			break
+	check(land_seen and water_seen, "preview includes land and sea")

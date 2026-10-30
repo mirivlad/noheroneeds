@@ -554,6 +554,11 @@ func biome_id_at(x: int, y: int) -> String:
 ## need wet lowland, only there), the one whose climate (warmth, rain) is
 ## nearest the place's — a little jitter, so the edges are ragged.
 func _biome_at(x: int, y: int, h: float, by_water: bool) -> int:
+	if geography is PlannedGeography and not by_water:
+		var planned := (geography as PlannedGeography).plan.biome_at(Vector2i(x, y))
+		var index := biome_ids.find(planned)
+		if index >= 0:
+			return index
 	var geo := geography
 	var here := (geo.climate_at(x, y) if geo else Vector2.ZERO) \
 		+ Vector2(_hash(x, y, 6) - 0.5, _hash(x, y, 7) - 0.5) * 0.08

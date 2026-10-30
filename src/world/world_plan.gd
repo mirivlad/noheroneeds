@@ -51,7 +51,6 @@ static func generate(seed_number: int, size_preset: String, climate_preset: Stri
 	moisture.frequency = 1.0
 	moisture.fractal_octaves = 3
 	var shift := 0.3 if climate_preset == "hot" else (-0.3 if climate_preset == "cold" else 0.0)
-	var best := -INF
 	for y in plan.size.y:
 		for x in plan.size.x:
 			var u := (float(x) + 0.5) / plan.size.x
@@ -85,14 +84,25 @@ static func generate(seed_number: int, size_preset: String, climate_preset: Stri
 			plan.fields[idx] = _encode(h)
 			plan.fields[idx + 1] = _encode(warmth)
 			plan.fields[idx + 2] = _encode(rain)
-			if h > 0.08:
-				var score := -absf(warmth - 0.1) - absf(rain) * 0.3 - absf(h - 0.12) - absf(v - 0.5) * 0.2
-				if score > best:
-					best = score
-					plan.spawn = Vector2i(x, y)
 	plan._orographic_rain()
 	WorldHydrology.build(plan)
+	plan._choose_spawn()
 	return plan
+
+
+## Choose after hydrology: the origin must not be in a lake or river.
+func _choose_spawn() -> void:
+	var best := -INF
+	for k in size.x * size.y:
+		var h := float(fields[k * 3]) / 127.5 - 1.0
+		if h < 0.05 or lake[k] > 0.0 or river[k] > 0.0:
+			continue
+		var warmth := float(fields[k * 3 + 1]) / 127.5 - 1.0
+		var rain := float(fields[k * 3 + 2]) / 127.5 - 1.0
+		var score := -absf(warmth - 0.1) - absf(rain) * 0.3 - absf(h - 0.12) * 2.0
+		if score > best:
+			best = score
+			spawn = Vector2i(k % size.x, k / size.x)
 
 
 ## Moisture brought by the prevailing west wind falls over rising land.
@@ -152,7 +162,7 @@ func sample(field: int, cell: Vector2i) -> float:
 
 
 func to_dict() -> Dictionary:
-	return {"format": FORMAT, "seed": seed_value, "type": "single_continent" if preset == "single_continent" else "planet",
+	return {"format": FORMAT, "seed": str(seed_value), "type": "single_continent" if preset == "single_continent" else "planet",
 		"preset": preset, "climate": climate,
 		"width": size.x, "height": size.y, "spawn_x": spawn.x, "spawn_y": spawn.y,
 		"fields": Marshalls.raw_to_base64(fields),

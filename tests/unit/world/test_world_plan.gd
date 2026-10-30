@@ -15,6 +15,9 @@ func test_plan_round_trip_and_validation() -> void:
 	invalid[0] = invalid.size()
 	broken["downstream"] = Marshalls.raw_to_base64(invalid.to_byte_array())
 	check(WorldPlan.from_dict(broken) == null, "out-of-range drainage is rejected")
+	original.seed_value = 9007199254740993
+	var decoded: Variant = JSON.parse_string(JSON.stringify(original.to_dict()))
+	eq(WorldPlan.from_dict(decoded).seed_value, original.seed_value, "64-bit seed survives JSON without precision loss")
 
 
 func test_presets_climate_and_boundaries() -> void:
@@ -185,3 +188,13 @@ func test_old_world_is_refused_before_any_migration() -> void:
 	check(store.open(path, {"migrations": WorldStore.MIGRATIONS.slice(0, 1)}), "the old schema is still readable")
 	eq(store.schema_version(), 1, "no migration happened")
 	store.close()
+
+
+func test_spawn_is_chosen_after_water_and_climate() -> void:
+	for preset in ["single_continent", "small", "medium"]:
+		for seed_number in [0, 19, 431, 10000]:
+			var plan := WorldPlan.generate(seed_number, preset, "cold")
+			var k := plan.spawn.y * plan.size.x + plan.spawn.x
+			check(plan.value(0, plan.spawn) > 0.05, "spawn is inland")
+			eq(plan.lake[k], 0.0, "spawn is not in a lake")
+			eq(plan.river[k], 0.0, "spawn is not in a river")

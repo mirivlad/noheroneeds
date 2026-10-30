@@ -182,6 +182,13 @@ static func from_dict(data: Dictionary) -> WorldPlan:
 	var lake_bytes := Marshalls.base64_to_raw(String(data.get("lake", "")))
 	if down_bytes.size() != dimensions.x * dimensions.y * 4 or river_bytes.size() != down_bytes.size() or lake_bytes.size() != down_bytes.size():
 		return null
+	var down := down_bytes.to_int32_array()
+	var rivers := river_bytes.to_float32_array()
+	var lakes := lake_bytes.to_float32_array()
+	for k in down.size():
+		if down[k] < -1 or down[k] >= down.size() or not is_finite(rivers[k]) or not is_finite(lakes[k]) \
+				or rivers[k] < 0.0 or rivers[k] > 9.0 or lakes[k] < 0.0 or lakes[k] > 1.01:
+			return null
 	var at := Vector2i(int(data.get("spawn_x", -1)), int(data.get("spawn_y", -1)))
 	if at.x < 0 or at.y < 0 or at.x >= dimensions.x or at.y >= dimensions.y:
 		return null
@@ -191,9 +198,9 @@ static func from_dict(data: Dictionary) -> WorldPlan:
 	plan.climate = climate_id
 	plan.size = dimensions
 	plan.fields = bytes
-	plan.downstream = down_bytes.to_int32_array()
-	plan.river = river_bytes.to_float32_array()
-	plan.lake = lake_bytes.to_float32_array()
+	plan.downstream = down
+	plan.river = rivers
+	plan.lake = lakes
 	plan.spawn = at
 	return plan
 

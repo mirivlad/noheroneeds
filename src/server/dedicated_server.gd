@@ -59,7 +59,7 @@ func start(o: Dictionary) -> String:
 	var identity := PlayerIdentity.load_or_create(ProjectSettings.globalize_path(String(o.get("identity", "user://server_identity"))))
 	if identity == null:
 		return "cannot load or create the server key"
-	_world = ServerWorld.open(world_path, content)
+	_world = ServerWorld.open(world_path, content, {"require_planned": true})
 	if _world == null:
 		return "cannot open the world %s: %s" % [world_path, ServerWorld.open_error]
 	_transport = ENetTransport.new()

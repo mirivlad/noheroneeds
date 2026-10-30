@@ -1,3 +1,5 @@
+Обязательные правила разработки и документации: [AGENTS.md](../../AGENTS.md) и [WIKI_WORKFLOW.md](../WIKI_WORKFLOW.md).
+
 # Задание для Claude — No Hero Needed, новый 2D-проект
 
 Прочитай **все** документы каталога `docs/design/` (или приложенного пакета) в следующем порядке: `README.md`, `GDD.md`, `ARCHITECTURE.md`, `DEVELOPMENT.md`, `OPEN_QUESTIONS.md`, `REFERENCES.md`.

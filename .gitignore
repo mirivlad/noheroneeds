@@ -5,3 +5,9 @@ __pycache__/
 /build/
 /art_src/
 /gen_img/
+
+# Website dependencies and local browser evidence
+site/node_modules/
+site/test-results/
+site/playwright-report/
+__pycache__/

@@ -377,6 +377,21 @@ static func chunk_key(location: String, cx: int, cy: int) -> String:
 	return "%s|%d|%d" % [location, cx, cy]
 
 
+## World storage keys identify a single longitude on a planned planet.
+## Latitude folding needs a reflected cell view and is handled separately.
+func storage_chunk(cx: int, cy: int) -> Vector2i:
+	if generator and generator.geography is PlannedGeography:
+		var plan := (generator.geography as PlannedGeography).plan
+		if plan.preset != "single_continent":
+			cx = posmod(cx + plan.spawn.x, plan.size.x) - plan.spawn.x
+	return Vector2i(cx, cy)
+
+
+func storage_key(location: String, cx: int, cy: int) -> String:
+	var point := storage_chunk(cx, cy)
+	return chunk_key(location, point.x, point.y)
+
+
 ## A chunk, loaded or generated now if the loader has not brought it yet.
 ## The chunk last asked for: most asks come in runs for one chunk (a
 ## creature's steps and sight, light around a cell), and building its key is
@@ -389,6 +404,9 @@ var _last_chunk_location := ""
 
 
 func chunk(location: String, cx: int, cy: int) -> Chunk:
+	var at := storage_chunk(cx, cy)
+	cx = at.x
+	cy = at.y
 	if _last_chunk != null and cx == _last_chunk_at.x and cy == _last_chunk_at.y and location == _last_chunk_location:
 		return _last_chunk
 	var c := _chunk(location, cx, cy)
@@ -430,7 +448,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 
 ## Ids of things lying in a chunk.
 func items_in_chunk(location: String, cx: int, cy: int) -> Array:
-	return (_items_by_chunk.get(chunk_key(location, cx, cy), {}) as Dictionary).keys()
+	return (_items_by_chunk.get(storage_key(location, cx, cy), {}) as Dictionary).keys()
 
 
 func _take_items(location: String, rows: Array) -> void:
@@ -459,16 +477,16 @@ func _place_item(id: String, it: Dictionary) -> void:
 
 func _item_chunk_key(it: Dictionary) -> String:
 	var cell := Movement.cell_of(Vector2i(it["x"], it["y"]))
-	return chunk_key(it["location"], floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
+	return storage_key(it["location"], floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
 
 
 func has_chunk(location: String, cx: int, cy: int) -> bool:
-	return _chunks.has(chunk_key(location, cx, cy))
+	return _chunks.has(storage_key(location, cx, cy))
 
 
 ## Players need these chunks now (keeps them from being unloaded).
 func mark_needed(location: String, cx: int, cy: int) -> void:
-	_needed[chunk_key(location, cx, cy)] = tick
+	_needed[storage_key(location, cx, cy)] = tick
 
 
 ## Unloads chunks nobody needed for `idle_ticks`, if nothing about them is
@@ -513,8 +531,9 @@ func loaded_chunks() -> int:
 
 ## Asks the loader thread for a chunk that is not in memory yet.
 func prefetch(location: String, cx: int, cy: int) -> void:
-	if not _chunks.has(chunk_key(location, cx, cy)):
-		loader.request(location, cx, cy)
+	var at := storage_chunk(cx, cy)
+	if not _chunks.has(chunk_key(location, at.x, at.y)):
+		loader.request(location, at.x, at.y)
 
 
 ## Takes chunks the loader finished (call every tick).
@@ -700,6 +719,9 @@ func _flush_explored() -> void:
 ## is there, else from the store without loading it into the world (no
 ## creatures woken, nothing generated); empty if it was never made.
 func map_tile(location: String, cx: int, cy: int) -> PackedByteArray:
+	var at := storage_chunk(cx, cy)
+	cx = at.x
+	cy = at.y
 	var key := chunk_key(location, cx, cy)
 	var rev: int = _chunk_rev.get(key, 0)
 	var cached: Array = _map_tiles.get(key, [])
@@ -904,13 +926,13 @@ func is_solid(location: String, x: int, y: int) -> bool:
 
 
 func chunk_revision(location: String, cx: int, cy: int) -> int:
-	return _chunk_rev.get(chunk_key(location, cx, cy), 0)
+	return _chunk_rev.get(storage_key(location, cx, cy), 0)
 
 
 ## The chunk as clients receive it, encoded once per revision: what is
 ## shut in rock is told as the rock it looks like (shown_chunk).
 func encoded_chunk(location: String, cx: int, cy: int) -> PackedByteArray:
-	var key := chunk_key(location, cx, cy)
+	var key := storage_key(location, cx, cy)
 	var rev: int = _chunk_rev.get(key, 0)
 	var cached: Array = _encoded.get(key, [])
 	if cached.is_empty() or cached[0] != rev:
@@ -1186,7 +1208,7 @@ func fact(key: String) -> String:
 
 
 func mark_chunk_dirty(location: String, cx: int, cy: int) -> void:
-	_dirty_chunks[chunk_key(location, cx, cy)] = true
+	_dirty_chunks[storage_key(location, cx, cy)] = true
 
 
 ## Whether players needed a chunk within the last `ticks` ticks (they are near).
@@ -1215,7 +1237,7 @@ class SolidIn:
 		if here != _at or _epoch != world.chunks_epoch:
 			_at = here
 			_epoch = world.chunks_epoch
-			_chunk = world._chunks.get(ServerWorld.chunk_key(location, here.x, here.y)) if loaded_only \
+			_chunk = world._chunks.get(world.storage_key(location, here.x, here.y)) if loaded_only \
 				else world.chunk(location, here.x, here.y)
 		if _chunk == null:
 			_at = Vector2i(1 << 30, 0)  # asked again next time: it may have come by then
@@ -1725,6 +1747,9 @@ func build_rain(location: String, x: int, y: int) -> float:
 
 
 func _changed(key: String) -> void:
+	var coordinate := key.rsplit("|", true, 2)
+	if coordinate.size() == 3:
+		key = storage_key(coordinate[0], int(coordinate[1]), int(coordinate[2]))
 	_dirty_chunks[key] = true
 	_lights_by_chunk.erase(key)
 	_chunk_rev[key] = _chunk_rev.get(key, 0) + 1

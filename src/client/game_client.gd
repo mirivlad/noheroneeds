@@ -248,7 +248,16 @@ func _on_message(m: Dictionary) -> void:
 			weather_seed = int(m.get("weather_seed", 0))
 			# The land's climate (ADR-0055), worked out here as the server does.
 			var seed_value := int(m.get("world_seed", -1))
-			geography = Geography.of(seed_value) if seed_value != -1 else null
+			var raw_plan: Variant = m.get("world_plan")
+			if raw_plan is Dictionary:
+				var plan := WorldPlan.from_dict(raw_plan)
+				if plan == null or plan.seed_value != seed_value:
+					reject_reason = "Сервер прислал неверный план мира"
+					state = "rejected"
+					return
+				geography = PlannedGeography.new(plan)
+			else:
+				geography = Geography.of(seed_value) if seed_value != -1 else null
 			state = "playing"
 			# The server knows nothing of our hands after a (re)join: they come
 			# before anything resent that may be done with them.

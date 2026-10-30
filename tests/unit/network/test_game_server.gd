@@ -604,3 +604,22 @@ func test_world_changes_reach_others_as_events() -> void:
 			types.append(e["type"])
 	eq(types, ["build", "open", "close", "dismantle"], "in order, once each")
 	eq(b.world_events[0]["part"], "base:wood_door")
+
+
+func test_planned_world_reaches_client_and_3d_geography() -> void:
+	server.shutdown()
+	world.close()
+	var plan := WorldPlan.generate(431, "small", "cold")
+	db = tmp_dir().path_join("planned.db")
+	world = ServerWorld.open(db, content, {"world_plan": plan.to_dict()})
+	net = MemoryTransport.MemoryNetwork.new()
+	server = GameServer.new(world, net.server(), _key("server"))
+	server.wait_for_disk = true
+	var client := _client("owner", _character("Аня"))
+	_run(30, [client])
+	eq(client.state, "playing", client.reject_reason)
+	check(client.geography is PlannedGeography, "the client uses the saved world plan")
+	if client.geography is PlannedGeography:
+		eq((client.geography as PlannedGeography).plan.to_dict(), plan.to_dict(), "the network carries exactly the saved plan")
+		var point := Vector2i(200, -300)
+		eq(client.geography.climate_at(point.x, point.y), world.generator.geography.climate_at(point.x, point.y), "client and server have the same climate")

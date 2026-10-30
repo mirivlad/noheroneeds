@@ -92,3 +92,19 @@ func test_huge_world_is_global_and_bounded() -> void:
 	eq(plan.downstream.size(), plan.size.x * plan.size.y, "drainage covers the whole map")
 	eq(WorldHydrology.index_at(plan, Vector2i(-1, 10)), WorldHydrology.index_at(plan, Vector2i(plan.size.x - 1, 10)), "drainage crosses the longitude seam")
 	eq(WorldHydrology.index_at(plan, Vector2i(10, -1)), WorldHydrology.index_at(plan, Vector2i(10 + plan.size.x / 2, 0)), "drainage crosses the pole")
+
+
+func test_surface_and_geology_use_saved_plan() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var plan := WorldPlan.generate(431, "small", "temperate")
+	var saved := WorldPlan.from_dict(plan.to_dict())
+	var surface := SurfaceGenerator.new(plan.seed_value, content, saved)
+	check(surface.geography is PlannedGeography, "surface uses the global plan")
+	var point := Vector2i(100, -200)
+	eq(surface.geography.sample(Geography.HEIGHT, point.x, point.y), saved.sample(0, point), "height comes from the stored map")
+	eq(surface.geography.climate_at(point.x, point.y), Vector2(saved.sample(1, point), saved.sample(2, point)), "biome climate comes from the stored map")
+	var underground := UndergroundGenerator.new(plan.seed_value, content)
+	underground.geography = surface.geography
+	eq(underground.geography.sample(Geography.HEIGHT, point.x, point.y), saved.sample(0, point), "geology sees the same relief")
+	var again := SurfaceGenerator.new(plan.seed_value, content, plan)
+	eq(ChunkCodec.encode(surface.generate(2, 3)), ChunkCodec.encode(again.generate(2, 3)), "saved and original plans generate the same detail")

@@ -262,7 +262,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 		"host":
 			hosted = HostedGame.start(String(cfg["world_path"]), content, me, server_identity, character_file,
 				int(cfg["port"]), int(cfg.get("max_players", 8)), {"seed": WorldLibrary.seed_of(cfg.get("rules", {})),
-				"password": String(cfg.get("password", ""))})
+				"password": String(cfg.get("password", "")), "world_plan": cfg.get("rules", {}).get("world_plan")})
 			if not hosted.ok():
 				return hosted.error
 			WorldLibrary.apply_rules(cfg.get("rules", {}), hosted.world)
@@ -270,7 +270,7 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 		_:
 			DirAccess.make_dir_recursive_absolute(String(cfg["world_path"]).get_base_dir())
 			game = LocalGame.start(String(cfg["world_path"]), content, me, server_identity, character_file,
-				{"seed": WorldLibrary.seed_of(cfg.get("rules", {}))})
+				{"seed": WorldLibrary.seed_of(cfg.get("rules", {})), "world_plan": cfg.get("rules", {}).get("world_plan")})
 			if game == null:
 				return ServerWorld.open_error if ServerWorld.open_error != "" else "не удалось открыть мир"
 			WorldLibrary.apply_rules(cfg.get("rules", {}), game.world)

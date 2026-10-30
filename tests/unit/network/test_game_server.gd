@@ -623,3 +623,55 @@ func test_planned_world_reaches_client_and_3d_geography() -> void:
 		eq((client.geography as PlannedGeography).plan.to_dict(), plan.to_dict(), "the network carries exactly the saved plan")
 		var point := Vector2i(200, -300)
 		eq(client.geography.climate_at(point.x, point.y), world.generator.geography.climate_at(point.x, point.y), "client and server have the same climate")
+
+## A planet's seam through the network: walking across it does not jump, the
+## chunks on the other side come, and what stands there is next to one.
+func test_walking_across_the_seam_of_a_planet() -> void:
+	server.shutdown()
+	world.close()
+	var plan := WorldPlan.generate(431, "small", "temperate")
+	db = tmp_dir().path_join("planet-seam.db")
+	world = ServerWorld.open(db, content, {"world_plan": plan.to_dict()})
+	net = MemoryTransport.MemoryNetwork.new()
+	server = GameServer.new(world, net.server(), _key("server"))
+	server.wait_for_disk = true
+	var a := _client("owner", _character("Аня"))
+	_run(30, [a])
+	eq(a.state, "playing", a.reject_reason)
+	# Three cells east of the western edge of the map, on open grass.
+	var west := -plan.spawn.x * Chunk.SIZE
+	var east := west + plan.size.x * Chunk.SIZE - 1
+	for y in range(-6, 7):
+		for x in range(west - 8, west + 3):
+			var c := world.chunk("surface", floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
+			c.set_cell("ground", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "base:grass")
+			c.set_cell("cover", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "")
+	for y in range(-6, 7):
+		for x in range(east - 2, east + 9):
+			var c := world.chunk("surface", floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
+			c.set_cell("ground", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "base:grass")
+			c.set_cell("cover", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "")
+	for x in range(west - 7, west + 3):
+		for y in range(-6, 7):
+			world._changed(ServerWorld.chunk_key("surface", floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE)))
+	world.move_character(a.character_id, Vector2i((west + 2) * Movement.UNIT + Movement.HALF_X, Movement.HALF_Y))
+	_run(30, [a])
+	eq(a.position, _server_pos(a), "placed at the west edge")
+	# A hare on the far side of the seam, a step east of the player.
+	var hare := world.creatures._spawn("base:hare", "surface", Vector2i(east - 1, 0), {}, 2)
+	hare.next_think = 1 << 40
+	_run(30, [a])
+	check(a.entities.has(hare.id), "a hare a step east of the west edge is seen")
+	if a.entities.has(hare.id):
+		check(Vector2i(int(a.entities[hare.id]["x"]), int(a.entities[hare.id]["y"])).distance_to(a.position) < 4 * Movement.UNIT,
+			"and drawn next to us, not a world away: %s vs %s" % [a.entities[hare.id], a.position])
+	var before := a.position
+	a.move = Vector2i(-1, 0)
+	_run(40, [a])
+	a.move = Vector2i.ZERO
+	_run(30, [a])
+	eq(a.position, _server_pos(a), "the client and the server agree after crossing")
+	check(a.position.x < before.x and before.x - a.position.x <= 40 * Movement.RUN, "walked west smoothly, no jump of a world: %s -> %s" % [before, a.position])
+	check(Movement.cell_of(a.position).x < west, "and past the western edge of the map, into the next lap of it: %s" % [Movement.cell_of(a.position)])
+	check(not a.chunks.is_empty(), "the ground across the seam was streamed")
+	check(a.corrections <= 1, "no rubber-banding at the seam: %d" % a.corrections)

@@ -247,3 +247,25 @@ func test_preview_colors_are_the_stored_biomes_and_water() -> void:
 		if land_seen and water_seen:
 			break
 	check(land_seen and water_seen, "preview includes land and sea")
+
+
+func test_planet_chunks_across_the_seam_share_saved_changes() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var path := tmp_dir().path_join("world.db")
+	var plan := WorldPlan.generate(431, "small", "temperate")
+	var world := ServerWorld.open(path, content, {"world_plan": plan.to_dict()})
+	var first := Vector2i(-plan.spawn.x, 0)
+	var alias := first + Vector2i(plan.size.x, 0)
+	world.prefetch("surface", alias.x, alias.y)
+	var chunk := world.chunk("surface", first.x, first.y)
+	chunk.set_cell("ground", 0, 0, "base:stone")
+	world._changed(ServerWorld.chunk_key("surface", alias.x, alias.y))
+	eq(world.chunk_revision("surface", alias.x, alias.y), world.chunk_revision("surface", first.x, first.y), "a change has one shared revision")
+	var encoded := ChunkCodec.decode(world.encoded_chunk("surface", alias.x, alias.y))
+	eq(encoded.get_cell("ground", 0, 0), "base:stone", "the client receives the changed canonical chunk")
+	eq(world.chunk("surface", alias.x, alias.y).get_cell("ground", 0, 0), "base:stone", "the seam names the same live cell")
+	eq(world.storage_key("surface", first.x, first.y), world.storage_key("surface", alias.x, alias.y), "one storage key")
+	world.close()
+	world = ServerWorld.open(path, content)
+	eq(world.chunk("surface", alias.x, alias.y).get_cell("ground", 0, 0), "base:stone", "the same cell is restored through either side")
+	world.close()

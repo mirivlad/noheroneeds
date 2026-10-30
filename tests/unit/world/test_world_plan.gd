@@ -10,6 +10,11 @@ func test_plan_round_trip_and_validation() -> void:
 	var broken := original.to_dict()
 	broken["fields"] = ""
 	check(WorldPlan.from_dict(broken) == null, "truncated maps are rejected")
+	broken = original.to_dict()
+	var invalid := original.downstream.duplicate()
+	invalid[0] = invalid.size()
+	broken["downstream"] = Marshalls.raw_to_base64(invalid.to_byte_array())
+	check(WorldPlan.from_dict(broken) == null, "out-of-range drainage is rejected")
 
 
 func test_presets_climate_and_boundaries() -> void:

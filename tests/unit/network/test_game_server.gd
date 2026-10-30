@@ -115,6 +115,47 @@ func test_bandit_colours_equipment_and_escort_contract_reach_two_clients() -> vo
 	check(not a.entities.has(bandit.id) and not b.entities.has(bandit.id), "both clients see the same death")
 
 
+func test_inn_services_and_competing_rentals_reach_two_clients() -> void:
+	server.shutdown()
+	world.close()
+	db = tmp_dir().path_join("inn-world.db")
+	world = ServerWorld.open(db, content, {"seed": 431})
+	net = MemoryTransport.MemoryNetwork.new()
+	server = GameServer.new(world, net.server(), _key("server"))
+	server.wait_for_disk = true
+	var s := world.generator.settlements
+	var district := s._district_of(0, s.home_plan()["centre"])
+	var p: Dictionary = s.inns.of_cluster(0, district.x, district.y).filter(func(site: Dictionary) -> bool: return site["site"] == "inn")[0]
+	var at: Vector2i = p["host"]
+	world.chunk("surface", at.x >> 5, at.y >> 5)
+	var host := world.creatures.get_creature(String(world.hospitality.state(String(p["id"]))["host"]))
+	var a := _client("owner", _character("Аня"))
+	var b := _client("other", _character("Боря"))
+	_run(35, [a, b])
+	for client: GameClient in [a, b]:
+		world.move_character(client.character_id, host.pos + Vector2i(0, 512))
+		world.grant(client.character_id, "base:coin", 60)
+	_run(35, [a, b])
+	var ra := a.request({"type": "inn_service", "creature": host.id, "service": "bed", "choice": "0"})
+	var rb := b.request({"type": "inn_service", "creature": host.id, "service": "bed", "choice": "0"})
+	_run(40, [a, b])
+	var won_a: bool = a.results.get(ra, {}).get("ok", false)
+	var won_b: bool = b.results.get(rb, {}).get("ok", false)
+	check(won_a != won_b, "exactly one simultaneous renter succeeds")
+	var winner := a if won_a else b
+	var loser := b if won_a else a
+	eq(loser.results.get(rb if won_a else ra, {}).get("reason"), "bed_rented")
+	eq(int(winner.inventory().get("base:coin", 0)), 54, "the winner sees the actual payment")
+	eq(int(loser.inventory().get("base:coin", 0)), 60, "the losing client keeps its money")
+	world.needs.set_satiety(winner.character_id, 10)
+	var meal := winner.request({"type": "inn_service", "creature": host.id, "service": "meal", "choice": "bread"})
+	_run(40, [a, b])
+	check(winner.results.get(meal, {}).get("ok", false), "meal through the normal request protocol")
+	check(int(winner.own.get("needs", {}).get("satiety", 0)) >= 49, "fed state is replicated")
+	eq(int(winner.inventory().get("base:coin", 0)), 51)
+	eq(int(winner.inventory().get("base:bread", 0)), 0)
+
+
 func test_animal_growth_and_hunger_reach_the_client() -> void:
 	var a := _client("owner", _character("Аня"))
 	_run(30, [a])

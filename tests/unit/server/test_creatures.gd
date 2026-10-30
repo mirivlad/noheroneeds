@@ -88,7 +88,7 @@ func test_chunks_get_their_animals_once_and_villagers_come() -> void:
 		for h: Dictionary in p["homes"]:
 			if h["bed"] != Settlements.NONE and made.has_point(h["bed"]):
 				homes.append(h)
-	var villagers := w.creatures.creatures.values().filter(func(c: Creature) -> bool: return c.kind == "base:villager" and not c.job.is_empty())
+	var villagers := w.creatures.creatures.values().filter(func(c: Creature) -> bool: return c.kind == "base:villager" and not c.job.is_empty() and not c.job.has("hospitality"))
 	eq(villagers.size(), homes.size(), "a dweller a home in the villages made")
 	check(not (villagers[0] as Creature).looks.is_empty(), "with looks of their own")
 	for c: Creature in w.creatures.creatures.values():

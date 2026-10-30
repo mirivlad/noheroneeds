@@ -1,0 +1,39 @@
+{
+  "checks": 16,
+  "failures": [],
+  "gpu": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "sites": [
+    {
+      "centre": [
+        22,
+        -25
+      ],
+      "name": "Медный котёл",
+      "template": "base:village_tavern"
+    },
+    {
+      "centre": [
+        -55,
+        -76
+      ],
+      "name": "У старой липы",
+      "template": "base:village_tavern"
+    },
+    {
+      "centre": [
+        -53,
+        -120
+      ],
+      "name": "У трёх дорог",
+      "template": "base:roadside_inn"
+    },
+    {
+      "centre": [
+        -812,
+        73
+      ],
+      "name": "Привал",
+      "template": "base:roadside_inn_large"
+    }
+  ]
+}

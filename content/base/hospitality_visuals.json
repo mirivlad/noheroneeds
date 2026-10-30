@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "defs": [
+    {
+      "id": "base:visual/inn_letter",
+      "kind": "visual",
+      "for": "base:inn_letter",
+      "mode": "item",
+      "atlas": "art/lpc_env/items.png",
+      "rect": [
+        1696,
+        0,
+        32,
+        32
+      ],
+      "origin": [
+        0,
+        32
+      ],
+      "pixel_scale": 0.5,
+      "variants": 1
+    }
+  ]
+}

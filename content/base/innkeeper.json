@@ -1,0 +1,39 @@
+{
+  "format": 1,
+  "defs": [
+    {
+      "id": "base:innkeeper",
+      "kind": "profession",
+      "name": "Тавернщик",
+      "work": "station:fire",
+      "hours": [
+        6,
+        23
+      ],
+      "teaches": {
+        "base:bake_bread": {
+          "price": 15,
+          "standing": 0
+        },
+        "base:cook_stew": {
+          "price": 10,
+          "standing": 0
+        }
+      },
+      "lines": {
+        "greet": [
+          "Заходи, путник. Есть горячее и место для отдыха."
+        ],
+        "work": [
+          "У очага всегда теплее."
+        ],
+        "evening": [
+          "Присаживайся к столу."
+        ],
+        "night": [
+          "Кровати наверху, тихо — люди отдыхают."
+        ]
+      }
+    }
+  ]
+}

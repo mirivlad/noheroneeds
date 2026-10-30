@@ -1,0 +1,59 @@
+{
+  "format": 1,
+  "defs": [
+    {
+      "id": "base:inn_berries",
+      "kind": "story",
+      "from": "hospitality",
+      "entry": "В «{inn}» есть работа для путника.",
+      "request": {
+        "kind": "fetch",
+        "asker": "base:innkeeper",
+        "item": "base:berries",
+        "count": 3,
+        "reward": 6,
+        "ask": "Набери свежих ягод, штук {count}. Кусты растут у леса, можно собрать руками. Заплачу.",
+        "doing": "Принести ягоды, штук {count}, в «{inn}»: {asker}.",
+        "done": "Спасибо за помощь. Держи, заработал{player_a}.",
+        "goal": "Принести ягоды, штук {count}, в «{inn}»: {asker}.",
+        "deed": "{player} выполнил{player_a} поручение заведения «{inn}»."
+      }
+    },
+    {
+      "id": "base:inn_wood",
+      "kind": "story",
+      "from": "hospitality",
+      "entry": "В «{inn}» есть работа для путника.",
+      "request": {
+        "kind": "fetch",
+        "asker": "base:innkeeper",
+        "item": "base:log",
+        "count": 2,
+        "reward": 8,
+        "ask": "Нужны брёвна для очага, штук {count}. Принесёшь — заплачу.",
+        "doing": "Принести брёвна, штук {count}, в «{inn}»: {asker}.",
+        "done": "Спасибо за помощь. Держи, заработал{player_a}.",
+        "goal": "Принести брёвна, штук {count}, в «{inn}»: {asker}.",
+        "deed": "{player} выполнил{player_a} поручение заведения «{inn}»."
+      }
+    },
+    {
+      "id": "base:inn_delivery",
+      "kind": "story",
+      "from": "hospitality",
+      "entry": "В «{inn}» есть работа для путника.",
+      "request": {
+        "kind": "deliver",
+        "asker": "base:innkeeper",
+        "item": "base:inn_letter",
+        "count": 1,
+        "reward": 12,
+        "ask": "Отнеси моё письмо в деревню {destination}. Передай любому местному жителю — там рассчитаются.",
+        "doing": "Доставить письмо из «{inn}» в деревню {destination} и передать местному жителю.",
+        "done": "Спасибо за помощь. Держи, заработал{player_a}.",
+        "goal": "Доставить письмо из «{inn}» в деревню {destination} и передать местному жителю.",
+        "deed": "{player} выполнил{player_a} поручение заведения «{inn}»."
+      }
+    }
+  ]
+}

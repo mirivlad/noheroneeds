@@ -1,0 +1,296 @@
+{
+  "format": 1,
+  "defs": [
+    {
+      "id": "base:inn_services",
+      "kind": "hospitality",
+      "mode": "services",
+      "name": "Услуги заведения",
+      "menu": [
+        {
+          "id": "bread",
+          "name": "Хлеб с горячим питьём",
+          "item": "base:bread",
+          "price": 3
+        },
+        {
+          "id": "stew",
+          "name": "Грибная похлёбка",
+          "item": "base:mushroom_stew",
+          "price": 6
+        },
+        {
+          "id": "meat",
+          "name": "Жареное мясо",
+          "item": "base:cooked_meat",
+          "price": 8
+        },
+        {
+          "id": "fish",
+          "name": "Жареная рыба",
+          "item": "base:cooked_fish",
+          "price": 5
+        },
+        {
+          "id": "milk",
+          "name": "Кружка молока",
+          "item": "base:milk_bucket",
+          "price": 2
+        }
+      ],
+      "lodging": [
+        {
+          "id": "shared",
+          "name": "Место в общей спальне",
+          "price": 6,
+          "hours": 12,
+          "rest": 6.0
+        },
+        {
+          "id": "private",
+          "name": "Отдельная комната",
+          "price": 15,
+          "hours": 24,
+          "rest": 6.0
+        }
+      ],
+      "work": [
+        "base:inn_berries",
+        "base:inn_wood",
+        "base:inn_delivery"
+      ],
+      "min_road": 120,
+      "names": [
+        "У старой липы",
+        "Тёплый очаг",
+        "У трёх дорог",
+        "Медный котёл",
+        "Постоялый двор у ручья",
+        "Сосновый двор",
+        "Привал",
+        "Добрый путь"
+      ]
+    },
+    {
+      "id": "base:village_tavern",
+      "kind": "hospitality",
+      "mode": "building",
+      "site": "tavern",
+      "name": "Таверна",
+      "rows": [
+        "##w###w###w####",
+        "#F.K...#O.#...#",
+        "w...H..#..#.B.w",
+        "#.=====#d##...#",
+        "#.........#.B.#",
+        "w..C......#...w",
+        "#..T...C..##d##",
+        "#..c...T..#...#",
+        "w......c..d.P.w",
+        "#.........#...#",
+        "##w###wD##w####"
+      ],
+      "upper": [],
+      "walls": [
+        "base:wood_wall",
+        "base:stone_wall"
+      ],
+      "yard": 4
+    },
+    {
+      "id": "base:roadside_inn",
+      "kind": "hospitality",
+      "mode": "building",
+      "site": "inn",
+      "name": "Постоялый двор",
+      "rows": [
+        "##w###w###w###w###",
+        "#F.K........#..O.#",
+        "w...H.......#....w",
+        "#.======....##d###",
+        "#................#",
+        "w..C.............w",
+        "#..T...C....C....#",
+        "#..c...T....T....#",
+        "w......c....c....w",
+        "#................#",
+        "#.S..............#",
+        "#................#",
+        "##w###w##Dw###w###"
+      ],
+      "upper": [
+        "##w###w###w###w###",
+        "#.......#........#",
+        "#.B..B..#........#",
+        "#.......#......P.#",
+        "#.......#........#",
+        "#.......#........#",
+        "#.......##d#######",
+        "#.......#........#",
+        "#.......#........#",
+        "#.......d......P.#",
+        "#.V.....#........#",
+        "#.......#........#",
+        "##w###w###w###w###"
+      ],
+      "walls": [
+        "base:wood_wall",
+        "base:stone_wall"
+      ],
+      "yard": 10
+    },
+    {
+      "id": "base:roadside_inn_large",
+      "kind": "hospitality",
+      "mode": "building",
+      "site": "inn",
+      "name": "Постоялый двор",
+      "rows": [
+        "##w###w###w###w#####",
+        "#F.K..........#..O.#",
+        "w...H.........#....w",
+        "#.======......##d###",
+        "#..................#",
+        "w..C...............w",
+        "#..T...C....C......#",
+        "#..c...T....T......#",
+        "w......c....c......w",
+        "#..................#",
+        "#..................#",
+        "w..................w",
+        "#.S................#",
+        "#..................#",
+        "##w###w###D###w#####"
+      ],
+      "upper": [
+        "##w###w###w###w#####",
+        "#.......#..........#",
+        "#.B..B..#........P.#",
+        "#.......#..........#",
+        "#.......##d#########",
+        "#.B..B..#..........#",
+        "#.......#........P.#",
+        "#.......#..........#",
+        "#.......##d#########",
+        "#.......#..........#",
+        "#.......#........P.#",
+        "#.......d..........#",
+        "#.V.....#..........#",
+        "#.......#..........#",
+        "##w###w###w###w#####"
+      ],
+      "walls": [
+        "base:wood_wall",
+        "base:stone_wall"
+      ],
+      "yard": 10
+    },
+    {
+      "id": "base:inn_table",
+      "kind": "structure",
+      "role": "furniture",
+      "name": "Обеденный стол",
+      "solid": true,
+      "natural": true,
+      "cost": {
+        "base:plank": 2
+      },
+      "durability": 520,
+      "material": "wood",
+      "furniture_model": "table",
+      "rotations": [
+        "s",
+        "n",
+        "e",
+        "w"
+      ]
+    },
+    {
+      "id": "base:inn_round_table",
+      "kind": "structure",
+      "role": "furniture",
+      "name": "Круглый стол",
+      "solid": true,
+      "natural": true,
+      "cost": {
+        "base:plank": 2
+      },
+      "durability": 520,
+      "material": "wood",
+      "furniture_model": "round_table",
+      "rotations": [
+        "s",
+        "n",
+        "e",
+        "w"
+      ]
+    },
+    {
+      "id": "base:inn_chair",
+      "kind": "structure",
+      "role": "furniture",
+      "name": "Стул",
+      "solid": false,
+      "natural": true,
+      "cost": {
+        "base:plank": 2
+      },
+      "durability": 520,
+      "material": "wood",
+      "furniture_model": "chair",
+      "rotations": [
+        "s",
+        "n",
+        "e",
+        "w"
+      ],
+      "seat": true
+    },
+    {
+      "id": "base:inn_counter",
+      "kind": "structure",
+      "role": "furniture",
+      "name": "Барная стойка",
+      "solid": true,
+      "natural": true,
+      "cost": {
+        "base:plank": 2
+      },
+      "durability": 520,
+      "material": "wood",
+      "furniture_model": "counter",
+      "rotations": [
+        "s",
+        "n",
+        "e",
+        "w"
+      ]
+    },
+    {
+      "id": "base:inn_sign",
+      "kind": "structure",
+      "role": "furniture",
+      "name": "Вывеска заведения",
+      "solid": false,
+      "natural": true,
+      "cost": {
+        "base:plank": 2
+      },
+      "durability": 520,
+      "material": "wood",
+      "furniture_model": "sign",
+      "rotations": [
+        "s",
+        "n",
+        "e",
+        "w"
+      ]
+    },
+    {
+      "id": "base:inn_letter",
+      "kind": "item",
+      "name": "Письмо хозяину соседнего поселения",
+      "stack": 1
+    }
+  ]
+}

@@ -712,6 +712,7 @@ func remove(id: String) -> void:
 	var c: Creature = creatures.get(id)
 	if c == null:
 		return
+	world.hospitality.died(c)
 	if c.job.has("caravan_driver") or c.job.has("guard_driver") or c.job.has("horse") or c.job.has("guard"):
 		_caravan_deaths[id] = true
 		world.operation_fact("caravan_dead|" + id, "1")
@@ -942,7 +943,9 @@ func _behave(c: Creature, def: Dictionary) -> void:
 		"prey":
 			_prey(c, def)
 		"villager":
-			if not c.route.is_empty() or c.job.get("profession", "") == "base:trader":
+			if c.job.has("hospitality"):
+				world.hospitality.think(c)
+			elif not c.route.is_empty() or c.job.get("profession", "") == "base:trader":
 				_traveller(c, def)
 			elif not c.job.is_empty():
 				_dweller(c, def)
@@ -1492,6 +1495,9 @@ func _own(c: Creature, salt: int) -> float:
 
 ## Where a dweller's day has it: its work, the fire, its bed.
 func _dweller_spot(c: Creature, phase: String) -> Vector2i:
+	if c.job.has("hospitality"):
+		var inn := world.hospitality.plan(String(c.job["hospitality"]))
+		return inn.get("host", c.home)
 	var plan := _plan_of(c)
 	if plan.is_empty():
 		return Creature.NO_TARGET
@@ -1501,6 +1507,9 @@ func _dweller_spot(c: Creature, phase: String) -> Vector2i:
 		"night":
 			return home["bed"]
 		"evening":
+			var visit := world.hospitality.visitor_spot(c)
+			if visit != Creature.NO_TARGET:
+				return visit
 			var round := [Vector2i(-2, 0), Vector2i(2, 0), Vector2i(-1, 1), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-3, 1), Vector2i(3, 1)]
 			return (plan["fire"] as Vector2i) + round[i % round.size()]
 	var work := String(_profession(c).get("work", ""))
@@ -1583,29 +1592,31 @@ func _dweller(c: Creature, def: Dictionary) -> void:
 		_villager(c, def)
 		return
 	var prof := _profession(c)
+	var visiting := phase == "evening" and world.hospitality.is_seat(c.location, spot)
 	if _someone_close(c, 3.0) and (c.said_at < 0 or _tick - c.said_at > int(SAY_EVERY * Movement.TICK_RATE)):
 		_speak(c, prof, phase)
-	if Vector2(c.cell()).distance_to(Vector2(spot)) <= 1.0:
+	var arrived := c.pos == spot * Movement.UNIT + Vector2i(128, 128) if visiting else Vector2(c.cell()).distance_to(Vector2(spot)) <= 1.0
+	if arrived:
 		c.path.clear()
 		_dress(c, String(prof.get("holds", "")) if phase == "work" else "", phase == "night")
 		# At the fire one looks into it (the author, 28.10.2026: they stood with their backs to it).
-		_look(c, (_plan_of(c)["fire"] as Vector2i) - c.cell() if phase == "evening" else Vector2i.ZERO)
+		_look(c, ContentRegistry.FACINGS.get(String(world._props_at(c.location, spot.x, spot.y).get("facing", "s")), Vector2i.DOWN) if visiting else ((_plan_of(c)["fire"] as Vector2i) - c.cell() if phase == "evening" else Vector2i.ZERO))
 		if phase == "work":
 			_work(c, spot, prof)
-		_go(c, phase, Creature.NO_TARGET, false)
+		_go(c, "visit" if visiting else phase, Creature.NO_TARGET, false)
 		return
 	_dress(c, "", false)
 	_look(c, Vector2i.ZERO)
 	if c.path_to != spot or c.path.is_empty():
 		c.path = _route(c, spot)
 		c.path_to = spot
-	while not c.path.is_empty() and c.path[0] == c.cell():
+	while not c.path.is_empty() and (c.pos == c.path[0] * Movement.UNIT + Vector2i(128, 128) if visiting else c.path[0] == c.cell()):
 		c.path.pop_front()
 	if c.path.is_empty():
 		_go(c, "lost", Creature.NO_TARGET, false)  # no way there now (a door locked, a wall built)
 		return
 	_open_doors(c, c.cell(), c.path[0])
-	_go(c, "walk", c.path[0], false)
+	_go(c, "visit_walk" if visiting else "walk", c.path[0], false)
 
 
 ## Where a dweller looks (seen by all): a change is told; ZERO — as it walks.
@@ -1920,7 +1931,7 @@ func _go(c: Creature, state: String, target_cell: Vector2i, run: bool) -> void:
 	var target := target_cell * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2) \
 		if target_cell != Creature.NO_TARGET else Creature.NO_TARGET
 	if c.state != state or c.target != target or c.running != run:
-		if (c.state == "hunt") != (state == "hunt"):
+		if (c.state == "hunt") != (state == "hunt") or (c.state == "visit") != (state == "visit"):
 			_cold[c.id] = true  # it starts or stops hunting: heard (its howl)
 		c.state = state
 		c.target = target
@@ -1949,7 +1960,7 @@ func _move(c: Creature) -> void:
 		_movers.erase(c.id)
 		return
 	var d := c.target - c.pos
-	var precise: bool = c.state == "detour" or (c.state == "follow" and c.job.has("guard_driver"))
+	var precise: bool = c.state in ["detour", "visit_walk"] or (c.state == "follow" and c.job.has("guard_driver"))
 	var detour_axis := Vector2i.ZERO
 	if c.state == "detour":
 		if c.path_heading == Vector2i.ZERO:
@@ -2004,7 +2015,7 @@ func _move(c: Creature) -> void:
 				c.route_retry = _tick + Movement.TICK_RATE
 				c.path.clear()
 				c.path_to = Creature.NO_TARGET
-			if c.job.has("guard_driver"):
+			if c.job.has("guard_driver") or c.state == "visit_walk":
 				c.path.clear()
 				c.path_to = Creature.NO_TARGET
 			c.target = Creature.NO_TARGET

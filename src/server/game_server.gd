@@ -657,6 +657,7 @@ func _creature_cold(c: Creature) -> Dictionary:
 		cold["name"] = String(c.job.get("name", ""))
 		cold["held"] = c.held
 		cold["asleep"] = c.asleep
+		cold["sitting"] = c.state == "visit"
 		cold["face"] = [c.face.x, c.face.y]  # where it looks standing (the fire)
 		cold["say"] = c.say
 		cold["said"] = c.said

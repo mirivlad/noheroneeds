@@ -495,9 +495,46 @@ func request_of(c: Creature) -> Dictionary:
 	if not c.job.has("village"):
 		return {}
 	for r: Dictionary in of(String(c.job["village"]))["requests"]:
-		if r["state"] == "open" and int(r["asker"]) == int(c.job.get("home", -1)):
+		if r["state"] == "open" and (r.get("asker_id", "") == c.id if r.has("asker_id") else int(r["asker"]) == int(c.job.get("home", -1))):
 			return r
 	return {}
+
+
+## A real host's finite jobs use the same request records, journal and
+## completion transaction as village errands. They are issued once per host.
+func offer_from(c: Creature, story: String, vars: Dictionary, destination := "") -> void:
+	var id := String(c.job["village"])
+	var v := of(id)
+	var r: Dictionary = world.content.get_def(story)["request"]
+	var n := int(v["next"])
+	v["next"] = n + 1
+	(v["requests"] as Array).append({"n": n, "story": story, "kind": r["kind"], "asker": int(c.job["home"]),
+		"asker_id": c.id, "asker_name": c.job["name"], "asker_profession": c.job["profession"],
+		"village": id, "destination": destination, "vars": vars.duplicate(), "item": r["item"],
+		"count": int(r["count"]), "target": "", "radius": int(r.get("radius", 48)), "reward": int(r["reward"]),
+		"takers": {}, "state": "open", "at": world.world_time})
+	(v["entries"] as Array).append({"at": world.world_time, "text": String(world.content.get_def(story)["entry"]).format(vars)})
+	_save(id)
+
+
+func parcel_copy(r: Dictionary, actor: String) -> int:
+	var inventory := world.inventory(actor)
+	for i in inventory.count(String(r["item"])):
+		var props := inventory.state_of(String(r["item"]), i)
+		if props.get("parcel", "") == "%s|%d" % [r["village"], int(r["n"])] and props.get("bearer", "") == actor:
+			return i
+	return -1
+
+
+func delivery_for(c: Creature, actor: String) -> Array:
+	if not _known.has(actor):
+		_known[actor] = _read_known(actor)
+	for id: String in _known[actor]:
+		for r: Dictionary in of(id)["requests"]:
+			if r["state"] == "open" and r["kind"] == "deliver" and r.get("destination", "") == c.job.get("village", "") \
+					and (r["takers"] as Dictionary).has(actor):
+				return [id, r]
+	return []
 
 
 ## Where one stands with a request: "offered", "doing", "ready".
@@ -507,6 +544,8 @@ func state_of(r: Dictionary, actor: String) -> String:
 	match String(r["kind"]):
 		"hunt":
 			return "ready" if int(r["takers"][actor]) >= int(r["count"]) else "doing"
+		"deliver":
+			return "ready" if parcel_copy(r, actor) >= 0 else "doing"
 		_:
 			return "ready" if world.inventory(actor).count(String(r["item"])) >= int(r["count"]) else "doing"
 
@@ -520,25 +559,30 @@ func talk(actor: String, c: Creature) -> Dictionary:
 		if not _known.has(actor):
 			_known[actor] = _read_known(actor)
 		_known[actor][id] = true
-		world.note_fact("known|" + actor, ",".join(PackedStringArray((_known[actor] as Dictionary).keys())))
+		world.note_fact("known|" + actor, JSON.stringify((_known[actor] as Dictionary).keys()))
 	var who := dweller_name(id, int(c.job.get("home", -1)))
 	var out := {"ok": true, "creature": c.id, "name": who[0], "profession": String(c.job.get("profession", "")),
 		"village": v["name"], "chronicle": told(v), "standing": standing(c, actor)}
 	if bears_grudge(c, actor):
 		out["grudge"] = true
 		return out
+	var delivery := delivery_for(c, actor)
 	var r := request_of(c)
-	if not r.is_empty():
-		out["request"] = shown(id, r, actor)
+	if not delivery.is_empty():
+		out["request"] = shown(String(delivery[0]), delivery[1], actor, id)
+	elif not r.is_empty():
+		out["request"] = shown(id, r, actor, id)
 	return out
 
 
 ## A request as one is told it.
-func shown(id: String, r: Dictionary, actor: String) -> Dictionary:
+func shown(id: String, r: Dictionary, actor: String, receiver := "") -> Dictionary:
 	var state := state_of(r, actor)
+	if r["kind"] == "deliver" and receiver != r.get("destination", ""):
+		state = "doing" if (r["takers"] as Dictionary).has(actor) else "offered"
 	var plan := _plan(id)
-	var asker := dweller_name(id, int(r["asker"]))
-	var trade := _trade_name(String(plan["homes"][int(r["asker"])]["dweller"])) if not plan.is_empty() else ""
+	var asker: Array = [r["asker_name"], false] if r.has("asker_id") else dweller_name(id, int(r["asker"]))
+	var trade := _trade_name(String(r["asker_profession"])) if r.has("asker_id") else (_trade_name(String(plan["homes"][int(r["asker"])]["dweller"])) if not plan.is_empty() else "")
 	var vars: Dictionary = (r["vars"] as Dictionary).duplicate()
 	vars.merge(_player_vars(actor), true)
 	vars["count"] = int(r["count"])
@@ -547,6 +591,7 @@ func shown(id: String, r: Dictionary, actor: String) -> Dictionary:
 	vars["asker_trade"] = trade
 	var said: Dictionary = world.content.get_def(String(r["story"]))["request"]
 	return {"n": int(r["n"]), "kind": String(r["kind"]), "state": state, "reward": int(r["reward"]),
+		"reissue": r["kind"] == "deliver" and receiver == id and state == "doing" and parcel_copy(r, actor) < 0,
 		"says": String(said["ask"] if state == "offered" else said["doing"]).format(vars),
 		"goal": String(said["goal"]).format(vars), "village": String(v_name(id))}
 
@@ -574,6 +619,11 @@ func promise(actor: String, c: Creature) -> Dictionary:
 	var r := request_of(c)
 	if r.is_empty():
 		return {"ok": false, "reason": "no_request"}
+	if r["kind"] == "deliver" and parcel_copy(r, actor) < 0:
+		var item := String(r["item"])
+		if Bag.room_for(world.content, world.inventory(actor).stacks, item) < 1:
+			return {"ok": false, "reason": "full"}
+		world.give(actor, item, 1, [{"parcel": "%s|%d" % [r["village"], int(r["n"])], "bearer": actor}])
 	if not (r["takers"] as Dictionary).has(actor):
 		r["takers"][actor] = 0
 		_save(String(c.job["village"]))
@@ -585,17 +635,25 @@ func promise(actor: String, c: Creature) -> Dictionary:
 func report(actor: String, c: Creature) -> Dictionary:
 	if bears_grudge(c, actor):
 		return {"ok": false, "reason": "grudge"}
-	var r := request_of(c)
+	var id := String(c.job["village"])
+	var delivery := delivery_for(c, actor)
+	var r: Dictionary = delivery[1] if not delivery.is_empty() else request_of(c)
+	if not delivery.is_empty():
+		id = String(delivery[0])
 	if r.is_empty():
 		return {"ok": false, "reason": "no_request"}
+	if r["kind"] == "deliver" and c.job.get("village", "") != r.get("destination", ""):
+		return {"ok": false, "reason": "not_receiver"}
 	match state_of(r, actor):
 		"offered":
 			return {"ok": false, "reason": "not_taken"}
 		"doing":
 			return {"ok": false, "reason": "not_done"}
-	var id := String(c.job["village"])
 	var told_now := shown(id, r, actor)
-	if r["kind"] != "hunt":
+	if r["kind"] == "deliver":
+		world.inventory(actor).take(String(r["item"]), 1, parcel_copy(r, actor))
+		world.touch_inventory(actor)
+	elif r["kind"] != "hunt":
 		world.inventory(actor).remove(String(r["item"]), int(r["count"]))
 		world.touch_inventory(actor)
 	if int(r["reward"]) > 0:
@@ -637,6 +695,19 @@ func journal(actor: String) -> Dictionary:
 func _read_known(actor: String) -> Dictionary:
 	var out := {}
 	var raw := world.fact("known|" + actor)
-	for id: String in raw.split(",", false):
-		out[id] = true
+	var parsed: Variant = JSON.parse_string(raw) if raw != "" else null
+	if parsed is Array:
+		for id: String in parsed:
+			out[id] = true
+	else:
+		# Legacy comma-separated names contain commas inside village IDs.
+		var parts := raw.split(",", false)
+		var i := 0
+		while i < parts.size():
+			var id := String(parts[i])
+			if id.contains("@") and not id.contains("#") and i + 1 < parts.size():
+				i += 1
+				id += "," + String(parts[i])
+			out[id] = true
+			i += 1
 	return out

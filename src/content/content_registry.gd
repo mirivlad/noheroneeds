@@ -467,6 +467,8 @@ func _validate() -> void:
 				_check_settlement(id, d)
 			"profession":
 				_check_profession(id, d)
+			"hospitality":
+				_check_hospitality(id, d)
 			"names":
 				for f: String in ["male", "female", "villages"]:
 					if typeof(d.get(f)) != TYPE_ARRAY or (d[f] as Array).is_empty():
@@ -475,6 +477,42 @@ func _validate() -> void:
 				_check_story(id, d)
 			var other:
 				errors.append("%s: unknown kind '%s'" % [id, other])
+
+
+func _check_hospitality(id: String, d: Dictionary) -> void:
+	if d.get("mode") == "services":
+		for meal: Dictionary in d.get("menu", []):
+			if String(meal.get("id", "")) == "" or int(meal.get("price", 0)) < 1 \
+					or get_def(String(meal.get("item", ""))).get("food", {}).is_empty():
+				errors.append("%s: meals need an id, a price and existing food" % id)
+		for bed: Dictionary in d.get("lodging", []):
+			if String(bed.get("id", "")) not in ["shared", "private"] or int(bed.get("price", 0)) < 1 \
+					or float(bed.get("hours", 0)) <= 0 or float(bed.get("rest", 1)) < 1:
+				errors.append("%s: lodging needs a bed kind, price, hours and rest rate" % id)
+		_check_refs(id, "work", d.get("work", []), "story")
+	elif d.get("mode") == "building":
+		if String(d.get("site", "")) not in ["tavern", "inn"]:
+			errors.append("%s: building site is tavern or inn" % id)
+		var rows: Array = d.get("rows", [])
+		if rows.is_empty() or rows.size() + int(d.get("yard", 4)) > 28 or String(rows[0]).length() > 24:
+			errors.append("%s: a lodging layout must fit within a chunk" % id)
+			return
+		var width := String(rows[0]).length()
+		if not d.get("upper", []).is_empty() and d["upper"].size() != rows.size():
+			errors.append("%s: upper floor must match the building footprint" % id)
+		var hosts := 0
+		for row: String in rows + d.get("upper", []):
+			if row.length() != width:
+				errors.append("%s: lodging rows must have the same width" % id)
+			for tile in row:
+				if not String(tile) in ".#wDd=HTCcFKOBPSV":
+					errors.append("%s: unknown lodging tile '%s'" % [id, tile])
+				hosts += 1 if tile == "H" else 0
+		if hosts != 1:
+			errors.append("%s: a lodging layout needs one host" % id)
+		_check_refs(id, "walls", d.get("walls", []), "structure")
+	else:
+		errors.append("%s: hospitality mode is services or building" % id)
 
 
 ## A living creature (ADR-0018): how it behaves is data, the code knows
@@ -648,7 +686,7 @@ func _check_profession(id: String, d: Dictionary) -> void:
 ## dwellers makes of whoever asks: hunt (a kind seen by the village, near
 ## it), fetch (an item, so many), find (a thing lost in a cave near it).
 const STORY_FROM := ["founding", "predators", "season:spring", "season:summer", "season:autumn", "season:winter",
-	"dweller_killed", "dweller_hurt", "livestock_killed"]
+	"dweller_killed", "dweller_hurt", "livestock_killed", "hospitality"]
 
 
 func _check_story(id: String, d: Dictionary) -> void:
@@ -677,7 +715,7 @@ func _check_story(id: String, d: Dictionary) -> void:
 		"hunt":
 			if d["from"] != "predators":
 				errors.append("%s: a hunt grows from predators seen" % id)
-		"fetch":
+		"fetch", "deliver":
 			if kind_of(String(r.get("item", ""))) != "item" or r["count"] < 1:
 				errors.append("%s: fetch needs an item and a count" % id)
 		"find":

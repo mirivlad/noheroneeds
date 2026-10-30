@@ -202,3 +202,21 @@ func test_a_continent_keeps_its_endless_ocean() -> void:
 	var ground := c.get_cell("ground", 0, 0) if c else ""
 	check(c != null and ground != "" and _content.get_def(ground).get("swim", false), "past the map is open sea, not another shore: %s" % ground)
 	w.close()
+
+
+func test_a_light_at_the_seam_lights_the_far_edge() -> void:
+	var plan := WorldPlan.generate(431, "small", "temperate")
+	var w := _open(plan)
+	if w == null:
+		return
+	w.world_time = 0  # midnight: the daylight is the same everywhere, and dim
+	var west := _west(plan)
+	var width := plan.size.x * Chunk.SIZE
+	var east := west + Vector2i(width - 1, 0)
+	var plain := w.light_at("surface", west)
+	var c := w.chunk("surface", west.x >> 5, west.y >> 5)
+	c.set_cell("structure", 0, 0, "base:torch")
+	w._changed(ServerWorld.chunk_key("surface", west.x >> 5, west.y >> 5))
+	check(w.light_at("surface", west) > plain, "a torch at the west edge lights its own cell")
+	check(w.light_at("surface", east) > plain, "and the cell a step east, across the seam: %f vs %f" % [w.light_at("surface", east), plain])
+	w.close()

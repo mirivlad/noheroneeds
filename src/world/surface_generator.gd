@@ -74,7 +74,7 @@ var _rivers_key := Vector2i(1 << 30, 0)
 var _rivers: Array = []
 
 
-func _init(seed_value: int, content: ContentRegistry) -> void:
+func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null) -> void:
 	world_seed = seed_value
 	var ids: Array = []
 	for id: String in content.defs:
@@ -107,7 +107,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 		_chasm = String(g.get("chasm", ""))
 		_hanging = String(g.get("hanging_bridge", ""))
 		_flat = bool(g["flat"])
-	geography = Geography.of(seed_value) if can_generate() and not _flat else null
+	geography = (PlannedGeography.new(plan) if plan else Geography.of(seed_value)) if can_generate() and not _flat else null
 	_grain.seed = seed_value + 7919
 	_grain.frequency = 0.045
 	_grain.fractal_octaves = 3

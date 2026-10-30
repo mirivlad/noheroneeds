@@ -1,0 +1,18 @@
+name: Website checks
+on:
+  push:
+    branches: [feat/game-site-wiki]
+    paths: ["site/**", ".github/workflows/site-check.yml"]
+  pull_request:
+    paths: ["site/**", ".github/workflows/site-check.yml"]
+permissions:
+  contents: read
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate website data and links
+        run: python3 -m unittest discover -s site/tests -v
+      - name: Check browser JavaScript syntax
+        run: node --check site/assets/site.js

@@ -175,7 +175,8 @@ func update_view(alpha: float, delta: float) -> void:
 		_resize()
 	if client.geography and _land == null:
 		# Call the ORIGINAL surface sampler, never a new world generator.
-		_land = SurfaceGenerator.new(client.geography.world_seed, content)
+		var plan: WorldPlan = (client.geography as PlannedGeography).plan if client.geography is PlannedGeography else null
+		_land = SurfaceGenerator.new(client.geography.world_seed, content, plan)
 		terrain = _new_terrain()
 	if client.location != _location:
 		_location = client.location

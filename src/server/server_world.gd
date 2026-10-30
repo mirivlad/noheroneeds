@@ -377,15 +377,20 @@ static func chunk_key(location: String, cx: int, cy: int) -> String:
 	return "%s|%d|%d" % [location, cx, cy]
 
 
-## World storage keys identify a single longitude on a planned planet.
-## Latitude folding needs a reflected cell view and is handled separately.
+## Canonical chunk identity on a planned planet.
 func storage_chunk(cx: int, cy: int) -> Vector2i:
 	if generator and generator.geography is PlannedGeography:
 		var plan := (generator.geography as PlannedGeography).plan
-		if plan.preset != "single_continent":
-			cx = posmod(cx + plan.spawn.x, plan.size.x) - plan.spawn.x
+		return plan.canonical_point(Vector2i(cx, cy), 1)
 	return Vector2i(cx, cy)
 
+
+func reflected_chunk(cy: int) -> bool:
+	if generator and generator.geography is PlannedGeography:
+		var plan := (generator.geography as PlannedGeography).plan
+		if plan.preset != "single_continent":
+			return posmod(cy + plan.spawn.y, plan.size.y * 2) >= plan.size.y
+	return false
 
 func storage_key(location: String, cx: int, cy: int) -> String:
 	var point := storage_chunk(cx, cy)
@@ -401,20 +406,24 @@ var _last_chunk: Chunk = null
 var chunks_epoch := 0
 var _last_chunk_at := Vector2i(1 << 30, 0)
 var _last_chunk_location := ""
+var _last_reflected: ReflectedChunk
 
 
 func chunk(location: String, cx: int, cy: int) -> Chunk:
+	var reflected := reflected_chunk(cy)
 	var at := storage_chunk(cx, cy)
-	cx = at.x
-	cy = at.y
-	if _last_chunk != null and cx == _last_chunk_at.x and cy == _last_chunk_at.y and location == _last_chunk_location:
-		return _last_chunk
-	var c := _chunk(location, cx, cy)
-	_last_chunk = c
-	_last_chunk_at = Vector2i(cx, cy)
-	_last_chunk_location = location
-	return c
-
+	if _last_chunk == null or at != _last_chunk_at or location != _last_chunk_location:
+		_last_chunk = _chunk(location, at.x, at.y)
+		_last_chunk_at = at
+		_last_chunk_location = location
+		_last_reflected = null
+	if reflected:
+		if _last_reflected == null:
+			_last_reflected = ReflectedChunk.new(_last_chunk)
+		else:
+			_last_reflected.refresh()
+		return _last_reflected
+	return _last_chunk
 
 func _chunk(location: String, cx: int, cy: int) -> Chunk:
 	var key := chunk_key(location, cx, cy)
@@ -719,30 +728,31 @@ func _flush_explored() -> void:
 ## is there, else from the store without loading it into the world (no
 ## creatures woken, nothing generated); empty if it was never made.
 func map_tile(location: String, cx: int, cy: int) -> PackedByteArray:
-	var at := storage_chunk(cx, cy)
-	cx = at.x
-	cy = at.y
-	var key := chunk_key(location, cx, cy)
+	var key := storage_key(location, cx, cy)
+	var reflected := reflected_chunk(cy)
 	var rev: int = _chunk_rev.get(key, 0)
-	var cached: Array = _map_tiles.get(key, [])
+	var cached: Array = _map_tiles.get(key, []) if not reflected else []
 	if not cached.is_empty() and cached[0] == rev:
 		return cached[1]
+	var at := storage_chunk(cx, cy)
 	var c: Chunk = _chunks.get(key)
 	if c == null:
-		var data := store.get_chunk(location, cx, cy)
+		var data := store.get_chunk(location, at.x, at.y)
 		if data.is_empty():
 			return PackedByteArray()
 		c = ChunkCodec.decode(data)
 		if c == null:
 			return PackedByteArray()
-	# Shut-in ore shows as rock on the map too; chunks not in memory count as
-	# solid round it (a map is no way to find veins).
-	var bytes := MapTile.encode(MapTile.of(shown_chunk(location, cx, cy, c, func(x: int, y: int) -> bool:
-		var k := chunk_key(location, floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
-		return not _chunks.has(k) or is_solid(location, x, y))))
-	if _map_tiles.size() > 4096:
-		_map_tiles.clear()  # a cache, not a store
-	_map_tiles[key] = [rev, bytes]
+	if reflected:
+		c = ReflectedChunk.new(c)
+	var shown := shown_chunk(location, cx, cy, c, func(x: int, y: int) -> bool:
+		var k := storage_key(location, floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
+		return not _chunks.has(k) or is_solid(location, x, y))
+	var bytes := MapTile.encode(MapTile.of(shown.snapshot() if shown is ReflectedChunk else shown))
+	if not reflected:
+		if _map_tiles.size() > 4096:
+			_map_tiles.clear()
+		_map_tiles[key] = [rev, bytes]
 	return bytes
 
 
@@ -934,6 +944,10 @@ func chunk_revision(location: String, cx: int, cy: int) -> int:
 func encoded_chunk(location: String, cx: int, cy: int) -> PackedByteArray:
 	var key := storage_key(location, cx, cy)
 	var rev: int = _chunk_rev.get(key, 0)
+	if reflected_chunk(cy):
+		var view := shown_chunk(location, cx, cy, chunk(location, cx, cy),
+			func(x: int, y: int) -> bool: return is_solid(location, x, y))
+		return ChunkCodec.encode(view.snapshot() if view is ReflectedChunk else view)
 	var cached: Array = _encoded.get(key, [])
 	if cached.is_empty() or cached[0] != rev:
 		cached = [rev, ChunkCodec.encode(shown_chunk(location, cx, cy, chunk(location, cx, cy),
@@ -1237,8 +1251,7 @@ class SolidIn:
 		if here != _at or _epoch != world.chunks_epoch:
 			_at = here
 			_epoch = world.chunks_epoch
-			_chunk = world._chunks.get(world.storage_key(location, here.x, here.y)) if loaded_only \
-				else world.chunk(location, here.x, here.y)
+			_chunk = world.chunk(location, here.x, here.y) if not loaded_only or world.has_chunk(location, here.x, here.y) else null
 		if _chunk == null:
 			_at = Vector2i(1 << 30, 0)  # asked again next time: it may have come by then
 			return true
@@ -1295,10 +1308,13 @@ func light_sources(location: String, around: Vector2i, radius: int) -> Array:
 
 func _chunk_lights(location: String, cx: int, cy: int) -> Array:
 	var key := chunk_key(location, cx, cy)
-	if _lights_by_chunk.has(key):
+	var alias := key != storage_key(location, cx, cy) or reflected_chunk(cy)
+	if not alias and _lights_by_chunk.has(key):
 		return _lights_by_chunk[key]
 	var out := []
 	var c := chunk(location, cx, cy)
+	if c is ReflectedChunk:
+		c = c.snapshot()
 	var cells: PackedInt32Array = c.layers.get("structure", PackedInt32Array())
 	if not cells.is_empty():
 		var lit := {}
@@ -1312,7 +1328,8 @@ func _chunk_lights(location: String, cx: int, cy: int) -> Array:
 					var l: Dictionary = lit[cells[i]]
 					out.append([Vector2i(cx * Chunk.SIZE + i % Chunk.SIZE, cy * Chunk.SIZE + i / Chunk.SIZE),
 						float(l["intensity"]), float(l["radius"])])
-	_lights_by_chunk[key] = out
+	if not alias:
+		_lights_by_chunk[key] = out
 	return out
 
 

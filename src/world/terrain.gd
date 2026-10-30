@@ -73,9 +73,10 @@ static func is_opaque(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> b
 ## changes: walking and sight ask about the same cells many times a second.
 static func _traits(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> int:
 	var i := Chunk.cell_index(lx, ly)
-	if c.traits.is_empty():
+	var reflected := c is ReflectedChunk
+	if not reflected and c.traits.is_empty():
 		c.traits.resize(Chunk.CELLS)
-	var t := c.traits[i]
+	var t := 0 if reflected else c.traits[i]
 	if t != 0:
 		return t
 	t = _KNOWN
@@ -110,5 +111,6 @@ static func _traits(c: Chunk, lx: int, ly: int, content: ContentRegistry) -> int
 		var pd := content.get_def(plant) if plant != "" else {}
 		if plant != "" and bool(pd.get("opaque", pd.get("solid", false))):
 			t |= _OPAQUE
-	c.traits[i] = t
+	if not reflected:
+		c.traits[i] = t
 	return t

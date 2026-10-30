@@ -42,6 +42,9 @@ static func clear(world: ServerWorld, la: String, a: Vector2i, lb: String, b: Ve
 		eye := EYE, body := BODY) -> bool:
 	if la != lb and not same_space(world, la, lb):
 		return false
+	# The world may be closed (a planet): name the far end on the near side of
+	# the seam, so a line never crosses the whole map to reach its neighbour.
+	b = world.near_cell(b, a)
 	var ha := world.levels.z(la) + eye
 	var hb := world.levels.z(lb) + body
 	var dx := absi(b.x - a.x)

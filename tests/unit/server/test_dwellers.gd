@@ -28,7 +28,7 @@ func _load_round() -> void:
 
 
 func _dwellers() -> Array:
-	return w.creatures.creatures.values().filter(func(c: Creature) -> bool: return String(c.job.get("village", "")) == String(plan["id"]))
+	return w.creatures.creatures.values().filter(func(c: Creature) -> bool: return String(c.job.get("village", "")) == String(plan["id"]) and int(c.job.get("home", -1)) >= 0)
 
 
 ## Lives on for `ticks` from the hour `hour` of day 2 (a jump: they catch
@@ -73,13 +73,14 @@ func test_a_day_at_work_an_evening_by_the_fire_a_night_in_bed() -> void:
 	# Individual shifts end as late as 19:36, and the earliest bedtime is
 	# 20:00. At 19:45 everyone is actually in their evening phase.
 	_live(19.75, 1600)
-	var by_fire := 0
+	var resting := 0
 	for c: Creature in _dwellers():
 		eq(w.creatures._phase(c), "evening", "after every shift, before any bedtime")
-		if Vector2(c.cell()).distance_to(Vector2(plan["fire"])) <= 4.0:
-			by_fire += 1
+		var evening_spot := w.creatures._dweller_spot(c, "evening")
+		if c.cell().distance_to(evening_spot) <= 1.0:
+			resting += 1
 			eq(c.held, "", "nothing in the hands of an evening")
-	check(by_fire >= _dwellers().size() - 1, "by the fire in the evening: %d" % by_fire)
+	check(resting >= _dwellers().size() - 1, "at the evening's fire or tavern table: %d" % resting)
 	_live(23.0, 1600)
 	for c: Creature in _dwellers():
 		var bed: Vector2i = plan["homes"][int(c.job["home"])]["bed"]

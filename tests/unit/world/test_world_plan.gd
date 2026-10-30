@@ -145,3 +145,20 @@ func test_corrupt_plan_is_refused_without_overwriting_world() -> void:
 	store.open(path)
 	eq(store.read_meta("world_plan"), "broken", "opening does not regenerate or overwrite a damaged plan")
 	store.close()
+
+
+func test_canonical_world_coordinates_close_the_seam_and_poles() -> void:
+	var plan := WorldPlan.generate(431, "small", "temperate")
+	for scale: int in [1, Chunk.SIZE, Chunk.SIZE * Movement.UNIT]:
+		var first := -plan.spawn * scale
+		var width := plan.size.x * scale
+		var height := plan.size.y * scale
+		var inside := first + Vector2i(5, 7)
+		eq(plan.canonical_point(inside + Vector2i(width, 0), scale), inside, "east and west identify the same coordinate")
+		eq(plan.canonical_point(first + Vector2i(5, -1), scale), first + Vector2i(5 + width / 2, 0), "crossing the north pole reverses y and turns longitude")
+		eq(plan.canonical_point(first + Vector2i(5, height), scale), first + Vector2i(5 + width / 2, height - 1), "crossing the south pole reverses y and turns longitude")
+		var far := inside + Vector2i(width * 5, height * 4)
+		eq(plan.canonical_point(far, scale), inside, "multiple circuits canonicalize")
+		eq(plan.canonical_point(plan.canonical_point(far, scale), scale), inside, "canonicalization is idempotent")
+	var flat := WorldPlan.generate(431, "single_continent", "cold")
+	eq(flat.canonical_point(Vector2i(-99999, 99999), Chunk.SIZE), Vector2i(-99999, 99999), "the continental ocean is not wrapped")

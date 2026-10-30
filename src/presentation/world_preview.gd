@@ -2,6 +2,13 @@ class_name WorldPreview
 extends Control
 ## The same stored fields used by geography, shown as a flat map or a sphere.
 
+const BIOME_COLORS := {
+	"base:meadow": "81a96b", "base:forest": "427b50", "base:taiga": "557d6b",
+	"base:grove": "74a865", "base:swamp": "738864", "base:steppe": "b0aa6b",
+	"base:tundra": "dbe5d9", "base:rocky": "92927b", "base:desert": "d4b877",
+	"base:mountains": "92998d", "base:peaks": "edf1e9",
+}
+
 var plan: WorldPlan
 var picture: TextureRect
 var viewport: SubViewport
@@ -91,25 +98,12 @@ static func map_image(source: WorldPlan) -> Image:
 		for x in source.size.x:
 			var k := y * source.size.x + x
 			var h := source.value(0, Vector2i(x, y))
-			var warmth := source.value(1, Vector2i(x, y))
-			var rain := source.value(2, Vector2i(x, y))
 			var color := Color("195474")
 			if h >= 0.0:
 				if source.lake[k] > 0.0 or source.river[k] > 0.0:
 					color = Color("4b9ab1")
-				elif warmth < -0.52:
-					color = Color("e4e9df")
-				elif warmth < -0.25:
-					color = Color("a6b8a0")
-				elif h > 0.45:
-					color = Color("a5a59a") if warmth > -0.2 else Color("e5e9e2")
-				elif h > 0.2:
-					color = Color("6c8063")
-				elif warmth > 0.32 and rain < -0.16:
-					color = Color("d4b877")
-				elif rain < -0.15:
-					color = Color("9ba867")
 				else:
-					color = Color("5f9864")
+					var biome: String = source.biome_ids[source.biomes[k]]
+					color = Color(String(BIOME_COLORS.get(biome, "7f9e69")))
 			image.set_pixel(x, y, color)
 	return image

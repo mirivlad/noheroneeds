@@ -4,7 +4,7 @@ extends RefCounted
 ## representing STEP surface cells. The packed fields are the authority, not
 ## a recipe to re-run when a world is opened.
 
-const FORMAT := 2
+const FORMAT := 3
 const STEP := Chunk.SIZE
 const PRESETS := {
 	"single_continent": Vector2i(160, 160),
@@ -26,9 +26,12 @@ var spawn := Vector2i.ZERO
 var downstream := PackedInt32Array()
 var river := PackedFloat32Array()
 var lake := PackedFloat32Array()
+## Stable global biome ids and the selected index at each coarse point.
+var biome_ids: Array[String] = []
+var biomes := PackedByteArray()
 
 
-static func generate(seed_number: int, size_preset: String, climate_preset: String) -> WorldPlan:
+static func generate(seed_number: int, size_preset: String, climate_preset: String, registry: ContentRegistry = null) -> WorldPlan:
 	if not PRESETS.has(size_preset) or not climate_preset in CLIMATES:
 		return null
 	var plan := WorldPlan.new()
@@ -87,6 +90,10 @@ static func generate(seed_number: int, size_preset: String, climate_preset: Stri
 	plan._orographic_rain()
 	WorldHydrology.build(plan)
 	plan._choose_spawn()
+	if registry == null:
+		registry = ContentRegistry.load_packs(["res://content/base"])
+	if not plan._bake_biomes(registry):
+		return null
 	return plan
 
 
@@ -103,6 +110,44 @@ func _choose_spawn() -> void:
 		if score > best:
 			best = score
 			spawn = Vector2i(k % size.x, k / size.x)
+
+
+## Select biomes once from the content's existing elevation and climate rules.
+func _bake_biomes(registry: ContentRegistry) -> bool:
+	var defs: Array[Dictionary] = []
+	for id: String in registry.defs:
+		if registry.kind_of(id) == "biome":
+			biome_ids.append(id)
+	biome_ids.sort()
+	if biome_ids.is_empty() or biome_ids.size() > 256:
+		return false
+	for id: String in biome_ids:
+		defs.append(registry.get_def(id))
+	biomes.resize(size.x * size.y)
+	for k in biomes.size():
+		var h := float(fields[k * 3]) / 127.5 - 1.0
+		var climate_here := Vector2(float(fields[k * 3 + 1]) / 127.5 - 1.0, float(fields[k * 3 + 2]) / 127.5 - 1.0)
+		var soggy := (lake[k] > 0.0 or river[k] > 0.0) and h < Geography.HILLS * 0.6 and climate_here.y > 0.15
+		var best := 0
+		var best_distance := INF
+		for i in defs.size():
+			var d := defs[i]
+			var span: Array = d.get("elevation", [-1.0, 2.0])
+			if h < float(span[0]) or h > float(span[1]) or (bool(d.get("wet_lowland", false)) and not soggy):
+				continue
+			var climate_value: Array = d.get("climate", [0.0, 0.0])
+			var distance := climate_here.distance_squared_to(Vector2(climate_value[0], climate_value[1]))
+			if distance < best_distance:
+				best_distance = distance
+				best = i
+		biomes[k] = best
+	return true
+
+
+func biome_at(cell: Vector2i) -> String:
+	var p := Vector2i(roundi(float(cell.x) / STEP), roundi(float(cell.y) / STEP)) + spawn
+	var k := WorldHydrology.index_at(self, p)
+	return biome_ids[biomes[k]] if k >= 0 and not biomes.is_empty() else ""
 
 
 ## Moisture brought by the prevailing west wind falls over rising land.
@@ -168,7 +213,8 @@ func to_dict() -> Dictionary:
 		"fields": Marshalls.raw_to_base64(fields),
 		"downstream": Marshalls.raw_to_base64(downstream.to_byte_array()),
 		"river": Marshalls.raw_to_base64(river.to_byte_array()),
-		"lake": Marshalls.raw_to_base64(lake.to_byte_array())}
+		"lake": Marshalls.raw_to_base64(lake.to_byte_array()),
+		"biome_ids": biome_ids, "biomes": Marshalls.raw_to_base64(biomes)}
 
 
 static func from_dict(data: Dictionary) -> WorldPlan:
@@ -199,6 +245,18 @@ static func from_dict(data: Dictionary) -> WorldPlan:
 		if down[k] < -1 or down[k] >= down.size() or not is_finite(rivers[k]) or not is_finite(lakes[k]) \
 				or rivers[k] < 0.0 or rivers[k] > 9.0 or lakes[k] < 0.0 or lakes[k] > 1.01:
 			return null
+	var biome_values: Variant = data.get("biome_ids")
+	var biome_data := Marshalls.base64_to_raw(String(data.get("biomes", "")))
+	if not biome_values is Array or biome_values.is_empty() or biome_values.size() > 256 or biome_data.size() != dimensions.x * dimensions.y:
+		return null
+	var ids: Array[String] = []
+	for entry: Variant in biome_values:
+		if not entry is String or entry == "" or entry in ids:
+			return null
+		ids.append(entry)
+	for i in biome_data:
+		if i >= ids.size():
+			return null
 	var at := Vector2i(int(data.get("spawn_x", -1)), int(data.get("spawn_y", -1)))
 	if at.x < 0 or at.y < 0 or at.x >= dimensions.x or at.y >= dimensions.y:
 		return null
@@ -211,6 +269,8 @@ static func from_dict(data: Dictionary) -> WorldPlan:
 	plan.downstream = down
 	plan.river = rivers
 	plan.lake = lakes
+	plan.biome_ids = ids
+	plan.biomes = biome_data
 	plan.spawn = at
 	return plan
 

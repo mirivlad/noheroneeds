@@ -52,3 +52,43 @@ func test_continent_is_one_landmass_surrounded_by_sea() -> void:
 			check(plan.value(0, Vector2i(x, 0)) < 0.0 and plan.value(0, Vector2i(x, plan.size.y - 1)) < 0.0, "north and south are sea")
 		for y in plan.size.y:
 			check(plan.value(0, Vector2i(0, y)) < 0.0 and plan.value(0, Vector2i(plan.size.x - 1, y)) < 0.0, "east and west are sea")
+
+
+func test_global_drainage_joins_oceans_and_survives_serialization() -> void:
+	for preset_id in ["single_continent", "small"]:
+		var plan := WorldPlan.generate(431, preset_id, "temperate")
+		var restored := WorldPlan.from_dict(plan.to_dict())
+		var count := plan.size.x * plan.size.y
+		var state := PackedByteArray()
+		state.resize(count)
+		var river_count := 0
+		var lake_count := 0
+		for k in count:
+			if plan.fields[k * 3] < 128:
+				state[k] = 2
+			river_count += 1 if plan.river[k] > 0.0 else 0
+			lake_count += 1 if plan.lake[k] > 0.0 else 0
+		for k in count:
+			if state[k] == 2:
+				continue
+			var path := PackedInt32Array()
+			var current := k
+			while current >= 0 and state[current] == 0:
+				state[current] = 1
+				path.append(current)
+				current = plan.downstream[current]
+			check(current >= 0 and state[current] == 2, "each drainage path reaches an ocean without a cycle")
+			for seen in path:
+				state[seen] = 2
+		check(river_count > 0 and lake_count > 0, "%s includes rivers and lakes" % preset_id)
+		eq(restored.downstream, plan.downstream, "drainage is saved")
+		eq(restored.river, plan.river, "rivers are saved")
+		eq(restored.lake, plan.lake, "lakes are saved")
+
+
+func test_huge_world_is_global_and_bounded() -> void:
+	var plan := WorldPlan.generate(22, "huge", "cold")
+	eq(plan.fields.size(), plan.size.x * plan.size.y * 3, "one finite coarse map")
+	eq(plan.downstream.size(), plan.size.x * plan.size.y, "drainage covers the whole map")
+	eq(WorldHydrology.index_at(plan, Vector2i(-1, 10)), WorldHydrology.index_at(plan, Vector2i(plan.size.x - 1, 10)), "drainage crosses the longitude seam")
+	eq(WorldHydrology.index_at(plan, Vector2i(10, -1)), WorldHydrology.index_at(plan, Vector2i(10 + plan.size.x / 2, 0)), "drainage crosses the pole")

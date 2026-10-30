@@ -419,6 +419,11 @@ func distance(a: Vector2i, b: Vector2i) -> float:
 	return topology.distance(a, b) if topology else Vector2(a).distance_to(Vector2(b))
 
 
+## The short way from cell `a` to cell `b`, across a planet's seam.
+func cell_vector(a: Vector2i, b: Vector2i) -> Vector2i:
+	return topology.cell_delta(a, b) if topology else b - a
+
+
 ## How far apart two cells are, the short way round a planet's seam.
 func cell_distance(a: Vector2i, b: Vector2i) -> float:
 	return topology.cell_distance(a, b) if topology else Vector2(a).distance_to(Vector2(b))
@@ -1389,7 +1394,8 @@ func light_sources(location: String, around: Vector2i, radius: int) -> Array:
 			var at: Vector2i = src[0]
 			# A planet's seam is short: a light a lap away may be next to us.
 			if near_cells(at, around, radius):
-				out.append(src)
+				# The offset, so light is never measured across the whole map.
+				out.append([at, src[1], src[2], cell_vector(around, at)])
 	return out
 
 

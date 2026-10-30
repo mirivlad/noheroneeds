@@ -32,6 +32,8 @@ static func level(time_ms: float, indoors: bool, cell: Vector2i, sources: Array,
 		ambient *= Daylight.INDOOR_SHARE
 	var best := ambient
 	for s: Array in sources:
-		var d := Vector2(cell).distance_to(Vector2(s[0]))
+		# A source may carry the offset from the cell (a planet's seam names
+		# the same place a lap away): measured as it lies, it is right next to us.
+		var d := Vector2(s[3]).length() if s.size() > 3 else Vector2(cell).distance_to(Vector2(s[0]))
 		best = maxf(best, from_source(float(s[1]), float(s[2]), d))
 	return clampf(best, 0.0, 1.0)

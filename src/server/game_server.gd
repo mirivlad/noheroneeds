@@ -753,8 +753,8 @@ func _view(s: Session) -> Dictionary:
 		var p: Dictionary = world.present[id]
 		if p["location"] != loc:
 			continue
-		var pc := Movement.cell_of(p["pos"])
-		if absi(floori(float(pc.x) / Chunk.SIZE) - mc.x) <= view_chunks and absi(floori(float(pc.y) / Chunk.SIZE) - mc.y) <= view_chunks:
+		var pc := world.near_cell(Movement.cell_of(p["pos"]), mine)
+		if world.near_cells(pc, mine, view_chunks * Chunk.SIZE):
 			view[id] = _replica[id]
 	for cy in range(mc.y - view_chunks, mc.y + view_chunks + 1):
 		for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
@@ -769,8 +769,8 @@ func _view(s: Session) -> Dictionary:
 			var p: Dictionary = world.present[id]
 			if p["location"] == loc or not _on_plan(p["location"]):
 				continue
-			var pc := Movement.cell_of(p["pos"])
-			if absi(pc.x - mine.x) <= CREATURE_VIEW.x and absi(pc.y - mine.y) <= CREATURE_VIEW.y \
+			var pc := world.near_cell(Movement.cell_of(p["pos"]), mine)
+			if world.near_cells(pc, mine, CREATURE_VIEW.x) \
 					and Sight.clear(world, loc, mine, p["location"], pc):
 				view[id] = _replica[id]
 		if loc != ServerWorld.SURFACE:
@@ -779,8 +779,8 @@ func _view(s: Session) -> Dictionary:
 				for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
 					for id: String in world.items_in_chunk(ServerWorld.SURFACE, cx, cy):
 						var r := _item_replica(id)
-						var ic := Movement.cell_of(Vector2i(r.x, r.y))
-						if absi(ic.x - mine.x) <= CREATURE_VIEW.x and absi(ic.y - mine.y) <= CREATURE_VIEW.y \
+						var ic := world.near_cell(Movement.cell_of(Vector2i(r.x, r.y)), mine)
+						if world.near_cells(ic, mine, CREATURE_VIEW.x) \
 								and Sight.clear(world, loc, mine, ServerWorld.SURFACE, ic):
 							view[id] = r
 	s.view = view
@@ -791,17 +791,34 @@ func _view(s: Session) -> Dictionary:
 ## out) and a little more round `mine`; seen from `from` (another location
 ## on the plan) only those Sight lets through.
 func _creatures_into(view: Dictionary, ln: int, mine: Vector2i, from: String) -> void:
-	var lo := (mine - CREATURE_VIEW) * Movement.UNIT
-	var hi := (mine + CREATURE_VIEW + Vector2i.ONE) * Movement.UNIT
 	for gy in range(floori(float(mine.y - CREATURE_VIEW.y) / GRID), floori(float(mine.y + CREATURE_VIEW.y) / GRID) + 1):
-		for gx in range(floori(float(mine.x - CREATURE_VIEW.x) / GRID), floori(float(mine.x + CREATURE_VIEW.x) / GRID) + 1):
-			var cell_creatures: Dictionary = _grid.get(Vector3i(gx, gy, ln), {})
-			for id: String in cell_creatures:
-				var r: Replica = cell_creatures[id]
-				if r.x >= lo.x and r.x < hi.x and r.y >= lo.y and r.y < hi.y \
-						and (from == "" or Sight.clear(world, from, mine, r.location, Movement.cell_of(Vector2i(r.x, r.y)),
-							Sight.EYE, float(BodySize.of(world.content.get_def(String(r.cold.get("creature", ""))))["body"]))):
-					view[id] = r
+		for gx0 in range(floori(float(mine.x - CREATURE_VIEW.x) / GRID), floori(float(mine.x + CREATURE_VIEW.x) / GRID) + 1):
+			for gx: int in _seam_columns(gx0):
+				var cell_creatures: Dictionary = _grid.get(Vector3i(gx, gy, ln), {})
+				for id: String in cell_creatures:
+					var r: Replica = cell_creatures[id]
+					var at := world.near_cell(Movement.cell_of(Vector2i(r.x, r.y)), mine)
+					var d := at - mine
+					if absi(d.x) > CREATURE_VIEW.x or absi(d.y) > CREATURE_VIEW.y:
+						continue
+					if from == "" or Sight.clear(world, from, mine, r.location, at,
+							Sight.EYE, float(BodySize.of(world.content.get_def(String(r.cold.get("creature", ""))))["body"])):
+						view[id] = r
+
+
+## The grid columns that hold the same places as `gx`, a lap away (a planet
+## only): a neighbour just across the seam may be kept a world further along.
+func _seam_columns(gx: int) -> Array:
+	var out := [gx]
+	if world.topology == null or not world.topology.wraps():
+		return out
+	var across := world.topology.cells_across()
+	if across <= 0 or across % GRID != 0:
+		return out
+	var laps := across / GRID
+	out.append(gx - laps)
+	out.append(gx + laps)
+	return out
 
 
 func _on_plan(location: String) -> bool:
@@ -821,15 +838,15 @@ func _send_snapshot(s: Session) -> void:
 	for id: String in world.combat.projectiles:
 		var r: Replica = _replica.get(id)
 		if r and (r.location == my_loc or (_on_plan(r.location) and _on_plan(my_loc))) \
-				and absi(r.x - my_pos.x) <= CREATURE_VIEW.x * Movement.UNIT \
-				and absi(r.y - my_pos.y) <= CREATURE_VIEW.y * Movement.UNIT:
+				and world.near_pos(Vector2i(r.x, r.y), my_pos, CREATURE_VIEW.x * Movement.UNIT):
 			view[id] = r
 	var due := []
 	for id: String in view:
 		var r: Replica = view[id]
 		if s.known.get(id) == Vector3i(r.hv, r.wv, r.cv) or r.gone:
 			continue
-		due.append([-1 if id == s.character_id else absi(r.x - my_pos.x) + absi(r.y - my_pos.y), id])
+		var away: Vector2i = world.near(Vector2i(r.x, r.y), my_pos) - my_pos
+		due.append([-1 if id == s.character_id else absi(away.x) + absi(away.y), id])
 	# A snapshot goes unreliably and must stay within a packet: entities up to
 	# SNAPSHOT_BYTES (sizes estimated, not encoded), the nearest first; the
 	# others come in the next snapshots.
@@ -933,8 +950,7 @@ func _send_snapshot(s: Session) -> void:
 	# Creatures that died near (their death cry; the creature is gone at once).
 	var died := []
 	for d: Dictionary in world.combat.died:
-		if d["location"] == my_loc and absi(int(d["x"]) - my_pos.x) <= CREATURE_VIEW.x * Movement.UNIT \
-				and absi(int(d["y"]) - my_pos.y) <= CREATURE_VIEW.y * Movement.UNIT:
+		if d["location"] == my_loc and world.near_pos(Vector2i(int(d["x"]), int(d["y"])), my_pos, CREATURE_VIEW.x * Movement.UNIT):
 			died.append([int(d["x"]), int(d["y"]), d["kind"]])
 	if not died.is_empty():
 		m["died"] = died
@@ -961,6 +977,8 @@ func _stream_chunks(s: Session) -> void:
 	var budget := CHUNKS_PER_TICK
 	# Nearest first, so the ground under the player arrives before the edges;
 	# the player's own location before the surface seen below it.
+	# The names are the player's own: the world is a covering space, so a
+	# chunk past the seam is the one next to the player, not a lap away.
 	for shown: String in _shown_locations(loc):
 		for r in view_chunks + 1:
 			for cy in range(mc.y - r, mc.y + r + 1):

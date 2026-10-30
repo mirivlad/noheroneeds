@@ -1149,7 +1149,7 @@ func _use_nearest() -> void:
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
 		if e.get("kind") == "item":
-			var dist := Vector2(client.position).distance_to(Vector2(int(e["x"]), int(e["y"])))
+			var dist := client.distance(client.position, Vector2i(int(e["x"]), int(e["y"])))
 			if dist <= best_d:
 				best = id
 				best_d = dist
@@ -1160,10 +1160,7 @@ func _use_nearest() -> void:
 	for dy in [0, -1, 1]:
 		for dx in [0, 1, -1]:
 			var cell: Vector2i = me + Vector2i(dx, dy)
-			var cx := floori(cell.x / 32.0)
-			var cy := floori(cell.y / 32.0)
-			var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
-			if c and content.get_def(c.get_cell("structure", cell.x - cx * 32, cell.y - cy * 32)).get("openable", false):
+			if content.get_def(client.cell_at(client.location, cell, "structure")).get("openable", false):
 				client.request({"type": "use", "location": client.location, "x": cell.x, "y": cell.y})
 				return
 	# A way up or down beside one (a cave's climb out, stairs): up first, as F does.
@@ -1192,20 +1189,13 @@ func _climb_nearest(prefer: String) -> void:
 
 ## Which ways lead on from a cell: "up" (stairs here), "down" (stairs below).
 func _ways_at(cell: Vector2i) -> Array:
-	var cx := floori(cell.x / float(Chunk.SIZE))
-	var cy := floori(cell.y / float(Chunk.SIZE))
-	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
-	if c == null:
-		return []
-	var lx := cell.x - cx * Chunk.SIZE
-	var ly := cell.y - cy * Chunk.SIZE
+	var part := client.cell_at(client.location, cell, "structure")
 	var ways := []
-	var part := c.get_cell("structure", lx, ly)
 	if part != "" and content.get_def(part).get("role") == "stairs":
 		ways.append("up")
 	if part != "" and content.get_def(part).get("role") == "shaft":
 		ways.append(String(content.get_def(part).get("leads", "down")))  # between depths (ADR-0017)
-	if c.get_props(lx, ly).get("stairs_down", false):
+	if client.props_of(client.location, cell).get("stairs_down", false):
 		ways.append("down")
 	return ways
 

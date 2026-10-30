@@ -39,6 +39,9 @@ var server_id := ""
 ## Predicted own position (1/256 cell units).
 var position := Vector2i.ZERO
 var has_position := false
+## How the world's places are named (a planet folds at the seam and the poles).
+## Null — an old world, or none known yet: every name is its own.
+var topology: PlanetTopology
 ## Movement intention for the next ticks, each axis -1..1.
 var move := Vector2i.ZERO
 ## Running (held key), 1.5 times as fast.
@@ -256,8 +259,10 @@ func _on_message(m: Dictionary) -> void:
 					state = "rejected"
 					return
 				geography = PlannedGeography.new(plan)
+				topology = PlanetTopology.new(plan)
 			else:
 				geography = Geography.of(seed_value) if seed_value != -1 else null
+				topology = null
 			state = "playing"
 			# The server knows nothing of our hands after a (re)join: they come
 			# before anything resent that may be done with them.
@@ -283,7 +288,10 @@ func _on_message(m: Dictionary) -> void:
 		Protocol.CHUNK:
 			var c := ChunkCodec.decode(m["data"])
 			if c:
-				var key := ServerWorld.chunk_key(m["location"], m["cx"], m["cy"])
+				# The chunk is kept under the name the server gave it: a planet
+				# may name the same place from either side of its seam, and both
+				# names are drawn where they belong in the continuous world.
+				var key := chunk_key(String(m["location"]), int(m["cx"]), int(m["cy"]))
 				var old: Chunk = chunks.get(key)
 				if old:
 					_note_changes(String(m["location"]), Vector2i(int(m["cx"]), int(m["cy"])) * Chunk.SIZE, old, c)
@@ -394,7 +402,9 @@ func _on_snapshot(m: Dictionary) -> void:
 			if fields.get("kind") == "projectile" and not entities.has(id):
 				world_events.append({"type": "shoot", "location": location, "part": String(fields.get("item", "")),
 					"cell": Movement.cell_of(Vector2i(int(fields.get("x", 0)), int(fields.get("y", 0))))})
-			(entities.get_or_add(id, {}) as Dictionary).merge(fields, true)
+			var ent: Dictionary = entities.get_or_add(id, {})
+			ent.merge(fields, true)
+			_to_own_chart(ent)
 	var hot := (m["hot"] as PackedByteArray).to_int32_array()
 	for i in range(0, hot.size() - 2, 3):
 		var id: String = _uid_of.get(hot[i], "")
@@ -402,6 +412,8 @@ func _on_snapshot(m: Dictionary) -> void:
 		if id != "" and (id == character_id or entities.has(id)):
 			e["x"] = hot[i + 1]
 			e["y"] = hot[i + 2]
+			if id != character_id:
+				_to_own_chart(e)
 	var warm := (m["warm"] as PackedByteArray).to_int32_array()
 	for i in range(0, warm.size() - 4, 5):
 		var id: String = _uid_of.get(warm[i], "")
@@ -452,18 +464,87 @@ func _reconcile(server_pos: Vector2i, ack: int) -> void:
 	has_position = true
 
 
+## The chunk key the client keeps a chunk of `location` under. The world is
+## drawn as a covering space: names stay in the player's own chart, exactly as
+## the server streamed them, so a chunk just across the seam is next to the
+## player. A chunk past a pole comes encoded already turned round the way it is
+## seen from there, so its cells are read as they lie.
+func chunk_key(location: String, cx: int, cy: int) -> String:
+	return ServerWorld.chunk_key(location, cx, cy)
+
+
+## The chunk of `location` the client holds that covers a world position, as
+## far as it has been streamed (null if not yet).
+func chunk_at(location: String, x: int, y: int) -> Chunk:
+	var cx := floori(float(x) / Chunk.SIZE)
+	var cy := floori(float(y) / Chunk.SIZE)
+	return chunks.get(chunk_key(location, cx, cy))
+
+
+## Where a cell lies inside its chunk. The server encodes a chunk past a pole
+## already told the way the player sees it from that side, so the local cell is
+## simply the cell less its chunk's origin.
+func local_cell(cx: int, cy: int, x: int, y: int) -> Vector2i:
+	return Vector2i(x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
+
+
+## What stands on a layer of a cell of `location` ("" if unknown or empty).
+func cell_at(location: String, cell: Vector2i, layer: String) -> String:
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	var c: Chunk = chunks.get(chunk_key(location, cx, cy))
+	if c == null:
+		return ""
+	var local := local_cell(cx, cy, cell.x, cell.y)
+	return c.get_cell(layer, local.x, local.y)
+
+
+## The props of a cell of `location` ({} if unknown).
+func props_of(location: String, cell: Vector2i) -> Dictionary:
+	var cx := floori(float(cell.x) / Chunk.SIZE)
+	var cy := floori(float(cell.y) / Chunk.SIZE)
+	var c: Chunk = chunks.get(chunk_key(location, cx, cy))
+	if c == null:
+		return {}
+	var local := local_cell(cx, cy, cell.x, cell.y)
+	return c.get_props(local.x, local.y)
+
+
+## How far apart two positions are, the short way round a planet's seam.
+func distance(a: Vector2i, b: Vector2i) -> float:
+	return topology.distance(a, b) if topology else Vector2(a).distance_to(Vector2(b))
+
+
+## The same place as `pos`, named on the side of the seam `around` is on: what
+## the server tells by its canonical name is drawn next to us, not a world away.
+func near(pos: Vector2i, around: Vector2i) -> Vector2i:
+	return topology.nearest(pos, around) if topology else pos
+
+
+## Puts an entity's position in our own chart: the world is closed, so a
+## neighbour just across the seam may be known to the server a lap away. A
+## position already near us is left exactly as it was (no jitter).
+func _to_own_chart(e: Dictionary) -> void:
+	if topology == null or not has_position or not e.has("x"):
+		return
+	var at := Vector2i(int(e["x"]), int(e["y"]))
+	var local := near(at, position)
+	if local != at:
+		e["x"] = local.x
+		e["y"] = local.y
+
+
 ## Whether a cell of the client's location is solid, as far as it knows.
 func is_solid(x: int, y: int) -> bool:
 	return _solid(x, y)
 
 
 func _solid(x: int, y: int) -> bool:
-	var cx := floori(float(x) / Chunk.SIZE)
-	var cy := floori(float(y) / Chunk.SIZE)
-	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	var at := _chunk_cell(x, y)
+	var c: Chunk = at[0]
 	if c == null:
 		return false  # unknown ground: the server will correct us
-	return Terrain.is_solid(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content, location != Levels.SURFACE, true)
+	return Terrain.is_solid(c, at[1], at[2], content, location != Levels.SURFACE, true)
 
 
 ## A step as the server takes it: in water one swims (ADR-0050), slowly;
@@ -500,38 +581,43 @@ func aboard() -> String:
 	return String(own.get("aboard", ""))
 
 
-## Whether a cell keeps a boat out: all but water and shallows (ADR-0052).
-func _keeps_boat_out(x: int, y: int) -> bool:
+## The chunk of our location that holds a cell, with the cell inside it.
+## [null, 0, 0] while the ground is unknown.
+func _chunk_cell(x: int, y: int) -> Array:
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)
-	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
-	return c != null and not Terrain.floats(c, x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, content)
+	var local := local_cell(cx, cy, x, y)
+	return [chunks.get(chunk_key(location, cx, cy)), local.x, local.y]
+
+
+## Whether a cell keeps a boat out: all but water and shallows (ADR-0052).
+func _keeps_boat_out(x: int, y: int) -> bool:
+	var at := _chunk_cell(x, y)
+	var c: Chunk = at[0]
+	return c != null and not Terrain.floats(c, at[1], at[2], content)
 
 
 ## Whether a cell of our location is water or shallows a boat goes on.
 func floats(cell: Vector2i) -> bool:
-	var cx := floori(float(cell.x) / Chunk.SIZE)
-	var cy := floori(float(cell.y) / Chunk.SIZE)
-	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
-	return c != null and Terrain.floats(c, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
+	var at := _chunk_cell(cell.x, cell.y)
+	var c: Chunk = at[0]
+	return c != null and Terrain.floats(c, at[1], at[2], content)
 
 
 ## Whether a position (movement units) on our location is in water.
 func in_water(pos: Vector2i) -> bool:
 	var cell := Movement.cell_of(pos)
-	var cx := floori(float(cell.x) / Chunk.SIZE)
-	var cy := floori(float(cell.y) / Chunk.SIZE)
-	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
-	return c != null and Terrain.is_water(c, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
+	var at := _chunk_cell(cell.x, cell.y)
+	var c: Chunk = at[0]
+	return c != null and Terrain.is_water(c, at[1], at[2], content)
 
 
 ## Whether a position on our location is in shallows (ADR-0051).
 func in_shallows(pos: Vector2i) -> bool:
 	var cell := Movement.cell_of(pos)
-	var cx := floori(float(cell.x) / Chunk.SIZE)
-	var cy := floori(float(cell.y) / Chunk.SIZE)
-	var c: Chunk = chunks.get(ServerWorld.chunk_key(location, cx, cy))
-	return c != null and Terrain.is_shallow(c, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE, content)
+	var at := _chunk_cell(cell.x, cell.y)
+	var c: Chunk = at[0]
+	return c != null and Terrain.is_shallow(c, at[1], at[2], content)
 
 
 func _send(channel: Transport.Channel, type: String, fields: Dictionary) -> void:

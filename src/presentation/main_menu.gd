@@ -114,13 +114,35 @@ func show_new_game() -> void:
 ## The new world's rules (and, for a server, its port and size).
 func show_world_form(mode: String) -> void:
 	_clear("Новый мир" if mode == "local" else "Новый мир на сервере")
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 16)
+	_body.add_child(columns)
+	var fields := VBoxContainer.new()
+	fields.custom_minimum_size.x = 300
+	fields.add_theme_constant_override("separation", 3)
+	columns.add_child(fields)
+	_into = fields
 	var name_edit := _field("Название", LineEdit.new()) as LineEdit
 	name_edit.text = "Новый мир"
 	name_edit.max_length = 40
 	var seed_edit := _field("Сид", LineEdit.new()) as LineEdit
-	seed_edit.placeholder_text = "случайный"
+	seed_edit.text = str(randi())
 	seed_edit.max_length = 24
 	seed_edit.tooltip_text = "Одинаковый сид — одинаковая местность. Число или слово."
+	var random_seed := Button.new()
+	random_seed.text = "↻"
+	random_seed.tooltip_text = "Случайный сид"
+	seed_edit.get_parent().add_child(random_seed)
+	random_seed.pressed.connect(func() -> void: seed_edit.text = str(randi()); seed_edit.text_changed.emit(seed_edit.text))
+	var size_pick := OptionButton.new()
+	for label: String in ["Один континент", "Небольшая планета", "Средняя планета", "Большая планета", "ОГРОМНАЯ планета"]:
+		size_pick.add_item(label)
+	_field("Размер", size_pick)
+	var climate_pick := OptionButton.new()
+	for label: String in ["Жаркий", "Умеренный", "Холодный"]:
+		climate_pick.add_item(label)
+	climate_pick.select(1)
+	_field("Климат", climate_pick)
 	var levels := _spin("Этажей не выше", 1, 20, WorldLibrary.RULES["max_levels"])
 	levels.tooltip_text = "Сколько этажей можно надстроить (правило мира)"
 	var day := _spin("Сутки длятся, мин", 2, 600, WorldLibrary.RULES["day_minutes"])
@@ -144,8 +166,22 @@ func show_world_form(mode: String) -> void:
 		password.placeholder_text = "без пароля — открыт всем"
 		password.tooltip_text = "Войдут только знающие пароль или получившие ссылку на мир («Поделиться ссылкой» в меню игры)"
 	_gap()
-	_button("Создать и играть", func() -> void:
-		var rules := {"seed": seed_edit.text.strip_edges(), "max_levels": int(levels.value), "day_minutes": int(day.value),
+	var preview_column := VBoxContainer.new()
+	preview_column.alignment = BoxContainer.ALIGNMENT_CENTER
+	columns.add_child(preview_column)
+	var preview := WorldPreview.new()
+	preview_column.add_child(preview)
+	var caption := Label.new()
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	preview_column.add_child(caption)
+	var regenerate := Button.new()
+	regenerate.text = "Создать предпросмотр"
+	preview_column.add_child(regenerate)
+	var state := {"plan": null, "valid": false}
+	var create_button := _button("Создать и играть", func() -> void:
+		if not state["valid"]:
+			return
+		var rules := {"seed": seed_edit.text.strip_edges(), "world_plan": (state["plan"] as WorldPlan).to_dict(), "max_levels": int(levels.value), "day_minutes": int(day.value),
 			"starter_kit": kit.button_pressed, "starter_outfit": outfit.button_pressed,
 			"all_recipes_known": known.button_pressed, "crafts_never_fail": sure.button_pressed}
 		var id := worlds.create(name_edit.text, rules)
@@ -154,6 +190,27 @@ func show_world_form(mode: String) -> void:
 			settings.save()
 		_start_world(id, mode, int(port.value) if port else 0, int(players.value) if players else 0))
 	_button("Назад", show_new_game)
+	var invalidate := func() -> void:
+		state["valid"] = false
+		create_button.disabled = true
+		caption.text = "Настройки изменены — создайте предпросмотр"
+	seed_edit.text_changed.connect(func(_text: String) -> void: invalidate.call())
+	size_pick.item_selected.connect(func(_i: int) -> void: invalidate.call())
+	climate_pick.item_selected.connect(func(_i: int) -> void: invalidate.call())
+	regenerate.pressed.connect(func() -> void:
+		if seed_edit.text.strip_edges() == "":
+			seed_edit.text = str(randi())
+		var seed_number := WorldLibrary.seed_of({"seed": seed_edit.text})
+		var presets := ["single_continent", "small", "medium", "large", "huge"]
+		var climates := ["hot", "temperate", "cold"]
+		state["plan"] = WorldPlan.generate(seed_number, presets[size_pick.selected], climates[climate_pick.selected])
+		state["valid"] = state["plan"] != null
+		create_button.disabled = not state["valid"]
+		if state["valid"]:
+			preview.show_plan(state["plan"])
+			caption.text = "Океан бесконечен" if size_pick.selected == 0 else "Перетащите, чтобы вращать; колесо — масштаб")
+	regenerate.pressed.emit()
+	_into = _body
 	name_edit.grab_focus()
 	name_edit.select_all()
 

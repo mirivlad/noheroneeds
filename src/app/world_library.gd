@@ -92,6 +92,8 @@ func create(name: String, rules: Dictionary) -> String:
 		"created": int(Time.get_unix_time_from_system()), "last_played": 0}
 	for key: String in RULES:
 		info[key] = rules.get(key, RULES[key])
+	if rules.get("world_plan") is Dictionary:
+		info["world_plan"] = rules["world_plan"]
 	info["max_levels"] = clampi(int(info["max_levels"]), 1, 20)
 	info["day_minutes"] = clampi(int(info["day_minutes"]), 2, 600)
 	_write(id, info)

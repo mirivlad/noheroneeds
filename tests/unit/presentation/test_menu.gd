@@ -155,3 +155,40 @@ func test_a_refused_start_is_told_on_the_start_screen() -> void:
 		said = said or l.text.contains(str(port))
 	check(said, "the busy port is told")
 	blocker.close()
+
+
+func test_world_preview_is_the_plan_written_to_the_database() -> void:
+	_press("Новая игра")
+	_press("Локально")
+	var menu := app.menu
+	var preview: WorldPreview = menu.find_children("*", "Control", true, false).filter(func(n: Node) -> bool: return n is WorldPreview)[0]
+	var picks: Array[Node] = menu.find_children("*", "OptionButton", true, false)
+	picks[0].select(1)
+	picks[0].item_selected.emit(1)
+	picks[1].select(2)
+	picks[1].item_selected.emit(2)
+	_press("Создать предпросмотр")
+	var expected := preview.plan.to_dict()
+	check(preview.globe != null, "a planet is rendered as a sphere")
+	var before := preview.globe.rotation.y
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	preview._gui_input(press)
+	var drag := InputEventMouseMotion.new()
+	drag.relative = Vector2(20, 0)
+	preview._gui_input(drag)
+	check(preview.globe.rotation.y != before, "drag rotates the sphere")
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel.pressed = true
+	for i in 20:
+		preview._gui_input(wheel)
+	eq(preview.distance, 2.8, "zoom has a near limit")
+	_press("Создать и играть")
+	_play(100)
+	check(app.game != null and app.game.game != null, "the planned world starts")
+	if app.game and app.game.game:
+		var actual := (app.game.game.world.generator.geography as PlannedGeography).plan
+		eq(actual.to_dict(), expected, "the database-backed world is exactly the displayed plan")
+		check(app.game.client.geography is PlannedGeography, "the client receives the plan")

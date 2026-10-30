@@ -134,6 +134,9 @@ var _encoded := {}
 ## shallows, fords and deep water (ADR-0051). 6: villages in clusters, their
 ## ids and places new (ADR-0054).
 const WORLD_FORMAT := 6
+## Format for the fixed-world transition; format 6 remains supported only
+## while the new creation and topology paths are being integrated.
+const PLANNED_WORLD_FORMAT := 7
 ## Why the last open() failed, for people ("" — it did not).
 static var open_error := ""
 
@@ -146,20 +149,39 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		push_error(s.last_error)
 		return null
 	if s.read_meta("seed") == "":
-		var seed_value := int(options.get("seed", randi()))
-		if not (s.write_meta("seed", str(seed_value)) and s.write_meta("world_id", Uuid.v4())
-				and s.write_meta("world_format", str(WORLD_FORMAT))):
+		var supplied: Variant = options.get("world_plan")
+		var new_plan: WorldPlan = WorldPlan.from_dict(supplied) if supplied is Dictionary else null
+		if supplied != null and new_plan == null:
+			open_error = "неверный глобальный план мира"
+			s.close()
+			return null
+		var seed_value := new_plan.seed_value if new_plan else int(options.get("seed", randi()))
+		var new_format := PLANNED_WORLD_FORMAT if new_plan else WORLD_FORMAT
+		var plan_text := JSON.stringify(new_plan.to_dict()) if new_plan else ""
+		if not (s.begin() and s.write_meta("seed", str(seed_value)) and s.write_meta("world_id", Uuid.v4())
+				and s.write_meta("world_format", str(new_format)) and (not new_plan or s.write_meta("world_plan", plan_text)) and s.commit()):
+			s.rollback()
 			open_error = "не удалось записать новый мир: " + s.last_error
 			push_error(s.last_error)
 			s.close()
 			return null
 	var format := int(s.read_meta("world_format")) if s.read_meta("world_format").is_valid_int() else 1
-	if format != WORLD_FORMAT:
+	if format != WORLD_FORMAT and format != PLANNED_WORLD_FORMAT:
 		open_error = ("Этот мир сохранён старой версией игры (формат %d, нужен %d): земля, вещи или знания в нём " \
 			+ "устроены по-старому, и эта версия его не откроет. Начните новый мир.") % [format, WORLD_FORMAT] \
 			if format < WORLD_FORMAT else "Этот мир сохранён более новой версией игры (формат %d): обновите игру." % format
 		s.close()
 		return null
+	var plan: WorldPlan = null
+	if format == PLANNED_WORLD_FORMAT:
+		var json := JSON.new()
+		var parsed := json.parse(s.read_meta("world_plan"))
+		var raw: Variant = json.data if parsed == OK else null
+		plan = WorldPlan.from_dict(raw) if raw is Dictionary else null
+		if plan == null or plan.seed_value != int(s.read_meta("seed")):
+			open_error = "глобальный план мира повреждён или не соответствует сиду"
+			s.close()
+			return null
 	var w := StoreWriter.new()
 	if not w.start(db_path, options):
 		push_error(w.last_error())
@@ -186,12 +208,12 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	if saved_time.is_valid_int():
 		world.world_time = int(saved_time)
 	world.levels.load_rows(s.all_locations())
-	var g := SurfaceGenerator.new(world.world_seed, registry)
+	var g := SurfaceGenerator.new(world.world_seed, registry, plan)
 	world.generator = g if g.can_generate() else null
 	var ug := UndergroundGenerator.new(world.world_seed, registry)
 	world.underground = ug if ug.can_generate() else null
 	var spawn_way := world._spawn_way()
-	var lg := SurfaceGenerator.new(world.world_seed, registry) if world.generator else null
+	var lg := SurfaceGenerator.new(world.world_seed, registry, plan) if world.generator else null
 	var lug := UndergroundGenerator.new(world.world_seed, registry) if world.underground else null
 	for gen: UndergroundGenerator in [world.underground, lug]:
 		if gen and spawn_way != NO_CELL:

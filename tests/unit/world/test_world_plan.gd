@@ -108,3 +108,40 @@ func test_surface_and_geology_use_saved_plan() -> void:
 	eq(underground.geography.sample(Geography.HEIGHT, point.x, point.y), saved.sample(0, point), "geology sees the same relief")
 	var again := SurfaceGenerator.new(plan.seed_value, content, plan)
 	eq(ChunkCodec.encode(surface.generate(2, 3)), ChunkCodec.encode(again.generate(2, 3)), "saved and original plans generate the same detail")
+
+
+func test_server_persists_the_exact_plan_and_modified_chunk() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var path := tmp_dir().path_join("world.db")
+	var plan := WorldPlan.generate(431, "small", "cold")
+	var world := ServerWorld.open(path, content, {"world_plan": plan.to_dict()})
+	check(world != null, "planned world opens")
+	var chunk := world.chunk("surface", 2, 3)
+	chunk.set_cell("ground", 1, 1, "base:stone")
+	world.mark_chunk_dirty("surface", 2, 3)
+	world.close()
+	var other := WorldPlan.generate(999, "small", "hot")
+	world = ServerWorld.open(path, content, {"world_plan": other.to_dict()})
+	check(world != null, "planned world reopens")
+	var restored := (world.generator.geography as PlannedGeography).plan
+	eq(restored.to_dict(), plan.to_dict(), "opening ignores a new plan and loads the saved one")
+	eq(world.chunk("surface", 2, 3).get_cell("ground", 1, 1), "base:stone", "materialized modifications survive")
+	world.close()
+
+
+func test_corrupt_plan_is_refused_without_overwriting_world() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var path := tmp_dir().path_join("world.db")
+	var plan := WorldPlan.generate(55, "small", "temperate")
+	var world := ServerWorld.open(path, content, {"world_plan": plan.to_dict()})
+	world.close()
+	var store := WorldStore.new()
+	store.open(path)
+	store.write_meta("world_plan", "broken")
+	store.close()
+	check(ServerWorld.open(path, content) == null, "a damaged map is refused")
+	check(ServerWorld.open_error.contains("повреждён"), "the error explains the damaged plan")
+	store = WorldStore.new()
+	store.open(path)
+	eq(store.read_meta("world_plan"), "broken", "opening does not regenerate or overwrite a damaged plan")
+	store.close()

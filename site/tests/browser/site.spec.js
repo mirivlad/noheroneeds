@@ -114,3 +114,30 @@ test('primary and guide text retain readable contrast', async ({ page }) => {
   });
   expect(contrast).toBeGreaterThanOrEqual(4.5);
 });
+
+test('published pages retain the original NHN theme and load CSS from the root artifact', async ({ page, request }) => {
+  const sheet = await request.get('assets/style.css');
+  expect(sheet.status()).toBe(200);
+  const css = await sheet.text();
+  expect(css).toContain('--bg:#0b1214');
+  expect(css).toContain('fonts.googleapis.com/css2?family=Manrope');
+  for (const route of ['./', 'wiki.html', 'guides.html', 'updates.html']) {
+    await page.goto(route);
+    const theme = await page.evaluate(() => {
+      const body = getComputedStyle(document.body);
+      const title = getComputedStyle(document.querySelector('h1'));
+      return {
+        background: body.backgroundColor,
+        font: body.fontFamily,
+        titleFont: title.fontFamily,
+        link: document.querySelector('link[rel="stylesheet"]')?.getAttribute('href'),
+        sheets: document.styleSheets.length,
+      };
+    });
+    expect(theme.background).toBe('rgb(11, 18, 20)');
+    expect(theme.font).toContain('Manrope');
+    expect(theme.titleFont).toContain('Playfair Display');
+    expect(theme.link).toBe('assets/style.css');
+    expect(theme.sheets).toBeGreaterThan(0);
+  }
+});

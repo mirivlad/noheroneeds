@@ -198,3 +198,32 @@ func test_spawn_is_chosen_after_water_and_climate() -> void:
 			check(plan.value(0, plan.spawn) > 0.05, "spawn is inland")
 			eq(plan.lake[k], 0.0, "spawn is not in a lake")
 			eq(plan.river[k], 0.0, "spawn is not in a river")
+
+
+func test_climate_changes_generated_biomes_and_vegetation() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var cold := WorldPlan.generate(431, "small", "cold")
+	var hot := WorldPlan.generate(431, "small", "hot")
+	var cold_surface := SurfaceGenerator.new(431, content, cold)
+	var hot_surface := SurfaceGenerator.new(431, content, hot)
+	var cold_snow := 0
+	var hot_snow := 0
+	var cold_desert := 0
+	var hot_desert := 0
+	for y in range(0, cold.size.y, 3):
+		for x in range(0, cold.size.x, 3):
+			var p := Vector2i(x, y)
+			var h := cold.value(0, p)
+			if h < 0.04 or h > 0.38:
+				continue
+			var a := (p - cold.spawn) * Chunk.SIZE
+			var b := (p - hot.spawn) * Chunk.SIZE
+			var cold_biome: String = cold_surface.biome_ids[cold_surface._biome_at(a.x, a.y, h, false)]
+			var hot_biome: String = hot_surface.biome_ids[hot_surface._biome_at(b.x, b.y, h, false)]
+			cold_snow += 1 if cold_biome == "base:tundra" else 0
+			hot_snow += 1 if hot_biome == "base:tundra" else 0
+			cold_desert += 1 if cold_biome in ["base:desert", "base:steppe"] else 0
+			hot_desert += 1 if hot_biome in ["base:desert", "base:steppe"] else 0
+	check(cold_snow > hot_snow, "cold climate increases snowy tundra")
+	check(hot_desert > cold_desert, "hot climate increases dry biomes")
+	check(content.get_def("base:tundra")["cover_density"] != content.get_def("base:steppe")["cover_density"], "these biomes carry different vegetation")

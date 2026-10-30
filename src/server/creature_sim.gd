@@ -72,7 +72,8 @@ func _init(w: ServerWorld) -> void:
 # --- what is where -----------------------------------------------------------
 
 func in_chunk(location: String, cx: int, cy: int, kind := "") -> Array:
-	var key := ServerWorld.chunk_key(location, cx, cy)
+	var at := world.storage_chunk(cx, cy)
+	var key := ServerWorld.chunk_key(location, at.x, at.y)
 	if kind != "":
 		return (_by_kind.get(key, {}).get(kind, {}) as Dictionary).keys()
 	return (_by_chunk.get(key, {}) as Dictionary).keys()
@@ -105,6 +106,7 @@ func get_creature(id: String) -> Creature:
 ## Its chunk's key (worked out again only when it moved to another chunk).
 func _chunk_of(c: Creature) -> String:
 	var at := Vector2i(c.pos.x >> (Movement.UNIT_SHIFT + 5), c.pos.y >> (Movement.UNIT_SHIFT + 5))  # Chunk.SIZE is 32
+	at = world.storage_chunk(at.x, at.y)
 	if at != c.chunk_at or c.location != c.chunk_location:
 		c.chunk_at = at
 		c.chunk_location = c.location
@@ -764,9 +766,10 @@ func kin_struck(c: Creature, who: String, at: Vector2i) -> void:
 				if not def.get("reaction", {}).get("kin", false):
 					continue
 				var me := o.cell()
-				if absi(at.x - me.x) > def["sight"] or absi(at.y - me.y) > def["sight"]:
+				var seen_at := world.near_cell(at, me)
+				if absi(seen_at.x - me.x) > def["sight"] or absi(seen_at.y - me.y) > def["sight"]:
 					continue
-				if Perception.sees(world, o.location, me, def, at, o.location):
+				if Perception.sees(world, o.location, me, def, seen_at, o.location):
 					o.memory[who] = {"pos": at, "time": world.world_time, "what": "attacker"}
 					alarm(o)
 
@@ -921,11 +924,11 @@ func _guard_caravan(c: Creature) -> void:
 			target = driver.cell()
 	if driver.job.has("camp_spot"):
 		var watch := index == int(world.world_time / (Daylight.HOUR_MS * 3)) % maxi(1, roster.size())
-		_dress(c, String(c.job.get("weapon", "base:iron_sword")), not watch and c.cell().distance_to(target) <= 1)
+		_dress(c, String(c.job.get("weapon", "base:iron_sword")), not watch and world.cell_distance(c.cell(), target) <= 1)
 	else:
 		_dress(c, String(c.job.get("weapon", "base:iron_sword")), false)
-	if c.cell().distance_to(driver.cell()) > 2.0 or (roster.size() > 1 and c.cell().distance_to(target) > 1):
-		if c.path.is_empty() or c.path_to.distance_to(target) > 3:
+	if world.cell_distance(c.cell(), driver.cell()) > 2.0 or (roster.size() > 1 and world.cell_distance(c.cell(), target) > 1):
+		if c.path.is_empty() or world.cell_distance(c.path_to, target) > 3:
 			c.path = _route(c, target)
 			if c.path.is_empty() and target != driver.cell():
 				c.path = _route(c, driver.cell())
@@ -1004,6 +1007,14 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 
 # --- perception and memory -----------------------------------------------------
 
+## The canonical chunks a band of `reach` cells round a cell covers. On a
+## planet the band runs over the seam and the poles: what lies at the far
+## edge is a step away (see ServerWorld.chunk_band).
+func _chunk_span(cell: Vector2i, reach: int) -> Array:
+	return world.chunk_band(Vector2i((cell.x - reach) >> 5, (cell.y - reach) >> 5),
+		Vector2i((cell.x + reach) >> 5, (cell.y + reach) >> 5))
+
+
 ## Fills memory with what it sees and hears now; forgets what is too old.
 func _perceive(c: Creature, def: Dictionary) -> void:
 	var me := c.cell()
@@ -1013,8 +1024,8 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 		var p: Dictionary = world.present[pid]
 		if p["location"] != c.location and not Sight.same_space(world, c.location, p["location"]):
 			continue
-		var at := Movement.cell_of(p["pos"])
-		if absi(at.x - me.x) > sight or absi(at.y - me.y) > sight:
+		var at := world.near_cell(Movement.cell_of(p["pos"]), me)
+		if not world.near_cells(at, me, int(sight)):
 			continue
 		if Perception.sees(world, c.location, me, def, at, p["location"]):
 			var was: Dictionary = c.memory.get(pid, {})
@@ -1034,20 +1045,20 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 			var o := get_creature(id)
 			if o and not kinds.has(o.kind):
 				kinds.append(o.kind)
-	for cy in range((me.y - int(sight)) >> 5, ((me.y + int(sight)) >> 5) + 1):
-		for cx in range((me.x - int(sight)) >> 5, ((me.x + int(sight)) >> 5) + 1):
-			for kind: String in kinds:
-				var body := float(BodySize.of(world.content.get_def(kind))["body"])
-				for id: String in in_chunk(c.location, cx, cy, kind):
-					var o := get_creature(id)
-					if o == null or o == c:
-						continue
-					if Perception.sees(world, c.location, me, def, o.cell(), o.location, body):
-						var was: Dictionary = c.memory.get(id, {})
-						c.memory[id] = {"pos": o.cell(), "time": now,
-							"what": "attacker" if was.get("what") == "attacker" and now - int(was["time"]) <= _ms(20.0) else watching.get(kind, "animal")}
+	for chunk_at: Vector2i in _chunk_span(me, int(sight)):
+		for kind: String in kinds:
+			var body := float(BodySize.of(world.content.get_def(kind))["body"])
+			for id: String in in_chunk(c.location, chunk_at.x, chunk_at.y, kind):
+				var o := get_creature(id)
+				if o == null or o == c:
+					continue
+				var at := world.near_cell(o.cell(), me)
+				if Perception.sees(world, c.location, me, def, at, o.location, body):
+					var was: Dictionary = c.memory.get(id, {})
+					c.memory[id] = {"pos": at, "time": now,
+						"what": "attacker" if was.get("what") == "attacker" and now - int(was["time"]) <= _ms(20.0) else watching.get(kind, "animal")}
 	for n: Array in _noises:
-		if n[0] == c.location and Perception.hears(def, me, n[1]):
+		if n[0] == c.location and Perception.hears(world, def, me, n[1]):
 			c.memory["noise"] = {"pos": n[1], "time": int(n[2]), "what": "noise"}
 	var keep := _ms(float(def["memory_s"]))
 	for k: String in c.memory.keys():
@@ -1087,9 +1098,9 @@ func _nearest_threat(c: Creature, within: float, noise_s: float, people := true)
 			continue
 		if m["what"] == "character" and _holds_its_food(k, def):
 			continue  # one holding out what it eats is let come close (ADR-0030)
-		var d := Vector2(me).distance_to(Vector2(m["pos"]))
+		var d := world.cell_distance(me, m["pos"])
 		if d <= within and (best.is_empty() or d < float(best[1])):
-			best = [m["pos"], d]
+			best = [world.near_cell(m["pos"], me), d]
 	return best
 
 
@@ -1098,7 +1109,7 @@ func _someone_close(c: Creature, within: float) -> bool:
 	for k: String in c.memory:
 		var m: Dictionary = c.memory[k]
 		if m["what"] == "character" and int(m["time"]) == world.world_time \
-				and Vector2(c.cell()).distance_to(Vector2(m["pos"])) <= within:
+				and world.cell_distance(c.cell(), m["pos"]) <= within:
 			return true
 	return false
 
@@ -1158,7 +1169,7 @@ func _engage(c: Creature, target: String, at: Vector2i) -> void:
 	_dress(c, String(c.job.get("weapon", c.held)), false)
 	var w := world.combat.creature_weapon(c)
 	var ranged: bool = w.get("kind") == "ranged"
-	var distance := c.cell().distance_to(at)
+	var distance := world.cell_distance(c.cell(), at)
 	if w.is_empty() or (ranged and world.inventory("gear|" + c.id).count(String(w["ammo"])) <= 0):
 		var away := _away_from(c, at, 8.0)
 		_go(c, "flee", away, true)
@@ -1257,7 +1268,7 @@ func _hunt_animal(c: Creature, def: Dictionary) -> bool:
 		var o := get_creature(id)
 		if o == null or not diet.has(o.kind) or o.location != c.location:
 			continue
-		var d := c.cell().distance_to(m["pos"])
+		var d := world.cell_distance(c.cell(), m["pos"])
 		if d < distance:
 			best = id
 			distance = d
@@ -1292,7 +1303,7 @@ func _looter(c: Creature, def: Dictionary) -> void:
 		if found != "":
 			var it: Dictionary = world.items[found]
 			var at := Vector2i(int(it["x"]), int(it["y"]))
-			if Movement.cell_of(at) == c.cell() or Vector2(c.pos).distance_to(Vector2(at)) <= Movement.UNIT:
+			if Movement.cell_of(at) == c.cell() or world.distance(c.pos, at) <= Movement.UNIT:
 				world.take_item(found, null)
 				var e := {"item": String(it["item"]), "count": int(it["count"]), "at": world.world_time}
 				if it.has("states"):
@@ -1340,7 +1351,7 @@ func _tame(c: Creature, def: Dictionary) -> void:
 			_breed(c, def)
 	var m: Dictionary = c.memory.get(c.owner, {})
 	if not m.is_empty() and int(m["time"]) == world.world_time and _holds_its_food(c.owner, def):
-		var d := Vector2(c.cell()).distance_to(Vector2(m["pos"]))
+		var d := world.cell_distance(c.cell(), m["pos"])
 		if d > 1.5:
 			_go(c, "follow", m["pos"], false)
 		else:
@@ -1406,17 +1417,16 @@ func _breed(c: Creature, def: Dictionary) -> void:
 	var me := c.cell()
 	var herd := 0
 	var mate: Creature = null
-	for cy in range((me.y - 8) >> 5, ((me.y + 8) >> 5) + 1):
-		for cx in range((me.x - 8) >> 5, ((me.x + 8) >> 5) + 1):
-			for id: String in in_chunk(c.location, cx, cy):
-				var o := get_creature(id)
-				if o == null or o.kind != c.kind or Vector2(o.cell()).distance_to(Vector2(me)) > 8.0:
-					continue
-				herd += 1
-				if o != c and mate == null and o.owner == c.owner and fed_lately(o) and not life.young(o, def) \
-						and Vector2(o.cell()).distance_to(Vector2(me)) <= BREED_NEAR and life.clear_route(c, o.cell()) \
-						and (o.bred_at < 0 or now - o.bred_at >= every):
-					mate = o
+	for chunk_at: Vector2i in _chunk_span(me, 8):
+		for id: String in in_chunk(c.location, chunk_at.x, chunk_at.y):
+			var o := get_creature(id)
+			if o == null or o.kind != c.kind or world.cell_distance(o.cell(), me) > 8.0:
+				continue
+			herd += 1
+			if o != c and mate == null and o.owner == c.owner and fed_lately(o) and not life.young(o, def) \
+					and world.cell_distance(o.cell(), me) <= BREED_NEAR and life.clear_route(c, o.cell()) \
+					and (o.bred_at < 0 or now - o.bred_at >= every):
+				mate = o
 	if mate == null or herd >= HERD_CAP:
 		return
 	var young := _spawn(c.kind, c.location, me, {}, hash([c.seed, mate.seed, now]))
@@ -1595,7 +1605,7 @@ func _dweller(c: Creature, def: Dictionary) -> void:
 	var visiting := phase == "evening" and world.hospitality.is_seat(c.location, spot)
 	if _someone_close(c, 3.0) and (c.said_at < 0 or _tick - c.said_at > int(SAY_EVERY * Movement.TICK_RATE)):
 		_speak(c, prof, phase)
-	var arrived := c.pos == spot * Movement.UNIT + Vector2i(128, 128) if visiting else Vector2(c.cell()).distance_to(Vector2(spot)) <= 1.0
+	var arrived := c.pos == spot * Movement.UNIT + Vector2i(128, 128) if visiting else world.cell_distance(c.cell(), spot) <= 1.0
 	if arrived:
 		c.path.clear()
 		_dress(c, String(prof.get("holds", "")) if phase == "work" else "", phase == "night")
@@ -1888,15 +1898,14 @@ func _thing_near(c: Creature, within: float) -> String:
 	var r := ceili(within)
 	var best := ""
 	var best_d := INF
-	for cy in range(floori(float(me.y - r) / Chunk.SIZE), floori(float(me.y + r) / Chunk.SIZE) + 1):
-		for cx in range(floori(float(me.x - r) / Chunk.SIZE), floori(float(me.x + r) / Chunk.SIZE) + 1):
-			for id: String in world.items_in_chunk(c.location, cx, cy):
-				var it: Dictionary = world.items[id]
-				var d := Vector2(c.pos).distance_to(Vector2(int(it["x"]), int(it["y"]))) / Movement.UNIT
-				if d <= within and d < best_d and world.may_take(c.id, it) \
-						and Sight.clear(world, c.location, me, c.location, Movement.cell_of(Vector2i(int(it["x"]), int(it["y"])))):
-					best = id
-					best_d = d
+	for chunk_at: Vector2i in _chunk_span(me, r):
+		for id: String in world.items_in_chunk(c.location, chunk_at.x, chunk_at.y):
+			var it: Dictionary = world.items[id]
+			var d := world.distance(c.pos, Vector2i(int(it["x"]), int(it["y"]))) / Movement.UNIT
+			if d <= within and d < best_d and world.may_take(c.id, it) \
+					and Sight.clear(world, c.location, me, c.location, Movement.cell_of(Vector2i(int(it["x"]), int(it["y"])))):
+				best = id
+				best_d = d
 	return best
 
 
@@ -1909,9 +1918,10 @@ func _nearest_character(c: Creature, within: float) -> Array:
 		var m: Dictionary = c.memory[k]
 		if m["what"] == "noise" or not world.present.has(k):
 			continue
-		var d := Vector2(me).distance_to(Vector2(m["pos"]))
+		var at := world.near_cell(m["pos"], me)
+		var d := world.distance(me, at)
 		if d <= within and (best.is_empty() or d < float(best[1])):
-			best = [m["pos"], d, k]
+			best = [at, d, k]
 	return best
 
 
@@ -1921,9 +1931,10 @@ func _attacker(c: Creature, within: float) -> Array:
 	for k: String in c.memory:
 		var m: Dictionary = c.memory[k]
 		if m["what"] == "attacker" and world.world_time - int(m["time"]) <= _ms(20.0):
-			var d := Vector2(me).distance_to(Vector2(m["pos"]))
+			var at := world.near_cell(m["pos"], me)
+			var d := world.distance(me, at)
 			if d <= within:
-				return [m["pos"], d, k]
+				return [at, d, k]
 	return []
 
 

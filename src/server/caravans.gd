@@ -72,7 +72,7 @@ func spawn_guard(c: Creature, weapon := "base:iron_sword") -> Creature:
 		for cx in range((c.cell().x - 20) >> 5, ((c.cell().x + 20) >> 5) + 1):
 			for id: String in world.creatures.in_chunk(c.location, cx, cy, "base:caravan_guard"):
 				var available := world.creatures.get_creature(id)
-				if available.job.get("retired", false) and available.health >= 12 and available.cell().distance_to(c.cell()) <= 20:
+				if available.job.get("retired", false) and available.health >= 12 and world.cell_distance(available.cell(), c.cell()) <= 20:
 					available.job.erase("retired")
 					available.job["guard_driver"] = c.id
 					world.operation_creature(available)
@@ -96,7 +96,7 @@ func attacked(victim: Creature, attacker: String, at: Vector2i) -> void:
 		return
 	for id: String in guards(driver):
 		var guard := world.creatures.get_creature(id)
-		if guard == null or guard.location != victim.location or guard.cell().distance_to(victim.cell()) > 20:
+		if guard == null or guard.location != victim.location or world.cell_distance(guard.cell(), victim.cell()) > 20:
 			continue
 		guard.memory[attacker] = {"pos": Movement.cell_of(at), "time": world.world_time, "what": "attacker"}
 		guard.changed()
@@ -213,7 +213,7 @@ func step() -> void:
 			finish(actor, "no_route")
 			continue
 		var p: Dictionary = world.present[actor]
-		var nearby: bool = p["location"] == driver.location and Vector2(p["pos"]).distance_to(Vector2(driver.pos)) <= 18 * Movement.UNIT
+		var nearby: bool = p["location"] == driver.location and world.distance(p["pos"], driver.pos) <= 18 * Movement.UNIT
 		var was_near: bool = s.get("accompanying", false)
 		s["accompanying"] = nearby
 		# No offline/restart catch-up, and no payment for an interval spent away.
@@ -334,7 +334,7 @@ func rest(c: Creature) -> void:
 		world.operation_creature(c)
 	var saved: Array = c.job["camp_spot"]
 	var spot := Vector2i(int(saved[0]), int(saved[1]))
-	if c.cell().distance_to(spot) > 1:
+	if world.cell_distance(c.cell(), spot) > 1:
 		var sim := world.creatures
 		if c.state == "detour" and c.target != Creature.NO_TARGET and c.path_to == spot:
 			return
@@ -376,10 +376,10 @@ func _fire_occupied(c: Creature, at: Vector2i) -> bool:
 		for cx in range((at.x - 2) >> 5, ((at.x + 2) >> 5) + 1):
 			for id: String in world.creatures.in_chunk(c.location, cx, cy):
 				var other := world.creatures.get_creature(id)
-				if other.cell().distance_to(at) < (2.2 if other.kind == "base:horse" else 1.6):
+				if world.cell_distance(other.cell(), at) < (2.2 if other.kind == "base:horse" else 1.6):
 					return true
 	for p: Dictionary in world.present.values():
-		if p["location"] == c.location and Movement.cell_of(p["pos"]).distance_to(at) < 1.6:
+		if p["location"] == c.location and world.cell_distance(Movement.cell_of(p["pos"]), at) < 1.6:
 			return true
 	return false
 

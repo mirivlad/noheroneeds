@@ -196,3 +196,21 @@ static func from_dict(data: Dictionary) -> WorldPlan:
 	plan.lake = lake_bytes.to_float32_array()
 	plan.spawn = at
 	return plan
+
+
+## Canonical coordinates on a planet, in any integral units per map point.
+## At a pole the local y axis reverses and longitude moves half a turn.
+## A continent has no wrapping: its ocean continues in all directions.
+func canonical_point(point: Vector2i, units_per_point: int) -> Vector2i:
+	if preset == "single_continent":
+		return point
+	var origin := spawn * units_per_point
+	var width := size.x * units_per_point
+	var height := size.y * units_per_point
+	var p := point + origin
+	p.y = posmod(p.y, height * 2)
+	if p.y >= height:
+		p.y = height * 2 - 1 - p.y
+		p.x += width / 2
+	p.x = posmod(p.x, width)
+	return p - origin

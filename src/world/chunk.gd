@@ -19,6 +19,8 @@ var meta := {}
 ## opaque...), 0 when not yet; a change of the cell forgets it.
 var traits := PackedByteArray()
 var _index := {"": 0}
+## In-memory generation for reflected views; never serialized.
+var _serial := 0
 
 
 static func cell_index(x: int, y: int) -> int:
@@ -45,6 +47,7 @@ func set_cell(layer: String, x: int, y: int, content_id: String) -> void:
 		_index[content_id] = i
 	cells[cell_index(x, y)] = i
 	layers[layer] = cells
+	_serial += 1
 	if not traits.is_empty():
 		traits[cell_index(x, y)] = 0
 
@@ -54,6 +57,7 @@ func get_props(x: int, y: int) -> Dictionary:
 
 
 func set_props(x: int, y: int, value: Dictionary) -> void:
+	_serial += 1
 	if value.is_empty():
 		props.erase(cell_index(x, y))
 	else:

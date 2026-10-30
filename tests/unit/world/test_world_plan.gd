@@ -167,3 +167,21 @@ func test_canonical_world_coordinates_close_the_seam_and_poles() -> void:
 		eq(plan.canonical_point(plan.canonical_point(far, scale), scale), inside, "canonicalization is idempotent")
 	var flat := WorldPlan.generate(431, "single_continent", "cold")
 	eq(flat.canonical_point(Vector2i(-99999, 99999), Chunk.SIZE), Vector2i(-99999, 99999), "the continental ocean is not wrapped")
+
+
+func test_old_world_is_refused_before_any_migration() -> void:
+	var path := tmp_dir().path_join("old.db")
+	var store := WorldStore.new()
+	check(store.open(path, {"migrations": WorldStore.MIGRATIONS.slice(0, 1)}), "an old schema")
+	store.write_meta("seed", "12")
+	store.write_meta("world_format", "6")
+	store.close()
+	var before := FileAccess.get_sha256(path)
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	check(ServerWorld.open(path, content, {"require_planned": true}) == null, "old generation is refused")
+	check(ServerWorld.open_error.contains("старый тип генерации"), "reason identifies the old generation")
+	eq(FileAccess.get_sha256(path), before, "refusal does not change the old database")
+	store = WorldStore.new()
+	check(store.open(path, {"migrations": WorldStore.MIGRATIONS.slice(0, 1)}), "the old schema is still readable")
+	eq(store.schema_version(), 1, "no migration happened")
+	store.close()

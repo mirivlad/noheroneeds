@@ -143,6 +143,9 @@ static var open_error := ""
 
 static func open(db_path: String, registry: ContentRegistry, options := {}) -> ServerWorld:
 	open_error = ""
+	if bool(options.get("require_planned", false)) and FileAccess.file_exists(db_path):
+		if not _check_planned_format(db_path):
+			return null
 	var s := WorldStore.new()
 	if not s.open(db_path, options):
 		open_error = "не удалось открыть файл мира: " + s.last_error
@@ -151,6 +154,8 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	if s.read_meta("seed") == "":
 		var supplied: Variant = options.get("world_plan")
 		var new_plan: WorldPlan = WorldPlan.from_dict(supplied) if supplied is Dictionary else null
+		if supplied == null and bool(options.get("require_planned", false)):
+			new_plan = WorldPlan.generate(int(options.get("seed", randi())), "single_continent", "temperate")
 		if supplied != null and new_plan == null:
 			open_error = "неверный глобальный план мира"
 			s.close()
@@ -232,6 +237,38 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		return null
 	world._open_spawn_way(spawn_way)
 	return world
+
+
+## Check old saves before opening the write connection or migrating schema.
+static func _check_planned_format(db_path: String) -> bool:
+	# The bundled SQLite VFS cannot query a WAL database read-only without
+	# opening auxiliary files. Inspect a temporary copy so an old database is
+	# never checkpointed or migrated by the compatibility check.
+	var temp := ProjectSettings.globalize_path("user://world-inspection/" + Uuid.v4())
+	if DirAccess.make_dir_recursive_absolute(temp) != OK:
+		open_error = "не удалось проверить формат мира"
+		return false
+	var target := temp.path_join("world.db")
+	var copied := DirAccess.copy_absolute(db_path, target) == OK
+	if copied and FileAccess.file_exists(db_path + "-wal"):
+		copied = DirAccess.copy_absolute(db_path + "-wal", target + "-wal") == OK
+	var saved := ""
+	if copied:
+		var db := SQLite.new()
+		db.path = target
+		db.verbosity_level = SQLite.QUIET
+		if db.open_db():
+			var queried := db.query("SELECT value FROM meta WHERE key='world_format'")
+			if queried and not db.query_result.is_empty():
+				saved = String(db.query_result[0]["value"])
+			db.close_db()
+	for filename in DirAccess.get_files_at(temp):
+		DirAccess.remove_absolute(temp.path_join(filename))
+	DirAccess.remove_absolute(temp)
+	if saved != str(PLANNED_WORLD_FORMAT):
+		open_error = "Этот мир использует старый тип генерации или повреждён и не поддерживает новую модель мира. Сохранение не изменено."
+		return false
+	return true
 
 
 ## Every world has a way into the underground near its spawn point (ADR-0017),

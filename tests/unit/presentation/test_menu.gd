@@ -62,7 +62,7 @@ func test_new_local_game_then_back_to_the_start_screen() -> void:
 
 func test_load_a_world_and_host_it() -> void:
 	var id := app.worlds.create("Сервер", {})
-	ServerWorld.open(app.worlds.db_path(id), app.content, {"seed": 1}).close()
+	ServerWorld.open(app.worlds.db_path(id), app.content, {"seed": 1, "require_planned": true}).close()
 	app.settings.set_value("server_port", 25400 + randi() % 400)
 	_press("Загрузить игру")
 	_press("Запустить сервер и играть")

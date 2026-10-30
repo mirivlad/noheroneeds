@@ -141,3 +141,16 @@ test('published pages retain the original NHN theme and load CSS from the root a
     expect(theme.sheets).toBeGreaterThan(0);
   }
 });
+
+test('homepage presents the game to players and offers a real download', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.locator('.hero h1')).toContainText('Живи свою историю');
+  await expect(page.locator('.hero-copy')).toContainText('строй дом');
+  await expect(page.locator('.top-cta')).toHaveText(/Скачать игру/);
+  await expect(page.locator('.hero .btn-primary')).toHaveAttribute(
+    'href', /^https:\/\/github\.com\/mirivlad\/noheroneeds\/releases\/tag\/v\d+\.\d+\.\d+$/
+  );
+  await expect(page.locator('.hero-meta')).not.toContainText('Опубликованных релизов');
+  await expect(page.locator('.split-showcase')).not.toContainText('Мы строим энциклопедию');
+  await expect(page.locator('.hero-art img')).toBeVisible();
+});

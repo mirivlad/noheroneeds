@@ -1,0 +1,201 @@
+{
+  "format": 1,
+  "mechanics": [
+    {
+      "id": "start",
+      "guide": "start",
+      "sources": [
+        "src/app/world_library.gd",
+        "src/characters/*.gd",
+        "src/app/character_library.gd"
+      ],
+      "kinds": [
+        "item",
+        "body_plan",
+        "style",
+        "attribute",
+        "achievement"
+      ]
+    },
+    {
+      "id": "controls",
+      "guide": "controls",
+      "sources": [
+        "src/presentation/*.gd",
+        "src/experiment_3d/*.gd",
+        "project.godot",
+        "src/app/key_map.gd",
+        "src/app/game_settings.gd",
+        "src/sim/movement.gd",
+        "content/base/*visuals.json",
+        "content/base/art/**"
+      ],
+      "kinds": []
+    },
+    {
+      "id": "mining",
+      "guide": "mining",
+      "sources": [
+        "src/world/underground_generator.gd",
+        "src/world/geography.gd",
+        "src/server/server_world.gd",
+        "content/base/underground.json"
+      ],
+      "kinds": [
+        "deposit",
+        "generator",
+        "ground"
+      ]
+    },
+    {
+      "id": "craft",
+      "guide": "craft",
+      "sources": [
+        "src/server/knowledge.gd",
+        "src/server/server_world.gd",
+        "src/content/*.gd",
+        "content/base/recipes.json",
+        "content/base/professions.json",
+        "content/base/materials.json",
+        "src/sim/bag.gd",
+        "src/sim/inventory.gd",
+        "src/sim/mastery.gd"
+      ],
+      "kinds": [
+        "recipe",
+        "profession",
+        "skill",
+        "modifier"
+      ]
+    },
+    {
+      "id": "farming",
+      "guide": "farming",
+      "sources": [
+        "src/server/growth.gd",
+        "src/server/animal_life.gd",
+        "src/sim/crops.gd"
+      ],
+      "kinds": [
+        "plant"
+      ]
+    },
+    {
+      "id": "fishing",
+      "guide": "fishing",
+      "sources": [
+        "src/server/server_world.gd",
+        "src/server/boats.gd"
+      ],
+      "kinds": []
+    },
+    {
+      "id": "trade",
+      "guide": "trade",
+      "sources": [
+        "src/server/village_economy.gd",
+        "src/server/chronicles.gd",
+        "src/world/settlements.gd",
+        "content/base/settlements.json"
+      ],
+      "kinds": [
+        "settlement",
+        "story"
+      ]
+    },
+    {
+      "id": "hospitality",
+      "guide": "hospitality",
+      "sources": [
+        "src/server/hospitality.gd",
+        "src/world/hospitality_plans.gd",
+        "content/base/hospitality*.json",
+        "content/base/inn*.json"
+      ],
+      "kinds": [
+        "hospitality"
+      ]
+    },
+    {
+      "id": "caravans",
+      "guide": "caravans",
+      "sources": [
+        "src/server/caravans.gd",
+        "src/server/bandits.gd",
+        "src/server/creature_sim.gd"
+      ],
+      "kinds": []
+    },
+    {
+      "id": "combat",
+      "guide": "combat",
+      "sources": [
+        "src/server/combat.gd",
+        "content/base/characters.json",
+        "src/sim/body_size.gd",
+        "src/sim/reach.gd",
+        "src/sim/wear.gd"
+      ],
+      "kinds": []
+    },
+    {
+      "id": "nature",
+      "guide": "nature",
+      "sources": [
+        "src/world/*.gd",
+        "src/server/growth.gd",
+        "src/server/animal_life.gd",
+        "src/server/creature_sim.gd",
+        "content/base/terrain.json",
+        "content/base/creatures.json",
+        "src/sim/creature.gd",
+        "src/sim/daylight.gd",
+        "src/sim/lighting.gd",
+        "src/sim/perception.gd",
+        "src/sim/seasons.gd",
+        "src/sim/sight.gd",
+        "src/sim/weather.gd"
+      ],
+      "kinds": [
+        "creature",
+        "biome"
+      ]
+    },
+    {
+      "id": "building",
+      "guide": "building",
+      "sources": [
+        "src/building/*.gd",
+        "src/server/server_world.gd",
+        "content/base/building.json",
+        "content/base/structures.json"
+      ],
+      "kinds": [
+        "structure"
+      ]
+    },
+    {
+      "id": "survival",
+      "guide": "survival",
+      "sources": [
+        "src/server/needs.gd",
+        "src/server/server_world.gd"
+      ],
+      "kinds": []
+    },
+    {
+      "id": "multiplayer",
+      "guide": "multiplayer",
+      "sources": [
+        "src/network/*.gd",
+        "src/client/*.gd",
+        "src/persistence/*.gd",
+        "src/server/game_server.gd",
+        "src/server/dedicated_server.gd",
+        "src/core/*.gd",
+        "src/server/server_main.gd"
+      ],
+      "kinds": []
+    }
+  ]
+}

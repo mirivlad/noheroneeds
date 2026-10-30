@@ -174,12 +174,9 @@ func station_near(kind: String) -> bool:
 	var at := Movement.cell_of(client.position)
 	for y in range(at.y - 2, at.y + 3):
 		for x in range(at.x - 2, at.x + 3):
-			var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, x >> 5, y >> 5))
-			if c == null:
-				continue
-			var part := c.get_cell("structure", x & 31, y & 31)
+			var part := client.cell_at(client.location, Vector2i(x, y), "structure")
 			if part != "" and content.get_def(part).get("station") == kind \
-					and Vector2(client.position).distance_to(Vector2(x * Movement.UNIT + 128, y * Movement.UNIT + 128)) <= ServerWorld.USE_REACH:
+					and client.distance(client.position, Vector2i(x * Movement.UNIT + 128, y * Movement.UNIT + 128)) <= ServerWorld.USE_REACH:
 				return true
 	return false
 

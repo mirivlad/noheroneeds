@@ -39,10 +39,7 @@ func update_view(_alpha: float, _delta: float) -> void:
 
 
 func ground_at(location: String, cell: Vector2i) -> String:
-	var cx := floori(cell.x / float(Chunk.SIZE))
-	var cy := floori(cell.y / float(Chunk.SIZE))
-	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(location, cx, cy))
-	return c.get_cell("ground", cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else ""
+	return client.cell_at(location, cell, "ground")
 
 
 ## Cells hidden because the player is inside under them (the room one is in).
@@ -108,18 +105,12 @@ func layer_target(cell: Vector2i, layer: String) -> Dictionary:
 
 
 func _cell_layer(cell: Vector2i, layer: String) -> String:
-	var cx := floori(cell.x / float(Chunk.SIZE))
-	var cy := floori(cell.y / float(Chunk.SIZE))
-	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
-	return c.get_cell(layer, cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else ""
+	return client.cell_at(client.location, cell, layer)
 
 
 ## The props of a cell of the client's location ({} if unknown).
 func props_at(cell: Vector2i) -> Dictionary:
-	var cx := floori(cell.x / float(Chunk.SIZE))
-	var cy := floori(cell.y / float(Chunk.SIZE))
-	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(client.location, cx, cy))
-	return c.get_props(cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE) if c else {}
+	return client.props_of(client.location, cell)
 
 
 ## How a blow with a thing looks (CharacterSprite.swing).

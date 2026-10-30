@@ -85,7 +85,7 @@ func test_a_village_has_a_name_a_past_and_a_thing_lost_in_a_real_cave() -> void:
 	var at := Vector2i(int(w.items[lying]["x"]), int(w.items[lying]["y"])) / Movement.UNIT
 	check(w.underground.is_cave(at.x, at.y, -1), "on the cave's floor, not in rock")
 	for c: Creature in w.creatures.creatures.values():
-		if String(c.job.get("village", "")) == id:
+		if String(c.job.get("village", "")) == id and not c.job.has("hospitality"):
 			eq(String(c.job["name"]), String(w.chronicles.dweller_name(id, int(c.job["home"]))[0]), "a dweller has its name")
 	w.close()
 	w = ServerWorld.open(_db, _content)

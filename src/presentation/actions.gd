@@ -271,6 +271,10 @@ static func describe(content: ContentRegistry, target: Dictionary, me := "") -> 
 				return "Пустота: проём или край — можно спрыгнуть"
 			var def := content.get_def(String(target.get("id", "")))
 			var name := String(def.get("name", target.get("id", "")))
+			if target.has("props"):
+				var props: Dictionary = target["props"]
+				if props.has("inn_bed"):
+					name += " №%d — %s" % [int(props["inn_bed"]) + 1, "общая спальня" if props.get("bed_kind", "") == "shared" else "отдельная комната"]
 			var top := int(def.get("durability", 0))
 			if target.get("kind") == "part" and top > 0 and target.has("damage"):
 				name += " (прочность %d/%d)" % [top - int(target["damage"]), top]

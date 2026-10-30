@@ -12,6 +12,7 @@ signal trade(creature: String)
 signal escort(creature: String)
 ## Learn a recipe from the dweller (ADR-0047).
 signal learn(creature: String, recipe: String)
+signal service(creature: String, kind: String, choice: String)
 
 const WIDTH := 400
 var content: ContentRegistry
@@ -23,6 +24,7 @@ var _says := Label.new()
 var _goal := Label.new()
 var _trust := Label.new()
 var _news := Label.new()
+var _news_scroll := ScrollContainer.new()
 var _take := Button.new()
 var _done := Button.new()
 var _trade := Button.new()
@@ -31,6 +33,14 @@ var _teach := Button.new()
 var _lessons := ItemList.new()
 var _lesson_ids: Array[String] = []
 var _lesson_ok := {}
+var _food := Button.new()
+var _lodging := Button.new()
+var _work := Button.new()
+var _services := ItemList.new()
+var _service_info := Label.new()
+var _pay := Button.new()
+var _service_rows: Array = []
+var _service_kind := ""
 ## The dweller as it looks, and the village's trust in one (-3..5 drawn).
 var portrait := CharacterPreview.new()
 var _trust_bar := HudBoxes.Bar.new()
@@ -38,7 +48,8 @@ var _trust_bar := HudBoxes.Bar.new()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		for node: Node in [_title, _says, _goal, _trust, _news, _take, _done, _trade, _ask_news, _teach, _lessons, portrait, _trust_bar]:
+		for node: Node in [_title, _says, _goal, _trust, _news, _take, _done, _trade, _ask_news, _teach, _lessons, portrait, _trust_bar,
+				_food, _lodging, _work, _services, _service_info, _pay, _news_scroll]:
 			if is_instance_valid(node) and node.get_parent() == null:
 				node.free()
 
@@ -59,10 +70,18 @@ func setup(registry: ContentRegistry) -> void:
 	right.add_theme_constant_override("separation", 6)
 	columns.add_child(right)
 	_says.add_theme_stylebox_override("normal", Art.hud_box())
-	for l: Label in [_says, _goal, _news]:
+	for l: Label in [_says, _goal]:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size.x = WIDTH
 		right.add_child(l)
+	_news_scroll.custom_minimum_size = Vector2(WIDTH, 150)
+	_news_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_news.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_news.custom_minimum_size.x = WIDTH - 12
+	_news.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_child(_news_scroll)
+	_news_scroll.add_child(_news)
+	_news.visibility_changed.connect(func() -> void: _news_scroll.visible = _news.visible)
 	var trust_row := HBoxContainer.new()
 	_trust_bar.custom_minimum_size = Vector2(80, 6)
 	_trust_bar.color = Art.GOOD
@@ -87,9 +106,15 @@ func setup(registry: ContentRegistry) -> void:
 	_trade.text = "Торговать"
 	_trade.pressed.connect(func() -> void: trade.emit(creature))
 	_ask_news.text = "Что нового?"
-	_ask_news.pressed.connect(func() -> void: _news.visible = not _news.visible)
+	_ask_news.pressed.connect(func() -> void:
+		_show_services("")
+		_lessons.hide()
+		_news.visible = not _news.visible)
 	_teach.text = "Учиться"
-	_teach.pressed.connect(func() -> void: _lessons.visible = not _lessons.visible)
+	_teach.pressed.connect(func() -> void:
+		_show_services("")
+		_news.hide()
+		_lessons.visible = not _lessons.visible)
 	for b: Button in [_take, _done, _trade, _teach, _ask_news]:
 		row.add_child(b)
 	# What it would teach, on what terms; a click asks to learn it.
@@ -100,6 +125,31 @@ func setup(registry: ContentRegistry) -> void:
 		if bool(_lesson_ok.get(_lesson_ids[i], false)):
 			learn.emit(creature, _lesson_ids[i]))
 	box.add_child(_lessons)
+	var services_row := HBoxContainer.new()
+	_food.text = "Что поесть?"
+	_lodging.text = "Нужен ночлег"
+	_work.text = "Есть работа?"
+	_food.pressed.connect(func() -> void: _show_services("meal"))
+	_lodging.pressed.connect(func() -> void: _show_services("bed"))
+	_work.pressed.connect(func() -> void:
+		_show_services("")
+		_news.hide()
+		_lessons.hide())
+	for b: Button in [_food, _lodging, _work]:
+		services_row.add_child(b)
+	box.add_child(services_row)
+	_services.custom_minimum_size = Vector2(WIDTH, 110)
+	_services.item_selected.connect(_select_service)
+	box.add_child(_services)
+	_service_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_service_info.custom_minimum_size.x = WIDTH
+	box.add_child(_service_info)
+	_pay.pressed.connect(func() -> void:
+		var selected := _services.get_selected_items()
+		if not selected.is_empty() and not _pay.disabled:
+			var t: Dictionary = _service_rows[selected[0]]
+			service.emit(creature, String(t["kind"]), String(t["id"])))
+	box.add_child(_pay)
 	var hint := Label.new()
 	hint.text = "L — журнал: что вы взялись сделать и что помнят деревни"
 	hint.add_theme_color_override("font_color", Art.TEXT_DIM)
@@ -151,14 +201,20 @@ func open_for(r: Dictionary, looks := {}) -> void:
 	portrait.visible = not looks.is_empty()
 	if not looks.is_empty():
 		portrait.show_look(content, looks)
+	if String(r.get("creature", creature)) != creature or not r.has("services"):
+		_service_kind = ""
 	creature = String(r.get("creature", creature))
 	talk = r
 	var trade_name := String(content.get_def(String(r.get("profession", ""))).get("name", "житель")).to_lower()
 	_title.text = "%s, %s. Деревня %s" % [r.get("name", "Житель"), trade_name, r.get("village", "")] if not r.get("trader", false) \
 		else "%s, торговец. Идёт в деревню %s" % [r.get("name", "Торговец"), r.get("village", "")]
+	if r.has("establishment"):
+		_title.text = "%s — «%s»" % [r.get("name", "Тавернщик"), r["establishment"]]
 	var req: Dictionary = r.get("request", {})
 	var state := String(req.get("state", ""))
-	if r.has("says"):  # a trader on the road (ADR-0067)
+	if r.has("notice"):
+		_says.text = String(r["notice"])
+	elif r.has("says"):  # a trader on the road (ADR-0067)
 		_says.text = "— " + String(r["says"])
 	elif r.get("grudge", false):
 		_says.text = "— Не о чем мне с тобой говорить. Ступай."
@@ -173,9 +229,9 @@ func open_for(r: Dictionary, looks := {}) -> void:
 	if state == "offered" and int(req.get("reward", 0)) > 0:
 		_goal.visible = true
 		_goal.text = "Обещает: %d монет." % int(req["reward"])
-	_take.visible = state == "offered"
+	_take.visible = state == "offered" or req.get("reissue", false)
 	_take.disabled = false
-	_take.text = "Взяться"
+	_take.text = "Получить письмо снова" if req.get("reissue", false) else "Взяться"
 	_done.visible = state in ["doing", "ready"]
 	_done.disabled = state != "ready"
 	_done.text = ("Отдать" if String(req.get("kind", "")) != "hunt" else "Сделано") if state == "ready" else "Ещё не сделано"
@@ -210,6 +266,77 @@ func open_for(r: Dictionary, looks := {}) -> void:
 		_goal.text += ("\n" if _goal.text != "" else "") + ("Там не хватает: " if r.get("trader", false) else "Деревне не хватает: ") + ", ".join(PackedStringArray(short.map(
 			func(i: Variant) -> String: return String(content.get_def(String(i)).get("name", i)).to_lower()))) + " — за это заплатят дороже."
 	var lines: Array = r.get("chronicle", [])
-	_news.text = "Деревня помнит:\n" + "\n".join(PackedStringArray(lines.map(func(t: Variant) -> String: return "• " + String(t))))
+	_news.text = ("Новости с дорог:\n" if r.has("establishment") else "Деревня помнит:\n") + "\n".join(PackedStringArray(lines.map(func(t: Variant) -> String: return "• " + String(t))))
 	_ask_news.visible = not lines.is_empty()
+	var host: bool = r.has("services") and not r.get("grudge", false)
+	_food.visible = host
+	_lodging.visible = host
+	_work.visible = host and not req.is_empty()
+	_services.visible = host and _service_kind != ""
+	_service_info.visible = _services.visible
+	_pay.visible = _services.visible
+	if host:
+		_show_services(_service_kind)
 	visible = true
+
+
+func _show_services(kind: String) -> void:
+	if not talk.has("services"):
+		return
+	_service_kind = kind
+	_services.visible = kind != ""
+	_service_info.visible = kind != ""
+	_pay.visible = kind != ""
+	var req: Dictionary = talk.get("request", {})
+	if kind == "":
+		_goal.visible = _goal.text != ""
+		_take.visible = req.get("state", "") == "offered" or req.get("reissue", false)
+		_done.visible = req.get("state", "") in ["doing", "ready"]
+		return
+	_goal.hide()
+	_take.hide()
+	_done.hide()
+	_news.hide()
+	_lessons.hide()
+	var selection := _services.get_selected_items()
+	var previous := String(_service_rows[selection[0]].get("id", "")) if not selection.is_empty() and selection[0] < _service_rows.size() else ""
+	var selected_row := 0
+	_services.clear()
+	_service_rows.clear()
+	for t: Dictionary in talk["services"]:
+		if t["kind"] != kind:
+			continue
+		var suffix := " — ваш ночлег" if t.get("mine", false) else (" — занято" if t.get("why", "") == "bed_rented" else "")
+		var i := _services.add_item("%s — %d мон.%s" % [t["name"], int(t["price"]), suffix])
+		if t.get("why", "") != "":
+			_services.set_item_custom_fg_color(i, Art.TEXT_DIM)
+		_service_rows.append(t)
+		if String(t["id"]) == previous:
+			selected_row = _service_rows.size() - 1
+	_pay.disabled = _service_rows.is_empty()
+	_service_info.text = "Свободных мест сейчас нет." if _service_rows.is_empty() else ""
+	if not _service_rows.is_empty():
+		_services.select(selected_row)
+		_select_service(selected_row)
+
+
+func _select_service(i: int) -> void:
+	if i < 0 or i >= _service_rows.size():
+		return
+	var t: Dictionary = _service_rows[i]
+	var why := String(t.get("why", ""))
+	_pay.disabled = why != ""
+	_pay.text = "Заплатить %d монет" % int(t["price"])
+	if t["kind"] == "meal":
+		_service_info.text = "Поесть здесь: сытость +%d, здоровье +%d." % [int(t["satiety"]), int(t["heal"])]
+	else:
+		_service_info.text = "%s. Аренда на %.0f игровых ч. Уютная кровать: быстрый отдых." % [
+			"Спальня наверху" if int(t["z"]) > 0 else "На первом этаже", float(t["hours"])]
+		if t.get("mine", false):
+			var until := int(t.get("until", 0))
+			_service_info.text += " Оплачено до дня %d, %02d:%02d." % [until / Daylight.DAY_MS + 1,
+				int(Daylight.hour_of(until)), int(Daylight.hour_of(until) * 60) % 60]
+	var reasons := {"no_money": "Не хватает монет.", "bed_rented": "Место занято другим гостем.",
+		"already_rented": "Эта кровать уже оплачена вами.", "no_bed": "Кровать больше недоступна."}
+	if why != "":
+		_service_info.text += " " + String(reasons.get(why, why))

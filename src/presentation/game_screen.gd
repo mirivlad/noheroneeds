@@ -171,6 +171,11 @@ var _build_view: ClientBuildView
 const REASONS := {
 	"escort_active": "у вас уже есть договор охраны — условия и завершение в журнале",
 	"no_route": "торговец сейчас никуда не отправляется",
+	"rent_first": "сначала снимите эту кровать у хозяина",
+	"bed_rented": "кровать уже снята другим гостем",
+	"already_rented": "эта кровать уже оплачена вами",
+	"no_bed": "кровать больше недоступна",
+	"not_receiver": "письмо нужно передать жителю указанной деревни",
 	"young_animal": "детёныш ещё не вырос", "hungry_animal": "сначала накормите животное",
 	"occupied": "место занято", "blocked": "мешает вода, стена или дерево", "someone_there": "там кто-то стоит",
 	"materials": "не хватает материалов", "too_far": "слишком далеко", "no_floor": "здесь нет пола",
@@ -1038,6 +1043,8 @@ func _build_tools(layer: CanvasLayer) -> void:
 		_talk_rids[client.request({"type": "promise", "creature": who})] = who)
 	talk_panel.escort.connect(func(who: String) -> void:
 		_talk_rids[client.request({"type": "escort_hire", "creature": who})] = who)
+	talk_panel.service.connect(func(who: String, kind: String, choice: String) -> void:
+		_talk_rids[client.request({"type": "inn_service", "creature": who, "service": kind, "choice": choice})] = who)
 	talk_panel.report.connect(func(who: String) -> void:
 		_talk_rids[client.request({"type": "report", "creature": who})] = who)
 	talk_panel.learn.connect(func(who: String, recipe: String) -> void:

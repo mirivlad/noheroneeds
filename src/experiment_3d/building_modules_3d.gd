@@ -147,6 +147,79 @@ func column() -> Mesh:
 	cache["column"] = mesh
 	return mesh
 
+
+func _cylinder(mesh: ArrayMesh, radius: float, height: float, at: Vector3, mat: Material) -> void:
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = radius
+	cylinder.bottom_radius = radius
+	cylinder.height = height
+	cylinder.radial_segments = 12
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.append_from(cylinder, 0, Transform3D(Basis.IDENTITY, at))
+	st.set_material(mat)
+	st.commit(mesh)
+
+
+## Permanent, assembled furniture in the same timber/plaster style as the
+## building modules: legs, boards, backs, shelving and cups, not stand-ins.
+func furniture(kind: String, decor := 0) -> Mesh:
+	var key := "furniture:%s:%d" % [kind, decor % 3]
+	if cache.has(key):
+		return cache[key]
+	var mesh := ArrayMesh.new()
+	var board := [wood, _material(Color("86633f")), _material(Color("ad8050"))][decor % 3] as Material
+	var metal := _material(Color("b18b4e"))
+	if kind == "chair":
+		for x: float in [-.21, .21]:
+			for z: float in [-.21, .21]:
+				_box(mesh, Vector3(.065, .47, .065), Vector3(x, .235, z), timber)
+		for x: float in [-.17, 0, .17]:
+			_box(mesh, Vector3(.15, .07, .51), Vector3(x, .48, 0), board)
+		for x: float in [-.21, .21]:
+			_box(mesh, Vector3(.065, .48, .065), Vector3(x, .75, -.21), timber)
+		for y: float in [.68, .9]:
+			_box(mesh, Vector3(.48, .11, .05), Vector3(0, y, -.21), board)
+	elif kind == "table" or kind == "round_table":
+		if kind == "table":
+			for x: float in [-.52, .52]:
+				for z: float in [-.3, .3]:
+					_box(mesh, Vector3(.1, .72, .1), Vector3(x, .36, z), timber)
+			for z: float in [-.29, 0, .29]:
+				_box(mesh, Vector3(1.35, .09, .27), Vector3(0, .76, z), board)
+			_box(mesh, Vector3(1.1, .1, .06), Vector3(0, .35, 0), timber)
+		else:
+			_cylinder(mesh, .59, .09, Vector3(0, .76, 0), board)
+			_cylinder(mesh, .12, .68, Vector3(0, .35, 0), timber)
+			for turn in 2:
+				_box(mesh, Vector3(.85, .1, .12), Vector3.UP * .07, timber, turn * PI / 2)
+		_cylinder(mesh, .16, .025, Vector3(.18, .82, .12), _material(Color("d8c79e")))
+		_cylinder(mesh, .07, .16, Vector3(-.2, .88, -.16), metal)
+	elif kind == "counter":
+		for x: float in [-.43, .43]:
+			_box(mesh, Vector3(.1, 1, .1), Vector3(x, .5, 0), timber)
+		for x: float in [-.36, -.18, 0, .18, .36]:
+			_box(mesh, Vector3(.16, .81, .09), Vector3(x, .45, .24), board)
+		for y: float in [.2, .65]:
+			_box(mesh, Vector3(.87, .06, .49), Vector3(0, y, -.02), board)
+		_box(mesh, Vector3(1.02, .11, .72), Vector3.UP * .98, board)
+		_box(mesh, Vector3(1.02, .035, .04), Vector3(0, .94, .36), metal)
+		for x: float in [-.25, .08]:
+			_cylinder(mesh, .065, .16, Vector3(x, 1.11, -.04), metal)
+	elif kind == "sign":
+		_box(mesh, Vector3(.12, 1.9, .12), Vector3(.38, .95, 0), timber)
+		_box(mesh, Vector3(.95, .08, .09), Vector3(0, 1.83, 0), timber)
+		for x: float in [-.25, .25]:
+			_box(mesh, Vector3(.025, .23, .025), Vector3(x, 1.67, 0), metal)
+		for y: float in [1.26, 1.47]:
+			_box(mesh, Vector3(.74, .19, .09), Vector3(0, y, 0), board)
+		_cylinder(mesh, .12, .23, Vector3(0, 1.39, .09), metal)
+		_box(mesh, Vector3(.14, .035, .04), Vector3(.13, 1.48, .09), metal)
+		_box(mesh, Vector3(.035, .15, .04), Vector3(.2, 1.42, .09), metal)
+		_box(mesh, Vector3(.14, .035, .04), Vector3(.13, 1.34, .09), metal)
+	cache[key] = mesh
+	return mesh
+
 ## A forge (it was a barrel): a stone furnace with a glowing mouth to the south
 ## and a chimney (its smoke and light are the content's).
 func forge() -> Mesh:

@@ -310,6 +310,10 @@ func rest(c: Creature) -> void:
 	if not c.job.has("camp_spot"):
 		var spot := c.cell()
 		var in_village := false
+		var inn := world.hospitality.camp_spot(c)
+		if inn != Creature.NO_TARGET:
+			spot = inn
+			in_village = true
 		for village: String in [String(c.job.get("from", "")), String(c.job.get("toward", ""))]:
 			var plan := world.generator.settlements.plan_by_id(village)
 			if not plan.is_empty() and (plan["bounds"] as Rect2i).grow(6).has_point(c.cell()):
@@ -331,8 +335,22 @@ func rest(c: Creature) -> void:
 	var saved: Array = c.job["camp_spot"]
 	var spot := Vector2i(int(saved[0]), int(saved[1]))
 	if c.cell().distance_to(spot) > 1:
-		world.bandits.walk_to(c, spot, "camp")
-		return
+		var sim := world.creatures
+		if c.state == "detour" and c.target != Creature.NO_TARGET and c.path_to == spot:
+			return
+		if c.path_to != spot or c.path.is_empty():
+			c.path = sim._caravan_route(c, spot, 16)
+			c.path_to = spot
+		while not c.path.is_empty() and c.pos == c.path[0] * Movement.UNIT + Vector2i(128, 128):
+			c.path.pop_front()
+		if not c.path.is_empty():
+			sim._go(c, "detour", c.path[0], false)
+			return
+		# A yard may have been sealed since it was generated. Rest where the
+		# whole caravan already fits, then resume the road in the morning.
+		c.job["camp_spot"] = [c.cell().x, c.cell().y]
+		c.job["rest_in_village"] = false
+		world.operation_creature(c)
 	if not c.job.has("campfire") and not c.job.get("rest_in_village", false):
 		var fuel := world.inventory("supplies|" + c.id)
 		for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
@@ -380,5 +398,8 @@ func break_camp(c: Creature) -> void:
 	c.job.erase("campfire")
 	c.job.erase("camp_spot")
 	c.job.erase("rest_in_village")
+	c.path.clear()
+	c.path_to = Creature.NO_TARGET
+	world.creatures._go(c, "rest", Creature.NO_TARGET, false)
 	world.creatures._dress(c, "", false)
 	world.operation_creature(c)

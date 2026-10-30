@@ -279,7 +279,8 @@ func _refresh_foundations(changed: Array) -> void:
 		var floors := {}
 		for y in Chunk.SIZE:
 			for x in Chunk.SIZE:
-				if c.get_cell("ground", x, y) in ["base:wood_floor", "base:stone_floor"] and not c.get_props(x, y).has("village"):
+				if c.get_cell("ground", x, y) in ["base:wood_floor", "base:stone_floor"] \
+						and (not c.get_props(x, y).has("village") or c.get_props(x, y).has("hospitality")):
 					floors[origin + Vector2i(x, y)] = true
 		if floors != _floor_chunks.get(key, {}):
 			_floor_chunks[key] = floors
@@ -399,7 +400,7 @@ func _build_row() -> void:
 	for x in Chunk.SIZE:
 		var cell := origin + Vector2i(x, y)
 		var ground := c.get_cell("ground", x, y)
-		if ground == "":
+		if ground == "" and not c.get_props(x, y).get("stairs_down", false):
 			continue
 		var level := 0.0 if client.z < 0 else client.z * STOREY
 		var points: Array[Vector3] = []
@@ -515,6 +516,10 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		mesh = buildings.stump()
 		basis = Basis.IDENTITY
 		instance_id = "module:stump"
+	elif d.has("furniture_model"):
+		mesh = buildings.furniture(String(d["furniture_model"]), int(props.get("decor", 0)))
+		position3.y = elevation(at) + lift
+		instance_id = "module:" + str(mesh.get_instance_id())
 	elif d.get("bed", false) or role == "column" or String(d.get("station", "")) == "forge":
 		# Furniture of its own make (the author: the bed was a cube): turned as laid.
 		mesh = buildings.bed() if d.get("bed", false) else (buildings.column() if role == "column" else buildings.forge())
@@ -577,6 +582,8 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		parts.append([cell, cover] if cover or role in ["wall", "window", "door"] else [])
 	_job["count"] += 1
 	var target := {"kind": "part", "id": id, "layer": layer, "cell": cell, "location": client.location}
+	if props.has("inn_bed"):
+		target["props"] = {"inn_bed": props["inn_bed"], "bed_kind": props.get("bed_kind", "shared")}
 	if layer in ["transition", "chasm"]:
 		target = {"kind": "ground", "id": ground_at(client.location, cell), "cell": cell, "location": client.location}
 	if layer == "ground":

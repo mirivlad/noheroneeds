@@ -92,10 +92,11 @@ func _draw_map() -> void:
 	painter.draw(c, client.location, me, Vector2.ZERO, px, Rect2(-d * 0.75, d * 1.5))
 	for id: String in client.entities:
 		var e: Dictionary = client.entities[id]
-		if e.get("kind") != "character" or int(e.get("z", client.z)) != client.z:
+		var host: bool = e.get("profession", "") == "base:innkeeper"
+		if (e.get("kind") != "character" and not host) or int(e.get("z", client.z)) != client.z:
 			continue
 		var at := (Vector2(int(e["x"]), int(e["y"])) / Movement.UNIT - me) * px
-		c.draw_rect(Rect2(at - Vector2.ONE, Vector2(2, 2)), Color(0.4, 0.8, 1.0))
+		c.draw_rect(Rect2(at - Vector2.ONE * (2 if host else 1), Vector2.ONE * (4 if host else 2)), Color("eab75c") if host else Color(0.4, 0.8, 1.0))
 	c.draw_set_transform(Vector2.ZERO)
 	c.draw_rect(Rect2(mid - Vector2(1.5, 1.5), Vector2(3, 3)), Color(1.0, 0.9, 0.3))
 

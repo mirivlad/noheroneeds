@@ -74,6 +74,7 @@ var _roads := {}
 var _ground_cost := {}
 ## Forest outlaws share the district map, not the peaceful village economy.
 var camps: BanditCampPlans
+var inns: HospitalityPlans
 
 
 func _init(seed_value: int, registry: ContentRegistry, wet: Callable, clearing: int, biome := Callable(), land := Callable()) -> void:
@@ -91,6 +92,7 @@ func _init(seed_value: int, registry: ContentRegistry, wet: Callable, clearing: 
 	for id: String in ids:
 		_kinds.append({"id": id, "def": registry.get_def(id)})
 	camps = BanditCampPlans.new(self)
+	inns = HospitalityPlans.new(self)
 
 
 func _district_size(k: int) -> int:

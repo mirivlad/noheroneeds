@@ -332,6 +332,18 @@ func test_decks_clear_the_substrate_and_bridge_feet_match_top_triangles() -> voi
 	for p:Vector3 in ground.mesh.get_faces():
 		check(p.y < view.corner_height(Vector2i(roundi(p.x),roundi(p.z)))-.13,"substrate is below decking, no coplanar green stripes")
 
+func test_upstairs_opening_without_floor_has_visible_pickable_stairs() -> void:
+	client.location = "upper"
+	client.z = 1
+	var c := Chunk.new()
+	c.set_props(2, 2, {"stairs_down": true})
+	client.chunks["upper|0|0"] = c
+	view._queued["upper|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in 3: view._build_row()
+	check(view._job["count"] > 0, "the open stairwell is rendered despite having no floor")
+	check(view._job["targets"].any(func(t: Dictionary) -> bool: return t.get("cell") == Vector2i(2, 2) and t.get("kind") == "ground"), "ordinary interaction can pick the way down")
+
 func test_one_hurt_shows_a_bar_and_the_damage() -> void:
 	var actor := BillboardActor3D.new()
 	actor.setup(content, content.visual_of("base:human_ro_m"), {"body_plan": "base:human_ro_m"}, {})

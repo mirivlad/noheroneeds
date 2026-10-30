@@ -192,10 +192,13 @@ func step() -> void:
 	for id: String in world.present:
 		# Awake it runs down; asleep in a bed it comes back, and full one wakes.
 		var sleeping := asleep(id)
+		if sleeping and world.hospitality.sleep_reason(id, String(world.present[id]["location"]), world.present[id]["asleep"]) != "":
+			world.wake(id)
+			sleeping = false
 		var swimming := world.in_water(id)
 		# Deep water is harder (ADR-0051): it tires and chills by its effort.
 		var effort := world.swim_effort(id) if swimming else 1.0
-		var rests := BED_RESTS if sleeping else (SIT_RESTS if world.sitting(id) else -FULL / AWAKE_HOURS)
+		var rests := BED_RESTS * world.hospitality.rest_rate(id) if sleeping else (SIT_RESTS if world.sitting(id) else -FULL / AWAKE_HOURS)
 		set_energy(id, energy_of(id) + (-SWIM_TIRES * effort if swimming else rests) * hours)
 		if sleeping and energy_of(id) >= FULL:
 			world.wake(id)

@@ -179,6 +179,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.economy = VillageEconomy.new(world)
 	world.bandits = Bandits.new(world)
 	world.caravans = Caravans.new(world)
+	world.hospitality = Hospitality.new(world)
 	world.world_seed = int(s.read_meta("seed"))
 	world.weather_seed = absi(hash([world.world_seed, "weather"]))
 	var saved_time := s.read_meta("time")
@@ -266,6 +267,7 @@ func close() -> void:
 	economy.world = null
 	bandits.world = null
 	caravans.world = null
+	hospitality.world = null
 	knowledge.world = null
 	boats.world = null
 	growth.world = null
@@ -286,6 +288,7 @@ func abandon() -> void:
 	economy.world = null
 	bandits.world = null
 	caravans.world = null
+	hospitality.world = null
 	knowledge.world = null
 	boats.world = null
 	growth.world = null
@@ -358,6 +361,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		_take_items(location, rows)
 		creatures.take_rows(location, rows)
 		creatures.on_chunk_ready(location, cx, cy, c)
+		hospitality.arrived(location, c)
 		_settle_stairs(location, cx, cy, c)
 		growth.arrived(location, cx, cy, c)  # what grew while it was away (ADR-0056)
 		chronicles.lie_lost(location, cx, cy)  # a thing lost in a cave lies there again (ADR-0042)
@@ -464,6 +468,7 @@ func poll_loaded() -> void:
 		_take_items(r[0], r[5])
 		creatures.take_rows(r[0], r[5])
 		creatures.on_chunk_ready(r[0], r[1], r[2], r[3])
+		hospitality.arrived(r[0], r[3])
 		if not (r[6] as PackedByteArray).is_empty():
 			_encoded[key] = [_chunk_rev.get(key, 0), r[6]]
 		if r[4]:
@@ -1095,6 +1100,7 @@ var growth: Growth
 var chronicles: Chronicles
 ## Villages' stores: what they make, need and fetch from each other (ADR-0066).
 var economy: VillageEconomy
+var hospitality: Hospitality
 var bandits: Bandits
 var caravans: Caravans
 ## World facts to write with the next state batch (set_meta).
@@ -1401,6 +1407,8 @@ func _apply(actor: String, r: Dictionary) -> Dictionary:
 				return {"ok": false, "reason": "not_here"}
 			caravans.finish(actor, "left")
 			return chronicles.journal(actor)
+		"inn_service":
+			return hospitality.buy(actor, r)
 		"places":
 			return _places(actor)
 		"trade_look":
@@ -2759,31 +2767,39 @@ func _places(actor: String) -> Dictionary:
 	for p: Dictionary in generator.settlements.plans_near(at, PLACES_RADIUS):
 		var fire: Vector2i = p["fire"]
 		out.append({"name": chronicles.village_name(String(p["id"])), "x": fire.x, "y": fire.y})
+	out.append_array(hospitality.places(at, mini(PLACES_RADIUS, 400)))
 	return {"ok": true, "places": out}
 
 
 ## Eats one of a food one carries: it heals, up to one's most health.
 func _eat(actor: String, r: Dictionary) -> Dictionary:
-	var item := rs(r, "item")
+	return eat_food(actor, rs(r, "item"))
+
+
+## The same food effects for a carried item or a meal eaten at a host's.
+## A service never creates food or a reusable container in the inventory.
+func eat_food(actor: String, item: String, from_inventory := true) -> Dictionary:
 	var food: Dictionary = content.get_def(item).get("food", {})
 	if food.is_empty():
 		return {"ok": false, "reason": "not_food"}
 	if not present.has(actor):
 		return {"ok": false, "reason": "not_here"}
-	if inventory(actor).count(item) < 1:
+	if from_inventory and inventory(actor).count(item) < 1:
 		return {"ok": false, "reason": "not_enough"}
 	var health := combat.health_of(actor)
 	var most := combat.max_health_of(actor)
 	# Eaten when hurt or not full (ADR-0032): it heals and fills.
 	if health >= most and needs.satiety_of(actor) > Needs.FULL - 5.0:
 		return {"ok": false, "reason": "not_hungry"}
-	var vessel := inventory(actor).take(item, 1, 0)
-	_touch_inventory(actor)
+	var vessel: Array = []
+	if from_inventory:
+		vessel = inventory(actor).take(item, 1, 0)
+		_touch_inventory(actor)
 	combat.heal(actor, int(food.get("heal", 0)))
 	needs.set_satiety(actor, needs.satiety_of(actor) + float(food.get("satiety", 0)))
 	var out := {"ok": true, "health": combat.health_of(actor), "satiety": needs.shown(actor)["satiety"]}
 	var empty := String(content.get_def(item).get("liquid", {}).get("empty", ""))
-	if empty != "":  # drunk: the container is left (a bucket of milk), the same one
+	if empty != "" and from_inventory:  # a guest uses the house's cup
 		give(actor, empty, 1, vessel)
 		out["now"] = empty
 	return out
@@ -2940,6 +2956,8 @@ func _talk(actor: String, r: Dictionary, what: String) -> Dictionary:
 		out["teaches"] = _teach_terms(c, actor)
 		if String(c.job.get("village", "")) != "":
 			out["short"] = economy.short(String(c.job["village"]))  # what the village lacks (ADR-0066)
+	if out.get("ok", false) and c.job.has("hospitality"):
+		hospitality.decorate(out, actor, c)
 	return out
 
 
@@ -3235,6 +3253,9 @@ func _sleep(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "too_far"}
 	if not content.get_def(part_at(at[0], x, y)).get("bed", false):
 		return {"ok": false, "reason": "not_a_bed"}
+	var rental := hospitality.sleep_reason(actor, at[0], Vector2i(x, y))
+	if rental != "":
+		return {"ok": false, "reason": rental}
 	if needs.energy_of(actor) > Needs.FULL - 10.0:
 		return {"ok": false, "reason": "not_tired"}
 	for id: String in present:

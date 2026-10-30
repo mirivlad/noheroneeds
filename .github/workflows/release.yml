@@ -1,8 +1,10 @@
 name: release
-# A release of the game: tests, then the packages — the Linux binary, the
+# A release of the game: gameplay and documentation/browser gates, then packages.
+# The Linux binary, the
 # Windows portable .exe and installer (with the game's icon), a .deb for
 # Debian and Ubuntu (menu entry, icons) — attached to a GitHub release.
-# Started by pushing a tag vX.Y.Z, or by hand with a version.
+# Started by pushing a tag vX.Y.Z, or by hand with a version. Published tags
+# also deploy the wiki snapshot after the release; drafts never deploy it.
 on:
   push:
     tags: ["v*.*.*"]
@@ -16,8 +18,12 @@ permissions:
 jobs:
   tests:
     uses: ./.github/workflows/tests.yml
+  documentation:
+    uses: ./.github/workflows/site-check.yml
+    with:
+      release_version: ${{ github.event.inputs.version || github.ref_name }}
   packages:
-    needs: tests
+    needs: [tests, documentation]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
@@ -54,6 +60,10 @@ jobs:
           fi
       - name: Packaging tools
         run: sudo apt-get update -q && sudo apt-get install -y -q nsis fakeroot zip
+      - name: Player release notes
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: python3 tools/site/release_notes.py "v$RELEASE_VERSION" --out build/release-notes.md
       - name: Packages
         run: GODOT=~/godot/godot tools/package.sh "${{ steps.version.outputs.version }}"
       - uses: actions/upload-artifact@v4
@@ -66,5 +76,16 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: No Hero Needed ${{ steps.version.outputs.version }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
-          generate_release_notes: true
+          body_path: build/release-notes.md
+          generate_release_notes: false
           files: build/release/*
+  published_wiki:
+    needs: packages
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
+    with:
+      release_tag: ${{ github.ref_name }}

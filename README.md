@@ -78,6 +78,14 @@ tools/export.sh
 
 Собирает Linux (`build/linux/noheroneeds.x86_64`) и Windows (`build/windows/noheroneeds.exe`), рядом с каждым — библиотека SQLite, и архивы `build/noheroneeds-<версия>-<коммит>-linux-x86_64.tar.gz` и `…-windows-x86_64.zip`. Только одна платформа: `tools/export.sh linux` или `tools/export.sh windows`; отладочная сборка: `--debug`. Нужны шаблоны экспорта Godot той же версии (4.7.2).
 
+### Сайт и документация
+
+Энциклопедия строится из игровых данных: `python3 tools/site/build.py`.
+Предпросмотр: `python3 tools/site/serve.py` → <http://127.0.0.1:18764/noheroneeds/>.
+[Обязательные правила документации](docs/WIKI_WORKFLOW.md) и [проверки сайта](site/README.md)
+входят в процедуру игровых изменений. Публичная вики собирается из опубликованного
+тега; будущая игра из `main` показывается только в предпросмотре.
+
 ### Релизы
 
 ```

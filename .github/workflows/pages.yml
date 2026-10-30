@@ -1,0 +1,54 @@
+name: Published wiki
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_tag:
+        type: string
+        default: ''
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve actual published releases
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+        shell: bash
+        run: |
+          args=()
+          if [[ -n "$EXPECTED_TAG" ]]; then args+=(--require-tag "$EXPECTED_TAG"); fi
+          python3 tools/site/sync_releases.py "${args[@]}"
+      - name: Build only the latest published game and its pinned documentation
+        run: python3 tools/site/publish.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

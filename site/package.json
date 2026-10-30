@@ -1,0 +1,11 @@
+{
+  "name": "noheroneeds-wiki",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "check": "node --check assets/site.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

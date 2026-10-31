@@ -79,7 +79,13 @@ func read(id: String) -> Dictionary:
 
 ## A world's record before its database exists (a new world), or {}.
 func read_meta_only(id: String) -> Dictionary:
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(root.path_join(id).path_join(META)))
+	var path := root.path_join(id).path_join(META)
+	if not FileAccess.file_exists(path):
+		return {}
+	var text := FileAccess.get_file_as_string(path)
+	if text == "":
+		return {}
+	var parsed: Variant = JSON.parse_string(text)
 	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
 

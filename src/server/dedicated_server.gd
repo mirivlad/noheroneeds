@@ -5,6 +5,10 @@ extends Node
 ## (`noheroneeds --headless -- --server [options]`). Options (without "--"
 ## in the dictionary):
 ##   --world=PATH         world database (default user://worlds/default/world.db)
+##   --seed=N             seed of a new world (an existing world keeps its own)
+##   --preset=ID          small|medium|large|huge|single_continent
+##                        (default single_continent for a new world)
+##   --climate=ID         hot|temperate|cold (default temperate)
 ##   --port=N             UDP port (default 24680)
 ##   --max-players=N      default 20
 ##   --identity=DIR       server key directory (default user://server_identity)
@@ -59,7 +63,11 @@ func start(o: Dictionary) -> String:
 	var identity := PlayerIdentity.load_or_create(ProjectSettings.globalize_path(String(o.get("identity", "user://server_identity"))))
 	if identity == null:
 		return "cannot load or create the server key"
-	_world = ServerWorld.open(world_path, content, {"require_planned": true})
+	var open_options := {"require_planned": true}
+	for key: String in ["seed", "preset", "climate"]:
+		if o.has(key):
+			open_options[key] = o[key]
+	_world = ServerWorld.open(world_path, content, open_options)
 	if _world == null:
 		return "cannot open the world %s: %s" % [world_path, ServerWorld.open_error]
 	_transport = ENetTransport.new()

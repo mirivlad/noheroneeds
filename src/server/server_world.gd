@@ -157,9 +157,18 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		return null
 	if s.read_meta("seed") == "":
 		var supplied: Variant = options.get("world_plan")
+		var required := bool(options.get("require_planned", false))
 		var new_plan: WorldPlan = WorldPlan.from_dict(supplied) if supplied is Dictionary else null
-		if supplied == null and bool(options.get("require_planned", false)):
-			new_plan = WorldPlan.generate(int(options.get("seed", randi())), "single_continent", "temperate", registry)
+		if supplied == null and required:
+			var preset := String(options.get("preset", "single_continent"))
+			var climate := String(options.get("climate", "temperate"))
+			new_plan = WorldPlan.generate(int(options.get("seed", randi())), preset, climate, registry)
+			if new_plan == null:
+				# A planned server must never fall through to the old random
+				# world: format 6 would be written and then refused on reopen.
+				open_error = "не удалось создать глобальный план мира (пресет %s, климат %s)" % [preset, climate]
+				s.close()
+				return null
 		if supplied != null and new_plan == null:
 			open_error = "неверный глобальный план мира"
 			s.close()
@@ -642,6 +651,7 @@ func poll_loaded() -> void:
 			_dirty_chunks[key] = true
 		_settle_stairs(r[0], r[1], r[2], r[3])  # after its encoding is kept: a change makes it stale
 		growth.arrived(r[0], r[1], r[2], r[3])
+		chronicles.lie_lost(r[0], r[1], r[2])  # the same as _chunk: a lost thing lies again
 
 
 func inventory(owner: String) -> Inventory:

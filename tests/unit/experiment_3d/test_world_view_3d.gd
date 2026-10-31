@@ -313,8 +313,34 @@ func test_crags_stand_up_and_only_a_levels_edge_is_flush() -> void:
 	view._land = SurfaceGenerator.new(plan.seed_value, content, plan)
 	view.terrain = null
 	view.terrain = view._new_terrain()
-	var cliff := Vector2i(1533, -1378)
-	var crag_cell := Vector2i(1526, -1294)
+	# Look round the spawn chunk rather than pin a coordinate: the plan is
+	# generated and a seed's cliffs move when its continents change.
+	var spawn_chunk := Vector2i(floori(plan.spawn.x / 32.0), floori(plan.spawn.y / 32.0))
+	var cliff := Vector2i.ZERO
+	var crag_cell := Vector2i.ZERO
+	var have_cliff := false
+	var have_crag := false
+	for radius in range(0, 3):
+		for cy in range(-radius, radius + 1):
+			for cx in range(-radius, radius + 1):
+				if maxi(absi(cx), absi(cy)) != radius:
+					continue
+				var base := (spawn_chunk + Vector2i(cx, cy)) * 32
+				for ly in 32:
+					for lx in 32:
+						var cell := base + Vector2i(lx, ly)
+						var h := view._land.height_at(cell.x, cell.y)
+						var is_cliff := view._land.is_cliff(cell.x, cell.y, h)
+						if not have_cliff and is_cliff:
+							cliff = cell
+							have_cliff = true
+						elif have_cliff and not have_crag and not is_cliff and view._land.metres_at(cell.x, cell.y) > 0.5:
+							crag_cell = cell
+							have_crag = true
+		if have_cliff and have_crag:
+			break
+	check(have_cliff, "the generated planet has a cliff near the spawn")
+	check(have_crag, "and a crag with level ground beside it")
 	check(view._rock_cliff(cliff), "the cliff is a level's edge")
 	check(is_equal_approx(view._rock_top(cliff, Vector2i.ZERO) - view.terrain.cell(cliff), .05),
 		"and is drawn flush with its level")

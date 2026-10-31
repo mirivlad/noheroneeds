@@ -547,6 +547,69 @@ func items_in_chunk(location: String, cx: int, cy: int) -> Array:
 	return (_items_by_chunk.get(storage_key(location, cx, cy), {}) as Dictionary).keys()
 
 
+## Whether something lies on the ground of this cell.
+func _thing_at(location: String, cx: int, cy: int, at: Vector2i) -> bool:
+	for id: String in items_in_chunk(location, cx, cy):
+		var it: Dictionary = items[id]
+		if String(it["location"]) == location \
+				and Movement.cell_of(Vector2i(int(it["x"]), int(it["y"]))) == at:
+			return true
+	return false
+
+
+## Old worlds were laid before every cell of a way was checked: a road may run
+## into open water where it now crosses. The audit goes over the stored surface
+## chunks and names such cells; with `apply` it lays a bridge deck in place of
+## common water where the cell is clear. It never lays road on land and never
+## touches deep water, a building, a plant, props or something lying there:
+## those cells are only named (ADR-0038). Returns counts and the cells.
+func road_audit(apply := false) -> Dictionary:
+	var out := {"checked": 0, "chunks": 0, "bridged": [], "deep": [], "blocked": []}
+	if generator == null or generator.settlements == null:
+		return out
+	var seen := {}
+	var stored := store.chunks_of(SURFACE)
+	out["chunks"] = stored.size()
+	for row: Dictionary in stored:
+		var cx := int(row["cx"])
+		var cy := int(row["cy"])
+		var c := chunk(SURFACE, cx, cy)
+		for road: Dictionary in generator.settlements.roads_touching(cx, cy):
+			var cells: Dictionary = road["cells"]
+			for at: Vector2i in cells:
+				var lx := at.x - cx * Chunk.SIZE
+				var ly := at.y - cy * Chunk.SIZE
+				if lx < 0 or ly < 0 or lx >= Chunk.SIZE or ly >= Chunk.SIZE:
+					continue
+				var seen_key := "%d|%d" % [at.x, at.y]
+				if seen.has(seen_key):
+					continue
+				seen[seen_key] = true
+				out["checked"] = int(out["checked"]) + 1
+				if not Terrain.is_water(c, lx, ly, content):
+					continue  # land is left exactly as it is
+				var ground := c.get_cell("ground", lx, ly)
+				var land := String(generator.land_at(at.x, at.y, false).get("what", "land"))
+				if land == "deep" or (generator.deep_ground() != "" and ground == generator.deep_ground()):
+					(out["deep"] as Array).append(at)
+					continue
+				if land != "water":
+					continue  # a ford or an unclear cell: no bridge guessed
+				var bridge := String((cells[at] as Dictionary).get("over_water", ""))
+				if bridge == "" or c.get_cell("structure", lx, ly) != "" \
+						or c.get_cell("cover", lx, ly) != "" or not c.get_props(lx, ly).is_empty() \
+						or _thing_at(SURFACE, cx, cy, at):
+					(out["blocked"] as Array).append(at)
+					continue
+				(out["bridged"] as Array).append(at)
+				if apply:
+					c.set_cell("ground", lx, ly, bridge)
+					c.set_cell("cover", lx, ly, "")
+					c.set_cell("structure", lx, ly, "")
+					_changed(chunk_key(SURFACE, cx, cy))
+	return out
+
+
 func _take_items(location: String, rows: Array) -> void:
 	for row: Dictionary in rows:
 		if row["kind"] != "item" or items.has(row["id"]):

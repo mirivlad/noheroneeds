@@ -277,6 +277,12 @@ func is_wet(x: int, y: int) -> bool:
 	return String(land_at(x, y)["what"]) in ["water", "deep", "shallows", "shore"]
 
 
+## The ground of deep water ("" when this world has none): a bridge is never
+## laid over it.
+func deep_ground() -> String:
+	return _deep
+
+
 ## Whether a ground is water one swims in (bridges go over it).
 func _swum(ground: String) -> bool:
 	return ground != "" and (ground == _water or ground == _deep)

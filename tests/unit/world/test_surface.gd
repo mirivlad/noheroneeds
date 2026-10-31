@@ -58,6 +58,67 @@ func test_spawn_clearing_and_solid_terrain() -> void:
 	check(water > 0 and trees > 0, "water %d, solid plants %d" % [water, trees])
 
 
+func _solids(c: Chunk, content: ContentRegistry) -> int:
+	var count := 0
+	for id in c.layer_ids("cover"):
+		if content.get_def(id).get("solid", false):
+			count += 1
+	return count
+
+
+func _solid_at(c: Chunk, x: int, y: int, content: ContentRegistry) -> bool:
+	return bool(content.get_def(c.get_cell("cover", x, y)).get("solid", false))
+
+
+func test_woods_have_glades_and_a_way_through() -> void:
+	# A wood must stay a wood, but not a wall: glades, trails, and a way the
+	# mouse's auto path finds without a search limit.
+	var content := _base()
+	var plan := WorldPlan.generate(431, "small", "temperate", content)
+	var surface := SurfaceGenerator.new(plan.seed_value, content, plan)
+	var chunks := {}
+	var densest := Vector2i.ZERO
+	var most := -1
+	for cy in range(-5, 6):
+		for cx in range(-5, 6):
+			var c := surface.generate(cx, cy)
+			chunks[Vector2i(cx, cy)] = c
+			var trees := _solids(c, content)
+			if trees > most:
+				most = trees
+				densest = Vector2i(cx, cy)
+	check(most > 20, "there is a wood near the spawn: %d solid plants" % most)
+	check(most < 130, "no chunk is a solid wall of wood: %d solid plants" % most)
+	var wood: Chunk = chunks[densest]
+	var open := 0
+	for y in range(0, Chunk.SIZE, 8):
+		for x in range(0, Chunk.SIZE, 8):
+			var count := 0
+			for ly in 8:
+				for lx in 8:
+					count += 1 if _solid_at(wood, x + lx, y + ly, content) else 0
+			open += 1 if count <= 2 else 0
+	check(open >= 4, "the wood has open glades: %d of 16 windows" % open)
+	# The way is searched only inside the wood, so it cannot simply go round.
+	var at := densest * Chunk.SIZE
+	var row := -1
+	for r in Chunk.SIZE:
+		if not _solid_at(wood, 0, r, content) and not _solid_at(wood, Chunk.SIZE - 1, r, content):
+			row = r
+			break
+	check(row >= 0, "the wood has an open row")
+	if row < 0:
+		return
+	var solid := func(x: int, y: int) -> bool:
+		if x < at.x or y < at.y or x >= at.x + Chunk.SIZE or y >= at.y + Chunk.SIZE:
+			return true
+		return _solid_at(wood, x - at.x, y - at.y, content)
+	var from := Vector2i(at.x, at.y + row)
+	var to := Vector2i(at.x + Chunk.SIZE - 1, at.y + row)
+	var way := ClickOrders.find(from, func(c: Vector2i) -> bool: return c == to, to, solid)
+	check(not way.is_empty(), "the auto path crosses the wood: %d cells" % way.size())
+
+
 func test_biomes_are_data() -> void:
 	var g := SurfaceGenerator.new(1, _plain())
 	var ids := {}

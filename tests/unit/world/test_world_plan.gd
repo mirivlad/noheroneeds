@@ -444,24 +444,62 @@ func test_climate_changes_generated_biomes_and_vegetation() -> void:
 	check(content.get_def("base:tundra")["cover_density"] != content.get_def("base:steppe")["cover_density"], "these biomes carry different vegetation")
 
 
+func test_biomes_are_judged_for_each_cell_not_per_coarse_point() -> void:
+	# A coarse point once answered for its whole 32-cell chunk, so biome ground
+	# and plants changed in squares. Now the point gives only climate and
+	# height, and every cell is judged from them.
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var plan := WorldPlan.generate(431, "small", "temperate", content)
+	check(not plan.biome_rules.is_empty(), "the plan keeps the rules that choose biomes")
+	var saved := WorldPlan.from_dict(plan.to_dict())
+	eq(saved.biome_rules, plan.biome_rules, "the rules are saved with the plan")
+	var surface := SurfaceGenerator.new(plan.seed_value, content, plan)
+	var inside := 0
+	var on_grid := 0
+	var varied := 0
+	for cy in range(-1, 2):
+		for cx in range(-1, 2):
+			var seen := {}
+			for ly in Chunk.SIZE:
+				var y := cy * Chunk.SIZE + ly
+				var before := surface.biome_id_at(cx * Chunk.SIZE - 1, y)
+				for lx in Chunk.SIZE + 1:
+					var x := cx * Chunk.SIZE + lx
+					var here := surface.biome_id_at(x, y)
+					if here != "":
+						seen[here] = true
+					if before != "" and here != "" and before != here:
+						inside += 1
+						on_grid += 1 if x % Chunk.SIZE == 0 else 0
+					before = here
+			varied += 1 if seen.size() > 1 else 0
+		check(varied > 0, "a chunk holds more than one biome")
+	check(inside > 20, "biome edges lie inside chunks: %d" % inside)
+	check(on_grid * 10 < inside,
+		"biome edges follow the climate, not the coarse grid: %d of %d on it" % [on_grid, inside])
+
+
 func test_preview_colors_are_the_stored_biomes_and_water() -> void:
 	var plan := WorldPlan.generate(19, "small", "cold")
 	var image := WorldPreview.map_image(plan)
+	eq(image.get_size(), plan.size * WorldPreview.MAP_DETAIL,
+		"a biome edge is drawn finer than one coarse point")
+	var land_colors: Array[Color] = []
+	for value: String in WorldPreview.BIOME_COLORS.values():
+		land_colors.append(Color(value))
 	var land_seen := false
 	var water_seen := false
-	for k in plan.size.x * plan.size.y:
-		var p := Vector2i(k % plan.size.x, k / plan.size.x)
-		if plan.value(0, p) < 0.0:
-			eq(image.get_pixel(p.x, p.y), Color("195474"), "sea color represents sea")
-			water_seen = true
-		elif plan.lake[k] <= 0.0 and plan.river[k] <= 0.0:
-			var biome: String = plan.biome_ids[plan.biomes[k]]
-			var color := Color(String(WorldPreview.BIOME_COLORS.get(biome, "7f9e69")))
-			eq(image.get_pixel(p.x, p.y), color, "land color represents its stored biome")
-			land_seen = true
+	for py in image.get_height():
+		for px in image.get_width():
+			var color := image.get_pixel(px, py)
+			if color == Color("195474") or color == Color("4b9ab1"):
+				water_seen = true
+			elif color in land_colors:
+				land_seen = true
 		if land_seen and water_seen:
 			break
-	check(land_seen and water_seen, "preview includes land and sea")
+	check(land_seen, "land is coloured by a biome")
+	check(water_seen, "sea and inland water are coloured as water")
 
 
 

@@ -39,6 +39,13 @@ var lake := PackedFloat32Array()
 ## Stable global biome ids and the selected index at each coarse point.
 var biome_ids: Array[String] = []
 var biomes := PackedByteArray()
+## How a biome is chosen from climate and height: elevation span, the climate it
+## fits best, and whether it wants wet lowland. Kept in the plan so a map drawn
+## or a cell judged later needs no content registry and uses the same rules.
+var biome_rules: Array = []
+## Smooth edges between biomes (built from the seed when first needed).
+var _edge_warmth: FastNoiseLite
+var _edge_rain: FastNoiseLite
 
 
 static func generate(seed_number: int, size_preset: String, climate_preset: String, registry: ContentRegistry = null) -> WorldPlan:
@@ -792,31 +799,92 @@ func _bake_biomes(registry: ContentRegistry) -> bool:
 		return false
 	for id: String in biome_ids:
 		defs.append(registry.get_def(id))
+	biome_rules.clear()
+	for d: Dictionary in defs:
+		var span: Array = d.get("elevation", [-1.0, 2.0])
+		var climate_center: Array = d.get("climate", [0.0, 0.0])
+		biome_rules.append({"elevation": [float(span[0]), float(span[1])],
+			"climate": [float(climate_center[0]), float(climate_center[1])],
+			"wet_lowland": bool(d.get("wet_lowland", false))})
 	biomes.resize(size.x * size.y)
 	for k in biomes.size():
 		var h := float(fields[k * 3]) / 127.5 - 1.0
 		var climate_here := Vector2(float(fields[k * 3 + 1]) / 127.5 - 1.0, float(fields[k * 3 + 2]) / 127.5 - 1.0)
 		var soggy := (lake[k] > 0.0 or river[k] > 0.0) and h < Geography.HILLS * 0.6 and climate_here.y > 0.15
-		var best := 0
-		var best_distance := INF
-		for i in defs.size():
-			var d := defs[i]
-			var span: Array = d.get("elevation", [-1.0, 2.0])
-			if h < float(span[0]) or h > float(span[1]) or (bool(d.get("wet_lowland", false)) and not soggy):
-				continue
-			var climate_value: Array = d.get("climate", [0.0, 0.0])
-			var distance := climate_here.distance_squared_to(Vector2(climate_value[0], climate_value[1]))
-			if distance < best_distance:
-				best_distance = distance
-				best = i
-		biomes[k] = best
+		var picked := biome_for(biome_rules, h, climate_here, soggy)
+		biomes[k] = picked if picked >= 0 else 0  # water and unbecoming land keep the first biome
 	return true
 
 
+## The biome whose elevation span holds `height` (and whose climate centre is
+## nearest `climate`), or -1 when none does. Shared by the baked coarse map,
+## per-cell surface generation and the preview, so all three agree.
+static func biome_for(rules: Array, height: float, climate: Vector2, soggy: bool) -> int:
+	var best := -1
+	var best_distance := INF
+	for i in rules.size():
+		var r: Dictionary = rules[i]
+		var span: Array = r["elevation"]
+		if height < float(span[0]) or height > float(span[1]) or (bool(r["wet_lowland"]) and not soggy):
+			continue
+		var center: Array = r["climate"]
+		var distance := climate.distance_squared_to(Vector2(float(center[0]), float(center[1])))
+		if distance < best_distance:
+			best_distance = distance
+			best = i
+	return best
+
+
+## The biome at a world cell, from the plan's fields sampled smoothly at that
+## cell: the coarse grid gives only the climate and height, never the answer for
+## a whole chunk. A little deterministic jitter keeps an edge ragged. `height`
+## may be passed when the caller already has it.
+func biome_index_at(cell: Vector2i, by_water := false, height := NAN) -> int:
+	if biome_rules.is_empty():
+		return -1
+	var h := sample(Geography.HEIGHT, cell) if is_nan(height) else height
+	var climate := Vector2(sample(Geography.WARMTH, cell), sample(Geography.RAIN, cell))
+	climate += _edge_offset(cell.x, cell.y)
+	climate += Vector2(_jitter(cell.x, cell.y, 6) - 0.5, _jitter(cell.x, cell.y, 7) - 0.5) * 0.02
+	var soggy := by_water and h < Geography.HILLS * 0.6 and climate.y > 0.15
+	return biome_for(biome_rules, h, climate, soggy)
+
+
+## A slow warp of the climate at a cell: an edge between biomes follows a
+## winding line, not the grain of the fields or the coarse grid.
+func _edge_offset(x: int, y: int) -> Vector2:
+	if _edge_warmth == null:
+		_edge_warmth = FastNoiseLite.new()
+		_edge_warmth.seed = seed_value + 9643
+		_edge_warmth.frequency = 0.04
+		_edge_warmth.fractal_octaves = 2
+		_edge_rain = FastNoiseLite.new()
+		_edge_rain.seed = seed_value + 15331
+		_edge_rain.frequency = 0.04
+		_edge_rain.fractal_octaves = 2
+	return Vector2(_edge_warmth.get_noise_2d(x, y), _edge_rain.get_noise_2d(x, y)) * 0.10
+
+
 func biome_at(cell: Vector2i) -> String:
+	var index := biome_index_at(cell)
+	if index >= 0:
+		return biome_ids[index]
 	var p := Vector2i(roundi(float(cell.x) / STEP), roundi(float(cell.y) / STEP)) + spawn
 	var k := WorldHydrology.index_at(self, p)
 	return biome_ids[biomes[k]] if k >= 0 and not biomes.is_empty() else ""
+
+
+## The level of a lake at a world cell: the deepest of the coarse points round
+## it, so a lake reaches a little past its points — -INF where there is none.
+func lake_level_at(cell: Vector2i) -> float:
+	var p := Vector2i(floori(float(cell.x) / STEP), floori(float(cell.y) / STEP)) + spawn
+	var level := -INF
+	for dy in 2:
+		for dx in 2:
+			var k := WorldHydrology.index_at(self, p + Vector2i(dx, dy))
+			if k >= 0 and lake[k] > 0.0:
+				level = maxf(level, lake[k])
+	return level
 
 
 ## Moisture brought by the prevailing west wind falls over rising land.
@@ -844,6 +912,14 @@ func _orographic_rain() -> void:
 
 static func _encode(value: float) -> int:
 	return clampi(roundi((value + 1.0) * 127.5), 0, 255)
+
+
+## Deterministic value in [0, 1) for a cell and a purpose, as the surface
+## generator's, seeded by the world so a reload repeats the same edge.
+func _jitter(x: int, y: int, salt: int) -> float:
+	var n := (x * 374761393 + y * 668265263 + salt * 2246822519 + seed_value * 3266489917) & 0xFFFFFFFF
+	n = ((n ^ (n >> 13)) * 1274126177) & 0xFFFFFFFF
+	return float((n ^ (n >> 16)) & 0xFFFFFF) / float(0x1000000)
 
 
 func value(field: int, point: Vector2i) -> float:
@@ -883,7 +959,7 @@ func to_dict() -> Dictionary:
 		"downstream": Marshalls.raw_to_base64(downstream.to_byte_array()),
 		"river": Marshalls.raw_to_base64(river.to_byte_array()),
 		"lake": Marshalls.raw_to_base64(lake.to_byte_array()),
-		"biome_ids": biome_ids, "biomes": Marshalls.raw_to_base64(biomes)}
+		"biome_ids": biome_ids, "biomes": Marshalls.raw_to_base64(biomes), "biome_rules": biome_rules}
 
 
 static func from_dict(data: Dictionary) -> WorldPlan:
@@ -940,6 +1016,9 @@ static func from_dict(data: Dictionary) -> WorldPlan:
 	plan.lake = lakes
 	plan.biome_ids = ids
 	plan.biomes = biome_data
+	var rules: Variant = data.get("biome_rules")
+	if rules is Array and rules.size() == ids.size():
+		plan.biome_rules = rules
 	plan.spawn = at
 	return plan
 

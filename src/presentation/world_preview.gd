@@ -110,18 +110,29 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 
+## Each coarse point becomes this many pixels across in the preview: a biome
+## edge is then finer than a chunk, not a square on the coarse grid.
+const MAP_DETAIL := 2
+
 static func map_image(source: WorldPlan) -> Image:
-	var image := Image.create(source.size.x, source.size.y, false, Image.FORMAT_RGB8)
-	for y in source.size.y:
-		for x in source.size.x:
-			var k := y * source.size.x + x
-			var h := source.value(0, Vector2i(x, y))
+	var detail := MAP_DETAIL if not source.biome_rules.is_empty() else 1
+	var image := Image.create(source.size.x * detail, source.size.y * detail, false, Image.FORMAT_RGB8)
+	for py in image.get_height():
+		for px in image.get_width():
+			var at := Vector2((float(px) + 0.5) / detail, (float(py) + 0.5) / detail)
+			var point := Vector2i(mini(floori(at.x), source.size.x - 1), mini(floori(at.y), source.size.y - 1))
+			var k := point.y * source.size.x + point.x
+			var cell := Vector2i(roundi((at.x - source.spawn.x) * WorldPlan.STEP),
+				roundi((at.y - source.spawn.y) * WorldPlan.STEP))
 			var color := Color("195474")
+			var h := source.sample(0, cell)
 			if h >= 0.0:
-				if source.lake[k] > 0.0 or source.river[k] > 0.0:
+				if h < source.lake_level_at(cell) or source.river[k] > 0.0:
 					color = Color("4b9ab1")
 				else:
-					var biome: String = source.biome_ids[source.biomes[k]]
+					var index := source.biome_index_at(cell)
+					var biome: String = source.biome_ids[maxi(index, 0)] if index >= 0 \
+						else source.biome_ids[source.biomes[k]]
 					color = Color(String(BIOME_COLORS.get(biome, "7f9e69")))
-			image.set_pixel(x, y, color)
+			image.set_pixel(px, py, color)
 	return image

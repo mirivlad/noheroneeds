@@ -62,6 +62,87 @@ func test_continent_is_one_landmass_surrounded_by_sea() -> void:
 			check(plan.value(0, Vector2i(0, y)) < 0.0 and plan.value(0, Vector2i(plan.size.x - 1, y)) < 0.0, "east and west are sea")
 
 
+## The land's connected masses of a planet, largest first, in coarse points.
+## The wrap is the planet's own: a mass across the seam or a pole is one mass.
+func _masses(plan: WorldPlan) -> Array[int]:
+	var land := {}
+	for y in plan.size.y:
+		for x in plan.size.x:
+			if plan.value(0, Vector2i(x, y)) > 0.0:
+				land[Vector2i(x, y)] = true
+	var out: Array[int] = []
+	while not land.is_empty():
+		var start: Vector2i = land.keys()[0]
+		land.erase(start)
+		var todo: Array[Vector2i] = [start]
+		var size := 0
+		while not todo.is_empty():
+			var p: Vector2i = todo.pop_back()
+			size += 1
+			for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var q := p + d
+				q.y = posmod(q.y, plan.size.y * 2)
+				if q.y >= plan.size.y:
+					q.y = plan.size.y * 2 - 1 - q.y
+					q.x += plan.size.x / 2
+				q.x = posmod(q.x, plan.size.x)
+				if land.erase(q):
+					todo.append(q)
+		out.append(size)
+	out.sort()
+	out.reverse()
+	return out
+
+
+func test_planet_presets_are_continents_not_archipelagos() -> void:
+	var plans := {}
+	for preset_id: String in ["small", "medium", "large", "huge"]:
+		plans[preset_id] = WorldPlan.generate(431, preset_id, "temperate")
+	var mains := {}
+	for preset_id: String in ["small", "medium", "large", "huge"]:
+		var plan: WorldPlan = plans[preset_id]
+		var masses := _masses(plan)
+		var land := 0
+		for mass in masses:
+			land += mass
+		var rules: Dictionary = WorldPlan.LANDS[preset_id]
+		check(not masses.is_empty(), "%s has land" % preset_id)
+		# A preset is a few masses, not a scatter of isles: the continents and
+		# the isles the preset names, allowing one pair to merge.
+		check(masses.size() <= int(rules["continents"]) + int(rules["isles"]) + 1,
+			"%s is %d masses (continents %d + isles %d): %s" % [preset_id, masses.size(),
+				int(rules["continents"]), int(rules["isles"]), masses])
+		# One mass is dominant: the world is continents, not an archipelago.
+		check(float(masses[0]) / float(land) >= 0.2,
+			"%s's largest mass is %.0f%% of its land" % [preset_id, 100.0 * masses[0] / land])
+		# The land covers about the share the preset promises (the coast detail
+		# bends it a little but does not add isles).
+		var share := float(land) / float(plan.size.x * plan.size.y)
+		check(absf(share - float(rules["share"])) < 0.05,
+			"%s's land share is %.3f, near %.3f" % [preset_id, share, float(rules["share"])])
+		# The mean main mass (the preset's continents), in points.
+		var main := 0
+		var top := mini(int(rules["continents"]), masses.size())
+		for i in top:
+			main += masses[i]
+		mains[preset_id] = float(main) / float(top)
+	# Bigger planets get bigger continents, not more and smaller islands.
+	check(mains["medium"] > mains["small"], "medium's main masses are larger than small's: %s" % mains)
+	check(mains["large"] > mains["medium"], "large's are larger than medium's: %s" % mains)
+	check(mains["huge"] > mains["large"], "huge's are larger than large's: %s" % mains)
+	# The caption tells the presets apart before one plays, not only by size.
+	eq(WorldPreview.describe(WorldPlan.generate(431, "single_continent", "temperate")),
+		"Один материк в бесконечном океане", "a continent is named as one")
+	var said := {"Один материк в бесконечном океане": true}
+	for preset_id: String in ["small", "medium", "large", "huge"]:
+		var caption := WorldPreview.describe(plans[preset_id])
+		var rules: Dictionary = WorldPlan.LANDS[preset_id]
+		check(caption.contains(str(int(rules["continents"]))), "%s's caption names its continents: %s" % [preset_id, caption])
+		check(caption.contains(str(int(rules["isles"]))), "%s's caption names its isles: %s" % [preset_id, caption])
+		check(not said.has(caption), "every preset's caption is its own: %s" % caption)
+		said[caption] = true
+
+
 func test_global_drainage_joins_oceans_and_survives_serialization() -> void:
 	for preset_id in ["single_continent", "small"]:
 		var plan := WorldPlan.generate(431, preset_id, "temperate")
@@ -247,6 +328,8 @@ func test_preview_colors_are_the_stored_biomes_and_water() -> void:
 		if land_seen and water_seen:
 			break
 	check(land_seen and water_seen, "preview includes land and sea")
+
+
 
 
 func test_planet_chunks_across_the_seam_share_saved_changes() -> void:

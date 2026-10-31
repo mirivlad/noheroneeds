@@ -32,7 +32,7 @@ static func describe(source: WorldPlan) -> String:
 		for x in source.size.x:
 			land += 1 if source.value(0, Vector2i(x, y)) > 0.0 else 0
 	var share := 100.0 * float(land) / float(source.size.x * source.size.y)
-	return "Материков: %d, островов между ними: %d · суша — %d%% поверхности" % [
+	return "Континентальных областей: %d, островных дуг: до %d · суша — %d%% поверхности" % [
 		int(rules.get("continents", 0)), int(rules.get("isles", 0)), roundi(share)]
 
 

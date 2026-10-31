@@ -295,6 +295,34 @@ func test_level_ground_and_cliffs() -> void:
 	var bounds := cliff.get_aabb()
 	check(is_equal_approx(bounds.end.y, 6.05) and is_equal_approx(bounds.position.y, 3.0), "flush top, face down to the lower level: %s" % bounds)
 
+func test_crags_stand_up_and_only_a_levels_edge_is_flush() -> void:
+	# The server's is_cliff decides: the edge of a level is drawn flush, any
+	# other rock (a crag, a peak) stands up, so walking looks as it is.
+	var flush := func(_p: Vector2i) -> bool: return true
+	var none := func(_p: Vector2i) -> bool: return false
+	var ground := func(_p: Vector2i) -> float: return 0.0
+	var crag := RockCells3D.mesh(Vector2i.ZERO, 0.0, ground, none, flush, view.buildings.stone,
+		Callable(), func(_c: Vector2i) -> bool: return false)
+	check(crag.get_aabb().end.y > 1.0, "a crag beside level ground stands up: %s" % crag.get_aabb())
+	var edge := RockCells3D.mesh(Vector2i.ZERO, 0.0, ground, none, flush, view.buildings.stone,
+		Callable(), func(_c: Vector2i) -> bool: return true)
+	check(is_equal_approx(edge.get_aabb().end.y, .05), "only the edge of a level is flush: %s" % edge.get_aabb())
+	# The real world: a cliff of the small planet 431 and a crag with level
+	# ground beside it (both found by the generator, not chosen by the test).
+	var plan := WorldPlan.generate(431, "small", "temperate", content)
+	view._land = SurfaceGenerator.new(plan.seed_value, content, plan)
+	view.terrain = null
+	view.terrain = view._new_terrain()
+	var cliff := Vector2i(1533, -1378)
+	var crag_cell := Vector2i(1526, -1294)
+	check(view._rock_cliff(cliff), "the cliff is a level's edge")
+	check(is_equal_approx(view._rock_top(cliff, Vector2i.ZERO) - view.terrain.cell(cliff), .05),
+		"and is drawn flush with its level")
+	check(not view._rock_cliff(crag_cell), "the crag is no level's edge")
+	check(view._rock_top(crag_cell, Vector2i.ZERO) - view.terrain.cell(crag_cell) > 1.0,
+		"so it is drawn standing up, not as walkable ground: %.2f m" % (view._rock_top(crag_cell, Vector2i.ZERO) - view.terrain.cell(crag_cell)))
+
+
 func test_natural_rock_shared_edges_and_no_brick_gaps() -> void:
 	var c := Vector2i(5,8)
 	var none := func(_p: Vector2i) -> bool: return false

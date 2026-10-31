@@ -398,7 +398,9 @@ func _move_caravan_horse(c: Creature) -> void:
 	if horse == null or horse.location != c.location:
 		return
 	var lead := _hauler_heading(c)
-	var at := c.pos + _caravan_offset(c, lead)
+	var at := _horse_place(c, c.pos, lead)
+	if at == Creature.NO_TARGET:
+		return  # no room even beside the shaft line: it stays where it is
 	if horse.pos == at:
 		return
 	var old_key := _chunk_of(horse)
@@ -460,13 +462,32 @@ func _saved_heading(v: Vector2) -> Array:
 
 
 func _caravan_horse_fits(c: Creature, wagon_at: Vector2i, heading: Vector2) -> bool:
-	var id := String(c.job.get("horse", ""))
-	if id == "":
-		return true
-	var horse := get_creature(id)
+	return _horse_place(c, wagon_at, heading) != Creature.NO_TARGET
+
+
+## Where the horse can stand with the wagon at `wagon_at`: on the shaft line,
+## or the nearest free place to it when a trunk or a wall stands there — a
+## horse steps aside rather than holding the cart for ever. NO_TARGET when
+## there is no room at all.
+func _horse_place(c: Creature, wagon_at: Vector2i, heading: Vector2) -> Vector2i:
+	if String(c.job.get("horse", "")) == "":
+		return wagon_at
+	var ideal := wagon_at + _caravan_offset(c, heading)
+	if _horse_free(c, ideal):
+		return ideal
+	for d: Vector2i in [Vector2i(64, 0), Vector2i(-64, 0), Vector2i(0, 64), Vector2i(0, -64),
+			Vector2i(64, 64), Vector2i(-64, 64), Vector2i(64, -64), Vector2i(-64, -64),
+			Vector2i(128, 0), Vector2i(-128, 0), Vector2i(0, 128), Vector2i(0, -128)]:
+		if _horse_free(c, ideal + d):
+			return ideal + d
+	return Creature.NO_TARGET
+
+
+## Whether the horse's body fits with its centre at `at`.
+func _horse_free(c: Creature, at: Vector2i) -> bool:
+	var horse := get_creature(String(c.job.get("horse", "")))
 	if horse == null:
 		return false
-	var at := wagon_at + _caravan_offset(c, heading)
 	var solid := _solid_in(c.location)
 	for cell: Vector2i in BodySize.cells(at, _half(horse.kind)):
 		if solid.call(cell.x, cell.y):
@@ -620,8 +641,21 @@ func _heading_of(value: Variant) -> Vector2:
 func _caravan_arrive(c: Creature) -> void:
 	c.job.erase("caravan_stop")
 	c.job.erase("caravan_stop_kind")
+	# Choose the place once, before walking in: a spot picked afresh each tick
+	# as the heading changes could send the caravan between two places for
+	# ever, and one step short of the spot may be the village fire itself.
+	var spot := _caravan_stop_spot(c)
+	c.job["caravan_goal"] = [spot.x, spot.y] if spot != Creature.NO_TARGET else []
 	_set_caravan_state(c, "arriving", 0)
 	_go(c, "rest", Creature.NO_TARGET, false)
+
+
+## The place chosen to stand at when the road ended (NO_TARGET if none).
+func _caravan_goal(c: Creature) -> Vector2i:
+	var saved: Variant = c.job.get("caravan_goal", [])
+	if saved is Array and (saved as Array).size() == 2:
+		return Vector2i(int(saved[0]), int(saved[1]))
+	return Creature.NO_TARGET
 
 
 ## The place in a village where a caravan stops: by the square (its fire), by
@@ -667,11 +701,15 @@ func _caravan_stop_spot(c: Creature) -> Vector2i:
 func _caravan_at_stop(c: Creature, phase: String) -> void:
 	match phase:
 		"arriving":
-			var spot := _caravan_stop_spot(c)
+			var spot := _caravan_goal(c)
 			if spot == Creature.NO_TARGET:
-				spot = c.cell()
-			if world.cell_distance(c.cell(), spot) <= 1:
+				# Nothing in the village fits the harness: trade on the road.
+				c.job["caravan_stop"] = [c.cell().x, c.cell().y]
+				_caravan_trade(c)
+				return
+			if c.cell() == spot:
 				c.job["caravan_stop"] = [spot.x, spot.y]
+				c.job.erase("caravan_goal")
 				_caravan_trade(c)
 				return
 			if c.state == "detour" and c.target != Creature.NO_TARGET and c.path_to == spot:
@@ -687,6 +725,7 @@ func _caravan_at_stop(c: Creature, phase: String) -> void:
 			# The yard may have been walled since the village was made: stand
 			# and trade where the caravan already is.
 			c.job["caravan_stop"] = [c.cell().x, c.cell().y]
+			c.job.erase("caravan_goal")
 			_caravan_trade(c)
 		"trading":
 			if c.state != "trading" or c.target != Creature.NO_TARGET:
@@ -699,6 +738,7 @@ func _caravan_at_stop(c: Creature, phase: String) -> void:
 			if world.world_time >= int(c.job.get("caravan_until", 0)):
 				c.job.erase("caravan_stop")
 				c.job.erase("caravan_stop_kind")
+				c.job.erase("caravan_goal")
 				c.path.clear()
 				c.path_to = Creature.NO_TARGET
 				_set_caravan_state(c, "departing", world.world_time + world.caravans.depart_ms(c))
@@ -2208,20 +2248,26 @@ func _move(c: Creature) -> void:
 	var np := Movement.step_at(c.pos, dx, dy, _solid_in(c.location), speed, _movement_half(c, c.pos))
 	if precise:
 		np = _waypoint_step(c, c.pos, c.target, speed)
-	# A harness turns smoothly: the horse leads, the cart follows its own line,
-	# and the place it is about to stand in must fit that turning body.
+	# The wheels take the step when the cart's body fits the line it rolls
+	# along; the horse leads on its own heading and steps aside for a trunk.
+	# Its heading turns smoothly and the cart's follows, so the drawn rig
+	# swings through the bend while the carts' bodies keep to their own line.
 	var cart := _heading_of(c.job.get("caravan_heading", [0, 1]))
 	if np != c.pos and String(c.job.get("horse", "")) != "":
-		var turned := _turn_caravan(c, Vector2(np - c.pos))
-		cart = turned[0]
-		var horse: Vector2 = turned[1]
-		if not _caravan_cart_fits(c, np, cart) or not _caravan_horse_fits(c, np, horse):
-			# No room to swing the harness here (a tree by the road): go on
-			# with the heading it already had, and turn where there is room.
-			cart = _heading_of(c.job.get("caravan_heading", [0, 1]))
-			horse = _hauler_heading(c)
-			if not _caravan_cart_fits(c, np, cart) or not _caravan_horse_fits(c, np, horse):
-				np = c.pos
+		var along := Vector2(np - c.pos)
+		var horse := _hauler_heading(c)
+		var turned := _turn_caravan(c, along)
+		var turn_cart: Vector2 = turned[0]
+		var turn_horse: Vector2 = turned[1]
+		if not _caravan_cart_fits(c, np, along):
+			np = c.pos
+		elif _caravan_horse_fits(c, np, turn_horse):
+			cart = turn_cart
+			horse = turn_horse
+		elif not _caravan_horse_fits(c, np, horse):
+			# No room for the horse on either line: hold the cart a tick and
+			# let the harness come round.
+			np = c.pos
 		if np != c.pos:
 			_save_headings(c, cart, horse)
 	if np == c.pos:

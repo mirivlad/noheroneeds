@@ -281,6 +281,14 @@ func test_caravan_delivers_when_it_reaches_the_end_of_the_road() -> void:
 			break
 	eq(trader.cell(), finish, "the wagon reaches the road's end")
 	w.creatures._traveller(trader, w.content.get_def(trader.kind))
+	# It now gets in and stands at a place in the village before trading
+	# (ADR-0068): the load changes hands when the stop is reached.
+	for i in 600:
+		if int(trader.route["step"]) == -1:
+			break
+		if trader.target == Creature.NO_TARGET:
+			w.creatures._traveller(trader, w.content.get_def(trader.kind))
+		w.creatures._move(trader)
 	eq(w.economy.have(String(road["to"]), "base:iron_sword"), before + 2, "the cargo arrives in the village store")
 	eq(int(trader.route["step"]), -1, "then the caravan turns back")
 
@@ -384,6 +392,10 @@ func _check_caravan_route(road: Dictionary, path: Array, obstruction: Vector2i, 
 		return
 	steps = 0
 	while int(trader.route["step"]) == -1 and steps < path.size() * 90:
+		# A caravan rests and gets ready before the way back (ADR-0068):
+		# let the game clock run to the end of the stop.
+		if String(trader.job.get("caravan_state", "travel")) != "travel":
+			w.world_time = maxi(w.world_time, int(trader.job.get("caravan_until", w.world_time)))
 		if trader.target == Creature.NO_TARGET:
 			w.creatures._traveller(trader, w.content.get_def(trader.kind))
 		w.creatures._move(trader)

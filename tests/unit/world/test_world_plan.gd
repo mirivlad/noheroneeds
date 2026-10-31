@@ -107,13 +107,22 @@ func test_planet_presets_are_continents_not_archipelagos() -> void:
 			land += mass
 		var rules: Dictionary = WorldPlan.LANDS[preset_id]
 		check(not masses.is_empty(), "%s has land" % preset_id)
-		# A preset is a few masses, not a scatter of isles: the continents and
-		# the isles the preset names, allowing one pair to merge.
-		check(masses.size() <= int(rules["continents"]) + int(rules["isles"]) + 1,
-			"%s is %d masses (continents %d + isles %d): %s" % [preset_id, masses.size(),
-				int(rules["continents"]), int(rules["isles"]), masses])
-		# One mass is dominant: the world is continents, not an archipelago.
-		check(float(masses[0]) / float(land) >= 0.2,
+		# Small coastal fragments and island arcs are legitimate. Count their
+		# area, rather than treating a one-point islet as a continent.
+		var main_area := 0
+		var major_count := 0
+		for mass in masses:
+			if mass >= land * 0.02:
+				major_count += 1
+				main_area += mass
+		check(major_count <= int(rules["continents"]) + 2,
+			"%s has %d major landmasses" % [preset_id, major_count])
+		check(float(main_area) / land >= 0.90,
+			"%s keeps at least 90%% of land in major masses: %s" % [preset_id, masses])
+		# The world is continents, not an archipelago. With six continents no
+		# single mass has to be dominant, but one still holds at least a sixth
+		# of the land; a scatter of isles would not.
+		check(float(masses[0]) / float(land) >= 0.16,
 			"%s's largest mass is %.0f%% of its land" % [preset_id, 100.0 * masses[0] / land])
 		# The land covers about the share the preset promises (the coast detail
 		# bends it a little but does not add isles).
@@ -141,6 +150,103 @@ func test_planet_presets_are_continents_not_archipelagos() -> void:
 		check(caption.contains(str(int(rules["isles"]))), "%s's caption names its isles: %s" % [preset_id, caption])
 		check(not said.has(caption), "every preset's caption is its own: %s" % caption)
 		said[caption] = true
+
+
+func test_planet_seeds_keep_land_share_ocean_poles_and_varied_masses() -> void:
+	# The approved shape sample: every seed must keep the preset's land share,
+	# leave both poles under the polar sea (a polar cap wraps the whole map into
+	# one band), and still be made of a few unequal continents, not isles.
+	var seeds := [7, 19, 42, 73, 108, 256, 431, 777, 1024, 2026, 4099, 9001]
+	var rules: Dictionary = WorldPlan.LANDS["medium"]
+	for seed: int in seeds:
+		var plan := WorldPlan.generate(seed, "medium", "temperate")
+		check(plan != null, "seed %d generates a planet" % seed)
+		if plan == null:
+			continue
+		var land := 0
+		for y in plan.size.y:
+			for x in plan.size.x:
+				if plan.value(0, Vector2i(x, y)) > 0.0:
+					land += 1
+		var share := float(land) / float(plan.size.x * plan.size.y)
+		check(absf(share - float(rules["share"])) < 0.04,
+			"seed %d keeps its land share: %.3f" % [seed, share])
+		var polar := 0
+		for x in plan.size.x:
+			if plan.value(0, Vector2i(x, 0)) > 0.0:
+				polar += 1
+			if plan.value(0, Vector2i(x, plan.size.y - 1)) > 0.0:
+				polar += 1
+		check(polar == 0, "seed %d leaves both poles under the polar sea" % seed)
+		var masses := _masses(plan)
+		var major := 0
+		for mass in masses:
+			if mass >= land * 0.02:
+				major += 1
+		check(major >= 2, "seed %d has more than one major mass" % seed)
+		check(major <= int(rules["continents"]) + 2,
+			"seed %d has %d major masses" % [seed, major])
+		var largest := 0.0 if masses.is_empty() else float(masses[0]) / float(land)
+		check(largest >= 0.16, "seed %d's largest mass is %.0f%%" % [seed, 100.0 * largest])
+
+
+func test_tectonic_boundaries_raise_collision_belts_and_lower_rifts() -> void:
+	var warp := FastNoiseLite.new()
+	var coast := FastNoiseLite.new()
+	var fine := FastNoiseLite.new()
+	for noise in [warp, coast, fine]:
+		noise.frequency = 1.0
+	var a := Vector3(1.0, 0.0, -0.5).normalized()
+	var b := Vector3(1.0, 0.0, 0.5).normalized()
+	var plates := [
+		{"at": a, "vel": Vector3.FORWARD, "weight": 1.0, "buoyancy": 0.6, "cont": true},
+		{"at": b, "vel": Vector3.BACK, "weight": 1.0, "buoyancy": 0.6, "cont": true},
+		{"at": Vector3.LEFT, "vel": Vector3.ZERO, "weight": 1.0, "buoyancy": -0.5, "cont": false},
+	]
+	# The belt is made of crust, so the collision has to happen on a terrane:
+	# a plate boundary in the open ocean raises no mountains. Two continents
+	# meet at the suture, one per plate, so their margins reach the seam.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1
+	var terranes := [
+		WorldPlan._terrane(rng, a, 1.15, 0.8, 9, 0),
+		WorldPlan._terrane(rng, b, 1.15, 0.8, 9, 1),
+	]
+	var model := {
+		"plates": plates, "terranes": terranes, "basins": [], "welds": [],
+		"sutures": {Vector2i(0, 1): true}, "sea_level": 0.0,
+	}
+	var collision_sum := 0.0
+	var rift_sum := 0.0
+	var collision_height := 0.0
+	var rift_height := 0.0
+	for direction in [-1.0, 1.0]:
+		plates[0]["vel"] = Vector3(0, 0, direction)
+		plates[1]["vel"] = Vector3(0, 0, -direction)
+		for i in 31:
+			var angle := (float(i) - 15.0) * 0.02
+			var point := Vector3(cos(angle), 0, sin(angle))
+			var result := WorldPlan._tectonic_relief(model, point, warp, coast, fine)
+			if direction > 0.0:
+				collision_sum += result.y
+				collision_height += result.x
+			else:
+				rift_sum += result.z
+				rift_height += result.x
+	check(collision_sum > 0.5, "convergence creates an orogenic belt")
+	check(rift_sum > 0.5, "divergence creates a rift belt")
+	check(collision_height > rift_height, "collision uplifts the same crust that divergence lowers")
+	# A full turn in longitude and every longitude at a pole identify the same
+	# direction: the generator has no map-edge special cases or polar cutout.
+	for i in 16:
+		var angle := float(i) * TAU / 16.0
+		var point := Vector3(cos(angle), 0.2, sin(angle)).normalized()
+		var again := Vector3(cos(angle + TAU), 0.2, sin(angle + TAU)).normalized()
+		var first := WorldPlan._tectonic_relief(model, point, warp, coast, fine)
+		var second := WorldPlan._tectonic_relief(model, again, warp, coast, fine)
+		check(first.distance_to(second) < 0.0001, "continuous tectonic field closes longitude")
+	check(is_finite(WorldPlan._tectonic_relief(model, Vector3.UP, warp, coast, fine).x), "north pole is finite")
+	check(is_finite(WorldPlan._tectonic_relief(model, Vector3.DOWN, warp, coast, fine).x), "south pole is finite")
 
 
 func test_global_drainage_joins_oceans_and_survives_serialization() -> void:

@@ -324,6 +324,34 @@ func test_server_persists_the_exact_plan_and_modified_chunk() -> void:
 	world.close()
 
 
+func test_a_planned_world_is_created_from_seed_preset_and_climate() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var path := tmp_dir().path_join("world.db")
+	var world := ServerWorld.open(path, content,
+		{"require_planned": true, "seed": 431, "preset": "medium", "climate": "cold"})
+	check(world != null, "a planned world is created from the options")
+	if world == null:
+		return
+	var plan := (world.generator.geography as PlannedGeography).plan
+	eq(plan.seed_value, 431, "the requested seed")
+	eq(plan.preset, "medium", "the requested preset")
+	eq(plan.climate, "cold", "the requested climate")
+	world.close()
+
+
+func test_a_planned_world_refuses_an_unknown_preset_without_writing_format_6() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var path := tmp_dir().path_join("world.db")
+	var world := ServerWorld.open(path, content,
+		{"require_planned": true, "seed": 431, "preset": "no_such_planet"})
+	check(world == null, "an unknown preset is refused")
+	check(ServerWorld.open_error.contains("пресет"), "the error names the preset: " + ServerWorld.open_error)
+	var store := WorldStore.new()
+	check(store.open(path), "the failed attempt left a store to inspect")
+	eq(store.read_meta("seed"), "", "no old-format world was written behind the failure")
+	store.close()
+
+
 func test_corrupt_plan_is_refused_without_overwriting_world() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	var path := tmp_dir().path_join("world.db")

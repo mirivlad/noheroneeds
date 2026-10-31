@@ -6,6 +6,7 @@ func test_dedicated_server_process() -> void:
 	var dir := tmp_dir()
 	var port := 41100 + randi() % 400
 	var p := spawn_godot("res://src/server/server_main.gd", ["--world=" + dir.path_join("world.db"),
+		"--seed=431", "--preset=small", "--climate=cold",
 		"--port=%d" % port, "--identity=" + ProjectSettings.globalize_path("user://test_keys/server")])
 	var ready := read_until(p, "LISTENING")
 	if not check(ready != "", "server started: " + (p["stderr"] as FileAccess).get_as_text()):
@@ -45,6 +46,12 @@ func test_dedicated_server_process() -> void:
 	store.open(dir.path_join("world.db"))
 	var place: Dictionary = Cbor.decode(store.get_world_character(c.character_id)).value
 	eq(Vector2i(place["x"], place["y"]), moved_to, "last position saved on stop")
+	var made: Variant = JSON.parse_string(store.read_meta("world_plan"))
+	check(made is Dictionary, "the dedicated server wrote a global plan")
+	if made is Dictionary:
+		eq(int(made["seed"]), 431, "the dedicated server used the requested seed")
+		eq(String(made["preset"]), "small", "and the requested preset")
+		eq(String(made["climate"]), "cold", "and the requested climate")
 	store.close()
 
 

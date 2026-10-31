@@ -135,7 +135,7 @@ func show_world_form(mode: String) -> void:
 	seed_edit.get_parent().add_child(random_seed)
 	random_seed.pressed.connect(func() -> void: seed_edit.text = str(randi()); seed_edit.text_changed.emit(seed_edit.text))
 	var size_pick := OptionButton.new()
-	for label: String in ["Один континент", "Небольшая планета", "Средняя планета", "Большая планета", "ОГРОМНАЯ планета"]:
+	for label: String in ["Один континент", "Небольшая планета", "Средняя планета", "Большая планета", "Огромная планета"]:
 		size_pick.add_item(label)
 	_field("Размер", size_pick)
 	var climate_pick := OptionButton.new()
@@ -208,7 +208,8 @@ func show_world_form(mode: String) -> void:
 		create_button.disabled = not state["valid"]
 		if state["valid"]:
 			preview.show_plan(state["plan"])
-			caption.text = "Океан бесконечен" if size_pick.selected == 0 else "Перетащите, чтобы вращать; колесо — масштаб")
+			var hint := "Перетащите, чтобы вращать; колесо — масштаб" if size_pick.selected != 0 else "За краем карты — океан без конца"
+			caption.text = WorldPreview.describe(state["plan"]) + "\n" + hint)
 	regenerate.pressed.emit()
 	_into = _body
 	name_edit.grab_focus()

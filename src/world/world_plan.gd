@@ -13,6 +13,16 @@ const PRESETS := {
 	"large": Vector2i(384, 192),
 	"huge": Vector2i(512, 256),
 }
+## What kind of land a planet preset is, in the same place as its size: the
+## continents it is made of (a count, not a noise scale), the share of its
+## surface that is land, and the small isles between the continents. A bigger
+## planet gets more and larger continents, not more and smaller islands.
+const LANDS := {
+	"small": {"continents": 3, "share": 0.28, "isles": 2},
+	"medium": {"continents": 4, "share": 0.31, "isles": 3},
+	"large": {"continents": 5, "share": 0.34, "isles": 4},
+	"huge": {"continents": 6, "share": 0.37, "isles": 5},
+}
 const CLIMATES := ["hot", "temperate", "cold"]
 
 var seed_value := 0
@@ -53,6 +63,16 @@ static func generate(seed_number: int, size_preset: String, climate_preset: Stri
 	moisture.seed = seed_number + 1013
 	moisture.frequency = 1.0
 	moisture.fractal_octaves = 3
+	# The coarse shape of a planet: a few large continents (with peninsulas)
+	# and a handful of small isles between them. The continents are placed and
+	# sized before any cell is looked at, so the preset decides how the world
+	# is made, not only how much of it there is.
+	var coast := FastNoiseLite.new()
+	coast.seed = seed_number + 4099
+	coast.fractal_octaves = 3
+	var shape := {}
+	if size_preset != "single_continent":
+		shape = _continents(seed_number, size_preset, plan.size)
 	var shift := 0.3 if climate_preset == "hot" else (-0.3 if climate_preset == "cold" else 0.0)
 	for y in plan.size.y:
 		for x in plan.size.x:
@@ -66,19 +86,23 @@ static func generate(seed_number: int, size_preset: String, climate_preset: Stri
 				var distance := p.length()
 				var angle := atan2(p.y, p.x)
 				# A radius for every direction keeps all land connected to the centre.
-				var coast := 0.65 + land.get_noise_2d(cos(angle) * 2.0, sin(angle) * 2.0) * 0.2
-				h = (coast - distance) * 0.55
+				var coast_r := 0.65 + land.get_noise_2d(cos(angle) * 2.0, sin(angle) * 2.0) * 0.2
+				h = (coast_r - distance) * 0.55
 				wet = moisture.get_noise_2d(u * 4.0, v * 4.0)
 				ridge = mountains.get_noise_2d(u * 6.0, v * 6.0)
 			else:
 				# Spherical sampling joins longitude at the seam and converges at the poles.
+				# The continents are caps on the sphere: one smooth field crossing the sea
+				# level at their coasts, so land is a few masses, not scattered islets.
 				var lon := u * TAU
 				var lat := (v - 0.5) * PI
 				var p := Vector3(cos(lat) * cos(lon), sin(lat), cos(lat) * sin(lon))
-				var scale := float(plan.size.x) / 80.0
-				h = land.get_noise_3d(p.x * scale, p.y * scale, p.z * scale) * 0.8 + 0.015
-				wet = moisture.get_noise_3d(p.x * scale, p.y * scale, p.z * scale)
-				ridge = mountains.get_noise_3d(p.x * scale * 2.0, p.y * scale * 2.0, p.z * scale * 2.0)
+				var edge := coast.get_noise_3d(p.x * 2.6, p.y * 2.6, p.z * 2.6)
+				h = _continent_height(shape, p, edge) * 0.55
+				# Detail inland only: a little relief, never new islets at the coast.
+				h += land.get_noise_3d(p.x * 6.0, p.y * 6.0, p.z * 6.0) * 0.05 * smoothstep(0.03, 0.14, h)
+				wet = moisture.get_noise_3d(p.x * 3.0, p.y * 3.0, p.z * 3.0)
+				ridge = mountains.get_noise_3d(p.x * 6.0, p.y * 6.0, p.z * 6.0)
 			h += maxf(ridge + 0.25, 0.0) * 0.5 * smoothstep(0.02, 0.15, h)
 			var latitude := absf(v - 0.5) * 2.0
 			var warmth := clampf(0.85 - latitude * 1.8 + shift - maxf(h, 0.0) * 0.6, -1.0, 1.0)
@@ -95,6 +119,138 @@ static func generate(seed_number: int, size_preset: String, climate_preset: Stri
 	if not plan._bake_biomes(registry):
 		return null
 	return plan
+
+
+## The continents of a planet, ready to sample: a few large caps, each an
+## elongated mass with lobes (peninsulas and wide bays), and `isles` small
+## isles in the ocean between them. Their radii are tuned so the land covers
+## `share` of the map: the preset says how much land and how many masses, not
+## a noise scale. No mass is round: each is stretched along its own axis and
+## bent by the coast noise, so a coast is a coast, not a circle.
+static func _continents(seed_number: int, preset_id: String, size: Vector2i) -> Dictionary:
+	var rules: Dictionary = LANDS[preset_id]
+	var count := int(rules["continents"])
+	var share := float(rules["share"])
+	var isles := int(rules["isles"])
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_number
+	# An even spread of the masses round the sphere (a Fibonacci lattice, kept
+	# off the poles so the poles stay open sea), each a little off its place.
+	var base := acos(clampf(1.0 - 2.0 * share / count, -1.0, 1.0))
+	var out: Array = []
+	for i in count:
+		var t := (float(i) + 0.5) / count
+		var y := (1.0 - 2.0 * t) * 0.78
+		var across := sqrt(maxf(0.0, 1.0 - y * y))
+		var angle := float(i) * 2.399963 + rng.randf_range(-0.3, 0.3)
+		var at := Vector3(across * cos(angle), y, across * sin(angle)).normalized()
+		var radius := base * rng.randf_range(0.9, 1.15)
+		var side := Vector3.UP.cross(at)
+		if side.length() < 0.01:
+			side = Vector3.RIGHT
+		side = side.normalized()
+		var up := at.cross(side).normalized()
+		# A few lobes out from the rim (peninsulas); a stretch along one axis
+		# (a long land, not a round one).
+		var lobes: Array = []
+		for l in 3:
+			var way := side * cos(rng.randf() * TAU) + up * sin(rng.randf() * TAU)
+			var out_along := radius * rng.randf_range(0.45, 0.85)
+			var turned := (at * cos(out_along) + way * sin(out_along)).normalized()
+			lobes.append({"at": turned, "radius": radius * rng.randf_range(0.45, 0.72), "stretch": 1.0})
+		out.append({"at": at, "radius": radius, "side": side, "up": up, "stretch": rng.randf_range(1.0, 1.65),
+			"lobes": lobes})
+	var small: Array = []
+	var placed := 0
+	for attempt in 400:
+		if placed >= isles:
+			break
+		var z := rng.randf_range(-0.8, 0.8)
+		var across := sqrt(maxf(0.0, 1.0 - z * z))
+		var angle := rng.randf() * TAU
+		var at := Vector3(across * cos(angle), z, across * sin(angle))
+		var clear := true
+		for c: Dictionary in out:
+			for spot: Dictionary in [c] + (c["lobes"] as Array):
+				if at.angle_to(spot["at"]) < float(spot["radius"]) * 2.1 + 0.08:
+					clear = false
+					break
+			if not clear:
+				break
+		if clear:
+			small.append({"at": at, "radius": rng.randf_range(0.018, 0.038)})
+			placed += 1
+	# Scale every radius so land is `share` of the map's points (two passes:
+	# caps overlap a little, so the first guess comes up short). Measured on a
+	# sample of the map's points: a whole huge map is millions of look-ups.
+	var stride := maxi(1, mini(size.x, size.y) / 64)
+	var samples := 0
+	var got := 0.0
+	for pass_index in 2:
+		got = 0.0
+		samples = 0
+		for y in range(0, size.y, stride):
+			for x in range(0, size.x, stride):
+				samples += 1
+				if _mask(out, small, _on_sphere(x, y, size), 0.0) > 0.0:
+					got += 1.0
+		var have := got / float(samples)
+		if have <= 0.0:
+			break
+		var scale := clampf(sqrt(share / have), 0.5, 2.0)
+		for c: Dictionary in out:
+			c["radius"] = float(c["radius"]) * scale
+			for lobe: Dictionary in c["lobes"]:
+				lobe["radius"] = float(lobe["radius"]) * scale
+		for isle: Dictionary in small:
+			isle["radius"] = float(isle["radius"]) * scale
+	return {"continents": out, "isles": small}
+
+
+## A map point's direction on the sphere (longitude wraps at the seam, the
+## latitude lines converge at the poles).
+static func _on_sphere(x: int, y: int, size: Vector2i) -> Vector3:
+	var lon := (float(x) + 0.5) / size.x * TAU
+	var lat := ((float(y) + 0.5) / size.y - 0.5) * PI
+	return Vector3(cos(lat) * cos(lon), sin(lat), cos(lat) * sin(lon))
+
+
+## How far inside the land a direction is: 1 deep within a continent, 0 on its
+## coast, negative at sea. The coast noise bends every coast as one, so the
+## continents keep their shape instead of breaking into an archipelago.
+static func _continent_height(shape: Dictionary, at: Vector3, edge: float) -> float:
+	return maxf(_mask(shape["continents"], shape["isles"], at, edge), -1.0)
+
+
+static func _mask(continents: Array, isles: Array, at: Vector3, edge: float) -> float:
+	var best := -1.0
+	var bend := 1.0 + 0.5 * edge
+	for c: Dictionary in continents:
+		best = maxf(best, 1.0 - _cap_distance(at, c) / maxf(float(c["radius"]) * bend, 0.02))
+		for lobe: Dictionary in c["lobes"]:
+			best = maxf(best, 1.0 - _cap_distance(at, lobe) / maxf(float(lobe["radius"]) * bend, 0.02))
+	for isle: Dictionary in isles:
+		best = maxf(best, 1.0 - at.angle_to(isle["at"]) / maxf(float(isle["radius"]) * bend, 0.01))
+	return best
+
+
+## The angular distance from a direction to a cap's middle, stretched along the
+## cap's axis (an ellipse on the sphere, not a round cap).
+static func _cap_distance(at: Vector3, cap: Dictionary) -> float:
+	var theta := at.angle_to(cap["at"])
+	if theta < 0.0001:
+		return 0.0
+	var stretch := float(cap.get("stretch", 1.0))
+	if stretch == 1.0 or not cap.has("side"):
+		return theta
+	var along := absf(at.dot(cap["side"]))
+	var across := absf(at.dot(cap["up"]))
+	var length := sqrt(along * along + across * across)
+	if length < 0.0001:
+		return theta
+	var axis := along / length
+	var other := across / length
+	return theta * sqrt(pow(axis / stretch, 2.0) + pow(other * stretch, 2.0))
 
 
 ## Choose after hydrology: the origin must not be in a lake or river.

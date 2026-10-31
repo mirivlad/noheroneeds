@@ -18,6 +18,24 @@ var dragging := false
 var distance := 3.2
 
 
+## What kind of world this is, in words for the new-world form: the continents
+## and isles the preset is made of and how much of the surface is land. The
+## presets differ in what they are, not only in size, and the caption says so
+## before one plays: a small planet is a few continents, a huge one larger
+## continents and oceans, not a scatter of isles.
+static func describe(source: WorldPlan) -> String:
+	if source.preset == "single_continent":
+		return "Один материк в бесконечном океане"
+	var rules: Dictionary = WorldPlan.LANDS.get(source.preset, {})
+	var land := 0
+	for y in source.size.y:
+		for x in source.size.x:
+			land += 1 if source.value(0, Vector2i(x, y)) > 0.0 else 0
+	var share := 100.0 * float(land) / float(source.size.x * source.size.y)
+	return "Материков: %d, островов между ними: %d · суша — %d%% поверхности" % [
+		int(rules.get("continents", 0)), int(rules.get("isles", 0)), roundi(share)]
+
+
 func _init() -> void:
 	custom_minimum_size = Vector2(360, 240)
 	mouse_filter = Control.MOUSE_FILTER_STOP

@@ -7,9 +7,27 @@ const HIRE := 10
 const MAX_GUARDS := 6
 const WEAPONS := ["base:iron_sword", "base:spear", "base:bow"]
 const DAILY_PAY := 12
+## A caravan's stop in a village, in game ms (ADR-0068): unloading and
+## trading, a rest, then getting under way. A trader's job may set its own
+## (`caravan_trade_ms`, `caravan_rest_ms`, `caravan_depart_ms`).
+const TRADE_MS := 2 * Daylight.HOUR_MS
+const REST_MS := 1 * Daylight.HOUR_MS
+const DEPART_MS := 10 * 60 * 1000
 var world: ServerWorld
 var _contracts := {}
 var _seen_online := {}
+
+
+func trade_ms(c: Creature) -> int:
+	return maxi(0, int(c.job.get("caravan_trade_ms", TRADE_MS)))
+
+
+func rest_ms(c: Creature) -> int:
+	return maxi(0, int(c.job.get("caravan_rest_ms", REST_MS)))
+
+
+func depart_ms(c: Creature) -> int:
+	return maxi(0, int(c.job.get("caravan_depart_ms", DEPART_MS)))
 
 
 func _init(w: ServerWorld) -> void:

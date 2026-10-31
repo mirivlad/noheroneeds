@@ -533,8 +533,166 @@ func _route_path(c: Creature) -> Array:
 	return s.road_of(int(k[0]), int(k[1]), int(k[2]), int(k[3])).get("path", [])
 
 
+# --- a caravan's stop in a village (ADR-0068) --------------------------------
+
+## Set a caravan's phase (and, for a stop, the game time it lasts until) and
+## tell the clients. The job, and so the stop, is saved with the creature.
+func _set_caravan_state(c: Creature, phase: String, until := -1) -> void:
+	if String(c.job.get("caravan_state", "travel")) == phase \
+			and (until < 0 or int(c.job.get("caravan_until", -1)) == until):
+		return
+	c.job["caravan_state"] = phase
+	if until >= 0:
+		c.job["caravan_until"] = until
+	else:
+		c.job.erase("caravan_until")
+	c.changed()
+	world.operation_creature(c)
+	_cold[c.id] = true
+
+
+## A saved heading ([x, y], whole or fractional) as a unit direction.
+func _heading_of(value: Variant) -> Vector2:
+	if value is Array and (value as Array).size() >= 2:
+		var v := Vector2(float(value[0]), float(value[1]))
+		if v.length_squared() > 0.000001:
+			return v.normalized()
+	return Vector2.DOWN
+
+
+## The caravan has reached the end of its road: find a place in the village
+## to stand and begin getting in. The step is turned round only when it has
+## traded, so it waits at the village it came to, not at the one it left.
+func _caravan_arrive(c: Creature) -> void:
+	c.job.erase("caravan_stop")
+	c.job.erase("caravan_stop_kind")
+	_set_caravan_state(c, "arriving", 0)
+	_go(c, "rest", Creature.NO_TARGET, false)
+
+
+## The place in a village where a caravan stops: by the square (its fire), by
+## a tavern, or a free place by the road. NO_TARGET if nothing fits.
+func _caravan_stop_spot(c: Creature) -> Vector2i:
+	var here := c.cell()
+	var heading := _heading_of(c.job.get("caravan_heading", [0, 1]))
+	var cell_heading := Vector2i(roundi(heading.x), roundi(heading.y))
+	var candidates: Array[Vector2i] = []
+	var road := _road_of(c)
+	var step := int(c.route.get("step", 1))
+	var dest := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
+	var plan := world.generator.settlements.plan_by_id(dest) if world.generator and dest != "" else {}
+	if not plan.is_empty():
+		var fire: Vector2i = plan["fire"]
+		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+				Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1), Vector2i(2, 0), Vector2i(-2, 0)]:
+			var at := fire + d
+			if world.cell_distance(at, here) <= 16:
+				candidates.append(at)
+		for e: Vector2i in plan["ends"]:
+			if world.cell_distance(e, here) <= 16:
+				candidates.append(e)
+	var inn := world.hospitality.camp_spot(c)
+	if inn != Creature.NO_TARGET and world.cell_distance(inn, here) <= 16:
+		candidates.append(inn)
+	candidates.append(here)
+	for d: Vector2i in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, 2), Vector2i(0, -2),
+			Vector2i(2, 2), Vector2i(-2, 2), Vector2i(2, -2), Vector2i(-2, -2), Vector2i(4, 0), Vector2i(-4, 0)]:
+		candidates.append(here + d)
+	for at: Vector2i in candidates:
+		if not world.has_chunk(c.location, at.x >> 5, at.y >> 5):
+			continue
+		if not _fits(c, at):
+			continue
+		var centre := at * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
+		if _caravan_cart_fits(c, centre, cell_heading) and _caravan_horse_fits(c, centre, cell_heading):
+			return at
+	return Creature.NO_TARGET
+
+
+## The phases of a stop: walk in, trade (unload, sell, take a return load),
+## rest, then leave. The stop's end is absolute game time, saved with the job.
+func _caravan_at_stop(c: Creature, phase: String) -> void:
+	match phase:
+		"arriving":
+			var spot := _caravan_stop_spot(c)
+			if spot == Creature.NO_TARGET:
+				spot = c.cell()
+			if world.cell_distance(c.cell(), spot) <= 1:
+				c.job["caravan_stop"] = [spot.x, spot.y]
+				_caravan_trade(c)
+				return
+			if c.state == "detour" and c.target != Creature.NO_TARGET and c.path_to == spot:
+				return
+			if c.path_to != spot or c.path.is_empty():
+				c.path = _caravan_route(c, spot, 16)
+				c.path_to = spot
+			while not c.path.is_empty() and c.pos == c.path[0] * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2):
+				c.path.pop_front()
+			if not c.path.is_empty():
+				_go(c, "detour", c.path[0], false)
+				return
+			# The yard may have been walled since the village was made: stand
+			# and trade where the caravan already is.
+			c.job["caravan_stop"] = [c.cell().x, c.cell().y]
+			_caravan_trade(c)
+		"trading":
+			if c.state != "trading" or c.target != Creature.NO_TARGET:
+				_go(c, "trading", Creature.NO_TARGET, false)
+			if world.world_time >= int(c.job.get("caravan_until", 0)):
+				_set_caravan_state(c, "resting", world.world_time + world.caravans.rest_ms(c))
+		"resting":
+			if c.state != "rest" or c.target != Creature.NO_TARGET:
+				_go(c, "rest", Creature.NO_TARGET, false)
+			if world.world_time >= int(c.job.get("caravan_until", 0)):
+				c.job.erase("caravan_stop")
+				c.job.erase("caravan_stop_kind")
+				c.path.clear()
+				c.path_to = Creature.NO_TARGET
+				_set_caravan_state(c, "departing", world.world_time + world.caravans.depart_ms(c))
+
+
+
+
+
+## Arrived: sell the load here, take one for the way back, and turn the route
+## round. The route's step turns now, so the trader trades here as a trader
+## of this village while it stays (the economy is server-side and saved).
+func _caravan_trade(c: Creature) -> void:
+	var step := int(c.route.get("step", 1))
+	var road := _road_of(c)
+	c.route["step"] = -step
+	var at := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
+	var back := String(road.get("from", "")) if step > 0 else String(road.get("to", ""))
+	if at != "":
+		_arrive(c, at, back)
+	else:
+		world.caravans.finish_for(c, "arrived")
+	c.job["caravan_stop_kind"] = _stop_kind(c)
+	_set_caravan_state(c, "trading", world.world_time + world.caravans.trade_ms(c))
+
+
+## What kind of place the stop is, for the journal and tests.
+func _stop_kind(c: Creature) -> String:
+	var plan := {}
+	if world.generator:
+		var road := _road_of(c)
+		var step := int(c.route.get("step", 1))
+		var dest := String(road.get("from", "")) if step > 0 else String(road.get("to", ""))
+		plan = world.generator.settlements.plan_by_id(dest)
+	if plan.is_empty():
+		return "roadside"
+	var at := c.cell()
+	if not (plan["bounds"] as Rect2i).grow(6).has_point(at):
+		return "roadside"  # on the road, not yet at the village's ground
+	if world.cell_distance(at, plan["fire"]) <= 4:
+		return "square"
+	return "village"
+
+
 ## A traveller walks its road from one settlement to the other and back,
-## by day; runs from who hurts it; stands the night by the way.
+## by day; runs from who hurts it; stands the night by the way. At each
+## village it arrives, stops at its square, tavern or a free place by the
+## road, trades, rests and only then sets off back (ADR-0068).
 func _traveller(c: Creature, def: Dictionary) -> void:
 	world.caravans.apply_refund(c)
 	# Older worlds already have traders. Outfit each one once; a horse that died
@@ -566,6 +724,15 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 		if away != Creature.NO_TARGET:
 			_go(c, "flee", away, true)
 			return
+	# A stop in a village: getting in, trading, resting, then out again.
+	# Its time is game time saved in the job, so a restart does not send the
+	# caravan off at once.
+	var phase := String(c.job.get("caravan_state", "travel"))
+	if phase in ["arriving", "trading", "resting"]:
+		_caravan_at_stop(c, phase)
+		return
+	if phase == "departing" and world.world_time >= int(c.job.get("caravan_until", 0)):
+		_set_caravan_state(c, "travel")
 	if Daylight.is_night(world.world_time):
 		world.caravans.rest(c)
 		return
@@ -614,13 +781,9 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 		if path[near] != path[end]:
 			i = end  # finish the road before transferring goods
 		else:
-			c.route["step"] = -step
-			if c.job.has("toward"):
-				var road := _road_of(c)
-				var at := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
-				var back := String(road.get("from", "")) if step > 0 else String(road.get("to", ""))
-				_arrive(c, at, back)
-			i = _road_waypoint(path, near, -step)
+			c.route["i"] = end
+			_caravan_arrive(c)
+			return
 	c.route["i"] = i
 	c.home = path[i]  # where it is about, should it be away a while
 	_go(c, "travel", path[i], false)

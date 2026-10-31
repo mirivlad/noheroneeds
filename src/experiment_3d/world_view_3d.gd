@@ -1000,9 +1000,14 @@ func _update_actors(alpha: float, delta: float) -> void:
 				and Vector2(actor.position.x, actor.position.z).distance_to(Vector2(at.x, at.z)) < .05:
 			actor.facing = Vector2(int(face[0]), int(face[1])).normalized()
 		if String(e.get("horse", "")) != "":
-			var heading: Array = e.get("caravan_heading", [0, 1])
+			# A wagon turns as its own slow body does; a trader on foot turns
+			# with the horse that leads it.
+			var key := "caravan_heading" if String(e.get("caravan_type", "cart")) == "cart" else "horse_heading"
+			var heading: Array = e.get(key, e.get("caravan_heading", [0, 1]))
 			if heading.size() == 2:
-				actor.facing = Vector2(float(heading[0]), float(heading[1])).normalized()
+				actor.tell_heading(Vector2(float(heading[0]), float(heading[1])))
+		elif e.get("profession", "") == "base:trader":
+			actor.forget_heading()  # a walking trader turns by where it goes
 		var asleep := bool(e.get("asleep", false))
 		var bed := Movement.cell_of(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
 		var in_bed: bool = asleep and content.get_def(_cell_layer(bed, "structure")).get("bed", false)
@@ -1073,9 +1078,17 @@ func _update_actors(alpha: float, delta: float) -> void:
 		var driver_id := String(e.get("caravan_driver", ""))
 		if driver_id != "":
 			var driver := _actors.get(driver_id) as BillboardActor3D
-			if driver:
+			var driven: Dictionary = entities.get(driver_id, {})
+			var told: Array = driven.get("horse_heading", driven.get("caravan_heading", []))
+			if told.size() == 2:
+				actor.tell_heading(Vector2(float(told[0]), float(told[1])))
+			elif driver:
 				actor.facing = driver.facing
 				actor.doll._face(actor.facing.rotated(-yaw))
+			else:
+				actor.forget_heading()
+		elif e.get("creature", "") == "base:horse":
+			actor.forget_heading()  # loose, it turns by where it walks
 		if e.get("creature", "") == "base:horse":
 			actor.show_packs(bool(e.get("pack", false)))
 	for id: String in _actors.keys():

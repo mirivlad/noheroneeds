@@ -674,6 +674,7 @@ func _creature_cold(c: Creature) -> Dictionary:
 		cold["horse"] = String(c.job.get("horse", ""))
 		cold["caravan_type"] = String(c.job.get("caravan_type", "cart"))
 		cold["caravan_heading"] = c.job.get("caravan_heading", [0, 1])
+		cold["horse_heading"] = c.job.get("horse_heading", c.job.get("caravan_heading", [0, 1]))
 	return cold
 
 

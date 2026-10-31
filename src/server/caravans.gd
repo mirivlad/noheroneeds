@@ -338,7 +338,7 @@ func rest(c: Creature) -> void:
 				in_village = true
 		c.job["rest_in_village"] = in_village
 		var heading: Array = c.job.get("caravan_heading", [0, 1])
-		var direction := Vector2i(int(heading[0]), int(heading[1]))
+		var direction := Vector2(float(heading[0]), float(heading[1]))
 		for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			if in_village:
 				break

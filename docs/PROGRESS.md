@@ -63,6 +63,8 @@
 Проверки: `test_biomes_are_judged_for_each_cell_not_per_coarse_point`,
 `test_woods_have_glades_and_a_way_through` (плотность, прогалины и путь
 автомаршрута внутри леса), обновлённый `test_preview_colors_are_the_stored_biomes_and_water`.
+Полный прогон 01.11.2026 — 561 тест без провалов (1776 с), две ожидаемые
+ошибки ENet.
 
 30.10.2026, ветка `feat/fixed-world-generation`: начат эксперимент с отдельным
 сериализуемым глобальным планом: сохранение, поверхность, клиент и экран

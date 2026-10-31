@@ -24,7 +24,9 @@ const ID := "base:surface"
 ## 10: rugged land in levels with cliffs between them and passes (ADR-0061).
 ## 14: hanging bridges only as crossings that join land on both sides, and a
 ##     crag that is no level's edge stands up (so rock looks as it blocks).
-const VERSION := 14  # public houses, only in newly generated chunks
+## 15: a biome is judged cell by cell from the plan's climate, not taken whole
+##     from a coarse point, and woods thin into glades with open trails.
+const VERSION := 15  # public houses, only in newly generated chunks
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -65,6 +67,9 @@ var _bumps_noise := FastNoiseLite.new()
 var _pass_noise := FastNoiseLite.new()
 ## Rivers wind: a cell is measured to a course from a place shifted by this.
 var _meander := FastNoiseLite.new()
+## Openings in a wood, and the winding trails that always cross it.
+var _glade := FastNoiseLite.new()
+var _track := FastNoiseLite.new()
 ## One noise field per patch slot (the n-th lesser ground of any biome uses field n).
 var _patch_noise: Array[FastNoiseLite] = []
 ## Where the ways into the underground are (null: none).
@@ -128,6 +133,12 @@ func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null) ->
 	_meander.seed = seed_value + 3571
 	_meander.frequency = 0.03
 	_meander.fractal_octaves = 2
+	_glade.seed = seed_value + 15485863
+	_glade.frequency = 0.021
+	_glade.fractal_octaves = 2
+	_track.seed = seed_value + 32452843
+	_track.frequency = 0.017
+	_track.fractal_octaves = 2
 	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at, land_at if geography else Callable())
 	for i in 8:
 		var n := FastNoiseLite.new()
@@ -170,6 +181,13 @@ func generate(cx: int, cy: int) -> Chunk:
 				continue
 			if _hash(x, y, 2) < float(b["density"]):
 				var plant := _pick(b["cover"], _hash(x, y, 3))
+				if plant != "" and _solid.has(plant):
+					# A wood thins into glades and is crossed by trails (a person
+					# must be seen, and a way found, through the thickest of it);
+					# lesser plants keep the floor of a glade alive.
+					var shade := 0.55 + 0.45 * smoothstep(-0.3, 0.4, _glade.get_noise_2d(x, y))
+					if _on_trail(x, y) or _hash(x, y, 8) >= shade:
+						plant = ""
 				if plant != "" and not (clearing and _solid.has(plant)):
 					c.set_cell("cover", lx, ly, plant)
 	# Roads between settlements, under them (a settlement's own cells win).
@@ -660,26 +678,37 @@ func biome_id_at(x: int, y: int) -> String:
 ## need wet lowland, only there), the one whose climate (warmth, rain) is
 ## nearest the place's — a little jitter, so the edges are ragged.
 func _biome_at(x: int, y: int, h: float, by_water: bool) -> int:
-	if geography is PlannedGeography and not by_water:
-		var planned := (geography as PlannedGeography).plan.biome_at(Vector2i(x, y))
-		var index := biome_ids.find(planned)
+	if geography is PlannedGeography:
+		# The plan gives the climate and the height, not a whole chunk's
+		# answer: judge the cell itself, as the preview does.
+		var planned := (geography as PlannedGeography).plan
+		var index := planned.biome_index_at(Vector2i(x, y), by_water, h)
 		if index >= 0:
-			return index
+			var here := biome_ids.find(planned.biome_ids[index])
+			if here >= 0:
+				return here
 	var geo := geography
 	var here := (geo.climate_at(x, y) if geo else Vector2.ZERO) \
-		+ Vector2(_hash(x, y, 6) - 0.5, _hash(x, y, 7) - 0.5) * 0.08
+		+ Vector2(_hash(x, y, 6) - 0.5, _hash(x, y, 7) - 0.5) * 0.06
 	var soggy := by_water and h < Geography.HILLS * 0.6 and here.y > 0.15
-	var best := 0
-	var best_d := INF
+	var matched := WorldPlan.biome_for(_biome_rules(), h, here, soggy)
+	return matched if matched >= 0 else 0
+
+
+## The same rules the plan baked, as the plan stores them (for a legacy seed
+## world, built from this content).
+func _biome_rules() -> Array:
+	var rules: Array = []
 	for i in _b_span.size():
-		var span := _b_span[i]
-		if h < span.x or h > span.y or (_b_wet[i] and not soggy):
-			continue
-		var d := here.distance_squared_to(_b_climate[i])
-		if d < best_d:
-			best_d = d
-			best = i
-	return best
+		rules.append({"elevation": [_b_span[i].x, _b_span[i].y],
+			"climate": [_b_climate[i].x, _b_climate[i].y], "wet_lowland": _b_wet[i] == 1})
+	return rules
+
+
+## A narrow winding trail (the band where the noise crosses zero) where no
+## solid plant grows, so a wood is never a wall across.
+func _on_trail(x: int, y: int) -> bool:
+	return absf(_track.get_noise_2d(x, y)) < 0.055
 
 
 ## The dominant ground of a biome covers everything except patches of the

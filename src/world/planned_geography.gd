@@ -24,14 +24,7 @@ func climate_at(x: int, y: int) -> Vector2:
 
 
 func lake_level_at(x: int, y: int) -> float:
-	var p := Vector2i(floori(float(x) / STEP), floori(float(y) / STEP)) + plan.spawn
-	var level := -INF
-	for dy in 2:
-		for dx in 2:
-			var k := WorldHydrology.index_at(plan, p + Vector2i(dx, dy))
-			if k >= 0 and plan.lake[k] > 0.0:
-				level = maxf(level, plan.lake[k])
-	return level
+	return plan.lake_level_at(Vector2i(x, y))
 
 
 func rivers_near(cx: int, cy: int) -> Array:

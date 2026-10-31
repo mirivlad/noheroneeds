@@ -638,7 +638,9 @@ func test_walking_across_the_seam_of_a_planet() -> void:
 	var a := _client("owner", _character("Аня"))
 	_run(30, [a])
 	eq(a.state, "playing", a.reject_reason)
-	# Three cells east of the western edge of the map, on open grass.
+	# Three cells east of the western edge of the map, on open grass. The land
+	# there is whatever the plan made (the map's edge may be mountains), so the
+	# rock is dug out as well: the strip must be walkable for the crossing.
 	var west := -plan.spawn.x * Chunk.SIZE
 	var east := west + plan.size.x * Chunk.SIZE - 1
 	for y in range(-6, 7):
@@ -646,11 +648,13 @@ func test_walking_across_the_seam_of_a_planet() -> void:
 			var c := world.chunk("surface", floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
 			c.set_cell("ground", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "base:grass")
 			c.set_cell("cover", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "")
+			c.set_cell("structure", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "")
 	for y in range(-6, 7):
 		for x in range(east - 2, east + 9):
 			var c := world.chunk("surface", floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
 			c.set_cell("ground", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "base:grass")
 			c.set_cell("cover", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "")
+			c.set_cell("structure", posmod(x, Chunk.SIZE), posmod(y, Chunk.SIZE), "")
 	for x in range(west - 7, west + 3):
 		for y in range(-6, 7):
 			world._changed(ServerWorld.chunk_key("surface", floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE)))

@@ -160,35 +160,77 @@ func test_walk_across_chunks_seamlessly() -> void:
 func test_chasms_have_hanging_bridges() -> void:
 	var c := _base()
 	var g := SurfaceGenerator.new(431, c)
-	var found := 0
+	var spans := 0
+	var seen := {}
 	for ky in range(-30, 31):
 		for kx in range(-30, 31):
 			for d: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE, Vector2i(1, -1)]:
-				if found >= 6:
+				if spans >= 10:
 					break
 				var a := g._chasm_site(Vector2i(kx, ky))
 				var b := g._chasm_site(Vector2i(kx, ky) + d)
 				var mid := Vector2i(((a + b) * 0.5).floor())
-				if g.land_at(mid.x, mid.y)["what"] != "bridge":
+				if seen.has(mid) or g.land_at(mid.x, mid.y)["what"] != "bridge":
 					continue
-				found += 1
 				var way := Vector2i.RIGHT if absf(b.x - a.x) >= absf(b.y - a.y) else Vector2i.DOWN
 				var side := Vector2i(way.y, way.x)
 				var start := mid
-				while g.land_at(start.x - way.x, start.y - way.y)["what"] == "bridge":
+				var guard := 0
+				while g.land_at(start.x - way.x, start.y - way.y)["what"] == "bridge" and guard < 32:
 					start -= way
+					guard += 1
 				var span := 0
 				var at := start
-				while g.land_at(at.x, at.y)["what"] == "bridge":
+				while g.land_at(at.x, at.y)["what"] == "bridge" and guard < 32:
+					seen[at] = true
 					span += 1
 					at += way
+					guard += 1
+				if span < 2:
+					continue
+				spans += 1
 				check(span >= 2 and span <= 8, "a bridge %s spans the chasm: %d cells" % [mid, span])
+				# A bridge is a crossing, never a deck in the middle of nowhere:
+				# both ends stand on walkable land and the chasm runs beside it.
 				eq(g.land_at(at.x, at.y)["what"], "land", "land at its far end %s" % at)
 				eq(g.land_at(start.x - way.x, start.y - way.y)["what"], "land", "and at its near end")
-				var beside := [String(g.land_at(mid.x + side.x, mid.y + side.y)["what"]), String(g.land_at(mid.x - side.x, mid.y - side.y)["what"])]
-				check("chasm" in beside, "the chasm beside it at %s: %s" % [mid, beside])
+				eq(g.land_at(start.x - way.x, start.y - way.y, false)["what"], "land", "the near end is land, not another deck")
+				var beside := false
+				var on := start
+				while true:
+					beside = beside or g.land_at(on.x + side.x, on.y + side.y)["what"] == "chasm" \
+						or g.land_at(on.x - side.x, on.y - side.y)["what"] == "chasm"
+					if on == at - way:
+						break
+					on += way
+				check(beside, "the chasm runs beside the bridge at %s" % mid)
 				check(g.bridge_sag(mid.x, mid.y) > 0.0, "it sags in its middle")
-	check(found > 0, "there are hanging bridges in the rugged land")
+	check(spans > 0, "there are hanging bridges in the rugged land")
+	# A bridge whose row leaves the chasm at a shore, over open air, or with no
+	# land beyond is no crossing, and none is made (it stays a chasm).
+	var bridges := 0
+	var crossings := 0
+	for y in range(-300, 300, 3):
+		for x in range(-300, 300, 3):
+			if g.land_at(x, y)["what"] != "bridge":
+				continue
+			bridges += 1
+			var axis: Vector2i = g._chasm_cut(x, y)[2]
+			var low := Vector2i(x, y)
+			var high := Vector2i(x, y)
+			for i in 32:
+				if g.land_at(low.x - axis.x, low.y - axis.y)["what"] != "bridge":
+					break
+				low -= axis
+			for i in 32:
+				if g.land_at(high.x + axis.x, high.y + axis.y)["what"] != "bridge":
+					break
+				high += axis
+			var near := low - axis
+			var far := high + axis
+			if g.land_at(near.x, near.y)["what"] == "land" and g.land_at(far.x, far.y)["what"] == "land":
+				crossings += 1
+	check(bridges == 0 or crossings == bridges, "every deck joins land at both ends: %d of %d" % [crossings, bridges])
 	var chunk := Chunk.new()
 	chunk.set_cell("ground", 0, 0, "base:chasm")
 	chunk.set_cell("ground", 1, 0, "base:hanging_bridge")

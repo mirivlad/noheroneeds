@@ -33,11 +33,18 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
           RELEASE_VERSION: ${{ inputs.release_version }}
         run: |
-          if [[ ! "$BASE_REF" =~ ^[0-9a-f]{40}$ || "$BASE_REF" == 0000000000000000000000000000000000000000 ]]; then
-            BASE_REF=$(git merge-base origin/main HEAD)
+          args=(--published build/published-releases.json)
+          if [[ -n "$RELEASE_VERSION" ]]; then
+            # The release gate verifies changes since the last published
+            # version. A forced tag update can make github.event.before
+            # unreachable, so never use it as the release diff base.
+            args+=(--release "v${RELEASE_VERSION#v}" --unpublished)
+          else
+            if [[ ! "$BASE_REF" =~ ^[0-9a-f]{40}$ || "$BASE_REF" == 0000000000000000000000000000000000000000 ]]; then
+              BASE_REF=$(git merge-base origin/main HEAD)
+            fi
+            args+=(--base "$BASE_REF")
           fi
-          args=(--base "$BASE_REF" --published build/published-releases.json)
-          if [[ -n "$RELEASE_VERSION" ]]; then args+=(--release "v${RELEASE_VERSION#v}" --unpublished); fi
           python3 tools/site/check.py "${args[@]}"
       - name: Generator, policy and link tests
         run: |

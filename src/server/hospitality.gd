@@ -101,12 +101,12 @@ func visitor_spot(c: Creature) -> Vector2i:
 	for id: String in _sites:
 		var p := plan(id)
 		if p.is_empty() or state(id).is_empty() or state(id).get("closed", false) or p["village"] != c.job.get("village", "") \
-				or c.home.distance_to(p["centre"]) > 100 or home / 2 >= p["seats"].size():
+				or world.cell_distance(c.home, p["centre"]) > 100 or home / 2 >= p["seats"].size():
 			continue
 		var at: Vector2i = p["host"]
 		if not world.has_chunk(Levels.SURFACE, at.x >> 5, at.y >> 5):
 			continue
-		if best.is_empty() or c.home.distance_to(p["centre"]) < c.home.distance_to(best["centre"]):
+		if best.is_empty() or world.cell_distance(c.home, p["centre"]) < world.cell_distance(c.home, best["centre"]):
 			best = p
 	return best["seats"][home / 2] if not best.is_empty() else Creature.NO_TARGET
 
@@ -117,7 +117,7 @@ func camp_spot(c: Creature) -> Vector2i:
 	for id: String in _sites:
 		var p := plan(id)
 		if p.is_empty() or state(id).is_empty() or state(id).get("closed", false) or p["road"] != c.route.get("road", []) \
-				or c.cell().distance_to(p["camp_spot"]) > 36:
+				or world.cell_distance(c.cell(), p["camp_spot"]) > 36:
 			continue
 		return p["camp_spot"]
 	return Creature.NO_TARGET
@@ -128,10 +128,11 @@ func places(at: Vector2i, radius: int) -> Array:
 		return out
 	for p: Dictionary in world.generator.settlements.inns.near(at, radius):
 		var host: Vector2i = p["host"]
-		var key := ServerWorld.chunk_key(Levels.SURFACE, host.x >> 5, host.y >> 5)
+		var key := world.storage_key(Levels.SURFACE, host.x >> 5, host.y >> 5)
 		var c := world._chunks.get(key) as Chunk
 		if c == null:
-			var bytes := world.store.get_chunk(Levels.SURFACE, host.x >> 5, host.y >> 5)
+			var where := world.storage_chunk(host.x >> 5, host.y >> 5)
+			var bytes := world.store.get_chunk(Levels.SURFACE, where.x, where.y)
 			if not bytes.is_empty():
 				c = ChunkCodec.decode(bytes)
 		if c != null and c.meta.get("hospitality", "") != p["id"]:

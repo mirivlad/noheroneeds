@@ -22,7 +22,11 @@ const ID := "base:surface"
 ## 8: pebbles (flint) on shores (ADR-0053).
 ## 9: villages in clusters, roads by the land (ADR-0054).
 ## 10: rugged land in levels with cliffs between them and passes (ADR-0061).
-const VERSION := 13  # public houses, only in newly generated chunks
+## 14: hanging bridges only as crossings that join land on both sides, and a
+##     crag that is no level's edge stands up (so rock looks as it blocks).
+## 15: a biome is judged cell by cell from the plan's climate, not taken whole
+##     from a coarse point, and woods thin into glades with open trails.
+const VERSION := 15  # public houses, only in newly generated chunks
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -63,6 +67,9 @@ var _bumps_noise := FastNoiseLite.new()
 var _pass_noise := FastNoiseLite.new()
 ## Rivers wind: a cell is measured to a course from a place shifted by this.
 var _meander := FastNoiseLite.new()
+## Openings in a wood, and the winding trails that always cross it.
+var _glade := FastNoiseLite.new()
+var _track := FastNoiseLite.new()
 ## One noise field per patch slot (the n-th lesser ground of any biome uses field n).
 var _patch_noise: Array[FastNoiseLite] = []
 ## Where the ways into the underground are (null: none).
@@ -74,7 +81,7 @@ var _rivers_key := Vector2i(1 << 30, 0)
 var _rivers: Array = []
 
 
-func _init(seed_value: int, content: ContentRegistry) -> void:
+func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null) -> void:
 	world_seed = seed_value
 	var ids: Array = []
 	for id: String in content.defs:
@@ -107,7 +114,7 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 		_chasm = String(g.get("chasm", ""))
 		_hanging = String(g.get("hanging_bridge", ""))
 		_flat = bool(g["flat"])
-	geography = Geography.of(seed_value) if can_generate() and not _flat else null
+	geography = (PlannedGeography.new(plan) if plan else Geography.of(seed_value)) if can_generate() and not _flat else null
 	_grain.seed = seed_value + 7919
 	_grain.frequency = 0.045
 	_grain.fractal_octaves = 3
@@ -126,6 +133,12 @@ func _init(seed_value: int, content: ContentRegistry) -> void:
 	_meander.seed = seed_value + 3571
 	_meander.frequency = 0.03
 	_meander.fractal_octaves = 2
+	_glade.seed = seed_value + 15485863
+	_glade.frequency = 0.021
+	_glade.fractal_octaves = 2
+	_track.seed = seed_value + 32452843
+	_track.frequency = 0.017
+	_track.fractal_octaves = 2
 	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at, land_at if geography else Callable())
 	for i in 8:
 		var n := FastNoiseLite.new()
@@ -168,6 +181,13 @@ func generate(cx: int, cy: int) -> Chunk:
 				continue
 			if _hash(x, y, 2) < float(b["density"]):
 				var plant := _pick(b["cover"], _hash(x, y, 3))
+				if plant != "" and _solid.has(plant):
+					# A wood thins into glades and is crossed by trails (a person
+					# must be seen, and a way found, through the thickest of it);
+					# lesser plants keep the floor of a glade alive.
+					var shade := 0.55 + 0.45 * smoothstep(-0.3, 0.4, _glade.get_noise_2d(x, y))
+					if _on_trail(x, y) or _hash(x, y, 8) >= shade:
+						plant = ""
 				if plant != "" and not (clearing and _solid.has(plant)):
 					c.set_cell("cover", lx, ly, plant)
 	# Roads between settlements, under them (a settlement's own cells win).
@@ -257,6 +277,12 @@ func is_wet(x: int, y: int) -> bool:
 	return String(land_at(x, y)["what"]) in ["water", "deep", "shallows", "shore"]
 
 
+## The ground of deep water ("" when this world has none): a bridge is never
+## laid over it.
+func deep_ground() -> String:
+	return _deep
+
+
 ## Whether a ground is water one swims in (bridges go over it).
 func _swum(ground: String) -> bool:
 	return ground != "" and (ground == _water or ground == _deep)
@@ -279,7 +305,10 @@ func is_unfit(x: int, y: int) -> bool:
 ## "height", "biome" (an index of the biomes, for land and rock)}. Deep is
 ## the open sea and the middle of big lakes; shallows (ADR-0051) the sea's
 ## and lakes' edges and fords on rivers, where one wades.
-func land_at(x: int, y: int) -> Dictionary:
+## `bridges` false asks for the ground under the decks: a hanging bridge is a
+## chasm there, and no bridge is judged (so judging one cannot start judging
+## another, and the answer is the same whichever cell one asks first).
+func land_at(x: int, y: int, bridges := true) -> Dictionary:
 	var geo := geography
 	if geo == null:
 		return {"what": "land", "height": 0.1, "biome": _biome_at(x, y, 0.1, false)} if _flat else {"what": "water", "height": -1.0, "biome": 0}
@@ -293,11 +322,35 @@ func land_at(x: int, y: int) -> Dictionary:
 		return {"what": _water_by_depth(lake - h), "height": h, "biome": 0}
 	if h < lake + 0.008:
 		return {"what": "shore", "height": h, "biome": 0}
+	var water := _river_near(x, y)
+	var near := float(water[0])
+	var ford := bool(water[1])
+	if near < 0.0:
+		return {"what": "shallows" if ford and _shallows != "" else "water", "height": h, "biome": 0}
+	if near < 1.0 and _hash(x, y, 8) < 0.6:
+		return {"what": "shore", "height": h, "biome": 0}
+	var biome := _biome_at(x, y, h, near < 10.0)
+	var chasm := (chasm_at(x, y, near) if bridges else _chasm_kind(x, y, near)) if _chasm != "" else NO_CHASM
+	if chasm == BRIDGE and not bridges:
+		return {"what": "chasm", "height": h, "biome": biome}
+	if chasm == CHASM or chasm == BRIDGE:
+		return {"what": "chasm" if chasm == CHASM else "bridge", "height": h, "biome": biome}
+	if chasm != APPROACH and _rock != "" and (h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or is_cliff(x, y, h)):
+		return {"what": "rock", "height": h, "biome": biome}
+	return {"what": "land", "height": h, "biome": biome}
+
+
+## [distance to the nearest river's bank (cells, negative in the water), whether
+## a ford lies there]. Only the courses that come within reach of the chunk.
+func _river_near(x: int, y: int) -> Array:
+	var near := INF
+	var ford := false
+	var geo := geography
+	if geo == null:
+		return [near, false]
 	var key := Vector2i(floori(x / 32.0), floori(y / 32.0))
 	if key != _rivers_key:
 		_rivers_key = key
-		# Only the courses that come within reach of the chunk (10 cells: what
-		# counts as "by the water"; and their winding).
 		_rivers = []
 		var box := Rect2(Vector2(key * Chunk.SIZE), Vector2(Chunk.SIZE, Chunk.SIZE)).grow(20.0)
 		for r: Array in geo.rivers_near(key.x, key.y):
@@ -305,8 +358,6 @@ func land_at(x: int, y: int) -> Dictionary:
 			var b: Vector2 = r[1]
 			if Rect2(a, Vector2.ZERO).expand(b).grow(maxf(r[2], r[3])).intersects(box):
 				_rivers.append(r)
-	var near := INF
-	var ford := false
 	var at := Vector2(x + 0.5, y + 0.5)
 	if not _rivers.is_empty():
 		at += Vector2(_meander.get_noise_2d(x, y), _meander.get_noise_2d(y + 7919.0, x)) * 9.0
@@ -321,17 +372,7 @@ func land_at(x: int, y: int) -> Dictionary:
 			near = d
 			# A ford: across the river, in the middle of its stretch.
 			ford = r[4] and absf(t - 0.5) * ab.length() < FORD_HALF
-	if near < 0.0:
-		return {"what": "shallows" if ford and _shallows != "" else "water", "height": h, "biome": 0}
-	if near < 1.0 and _hash(x, y, 8) < 0.6:
-		return {"what": "shore", "height": h, "biome": 0}
-	var biome := _biome_at(x, y, h, near < 10.0)
-	var chasm := chasm_at(x, y) if _chasm != "" and near > CHASM_FROM_WATER and _stepped(x, y, h) >= 0.5 else NO_CHASM
-	if chasm == CHASM or chasm == BRIDGE:
-		return {"what": "chasm" if chasm == CHASM else "bridge", "height": h, "biome": biome}
-	if chasm != APPROACH and _rock != "" and (h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or is_cliff(x, y, h)):
-		return {"what": "rock", "height": h, "biome": biome}
-	return {"what": "land", "height": h, "biome": biome}
+	return [near, ford]
 
 
 # --- Chasms and hanging bridges (ADR-0064) -----------------------------------
@@ -364,9 +405,37 @@ func _chasm_site(k: Vector2i) -> Vector2:
 
 ## What a cell is for chasms, by the two nearest sites, wherever the land allows
 ## one (land_at): NO_CHASM, CHASM, BRIDGE (over it) or APPROACH (a bridge's way on).
-func chasm_at(x: int, y: int) -> int:
+## A bridge is only kept where it is a real crossing (`_crossing_stands`); any
+## other cutting is a plain chasm. `near` is how far the nearest river is (cells,
+## as `_river_near` says): given, it saves asking again.
+func chasm_at(x: int, y: int, near := INF) -> int:
+	var kind := _chasm_kind(x, y, near)
+	if kind == BRIDGE and not _crossing_stands(x, y, _chasm_cut(x, y)[2]):
+		return CHASM
+	return kind
+
+
+## The cutting where the land allows one, before bridges are judged: NO_CHASM,
+## CHASM, BRIDGE or APPROACH.
+func _chasm_kind(x: int, y: int, near := INF) -> int:
 	var c := _chasm_cut(x, y)
-	return int(c[0])
+	var kind := int(c[0])
+	if kind == NO_CHASM:
+		return NO_CHASM
+	# No chasm by a river, nor on ground that rolls smoothly (a pass): the
+	# cutting and the bridge both need rugged land away from water.
+	if near == INF:
+		near = float(_river_near(x, y)[0])
+	if near <= CHASM_FROM_WATER:
+		return NO_CHASM
+	# Only dry land is cut: a beach, a lake's edge or a shoal keeps its ground
+	# (a chasm hidden under a shore would leave a bridge deck over the sand).
+	var h := height_at(x, y)
+	if h <= Geography.SEA + 0.012 or h < geography.lake_level_at(x, y) + 0.008:
+		return NO_CHASM
+	if _stepped(x, y, h) < 0.5:
+		return NO_CHASM
+	return kind
 
 
 ## How far a hanging bridge's deck would sag at a cell (metres): deepest over
@@ -376,7 +445,9 @@ func bridge_sag(x: int, y: int) -> float:
 	return BRIDGE_SAG * (1.0 - pow(float(c[1]) / CHASM_HALF, 2.0)) if int(c[0]) in [CHASM, BRIDGE] else 0.0
 
 
-## [kind, distance from the chasm's middle line (cells)].
+## [kind, distance from the chasm's middle line (cells), the way a bridge
+## crosses the line (a unit cell step)]. The raw cutting: `chasm_at` keeps a
+## bridge only where the crossing makes sense.
 func _chasm_cut(x: int, y: int) -> Array:
 	var p := Vector2(x + 0.5, y + 0.5)
 	var g := Vector2i(floori(p.x / CHASM_GRID), floori(p.y / CHASM_GRID))
@@ -399,17 +470,76 @@ func _chasm_cut(x: int, y: int) -> Array:
 	var lo := a if a.x < b.x or (a.x == b.x and a.y < b.y) else b
 	var hi := b if lo == a else a
 	if _hash(lo.x * 9176 + hi.x, lo.y * 7919 + hi.y, 33) >= CHASM_SHARE:
-		return [NO_CHASM, INF]
+		return [NO_CHASM, INF, Vector2i.ZERO]
 	var sa := _chasm_site(a)
 	var sb := _chasm_site(b)
 	var across := (db - da) / (2.0 * sa.distance_to(sb))  # from the border, toward the nearer site
 	var mid := (sa + sb) * 0.5
-	var row := y == floori(mid.y) if absf(sb.x - sa.x) >= absf(sb.y - sa.y) else x == floori(mid.x)
+	var along_x := absf(sb.x - sa.x) >= absf(sb.y - sa.y)
+	var row := y == floori(mid.y) if along_x else x == floori(mid.x)
+	var axis := Vector2i.RIGHT if along_x else Vector2i.DOWN
 	if across < CHASM_HALF:
-		return [BRIDGE if row else CHASM, across]
+		return [BRIDGE if row else CHASM, across, axis]
 	if row and across < CHASM_HALF + CHASM_APPROACH:
-		return [APPROACH, across]
-	return [NO_CHASM, across]
+		return [APPROACH, across, axis]
+	return [NO_CHASM, across, axis]
+
+
+## Whether a hanging bridge belongs at this cell (ADR-0064): it must be a
+## crossing, not a deck in the middle of nowhere. Its straight row has to leave
+## the chasm onto dry walkable land at both ends, the chasm has to be cut along
+## the whole row (a bridge over the open air or over a river is no bridge), and
+## the land must go on past both ends: a way from one real side to the other.
+## Otherwise the cutting is a plain chasm and no bridge is made.
+func _crossing_stands(x: int, y: int, axis: Vector2i) -> bool:
+	if axis == Vector2i.ZERO:
+		return false
+	# The row of the bridge: as long as the cutting makes it.
+	var low := Vector2i(x, y)
+	var high := Vector2i(x, y)
+	var far := int(ceilf(CHASM_HALF * 2.0)) + 2
+	for i in far:
+		if _chasm_kind(low.x - axis.x, low.y - axis.y) != BRIDGE:
+			break
+		low -= axis
+	for i in far:
+		if _chasm_kind(high.x + axis.x, high.y + axis.y) != BRIDGE:
+			break
+		high += axis
+	var span := maxi(absi(high.x - low.x), absi(high.y - low.y)) + 1
+	if span < 2 or span > int(ceilf(CHASM_HALF * 2.0)) + 1:
+		return false
+	# The chasm runs along the deck: over its whole length, a chasm beside it,
+	# and no open water or pass in place of the cutting.
+	var side := Vector2i(axis.y, axis.x)
+	var at := low
+	while true:
+		if _chasm_kind(at.x, at.y) == NO_CHASM:
+			return false
+		var under := false
+		for b: Vector2i in [at + side, at - side]:
+			under = under or _chasm_kind(b.x, b.y) == CHASM
+		if not under:
+			return false
+		if at == high:
+			break
+		at += axis
+	# Both ends on dry walkable land (the cleared approach included), and the way
+	# goes on beyond them: a route from one side to the other.
+	var ends: Array = [[low - axis, -1], [high + axis, 1]]
+	for end: Array in ends:
+		var at_end: Vector2i = end[0]
+		var here := land_at(at_end.x, at_end.y, false)
+		if String(here["what"]) != "land" or float(here["height"]) <= Geography.SEA + 0.012:
+			return false
+		var out := int(end[1])
+		var gone := false
+		for step: int in [1, 2, 3]:
+			var beyond := at_end + axis * out * step
+			gone = gone or String(land_at(beyond.x, beyond.y, false)["what"]) == "land"
+		if not gone:
+			return false
+	return true
 
 
 # --- Relief in levels (ADR-0061) ---------------------------------------------
@@ -554,21 +684,37 @@ func biome_id_at(x: int, y: int) -> String:
 ## need wet lowland, only there), the one whose climate (warmth, rain) is
 ## nearest the place's — a little jitter, so the edges are ragged.
 func _biome_at(x: int, y: int, h: float, by_water: bool) -> int:
+	if geography is PlannedGeography:
+		# The plan gives the climate and the height, not a whole chunk's
+		# answer: judge the cell itself, as the preview does.
+		var planned := (geography as PlannedGeography).plan
+		var index := planned.biome_index_at(Vector2i(x, y), by_water, h)
+		if index >= 0:
+			var here := biome_ids.find(planned.biome_ids[index])
+			if here >= 0:
+				return here
 	var geo := geography
 	var here := (geo.climate_at(x, y) if geo else Vector2.ZERO) \
-		+ Vector2(_hash(x, y, 6) - 0.5, _hash(x, y, 7) - 0.5) * 0.08
+		+ Vector2(_hash(x, y, 6) - 0.5, _hash(x, y, 7) - 0.5) * 0.06
 	var soggy := by_water and h < Geography.HILLS * 0.6 and here.y > 0.15
-	var best := 0
-	var best_d := INF
+	var matched := WorldPlan.biome_for(_biome_rules(), h, here, soggy)
+	return matched if matched >= 0 else 0
+
+
+## The same rules the plan baked, as the plan stores them (for a legacy seed
+## world, built from this content).
+func _biome_rules() -> Array:
+	var rules: Array = []
 	for i in _b_span.size():
-		var span := _b_span[i]
-		if h < span.x or h > span.y or (_b_wet[i] and not soggy):
-			continue
-		var d := here.distance_squared_to(_b_climate[i])
-		if d < best_d:
-			best_d = d
-			best = i
-	return best
+		rules.append({"elevation": [_b_span[i].x, _b_span[i].y],
+			"climate": [_b_climate[i].x, _b_climate[i].y], "wet_lowland": _b_wet[i] == 1})
+	return rules
+
+
+## A narrow winding trail (the band where the noise crosses zero) where no
+## solid plant grows, so a wood is never a wall across.
+func _on_trail(x: int, y: int) -> bool:
+	return absf(_track.get_noise_2d(x, y)) < 0.055
 
 
 ## The dominant ground of a biome covers everything except patches of the

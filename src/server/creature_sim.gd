@@ -72,7 +72,8 @@ func _init(w: ServerWorld) -> void:
 # --- what is where -----------------------------------------------------------
 
 func in_chunk(location: String, cx: int, cy: int, kind := "") -> Array:
-	var key := ServerWorld.chunk_key(location, cx, cy)
+	var at := world.storage_chunk(cx, cy)
+	var key := ServerWorld.chunk_key(location, at.x, at.y)
 	if kind != "":
 		return (_by_kind.get(key, {}).get(kind, {}) as Dictionary).keys()
 	return (_by_chunk.get(key, {}) as Dictionary).keys()
@@ -105,6 +106,7 @@ func get_creature(id: String) -> Creature:
 ## Its chunk's key (worked out again only when it moved to another chunk).
 func _chunk_of(c: Creature) -> String:
 	var at := Vector2i(c.pos.x >> (Movement.UNIT_SHIFT + 5), c.pos.y >> (Movement.UNIT_SHIFT + 5))  # Chunk.SIZE is 32
+	at = world.storage_chunk(at.x, at.y)
 	if at != c.chunk_at or c.location != c.chunk_location:
 		c.chunk_at = at
 		c.chunk_location = c.location
@@ -273,6 +275,12 @@ func _settle(cx: int, cy: int) -> void:
 const TRAVELLER_CHANCE := 0.7
 const CARAVAN_HORSE_DISTANCE := 3.5
 const PACK_HORSE_DISTANCE := 1.8
+## How far the harness headings may turn in one tick (radians; the server
+## ticks Movement.TICK_RATE a second). The horse leads into a turn, the cart
+## follows its own line, and the shafts allow only so much bend between them.
+const HORSE_TURN := 0.45  # ~9 rad/s
+const CART_TURN := 0.18  # ~3.6 rad/s
+const HITCH_ANGLE := 1.15  # ~66 degrees
 
 
 func _travellers(cx: int, cy: int) -> void:
@@ -327,6 +335,7 @@ func _make_caravan(c: Creature, variant := "") -> void:
 		if direction != Vector2i.ZERO:
 			initial = Vector2i(signi(direction.x), signi(direction.y))
 	c.job["caravan_heading"] = [initial.x, initial.y]
+	c.job["horse_heading"] = [initial.x, initial.y]
 	if variant == "" and kind == "cart" and not road_path.is_empty():
 		# Some roads wind through a forest too tight for a cart. Choose a pack
 		# horse at departure if the nearby road cannot fit the full harness.
@@ -341,7 +350,7 @@ func _make_caravan(c: Creature, variant := "") -> void:
 				continue
 			var cell: Vector2i = road_path[index]
 			var at := cell * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
-			if not _caravan_cart_fits(c, at, d) or not _caravan_horse_fits(c, at, d):
+			if not _caravan_cart_fits(c, at, Vector2(d)) or not _caravan_horse_fits(c, at, Vector2(d)):
 				c.job["caravan_type"] = "pack"
 				horse.job["pack"] = true
 				break
@@ -373,26 +382,25 @@ func _caravan_lost(id: String) -> bool:
 	return id != "" and (_caravan_deaths.has(id) or world.fact("caravan_dead|" + id) == "1")
 
 
-func _caravan_offset(c: Creature, heading: Vector2i) -> Vector2i:
+func _caravan_offset(c: Creature, heading: Vector2) -> Vector2i:
 	var distance := -PACK_HORSE_DISTANCE if c.job.get("caravan_type", "cart") == "pack" else CARAVAN_HORSE_DISTANCE
-	var offset := Vector2(heading).normalized() * (distance * Movement.UNIT)
+	var offset := heading.normalized() * (distance * Movement.UNIT)
 	return Vector2i(roundi(offset.x), roundi(offset.y))
 
 
 ## The horse's server position is ahead of a cart or behind a walking trader,
-## where players see and hit it. The heading is saved across a load.
-func _move_caravan_horse(c: Creature, heading := Vector2i.ZERO) -> void:
+## where players see and hit it. The cart and the horse have headings of their
+## own: the horse turns first and its body leads into the bend, the cart
+## follows the line its own wheels take, and the harness between them bends no
+## more than HITCH_ANGLE. Both are saved across a load.
+func _move_caravan_horse(c: Creature) -> void:
 	var horse := get_creature(String(c.job.get("horse", "")))
 	if horse == null or horse.location != c.location:
 		return
-	if heading != Vector2i.ZERO:
-		var next := [heading.x, heading.y]
-		if c.job.get("caravan_heading", []) != next:
-			c.job["caravan_heading"] = next
-			c.changed()
-			_cold[c.id] = true
-	var saved: Array = c.job.get("caravan_heading", [0, 1])
-	var at := c.pos + _caravan_offset(c, Vector2i(int(saved[0]), int(saved[1])))
+	var lead := _hauler_heading(c)
+	var at := _horse_place(c, c.pos, lead)
+	if at == Creature.NO_TARGET:
+		return  # no room even beside the shaft line: it stays where it is
 	if horse.pos == at:
 		return
 	var old_key := _chunk_of(horse)
@@ -403,14 +411,83 @@ func _move_caravan_horse(c: Creature, heading := Vector2i.ZERO) -> void:
 		horse.changed()
 
 
-func _caravan_horse_fits(c: Creature, wagon_at: Vector2i, heading: Vector2i) -> bool:
-	var id := String(c.job.get("horse", ""))
-	if id == "":
-		return true
-	var horse := get_creature(id)
+## The heading the horse is placed along: its own, ahead of a cart or on a
+## lead behind a pack trader. It turns first and so leads the way; the cart
+## follows its own slower line.
+func _hauler_heading(c: Creature) -> Vector2:
+	return _heading_of(c.job.get("horse_heading", c.job.get("caravan_heading", [0, 1])))
+
+
+## Turn the harness toward `desired` by no more than a tick allows: the horse
+## first, the cart toward where the horse now points, and the horse kept
+## within the bend the shafts allow. Returns [cart, horse].
+func _turn_caravan(c: Creature, desired: Vector2) -> Array:
+	var cart := _heading_of(c.job.get("caravan_heading", [0, 1]))
+	var horse := _heading_of(c.job.get("horse_heading", c.job.get("caravan_heading", [0, 1])))
+	if desired.length_squared() < 0.000001:
+		return [cart, horse]
+	horse = _turn_to(horse, desired, HORSE_TURN)
+	cart = _turn_to(cart, horse, CART_TURN)
+	var bend := wrapf(horse.angle() - cart.angle(), -PI, PI)
+	if absf(bend) > HITCH_ANGLE:
+		horse = cart.rotated(signf(bend) * HITCH_ANGLE)
+	return [cart, horse]
+
+
+## A unit direction turned toward `to` by at most `most` radians.
+func _turn_to(from: Vector2, to: Vector2, most: float) -> Vector2:
+	var turned := wrapf(to.angle() - from.angle(), -PI, PI)
+	return from.rotated(clampf(turned, -most, most)).normalized()
+
+
+## Save the harness headings (a changed one tells the clients).
+func _save_headings(c: Creature, cart: Vector2, horse: Vector2) -> void:
+	var saved_cart: Array = c.job.get("caravan_heading", [])
+	var saved_horse: Array = c.job.get("horse_heading", [])
+	var next_cart := _saved_heading(cart)
+	var next_horse := _saved_heading(horse)
+	if saved_cart == next_cart and saved_horse == next_horse:
+		return
+	c.job["caravan_heading"] = next_cart
+	c.job["horse_heading"] = next_horse
+	c.changed()
+	_cold[c.id] = true
+
+
+## A heading as the job keeps it: whole numbers where it is so, so that old
+## data and a straight line away compare equal.
+func _saved_heading(v: Vector2) -> Array:
+	var n := v.normalized() if v.length_squared() > 0.000001 else Vector2.DOWN
+	return [snappedf(n.x, 0.001), snappedf(n.y, 0.001)]
+
+
+func _caravan_horse_fits(c: Creature, wagon_at: Vector2i, heading: Vector2) -> bool:
+	return _horse_place(c, wagon_at, heading) != Creature.NO_TARGET
+
+
+## Where the horse can stand with the wagon at `wagon_at`: on the shaft line,
+## or the nearest free place to it when a trunk or a wall stands there — a
+## horse steps aside rather than holding the cart for ever. NO_TARGET when
+## there is no room at all.
+func _horse_place(c: Creature, wagon_at: Vector2i, heading: Vector2) -> Vector2i:
+	if String(c.job.get("horse", "")) == "":
+		return wagon_at
+	var ideal := wagon_at + _caravan_offset(c, heading)
+	if _horse_free(c, ideal):
+		return ideal
+	for d: Vector2i in [Vector2i(64, 0), Vector2i(-64, 0), Vector2i(0, 64), Vector2i(0, -64),
+			Vector2i(64, 64), Vector2i(-64, 64), Vector2i(64, -64), Vector2i(-64, -64),
+			Vector2i(128, 0), Vector2i(-128, 0), Vector2i(0, 128), Vector2i(0, -128)]:
+		if _horse_free(c, ideal + d):
+			return ideal + d
+	return Creature.NO_TARGET
+
+
+## Whether the horse's body fits with its centre at `at`.
+func _horse_free(c: Creature, at: Vector2i) -> bool:
+	var horse := get_creature(String(c.job.get("horse", "")))
 	if horse == null:
 		return false
-	var at := wagon_at + _caravan_offset(c, heading)
 	var solid := _solid_in(c.location)
 	for cell: Vector2i in BodySize.cells(at, _half(horse.kind)):
 		if solid.call(cell.x, cell.y):
@@ -418,10 +495,10 @@ func _caravan_horse_fits(c: Creature, wagon_at: Vector2i, heading: Vector2i) -> 
 	return true
 
 
-func _caravan_cart_fits(c: Creature, at: Vector2i, heading: Vector2i) -> bool:
+func _caravan_cart_fits(c: Creature, at: Vector2i, heading: Vector2) -> bool:
 	if String(c.job.get("horse", "")) == "" or c.job.get("caravan_type", "cart") == "pack":
 		return true
-	var forward := Vector2(heading).normalized()
+	var forward := heading.normalized()
 	var side := Vector2(-forward.y, forward.x)
 	var extent := forward.abs() * .95 + side.abs() * .70
 	var half := Vector2i(ceili(extent.x * Movement.UNIT), ceili(extent.y * Movement.UNIT))
@@ -531,8 +608,184 @@ func _route_path(c: Creature) -> Array:
 	return s.road_of(int(k[0]), int(k[1]), int(k[2]), int(k[3])).get("path", [])
 
 
+# --- a caravan's stop in a village (ADR-0068) --------------------------------
+
+## Set a caravan's phase (and, for a stop, the game time it lasts until) and
+## tell the clients. The job, and so the stop, is saved with the creature.
+func _set_caravan_state(c: Creature, phase: String, until := -1) -> void:
+	if String(c.job.get("caravan_state", "travel")) == phase \
+			and (until < 0 or int(c.job.get("caravan_until", -1)) == until):
+		return
+	c.job["caravan_state"] = phase
+	if until >= 0:
+		c.job["caravan_until"] = until
+	else:
+		c.job.erase("caravan_until")
+	c.changed()
+	world.operation_creature(c)
+	_cold[c.id] = true
+
+
+## A saved heading ([x, y], whole or fractional) as a unit direction.
+func _heading_of(value: Variant) -> Vector2:
+	if value is Array and (value as Array).size() >= 2:
+		var v := Vector2(float(value[0]), float(value[1]))
+		if v.length_squared() > 0.000001:
+			return v.normalized()
+	return Vector2.DOWN
+
+
+## The caravan has reached the end of its road: find a place in the village
+## to stand and begin getting in. The step is turned round only when it has
+## traded, so it waits at the village it came to, not at the one it left.
+func _caravan_arrive(c: Creature) -> void:
+	c.job.erase("caravan_stop")
+	c.job.erase("caravan_stop_kind")
+	# Choose the place once, before walking in: a spot picked afresh each tick
+	# as the heading changes could send the caravan between two places for
+	# ever, and one step short of the spot may be the village fire itself.
+	var spot := _caravan_stop_spot(c)
+	c.job["caravan_goal"] = [spot.x, spot.y] if spot != Creature.NO_TARGET else []
+	_set_caravan_state(c, "arriving", 0)
+	_go(c, "rest", Creature.NO_TARGET, false)
+
+
+## The place chosen to stand at when the road ended (NO_TARGET if none).
+func _caravan_goal(c: Creature) -> Vector2i:
+	var saved: Variant = c.job.get("caravan_goal", [])
+	if saved is Array and (saved as Array).size() == 2:
+		return Vector2i(int(saved[0]), int(saved[1]))
+	return Creature.NO_TARGET
+
+
+## The place in a village where a caravan stops: by the square (its fire), by
+## a tavern, or a free place by the road. NO_TARGET if nothing fits.
+func _caravan_stop_spot(c: Creature) -> Vector2i:
+	var here := c.cell()
+	var heading := _heading_of(c.job.get("caravan_heading", [0, 1]))
+	var candidates: Array[Vector2i] = []
+	var road := _road_of(c)
+	var step := int(c.route.get("step", 1))
+	var dest := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
+	var plan := world.generator.settlements.plan_by_id(dest) if world.generator and dest != "" else {}
+	if not plan.is_empty():
+		var fire: Vector2i = plan["fire"]
+		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+				Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1), Vector2i(2, 0), Vector2i(-2, 0)]:
+			var at := fire + d
+			if world.cell_distance(at, here) <= 16:
+				candidates.append(at)
+		for e: Vector2i in plan["ends"]:
+			if world.cell_distance(e, here) <= 16:
+				candidates.append(e)
+	var inn := world.hospitality.camp_spot(c)
+	if inn != Creature.NO_TARGET and world.cell_distance(inn, here) <= 16:
+		candidates.append(inn)
+	candidates.append(here)
+	for d: Vector2i in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, 2), Vector2i(0, -2),
+			Vector2i(2, 2), Vector2i(-2, 2), Vector2i(2, -2), Vector2i(-2, -2), Vector2i(4, 0), Vector2i(-4, 0)]:
+		candidates.append(here + d)
+	for at: Vector2i in candidates:
+		if not world.has_chunk(c.location, at.x >> 5, at.y >> 5):
+			continue
+		if not _fits(c, at):
+			continue
+		var centre := at * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
+		if _caravan_cart_fits(c, centre, heading) and _caravan_horse_fits(c, centre, heading):
+			return at
+	return Creature.NO_TARGET
+
+
+## The phases of a stop: walk in, trade (unload, sell, take a return load),
+## rest, then leave. The stop's end is absolute game time, saved with the job.
+func _caravan_at_stop(c: Creature, phase: String) -> void:
+	match phase:
+		"arriving":
+			var spot := _caravan_goal(c)
+			if spot == Creature.NO_TARGET:
+				# Nothing in the village fits the harness: trade on the road.
+				c.job["caravan_stop"] = [c.cell().x, c.cell().y]
+				_caravan_trade(c)
+				return
+			if c.cell() == spot:
+				c.job["caravan_stop"] = [spot.x, spot.y]
+				c.job.erase("caravan_goal")
+				_caravan_trade(c)
+				return
+			if c.state == "detour" and c.target != Creature.NO_TARGET and c.path_to == spot:
+				return
+			if c.path_to != spot or c.path.is_empty():
+				c.path = _caravan_route(c, spot, 16)
+				c.path_to = spot
+			while not c.path.is_empty() and c.pos == c.path[0] * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2):
+				c.path.pop_front()
+			if not c.path.is_empty():
+				_go(c, "detour", c.path[0], false)
+				return
+			# The yard may have been walled since the village was made: stand
+			# and trade where the caravan already is.
+			c.job["caravan_stop"] = [c.cell().x, c.cell().y]
+			c.job.erase("caravan_goal")
+			_caravan_trade(c)
+		"trading":
+			if c.state != "trading" or c.target != Creature.NO_TARGET:
+				_go(c, "trading", Creature.NO_TARGET, false)
+			if world.world_time >= int(c.job.get("caravan_until", 0)):
+				_set_caravan_state(c, "resting", world.world_time + world.caravans.rest_ms(c))
+		"resting":
+			if c.state != "rest" or c.target != Creature.NO_TARGET:
+				_go(c, "rest", Creature.NO_TARGET, false)
+			if world.world_time >= int(c.job.get("caravan_until", 0)):
+				c.job.erase("caravan_stop")
+				c.job.erase("caravan_stop_kind")
+				c.job.erase("caravan_goal")
+				c.path.clear()
+				c.path_to = Creature.NO_TARGET
+				_set_caravan_state(c, "departing", world.world_time + world.caravans.depart_ms(c))
+
+
+
+
+
+## Arrived: sell the load here, take one for the way back, and turn the route
+## round. The route's step turns now, so the trader trades here as a trader
+## of this village while it stays (the economy is server-side and saved).
+func _caravan_trade(c: Creature) -> void:
+	var step := int(c.route.get("step", 1))
+	var road := _road_of(c)
+	c.route["step"] = -step
+	var at := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
+	var back := String(road.get("from", "")) if step > 0 else String(road.get("to", ""))
+	if at != "":
+		_arrive(c, at, back)
+	else:
+		world.caravans.finish_for(c, "arrived")
+	c.job["caravan_stop_kind"] = _stop_kind(c)
+	_set_caravan_state(c, "trading", world.world_time + world.caravans.trade_ms(c))
+
+
+## What kind of place the stop is, for the journal and tests.
+func _stop_kind(c: Creature) -> String:
+	var plan := {}
+	if world.generator:
+		var road := _road_of(c)
+		var step := int(c.route.get("step", 1))
+		var dest := String(road.get("from", "")) if step > 0 else String(road.get("to", ""))
+		plan = world.generator.settlements.plan_by_id(dest)
+	if plan.is_empty():
+		return "roadside"
+	var at := c.cell()
+	if not (plan["bounds"] as Rect2i).grow(6).has_point(at):
+		return "roadside"  # on the road, not yet at the village's ground
+	if world.cell_distance(at, plan["fire"]) <= 4:
+		return "square"
+	return "village"
+
+
 ## A traveller walks its road from one settlement to the other and back,
-## by day; runs from who hurts it; stands the night by the way.
+## by day; runs from who hurts it; stands the night by the way. At each
+## village it arrives, stops at its square, tavern or a free place by the
+## road, trades, rests and only then sets off back (ADR-0068).
 func _traveller(c: Creature, def: Dictionary) -> void:
 	world.caravans.apply_refund(c)
 	# Older worlds already have traders. Outfit each one once; a horse that died
@@ -564,6 +817,15 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 		if away != Creature.NO_TARGET:
 			_go(c, "flee", away, true)
 			return
+	# A stop in a village: getting in, trading, resting, then out again.
+	# Its time is game time saved in the job, so a restart does not send the
+	# caravan off at once.
+	var phase := String(c.job.get("caravan_state", "travel"))
+	if phase in ["arriving", "trading", "resting"]:
+		_caravan_at_stop(c, phase)
+		return
+	if phase == "departing" and world.world_time >= int(c.job.get("caravan_until", 0)):
+		_set_caravan_state(c, "travel")
 	if Daylight.is_night(world.world_time):
 		world.caravans.rest(c)
 		return
@@ -612,13 +874,9 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 		if path[near] != path[end]:
 			i = end  # finish the road before transferring goods
 		else:
-			c.route["step"] = -step
-			if c.job.has("toward"):
-				var road := _road_of(c)
-				var at := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
-				var back := String(road.get("from", "")) if step > 0 else String(road.get("to", ""))
-				_arrive(c, at, back)
-			i = _road_waypoint(path, near, -step)
+			c.route["i"] = end
+			_caravan_arrive(c)
+			return
 	c.route["i"] = i
 	c.home = path[i]  # where it is about, should it be away a while
 	_go(c, "travel", path[i], false)
@@ -764,9 +1022,10 @@ func kin_struck(c: Creature, who: String, at: Vector2i) -> void:
 				if not def.get("reaction", {}).get("kin", false):
 					continue
 				var me := o.cell()
-				if absi(at.x - me.x) > def["sight"] or absi(at.y - me.y) > def["sight"]:
+				var seen_at := world.near_cell(at, me)
+				if absi(seen_at.x - me.x) > def["sight"] or absi(seen_at.y - me.y) > def["sight"]:
 					continue
-				if Perception.sees(world, o.location, me, def, at, o.location):
+				if Perception.sees(world, o.location, me, def, seen_at, o.location):
 					o.memory[who] = {"pos": at, "time": world.world_time, "what": "attacker"}
 					alarm(o)
 
@@ -921,11 +1180,11 @@ func _guard_caravan(c: Creature) -> void:
 			target = driver.cell()
 	if driver.job.has("camp_spot"):
 		var watch := index == int(world.world_time / (Daylight.HOUR_MS * 3)) % maxi(1, roster.size())
-		_dress(c, String(c.job.get("weapon", "base:iron_sword")), not watch and c.cell().distance_to(target) <= 1)
+		_dress(c, String(c.job.get("weapon", "base:iron_sword")), not watch and world.cell_distance(c.cell(), target) <= 1)
 	else:
 		_dress(c, String(c.job.get("weapon", "base:iron_sword")), false)
-	if c.cell().distance_to(driver.cell()) > 2.0 or (roster.size() > 1 and c.cell().distance_to(target) > 1):
-		if c.path.is_empty() or c.path_to.distance_to(target) > 3:
+	if world.cell_distance(c.cell(), driver.cell()) > 2.0 or (roster.size() > 1 and world.cell_distance(c.cell(), target) > 1):
+		if c.path.is_empty() or world.cell_distance(c.path_to, target) > 3:
 			c.path = _route(c, target)
 			if c.path.is_empty() and target != driver.cell():
 				c.path = _route(c, driver.cell())
@@ -1004,6 +1263,14 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 
 # --- perception and memory -----------------------------------------------------
 
+## The canonical chunks a band of `reach` cells round a cell covers. On a
+## planet the band runs over the seam and the poles: what lies at the far
+## edge is a step away (see ServerWorld.chunk_band).
+func _chunk_span(cell: Vector2i, reach: int) -> Array:
+	return world.chunk_band(Vector2i((cell.x - reach) >> 5, (cell.y - reach) >> 5),
+		Vector2i((cell.x + reach) >> 5, (cell.y + reach) >> 5))
+
+
 ## Fills memory with what it sees and hears now; forgets what is too old.
 func _perceive(c: Creature, def: Dictionary) -> void:
 	var me := c.cell()
@@ -1013,8 +1280,8 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 		var p: Dictionary = world.present[pid]
 		if p["location"] != c.location and not Sight.same_space(world, c.location, p["location"]):
 			continue
-		var at := Movement.cell_of(p["pos"])
-		if absi(at.x - me.x) > sight or absi(at.y - me.y) > sight:
+		var at := world.near_cell(Movement.cell_of(p["pos"]), me)
+		if not world.near_cells(at, me, int(sight)):
 			continue
 		if Perception.sees(world, c.location, me, def, at, p["location"]):
 			var was: Dictionary = c.memory.get(pid, {})
@@ -1034,20 +1301,20 @@ func _perceive(c: Creature, def: Dictionary) -> void:
 			var o := get_creature(id)
 			if o and not kinds.has(o.kind):
 				kinds.append(o.kind)
-	for cy in range((me.y - int(sight)) >> 5, ((me.y + int(sight)) >> 5) + 1):
-		for cx in range((me.x - int(sight)) >> 5, ((me.x + int(sight)) >> 5) + 1):
-			for kind: String in kinds:
-				var body := float(BodySize.of(world.content.get_def(kind))["body"])
-				for id: String in in_chunk(c.location, cx, cy, kind):
-					var o := get_creature(id)
-					if o == null or o == c:
-						continue
-					if Perception.sees(world, c.location, me, def, o.cell(), o.location, body):
-						var was: Dictionary = c.memory.get(id, {})
-						c.memory[id] = {"pos": o.cell(), "time": now,
-							"what": "attacker" if was.get("what") == "attacker" and now - int(was["time"]) <= _ms(20.0) else watching.get(kind, "animal")}
+	for chunk_at: Vector2i in _chunk_span(me, int(sight)):
+		for kind: String in kinds:
+			var body := float(BodySize.of(world.content.get_def(kind))["body"])
+			for id: String in in_chunk(c.location, chunk_at.x, chunk_at.y, kind):
+				var o := get_creature(id)
+				if o == null or o == c:
+					continue
+				var at := world.near_cell(o.cell(), me)
+				if Perception.sees(world, c.location, me, def, at, o.location, body):
+					var was: Dictionary = c.memory.get(id, {})
+					c.memory[id] = {"pos": at, "time": now,
+						"what": "attacker" if was.get("what") == "attacker" and now - int(was["time"]) <= _ms(20.0) else watching.get(kind, "animal")}
 	for n: Array in _noises:
-		if n[0] == c.location and Perception.hears(def, me, n[1]):
+		if n[0] == c.location and Perception.hears(world, def, me, n[1]):
 			c.memory["noise"] = {"pos": n[1], "time": int(n[2]), "what": "noise"}
 	var keep := _ms(float(def["memory_s"]))
 	for k: String in c.memory.keys():
@@ -1087,9 +1354,9 @@ func _nearest_threat(c: Creature, within: float, noise_s: float, people := true)
 			continue
 		if m["what"] == "character" and _holds_its_food(k, def):
 			continue  # one holding out what it eats is let come close (ADR-0030)
-		var d := Vector2(me).distance_to(Vector2(m["pos"]))
+		var d := world.cell_distance(me, m["pos"])
 		if d <= within and (best.is_empty() or d < float(best[1])):
-			best = [m["pos"], d]
+			best = [world.near_cell(m["pos"], me), d]
 	return best
 
 
@@ -1098,7 +1365,7 @@ func _someone_close(c: Creature, within: float) -> bool:
 	for k: String in c.memory:
 		var m: Dictionary = c.memory[k]
 		if m["what"] == "character" and int(m["time"]) == world.world_time \
-				and Vector2(c.cell()).distance_to(Vector2(m["pos"])) <= within:
+				and world.cell_distance(c.cell(), m["pos"]) <= within:
 			return true
 	return false
 
@@ -1158,7 +1425,7 @@ func _engage(c: Creature, target: String, at: Vector2i) -> void:
 	_dress(c, String(c.job.get("weapon", c.held)), false)
 	var w := world.combat.creature_weapon(c)
 	var ranged: bool = w.get("kind") == "ranged"
-	var distance := c.cell().distance_to(at)
+	var distance := world.cell_distance(c.cell(), at)
 	if w.is_empty() or (ranged and world.inventory("gear|" + c.id).count(String(w["ammo"])) <= 0):
 		var away := _away_from(c, at, 8.0)
 		_go(c, "flee", away, true)
@@ -1257,7 +1524,7 @@ func _hunt_animal(c: Creature, def: Dictionary) -> bool:
 		var o := get_creature(id)
 		if o == null or not diet.has(o.kind) or o.location != c.location:
 			continue
-		var d := c.cell().distance_to(m["pos"])
+		var d := world.cell_distance(c.cell(), m["pos"])
 		if d < distance:
 			best = id
 			distance = d
@@ -1292,7 +1559,7 @@ func _looter(c: Creature, def: Dictionary) -> void:
 		if found != "":
 			var it: Dictionary = world.items[found]
 			var at := Vector2i(int(it["x"]), int(it["y"]))
-			if Movement.cell_of(at) == c.cell() or Vector2(c.pos).distance_to(Vector2(at)) <= Movement.UNIT:
+			if Movement.cell_of(at) == c.cell() or world.distance(c.pos, at) <= Movement.UNIT:
 				world.take_item(found, null)
 				var e := {"item": String(it["item"]), "count": int(it["count"]), "at": world.world_time}
 				if it.has("states"):
@@ -1340,7 +1607,7 @@ func _tame(c: Creature, def: Dictionary) -> void:
 			_breed(c, def)
 	var m: Dictionary = c.memory.get(c.owner, {})
 	if not m.is_empty() and int(m["time"]) == world.world_time and _holds_its_food(c.owner, def):
-		var d := Vector2(c.cell()).distance_to(Vector2(m["pos"]))
+		var d := world.cell_distance(c.cell(), m["pos"])
 		if d > 1.5:
 			_go(c, "follow", m["pos"], false)
 		else:
@@ -1406,17 +1673,16 @@ func _breed(c: Creature, def: Dictionary) -> void:
 	var me := c.cell()
 	var herd := 0
 	var mate: Creature = null
-	for cy in range((me.y - 8) >> 5, ((me.y + 8) >> 5) + 1):
-		for cx in range((me.x - 8) >> 5, ((me.x + 8) >> 5) + 1):
-			for id: String in in_chunk(c.location, cx, cy):
-				var o := get_creature(id)
-				if o == null or o.kind != c.kind or Vector2(o.cell()).distance_to(Vector2(me)) > 8.0:
-					continue
-				herd += 1
-				if o != c and mate == null and o.owner == c.owner and fed_lately(o) and not life.young(o, def) \
-						and Vector2(o.cell()).distance_to(Vector2(me)) <= BREED_NEAR and life.clear_route(c, o.cell()) \
-						and (o.bred_at < 0 or now - o.bred_at >= every):
-					mate = o
+	for chunk_at: Vector2i in _chunk_span(me, 8):
+		for id: String in in_chunk(c.location, chunk_at.x, chunk_at.y):
+			var o := get_creature(id)
+			if o == null or o.kind != c.kind or world.cell_distance(o.cell(), me) > 8.0:
+				continue
+			herd += 1
+			if o != c and mate == null and o.owner == c.owner and fed_lately(o) and not life.young(o, def) \
+					and world.cell_distance(o.cell(), me) <= BREED_NEAR and life.clear_route(c, o.cell()) \
+					and (o.bred_at < 0 or now - o.bred_at >= every):
+				mate = o
 	if mate == null or herd >= HERD_CAP:
 		return
 	var young := _spawn(c.kind, c.location, me, {}, hash([c.seed, mate.seed, now]))
@@ -1595,7 +1861,7 @@ func _dweller(c: Creature, def: Dictionary) -> void:
 	var visiting := phase == "evening" and world.hospitality.is_seat(c.location, spot)
 	if _someone_close(c, 3.0) and (c.said_at < 0 or _tick - c.said_at > int(SAY_EVERY * Movement.TICK_RATE)):
 		_speak(c, prof, phase)
-	var arrived := c.pos == spot * Movement.UNIT + Vector2i(128, 128) if visiting else Vector2(c.cell()).distance_to(Vector2(spot)) <= 1.0
+	var arrived := c.pos == spot * Movement.UNIT + Vector2i(128, 128) if visiting else world.cell_distance(c.cell(), spot) <= 1.0
 	if arrived:
 		c.path.clear()
 		_dress(c, String(prof.get("holds", "")) if phase == "work" else "", phase == "night")
@@ -1756,8 +2022,8 @@ func _route(c: Creature, goal: Vector2i) -> Array[Vector2i]:
 func _caravan_route(c: Creature, goal: Vector2i, margin := 8) -> Array[Vector2i]:
 	var start := c.cell()
 	var centre := start * Movement.UNIT + Vector2i(128, 128)
-	var heading: Array = c.job.get("caravan_heading", [0, 1])
-	var align := c.pos != centre and _caravan_departure_fits(c, centre, Vector2i(int(heading[0]), int(heading[1])))
+	var heading := _heading_of(c.job.get("caravan_heading", [0, 1]))
+	var align := c.pos != centre and _caravan_departure_fits(c, centre, heading)
 	var origin := centre if align else c.pos
 	var box := Rect2i(start, Vector2i.ONE).merge(Rect2i(goal, Vector2i.ONE)).grow(margin)
 	if box.size.x > 64 or box.size.y > 64:
@@ -1776,12 +2042,12 @@ func _caravan_route(c: Creature, goal: Vector2i, margin := 8) -> Array[Vector2i]
 			if came.has(next) or not box.has_point(next) or not _fits(c, next):
 				continue
 			var next_centre := next * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
-			if c.job.get("caravan_type", "cart") == "pack" and not _caravan_horse_fits(c, next_centre, Vector2i.ZERO):
+			if c.job.get("caravan_type", "cart") == "pack" and not _caravan_horse_fits(c, next_centre, Vector2.ZERO):
 				continue
 			if at == start:
-				if _departure_heading(c, next_centre, d, origin) == Vector2i.ZERO:
+				if _departure_heading(c, next_centre, Vector2(d), origin) == Vector2.ZERO:
 					continue
-			elif not _caravan_cart_fits(c, next_centre, d) or not _caravan_horse_fits(c, next_centre, d):
+			elif not _caravan_cart_fits(c, next_centre, Vector2(d)) or not _caravan_horse_fits(c, next_centre, Vector2(d)):
 				continue
 			came[next] = at
 			queue.append(next)
@@ -1800,7 +2066,7 @@ func _caravan_route(c: Creature, goal: Vector2i, margin := 8) -> Array[Vector2i]
 ## The first edge starts at the real fractional position, not at the cell
 ## centre used by the search. Check the same bounded steps as movement:
 ## checking only its first few pixels can pick the same blocked turn forever.
-func _caravan_departure_fits(c: Creature, goal: Vector2i, heading: Vector2i, origin := Creature.NO_TARGET) -> bool:
+func _caravan_departure_fits(c: Creature, goal: Vector2i, heading: Vector2, origin := Creature.NO_TARGET) -> bool:
 	var at := c.pos if origin == Creature.NO_TARGET else origin
 	var speed := int(float(world.content.get_def(c.kind)["speed"]) * Movement.WALK)
 	for i in 40:
@@ -1816,13 +2082,13 @@ func _caravan_departure_fits(c: Creature, goal: Vector2i, heading: Vector2i, ori
 
 ## Back out with the existing harness orientation when there is no room
 ## to turn in place. The next waypoint can turn once the whole caravan fits.
-func _departure_heading(c: Creature, goal: Vector2i, preferred: Vector2i, origin: Vector2i) -> Vector2i:
-	var saved: Array = c.job.get("caravan_heading", [0, 1])
-	for heading: Vector2i in [preferred, Vector2i(int(saved[0]), int(saved[1]))]:
+func _departure_heading(c: Creature, goal: Vector2i, preferred: Vector2, origin: Vector2i) -> Vector2:
+	var saved := _heading_of(c.job.get("caravan_heading", [0, 1]))
+	for heading: Vector2 in [preferred, saved]:
 		if _caravan_cart_fits(c, goal, heading) and _caravan_horse_fits(c, goal, heading) \
 				and _caravan_departure_fits(c, goal, heading, origin):
 			return heading
-	return Vector2i.ZERO
+	return Vector2.ZERO
 
 
 func _waypoint_step(c: Creature, at: Vector2i, goal: Vector2i, speed: int) -> Vector2i:
@@ -1838,7 +2104,7 @@ func _waypoint_step(c: Creature, at: Vector2i, goal: Vector2i, speed: int) -> Ve
 ## saves can already stand closer to a wall; let those walk out normally.
 func _movement_half(c: Creature, at: Vector2i) -> Vector2i:
 	var half := _half(c.kind)
-	if c.job.get("caravan_type", "cart") == "pack" and String(c.job.get("horse", "")) != "" and _caravan_horse_fits(c, at, Vector2i.ZERO):
+	if c.job.get("caravan_type", "cart") == "pack" and String(c.job.get("horse", "")) != "" and _caravan_horse_fits(c, at, Vector2.ZERO):
 		var horse := _half("base:horse")
 		return Vector2i(maxi(half.x, horse.x), maxi(half.y, horse.y))
 	return half
@@ -1888,15 +2154,14 @@ func _thing_near(c: Creature, within: float) -> String:
 	var r := ceili(within)
 	var best := ""
 	var best_d := INF
-	for cy in range(floori(float(me.y - r) / Chunk.SIZE), floori(float(me.y + r) / Chunk.SIZE) + 1):
-		for cx in range(floori(float(me.x - r) / Chunk.SIZE), floori(float(me.x + r) / Chunk.SIZE) + 1):
-			for id: String in world.items_in_chunk(c.location, cx, cy):
-				var it: Dictionary = world.items[id]
-				var d := Vector2(c.pos).distance_to(Vector2(int(it["x"]), int(it["y"]))) / Movement.UNIT
-				if d <= within and d < best_d and world.may_take(c.id, it) \
-						and Sight.clear(world, c.location, me, c.location, Movement.cell_of(Vector2i(int(it["x"]), int(it["y"])))):
-					best = id
-					best_d = d
+	for chunk_at: Vector2i in _chunk_span(me, r):
+		for id: String in world.items_in_chunk(c.location, chunk_at.x, chunk_at.y):
+			var it: Dictionary = world.items[id]
+			var d := world.distance(c.pos, Vector2i(int(it["x"]), int(it["y"]))) / Movement.UNIT
+			if d <= within and d < best_d and world.may_take(c.id, it) \
+					and Sight.clear(world, c.location, me, c.location, Movement.cell_of(Vector2i(int(it["x"]), int(it["y"])))):
+				best = id
+				best_d = d
 	return best
 
 
@@ -1909,9 +2174,10 @@ func _nearest_character(c: Creature, within: float) -> Array:
 		var m: Dictionary = c.memory[k]
 		if m["what"] == "noise" or not world.present.has(k):
 			continue
-		var d := Vector2(me).distance_to(Vector2(m["pos"]))
+		var at := world.near_cell(m["pos"], me)
+		var d := world.distance(me, at)
 		if d <= within and (best.is_empty() or d < float(best[1])):
-			best = [m["pos"], d, k]
+			best = [at, d, k]
 	return best
 
 
@@ -1921,9 +2187,10 @@ func _attacker(c: Creature, within: float) -> Array:
 	for k: String in c.memory:
 		var m: Dictionary = c.memory[k]
 		if m["what"] == "attacker" and world.world_time - int(m["time"]) <= _ms(20.0):
-			var d := Vector2(me).distance_to(Vector2(m["pos"]))
+			var at := world.near_cell(m["pos"], me)
+			var d := world.distance(me, at)
 			if d <= within:
-				return [m["pos"], d, k]
+				return [at, d, k]
 	return []
 
 
@@ -1939,12 +2206,12 @@ func _go(c: Creature, state: String, target_cell: Vector2i, run: bool) -> void:
 		if state == "detour":
 			var direction := target_cell - c.cell()
 			if direction == Vector2i.ZERO:
-				var saved: Array = c.job.get("caravan_heading", [0, 1])
-				direction = Vector2i(int(saved[0]), int(saved[1]))
+				var saved := _heading_of(c.job.get("caravan_heading", [0, 1]))
+				direction = Vector2i(roundi(saved.x), roundi(saved.y))
 			c.path_heading = Vector2i(signi(direction.x), signi(direction.y))
-			var turn := _departure_heading(c, target, c.path_heading, c.pos)
-			if turn != Vector2i.ZERO:
-				c.path_heading = turn
+			var turn := _departure_heading(c, target, Vector2(c.path_heading), c.pos)
+			if turn != Vector2.ZERO:
+				c.path_heading = Vector2i(signi(roundi(turn.x)), signi(roundi(turn.y)))
 		c.running = run
 		c.stuck = 0
 		c.changed()
@@ -1961,11 +2228,8 @@ func _move(c: Creature) -> void:
 		return
 	var d := c.target - c.pos
 	var precise: bool = c.state in ["detour", "visit_walk"] or (c.state == "follow" and c.job.has("guard_driver"))
-	var detour_axis := Vector2i.ZERO
-	if c.state == "detour":
-		if c.path_heading == Vector2i.ZERO:
-			c.path_heading = Vector2i(signi(d.x), signi(d.y))
-		detour_axis = c.path_heading
+	if c.state == "detour" and c.path_heading == Vector2i.ZERO:
+		c.path_heading = Vector2i(signi(d.x), signi(d.y))
 	var arrived := d == Vector2i.ZERO if precise else (absi(d.x) < 48 and absi(d.y) < 48)
 	if arrived:
 		c.target = Creature.NO_TARGET
@@ -1980,14 +2244,32 @@ func _move(c: Creature) -> void:
 	var dy := signi(d.y) if absi(d.y) > 24 else 0
 	# Approach the waypoint in both coordinates. Forcing a diagonal from an
 	# off-centre position overshoots one axis and can seesaw forever at trees.
-	# Keep the harness heading while making the small alignment correction.
-	var heading := detour_axis if detour_axis != Vector2i.ZERO else Vector2i(dx, dy)
 	var old_key := _chunk_of(c)
 	var np := Movement.step_at(c.pos, dx, dy, _solid_in(c.location), speed, _movement_half(c, c.pos))
 	if precise:
 		np = _waypoint_step(c, c.pos, c.target, speed)
-	if np != c.pos and (not _caravan_cart_fits(c, np, heading) or not _caravan_horse_fits(c, np, heading)):
-		np = c.pos
+	# The wheels take the step when the cart's body fits the line it rolls
+	# along; the horse leads on its own heading and steps aside for a trunk.
+	# Its heading turns smoothly and the cart's follows, so the drawn rig
+	# swings through the bend while the carts' bodies keep to their own line.
+	var cart := _heading_of(c.job.get("caravan_heading", [0, 1]))
+	if np != c.pos and String(c.job.get("horse", "")) != "":
+		var along := Vector2(np - c.pos)
+		var horse := _hauler_heading(c)
+		var turned := _turn_caravan(c, along)
+		var turn_cart: Vector2 = turned[0]
+		var turn_horse: Vector2 = turned[1]
+		if not _caravan_cart_fits(c, np, along):
+			np = c.pos
+		elif _caravan_horse_fits(c, np, turn_horse):
+			cart = turn_cart
+			horse = turn_horse
+		elif not _caravan_horse_fits(c, np, horse):
+			# No room for the horse on either line: hold the cart a tick and
+			# let the harness come round.
+			np = c.pos
+		if np != c.pos:
+			_save_headings(c, cart, horse)
 	if np == c.pos:
 		c.stuck += 1
 		if c.stuck > 4:  # something in the way: give up, think again
@@ -2027,7 +2309,7 @@ func _move(c: Creature) -> void:
 	c.stuck = 0
 	c.pos = np
 	_moved[c.id] = true
-	_move_caravan_horse(c, heading)
+	_move_caravan_horse(c)
 	var key := _chunk_of(c)
 	if key != old_key:
 		_index(c, old_key)

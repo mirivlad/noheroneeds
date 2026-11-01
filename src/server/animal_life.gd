@@ -127,9 +127,9 @@ func forage(c: Creature, def: Dictionary, offscreen := false) -> bool:
 		world.creatures._go(c, "eat" if item != "" else "graze", Creature.NO_TARGET, false)
 		return true
 	var path: Array = found["path"]
-	while not path.is_empty() and Vector2(c.pos).distance_to(Vector2((path[0] as Vector2i) * Movement.UNIT + Vector2i(128, 128))) < 64:
+	while not path.is_empty() and world.distance(c.pos, (path[0] as Vector2i) * Movement.UNIT + Vector2i(128, 128)) < 64:
 		path.pop_front()
-	if path.is_empty() or c.cell().distance_to(path[0]) > 1.5:
+	if path.is_empty() or world.cell_distance(c.cell(), path[0]) > 1.5:
 		_foraging.erase(c.id)  # led somewhere else meanwhile; find a route from there
 		return false
 	world.creatures._go(c, "forage", path[0], false)
@@ -301,7 +301,7 @@ func _breed(c: Creature, def: Dictionary) -> void:
 	for id: String in c.memory:
 		var o := world.creatures.get_creature(id)
 		if o == null or o.kind != c.kind or o.owner != "" or not ready(o, def) \
-				or o.location != c.location or c.cell().distance_to(o.cell()) > MATE_NEAR:
+				or o.location != c.location or world.cell_distance(c.cell(), o.cell()) > MATE_NEAR:
 			continue
 		if not Perception.sees(world, c.location, c.cell(), def, o.cell()) or not clear_route(c, o.cell()):
 			continue
@@ -332,10 +332,10 @@ func _destination(c: Creature, def: Dictionary) -> Vector2i:
 				continue
 			var origin := patch * Chunk.SIZE
 			var at := origin + Vector2i(clampi(c.cell().x - origin.x, 3, 28), clampi(c.cell().y - origin.y, 3, 28))
-			if c.cell().distance_to(at) >= distance or not clear_route(c, at):
+			if world.cell_distance(c.cell(), at) >= distance or not clear_route(c, at):
 				continue
 			best = at
-			distance = c.cell().distance_to(at)
+			distance = world.cell_distance(c.cell(), at)
 	return best
 
 
@@ -355,7 +355,7 @@ func wander(c: Creature, def: Dictionary) -> bool:
 	if c.owner != "" or not def.has("life"):
 		return false
 	if c.migration != Creature.NO_TARGET:
-		if c.cell().distance_to(c.migration) <= 1.0:
+		if world.cell_distance(c.cell(), c.migration) <= 1.0:
 			c.home = c.cell()
 			c.migration = Creature.NO_TARGET
 			c.changed()
@@ -367,7 +367,7 @@ func wander(c: Creature, def: Dictionary) -> bool:
 			var o := world.creatures.get_creature(id)
 			var m: Dictionary = c.memory[id]
 			if o and o.owner == "" and o.kind == c.kind and ready(o, def) \
-					and int(m["time"]) == world.world_time and c.cell().distance_to(m["pos"]) > 2.0:
+					and int(m["time"]) == world.world_time and world.cell_distance(c.cell(), m["pos"]) > 2.0:
 				world.creatures._go(c, "mate", m["pos"], false)
 				return true
 	return false

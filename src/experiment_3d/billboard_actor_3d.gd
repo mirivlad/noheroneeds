@@ -13,6 +13,13 @@ var body := StaticBody3D.new()
 var shape := CollisionShape3D.new()
 var previous := Vector2.ZERO
 var facing := Vector2.DOWN
+## A heading the server tells (a cart, a horse in harness). The delta of the
+## smoothed position then no longer sets the facing: the server is the
+## authority, and the client only eases the last small step.
+var head_told := false
+var told_heading := Vector2.DOWN
+## How fast the told facing may be eased on the client (radians a second).
+const HEAD_EASE := 8.0
 var placed := false
 var animation_at := Vector2.ZERO
 var looks := {}
@@ -95,16 +102,37 @@ func swing(dir: Vector2, kind: String, yaw: float) -> void:
 func show_actor(at: Vector3, yaw: float, delta: float, exact: bool) -> void:
 	position = at if exact else position.lerp(at, minf(1, delta * 12))
 	var horizontal := Vector2(position.x, position.z)
+	var was_placed := placed
 	if placed and horizontal.distance_squared_to(previous) > .00001:
-		facing = (horizontal - previous).normalized()
+		if not head_told:
+			facing = (horizontal - previous).normalized()
 		wheel_angle += horizontal.distance_to(previous) / .39
 		animation_at += (horizontal - previous).rotated(-yaw) * WorldView.CELL
 	previous = horizontal
 	placed = true
+	if head_told:
+		if not was_placed:
+			facing = told_heading
+		else:
+			var most := maxf(0.0, delta) * HEAD_EASE
+			var turn := wrapf(told_heading.angle() - facing.angle(), -PI, PI)
+			facing = facing.rotated(clampf(turn, -most, most)).normalized()
 	# Rotate the animation's apparent movement, not the authoritative position.
 	doll._face(facing.rotated(-yaw))
 	doll.show_at(animation_at, delta, true)
 	doll.position = DOLL_FEET
+
+
+## The server gives this one's heading (a cart or a harnessed horse).
+func tell_heading(dir: Vector2) -> void:
+	if dir.length_squared() > .000001:
+		told_heading = dir.normalized()
+		head_told = true
+
+
+## No told heading any more (the horse is unharnessed): go by the movement.
+func forget_heading() -> void:
+	head_told = false
 
 ## The lying frames already contain perspective, just like the standing
 ## ones. Keep the camera-facing card and lift only a sleeper on a mattress;

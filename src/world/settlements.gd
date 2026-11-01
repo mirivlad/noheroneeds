@@ -41,12 +41,16 @@ const APART := 90
 const EDGE := 48
 ## Roads keep this far out of a settlement's side before turning.
 const ROAD_OUT := 3
-## Water a road crosses on a bridge (in its path's cells); longer, it breaks off.
+## A run of water a road crosses on a bridge (in its path's cells); a longer
+## run turns the way aside, and if no way goes round, there is no road.
 const BRIDGE_MAX := 16
 ## Roads are found on a grid of this many cells (then drawn cell by cell).
 const ROUTE_STEP := 8
 ## Cells round two villages a road between them may wander.
 const ROUTE_MARGIN := 96
+## How many times a way is found again when its cells are not passable (deep
+## water, rock, too long a bridge) before there is no road here.
+const ROUTE_TRIES := 8
 
 var world_seed := 0
 var content: ContentRegistry
@@ -620,13 +624,56 @@ func _district_roads(k: int, dx: int, dy: int) -> Array:
 
 ## A road between two villages: out along the street of each, past its
 ## fields, then the easiest way over the land between (A* on a grid of
-## ROUTE_STEP cells); {} if there is none (the sea between).
+## ROUTE_STEP cells), checked cell by cell — every cell of the way must be
+## passable for a cart, short water bridged, deep water, rock and too long a
+## bridge gone round; {} if there is no such way (the sea between).
 func _road(a: Dictionary, b: Dictionary, key: Array) -> Dictionary:
 	var from_a := _way_out(a, b["centre"])
 	var from_b := _way_out(b, a["centre"])
-	var route := _route(from_a[-1], from_b[-1], [a["bounds"], b["bounds"]])
+	var avoid: Array = [a["bounds"], b["bounds"]]
+	var banned := {}
+	var route := _route(from_a[-1], from_b[-1], avoid, banned)
 	if route.is_empty():
 		return {}
+	var path := _way_path(from_a, from_b, route)
+	var bad := _bad_cells(path)
+	var tries := 0
+	while not bad.is_empty() and tries < ROUTE_TRIES:
+		# The coarse search only looked at its own points; the way between
+		# them crossed water or rock. Keep it away from there and look again.
+		_ban_cells(bad, banned)
+		route = _route(from_a[-1], from_b[-1], avoid, banned)
+		if route.is_empty():
+			return {}
+		path = _way_path(from_a, from_b, route)
+		bad = _bad_cells(path)
+		tries += 1
+	if not bad.is_empty():
+		return {}
+	var cells := {}
+	var ground := String(a["road"])
+	var bridge := String(a["bridge"])
+	var bounds := Rect2i(path[0], Vector2i.ONE)
+	for i in path.size():
+		var p: Vector2i = path[i]
+		# Two cells wide (a cart and its horse), and a wider patch where the
+		# way turns: the whole harness swings through the corner.
+		var stamp := [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]
+		if _turns(path, i):
+			stamp = [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
+				Vector2i(-1, 0), Vector2i(0, 0), Vector2i(1, 0),
+				Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)]
+		for o: Vector2i in stamp:
+			var at := p + o
+			cells[at] = {"ground": ground, "cover": "", "over_water": bridge}
+			bounds = bounds.merge(Rect2i(at, Vector2i.ONE))
+	return {"id": "road:%d,%d,%d" % [key[1], key[2], key[3]], "key": key, "bounds": bounds, "cells": cells, "path": path,
+		"from": a["id"], "to": b["id"]}
+
+
+## A way from one village out to the other: its own street out, the coarse
+## route drawn cell by cell, then the other village's street.
+func _way_path(from_a: Array[Vector2i], from_b: Array[Vector2i], route: Array[Vector2i]) -> Array[Vector2i]:
 	var path: Array[Vector2i] = []
 	path.append_array(from_a)
 	for i in range(1, route.size()):
@@ -636,29 +683,66 @@ func _road(a: Dictionary, b: Dictionary, key: Array) -> Dictionary:
 	var back := from_b.duplicate()
 	back.reverse()
 	path.append_array(back)
-	var cells := {}
-	var ground := String(a["road"])
-	var bridge := String(a["bridge"])
-	var bounds := Rect2i(path[0], Vector2i.ONE)
-	# Wet stretches of the way: short ones are bridged, long ones not crossed.
-	var dry := []
-	var run := []
-	for p: Vector2i in path + [Vector2i(1 << 30, 0)]:
-		if p.x != 1 << 30 and _wet.call(p.x, p.y):
-			run.append(p)
+	return path
+
+
+## What is not passable along a way: deep water in it, a bridge over more
+## than BRIDGE_MAX cells of water, a bridge that does not meet the land, and
+## deep water under the bridge's two-cell deck. Cells to keep the way away
+## from are returned. Rock in a way is cut through (a pass), as before.
+func _bad_cells(path: Array[Vector2i]) -> Array[Vector2i]:
+	var bad: Array[Vector2i] = []
+	var n := path.size()
+	var i := 0
+	while i < n:
+		var what := _what(path[i])
+		if what == "deep":
+			bad.append(path[i])
+			i += 1
 			continue
-		if run.size() <= BRIDGE_MAX:
-			dry.append_array(run)
-		run.clear()
-		if p.x != 1 << 30:
-			dry.append(p)
-	for p: Vector2i in dry:
-		for o: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:  # two cells wide
-			var at := p + o
-			cells[at] = {"ground": ground, "cover": "", "over_water": bridge}
-			bounds = bounds.merge(Rect2i(at, Vector2i.ONE))
-	return {"id": "road:%d,%d,%d" % [key[1], key[2], key[3]], "key": key, "bounds": bounds, "cells": cells, "path": dry,
-		"from": a["id"], "to": b["id"]}
+		if what != "water":
+			i += 1
+			continue
+		var j := i
+		while j < n and _what(path[j]) == "water":
+			j += 1
+		var before_ok := i > 0 and _what(path[i - 1]) in ["land", "shore", "shallows"]
+		var after_ok := j < n and _what(path[j]) in ["land", "shore", "shallows"]
+		if j - i > BRIDGE_MAX or not before_ok or not after_ok:
+			for k in range(i, j):
+				bad.append(path[k])
+		# The deck is two cells wide: no part of it may hang over deep water.
+		for k in range(i, j):
+			for o: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
+				if _what(path[k] + o) == "deep":
+					bad.append(path[k])
+		i = j
+	return bad
+
+
+## Keep the coarse search away from the cells that are not passable.
+func _ban_cells(bad: Array[Vector2i], banned: Dictionary) -> void:
+	for at: Vector2i in bad:
+		var g := Vector2i(roundi(float(at.x) / ROUTE_STEP), roundi(float(at.y) / ROUTE_STEP))
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				banned[g + Vector2i(dx, dy)] = true
+
+
+## The land at a cell ("land" when there is no land to ask: flat dry ground).
+func _what(at: Vector2i) -> String:
+	if not _land.is_valid():
+		return "land"
+	return String(_land.call(at.x, at.y).get("what", "land"))
+
+
+## Whether a way turns at path[i] (the cart needs a wider patch there).
+static func _turns(path: Array[Vector2i], i: int) -> bool:
+	if i <= 0 or i + 1 >= path.size():
+		return false
+	var before := path[i] - path[i - 1]
+	var after := path[i + 1] - path[i]
+	return before != Vector2i.ZERO and after != Vector2i.ZERO and before != after
 
 
 ## A village's way out toward `to`: along its first street past its side,
@@ -677,8 +761,9 @@ func _way_out(p: Dictionary, to: Vector2i) -> Array[Vector2i]:
 ## over the grid, the cost of a point by the land there — rock and deep
 ## water not at all, water dear (a bridge), shallows a little (a ford), the
 ## heights and slopes dear (so passes); `avoid` rects (the villages' own) not
-## gone through. [] if there is no way.
-func _route(a: Vector2i, b: Vector2i, avoid: Array) -> Array[Vector2i]:
+## gone through, coarse grid points in `banned` kept away from. [] if there is
+## no way.
+func _route(a: Vector2i, b: Vector2i, avoid: Array, banned := {}) -> Array[Vector2i]:
 	var s := ROUTE_STEP
 	var ga := Vector2i(roundi(float(a.x) / s), roundi(float(a.y) / s))
 	var gb := Vector2i(roundi(float(b.x) / s), roundi(float(b.y) / s))
@@ -717,6 +802,8 @@ func _route(a: Vector2i, b: Vector2i, avoid: Array) -> Array[Vector2i]:
 				continue
 			var g := box.position + q
 			var cell := g * s
+			if banned.has(g) and m != goal:
+				continue
 			var inside := false
 			for r: Rect2i in avoid:
 				inside = inside or r.grow(2).has_point(cell)

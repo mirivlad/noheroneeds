@@ -1,0 +1,141 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Создание отдельного постоянного мира с сохранением выбранного размера, климата и географического плана; повторная загрузка использует подтверждённый план.",
+      "sources": {
+        "src/app/world_library.gd": "bfbce916984b2b70f84d55e14064a4012ddb8fcea7d0234c46f5aabcbb416589"
+      },
+      "mechanics": [
+        "start"
+      ],
+      "guides": {
+        "site/content/guides/start.html": "07ac5607c642d95fc15e019ecf8801bac6fcbdd3730297f053c326255df4f7af"
+      },
+      "changelog": "docs/changelog/v0.18.0.json"
+    },
+    {
+      "impact": "player-facing-change",
+      "summary": "Экран выбора и просмотра нового мира и отображение игроков и караванов после обновления планетарных координат.",
+      "sources": {
+        "src/experiment_3d/billboard_actor_3d.gd": "5d0f0470e96859f8b0766c001498bab7cf1fbb3fe90e7406e33d02d3ff212e9e",
+        "src/experiment_3d/rock_cells_3d.gd": "a19ecc13bfcb815befa0524e7ed7bfe7fdf5030c1879445f2be46677816557e6",
+        "src/experiment_3d/world_view_3d.gd": "d6eb6dfd779e273892c1e1730d6f511bcc20f544f57c1b982b35c7cf18fe751f",
+        "src/presentation/app.gd": "7ec2de21fd8629fd39f8b0f544c7675313d54ba202a881c39a0d99d67763acfc",
+        "src/presentation/audio_director.gd": "6bc19b2d0b4143c4ebb7875e34fafe6bd012a123228ffe8952ff1a9bdae5f64e",
+        "src/presentation/client_build_view.gd": "638650174d49336a9197eae1744375235eedfe5c0ff1fe5f8269e0e470266da3",
+        "src/presentation/craft_panel.gd": "215a0856b63b6ff171acc584f7d816cd37c3729c1747aaf8c887897929b206b9",
+        "src/presentation/game_screen.gd": "decd834d64d4e718de4df564d93181f91be8bbcf24eee85599e451fc5bd180e8",
+        "src/presentation/main_menu.gd": "b6eb0ea262cc2fc4de46cd1811e5aa47ae46db52c754b43afbb8e04757f6c1e7",
+        "src/presentation/world_preview.gd": "e41a774c032a0efa174640f8a99d3f9905efe4b432d9c9b549a5999230e826fb",
+        "src/presentation/world_view.gd": "6112a87f2e644d2a738d8ebfee9699432159f9c3dca3ea1676ae5a117868eab3",
+        "project.godot": "dd52f174bef470c6f8b27e8e4a09aaa57637d44e71f945f3bc250036f3a6bf14"
+      },
+      "mechanics": [
+        "controls"
+      ],
+      "guides": {
+        "site/content/guides/controls.html": "e29fedf7f5a1e7c1b6c3083ccfc1bcb1d8c53c31ea6879b240423f74b191cf56"
+      },
+      "changelog": "docs/changelog/v0.18.0.json"
+    },
+    {
+      "impact": "player-facing-change",
+      "summary": "Сервер, сеть и сохранения используют единую каноническую топологию планеты, не переопределяют выбранные параметры и поддерживают выделенный сервер.",
+      "sources": {
+        "src/client/game_client.gd": "3c756eaa2d3583696dbcf1cfcd65d29b9a20ce09205ff85bb1a369a79122da9f",
+        "src/server/dedicated_server.gd": "bca6c0865c53edc84133e8e213285c577ab9e3826f12b97b005dad7e496940a1",
+        "src/server/game_server.gd": "eb1d09ebfbf01630a661023de8ebed3fc382fe31a2c46bd84327d05c7ff04016",
+        "src/server/server_world.gd": "5a561f0ae24375dfd86dfbd926d78c9c87c1bbd8abf6ad08884932fb8b5b451b"
+      },
+      "mechanics": [
+        "multiplayer"
+      ],
+      "guides": {
+        "site/content/guides/multiplayer.html": "3de065e64ca81ab23a42afe02af367db79269b164a0c655631f720a6259fd9bd"
+      },
+      "changelog": "docs/changelog/v0.18.0.json"
+    },
+    {
+      "impact": "player-facing-change",
+      "summary": "Глобальная география, реки, озёра, климат и клеточные биомы согласованы с постоянным планом; растительность стала проходимее для игрока.",
+      "sources": {
+        "content/base/terrain.json": "eb631655ae722c003493e0ee722553a97c38d48942a0bd5a2425eb9cd187f318",
+        "src/server/animal_life.gd": "8edc8654f306ab53e4d73477da2ec4cca0350b2fb373498ab568124720b4d8b5",
+        "src/server/growth.gd": "0748384041eee1685d4e65625a19f60ab2355a95ec5d309200840c2dbdf3647d",
+        "src/sim/lighting.gd": "f3adb46207dd699f676582dede680d0ba98483e36216577a34e8c7d12e9b7640",
+        "src/sim/perception.gd": "2d1ae6e699314b53822e4525f83d866036ec77196531fcd4a97d2bc14fefd737",
+        "src/sim/sight.gd": "ae758a714d5153689211b9aa416fa3984e8cd540870fb971d2d268f380c65628",
+        "src/world/chunk.gd": "355589b43f22708aedbe6b4f09fd24f44b4c4ba7cf5fe849de0ed809f7bff652",
+        "src/world/planet_topology.gd": "4c496fb3c237c4117358dc84628e438ea1f9262853c718abd48883dc6659e7ac",
+        "src/world/planned_geography.gd": "73ae61789ba7bbf2b2190cc1f3921798d18267f34956a7644d5d4582d64e9aa9",
+        "src/world/reflected_chunk.gd": "a53796439f2fcfdd07dc2acc93d8282dac0c5c04de1461f400ba859c762e3f24",
+        "src/world/surface_generator.gd": "39f2abd25980f97c94f0396e3bdd78f116bcaf6e4ddff511a18652050f1ec94c",
+        "src/world/terrain.gd": "6b6dfca8e160d8edc928073c219ed97de104d48f6d703d675dfe9a21bfb66edc",
+        "src/world/world_hydrology.gd": "b147bbf0a0e03ec920e7e21072ee5f44b5c1586f518c03b6ea534480f7820d65",
+        "src/world/world_plan.gd": "2bd42aee3c0ff415dbe97b42232de2adc1318da0744aaff67b27c0c0e31864e5"
+      },
+      "mechanics": [
+        "nature"
+      ],
+      "guides": {
+        "site/content/guides/nature.html": "15008424b3a08fda54b5f311bb33aaaab69021d0f4821f1f21f0f95784909282"
+      },
+      "changelog": "docs/changelog/v0.18.0.json"
+    },
+    {
+      "impact": "player-facing-change",
+      "summary": "Поселения и дороги работают с новой географией; водные препятствия получают мост или объезд, иначе сухопутный торговый маршрут отсутствует.",
+      "sources": {
+        "src/server/chronicles.gd": "3aa2196a825cf4c42806128ce9ac3454e25de5a2d4ca34977606ecc89f3621f9",
+        "src/world/settlements.gd": "3856cde4a8c438cb1c8c76d8c7f1c2a737dee0f2911bb98b1f0cf35868ee96ea"
+      },
+      "mechanics": [
+        "trade"
+      ],
+      "guides": {
+        "site/content/guides/trade.html": "3225726523c6bfcf00d3b351ad960b33555913acc2336789e0a63232f97a4dd3"
+      },
+      "changelog": "docs/changelog/v0.18.0.json"
+    },
+    {
+      "impact": "player-facing-change",
+      "summary": "Караваны корректно преодолевают маршруты, задерживаются для торговли и отдыха в деревнях и проходят повороты раздельной кинематикой лошади и телеги.",
+      "sources": {
+        "src/server/bandits.gd": "f779f052375c8b6b4d1856f87f72e57beb7ce83ff131cee5c0cb636f1fdd01e6",
+        "src/server/caravans.gd": "f1f2b710649687fae35bd3a1f5e96c979c4f106df9e4ee3d10814eaa5b665e2d",
+        "src/server/creature_sim.gd": "eac73a22ea99ddd7df775171ac2bcc3d05cd2102be7ae3daca25a8cf538afd2d"
+      },
+      "mechanics": [
+        "caravans"
+      ],
+      "guides": {
+        "site/content/guides/caravans.html": "ce4aa036c15969ad137c24b9978f4801afb5721f87c43869e2b5a4ee9ad4f30a"
+      },
+      "changelog": "docs/changelog/v0.18.0.json"
+    },
+    {
+      "impact": "no-player-facing-change",
+      "summary": "Служебные идентификаторы GDScript и адаптеры старых игровых систем, без самостоятельных пользовательских возможностей.",
+      "rationale": "Эти небольшие изменения обслуживают регистрацию GDScript-файлов и согласование координат существующих игровых подсистем после перехода на планетарную топологию. Они не вводят новые правила боя, плавания или обслуживания игроков, не изменяют предметы и рецепты.",
+      "sources": {
+        "src/presentation/world_preview.gd.uid": "7ee9339a640f8def77bd17c9e54a566200d009cf5b09941724bd2ce4f5d16b30",
+        "src/server/boats.gd": "b09334b1d8e6299c76e16eec34225464802fd22f72bca5e616b4041352d084d1",
+        "src/server/combat.gd": "c8026da604e820c5299a14a941224bd6cfd9eac2e59905bd282f954854ec431c",
+        "src/server/hospitality.gd": "89d431987c8b93ed2361dc49c862c15d4ef455d4d1b639e9898b2c92b328e5fd",
+        "src/world/planet_topology.gd.uid": "14198e3995057c133a3ec1fdc6ce76ffd8eaa1e6ee14e1b4290e464cba9648b9"
+      }
+    },
+    {
+      "impact": "no-player-facing-change",
+      "summary": "Служебные идентификаторы GDScript и адаптеры старых игровых систем, без самостоятельных пользовательских возможностей.",
+      "rationale": "Эти небольшие изменения обслуживают регистрацию GDScript-файлов и согласование координат существующих игровых подсистем после перехода на планетарную топологию. Они не вводят новые правила боя, плавания или обслуживания игроков, не изменяют предметы и рецепты.",
+      "sources": {
+        "src/world/planned_geography.gd.uid": "d3eddf58174c0b36324ea72e76ac99228f981d2d722f21cd41ed095b590762e0",
+        "src/world/reflected_chunk.gd.uid": "6efdfe1f03a42a90e6b43a42336450bc72a655764b643d2289023d3520c6f757",
+        "src/world/world_hydrology.gd.uid": "f3685a5ffad21ce8be74d41f1ecad21212ca6ebc7c532f9cf43423ce4b46eea9",
+        "src/world/world_plan.gd.uid": "31299004900efc6c8167cc9fa7a43514427c005662dcff5c520ae445fe5c23f2"
+      }
+    }
+  ]
+}

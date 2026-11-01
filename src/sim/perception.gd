@@ -21,7 +21,10 @@ static func sight_range(def: Dictionary, light: float) -> float:
 static func sees(world: ServerWorld, location: String, eye: Vector2i, def: Dictionary, at: Vector2i,
 		at_location := "", target_body := Sight.BODY) -> bool:
 	var there := location if at_location == "" else at_location
-	var d := Vector2(eye).distance_to(Vector2(at))
+	# The same place named on the observer's side of the seam: what is a step
+	# away across the seam is a step away, not a world.
+	var near := world.near_cell(at, eye)
+	var d := world.cell_distance(eye, near)
 	var most := float(def["sight"])
 	if world.has_daylight(there):  # rain and fog shorten it outdoors (ADR-0033)
 		most *= world.sight_at(there, eye)
@@ -31,12 +34,12 @@ static func sees(world: ServerWorld, location: String, eye: Vector2i, def: Dicti
 	# than the day indoors (in a location with daylight), so nearer than the
 	# sight that leaves, it is seen whatever the light.
 	var least := Daylight.outdoor_light(world.world_time) * Daylight.INDOOR_SHARE if world.has_daylight(there) else 0.0
-	if d > sight_range(def, least) and d > sight_range(def, world.light_at(there, at)):
+	if d > sight_range(def, least) and d > sight_range(def, world.light_at(there, near)):
 		return false
 	var size := BodySize.of(def)
-	return Sight.clear(world, location, eye, there, at, float(size["eye"]), target_body)
+	return Sight.clear(world, location, eye, there, near, float(size["eye"]), target_body)
 
 
 ## Whether a noise at `at` reaches a creature at `ear`.
-static func hears(def: Dictionary, ear: Vector2i, at: Vector2i) -> bool:
-	return Vector2(ear).distance_to(Vector2(at)) <= float(def["hearing"])
+static func hears(world: ServerWorld, def: Dictionary, ear: Vector2i, at: Vector2i) -> bool:
+	return world.distance(ear, at) <= float(def["hearing"])

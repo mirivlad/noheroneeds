@@ -353,7 +353,7 @@ func look_about(id: String) -> void:
 		var seen := {}
 		for c: Creature in world.creatures.creatures.values():
 			if c.location == Levels.SURFACE and String(world.content.get_def(c.kind).get("behavior", "")) == "predator" \
-					and Vector2(Movement.cell_of(c.pos)).distance_to(Vector2(plan["centre"])) <= PREDATORS_SEEN:
+					and world.cell_distance(Movement.cell_of(c.pos), plan["centre"]) <= PREDATORS_SEEN:
 				seen[c.kind] = int(seen.get(c.kind, 0)) + 1
 		var kind := ""
 		for k: String in seen:
@@ -413,7 +413,7 @@ func died(c: Creature, killer: String) -> void:
 		var plan := _plan(id)
 		for r: Dictionary in v["requests"]:
 			if r["state"] == "open" and r["kind"] == "hunt" and r["target"] == c.kind and (r["takers"] as Dictionary).has(killer) \
-					and not plan.is_empty() and Vector2(Movement.cell_of(c.pos)).distance_to(Vector2(plan["centre"])) <= int(r["radius"]):
+					and not plan.is_empty() and world.cell_distance(Movement.cell_of(c.pos), plan["centre"]) <= int(r["radius"]):
 				r["takers"][killer] = mini(int(r["count"]), int(r["takers"][killer]) + 1)
 				_save(id)
 

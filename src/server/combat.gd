@@ -358,7 +358,7 @@ func creature_attack(c: Creature, target: String) -> bool:
 	var ranged: bool = w.get("kind") == "ranged"
 	var reach := float(w.get("range", 0) if ranged else w.get("reach", 0)) * Movement.UNIT + float(size_of(c.id)["radius"]) \
 		- float(BodySize.HUMAN["radius"]) + float(size_of(target)["radius"])
-	if Vector2(c.pos).distance_to(Vector2(at)) > reach \
+	if world.distance(c.pos, at) > reach \
 			or not Sight.clear(world, c.location, c.cell(), c.location, Movement.cell_of(at),
 				float(size_of(c.id)["eye"]), float(size_of(target)["body"])):
 		return false
@@ -478,7 +478,7 @@ func _blow(attacker: String, location: String, from: Vector2i, aim: Vector2i, w:
 	for id: String in _targets_near(attacker, location, from, reach):
 		if allied(attacker, id):
 			continue
-		var v := Vector2(_position(id) - from)
+		var v := world.vector(from, _position(id))
 		var d := v.length()
 		var body := float(size_of(id)["radius"])
 		if d > reach + body or d >= best_d:
@@ -505,15 +505,15 @@ func _targets_near(attacker: String, location: String, at: Vector2i, radius: flo
 			continue
 		if not attacker_is_creature and pvp != "free":
 			continue  # PvE (ADR-0016): characters are not hit by characters
-		if Vector2(world.present[id]["pos"] - at).length() <= radius + float(size_of(id)["radius"]):
+		if world.distance(world.present[id]["pos"], at) <= radius + float(size_of(id)["radius"]):
 			out.append(id)
 	var cell := Movement.cell_of(at)
 	var r := ceili(radius / Movement.UNIT) + 1 + MAX_BODY_CELLS
-	for cy in range((cell.y - r) >> 5, ((cell.y + r) >> 5) + 1):
-		for cx in range((cell.x - r) >> 5, ((cell.x + r) >> 5) + 1):
-			for id: String in world.creatures.in_chunk(location, cx, cy):
-				if id != attacker and Vector2(world.creatures.get_creature(id).pos - at).length() <= radius + float(size_of(id)["radius"]):
-					out.append(id)
+	var band := world.chunk_band(Vector2i((cell.x - r) >> 5, (cell.y - r) >> 5), Vector2i((cell.x + r) >> 5, (cell.y + r) >> 5))
+	for chunk_at: Vector2i in band:
+		for id: String in world.creatures.in_chunk(location, chunk_at.x, chunk_at.y):
+			if id != attacker and world.distance(world.creatures.get_creature(id).pos, at) <= radius + float(size_of(id)["radius"]):
+				out.append(id)
 	return out
 
 

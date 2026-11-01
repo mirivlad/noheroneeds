@@ -120,6 +120,9 @@ var revision_epoch := 0
 var _chunk_rev := {}
 ## chunk key -> [revision, encoded bytes], shared by all clients
 var _encoded := {}
+## How the world's places are named (a planet folds at the seam and the
+## poles; a continent does not). Null while no plan is known.
+var topology: PlanetTopology
 
 
 ## Opens a world: a read connection here, a write connection on the writer
@@ -134,32 +137,69 @@ var _encoded := {}
 ## shallows, fords and deep water (ADR-0051). 6: villages in clusters, their
 ## ids and places new (ADR-0054).
 const WORLD_FORMAT := 6
+## 7: the finite world (ADR-0071): one saved plan, a closed planet's seam and
+## poles. Format 6 (the endless world) still opens, but its places have no
+## plan; a world made without one keeps the endless land.
+const PLANNED_WORLD_FORMAT := 7
 ## Why the last open() failed, for people ("" — it did not).
 static var open_error := ""
 
 
 static func open(db_path: String, registry: ContentRegistry, options := {}) -> ServerWorld:
 	open_error = ""
+	if bool(options.get("require_planned", false)) and FileAccess.file_exists(db_path):
+		if not _check_planned_format(db_path):
+			return null
 	var s := WorldStore.new()
 	if not s.open(db_path, options):
 		open_error = "не удалось открыть файл мира: " + s.last_error
 		push_error(s.last_error)
 		return null
 	if s.read_meta("seed") == "":
-		var seed_value := int(options.get("seed", randi()))
-		if not (s.write_meta("seed", str(seed_value)) and s.write_meta("world_id", Uuid.v4())
-				and s.write_meta("world_format", str(WORLD_FORMAT))):
+		var supplied: Variant = options.get("world_plan")
+		var required := bool(options.get("require_planned", false))
+		var new_plan: WorldPlan = WorldPlan.from_dict(supplied) if supplied is Dictionary else null
+		if supplied == null and required:
+			var preset := String(options.get("preset", "single_continent"))
+			var climate := String(options.get("climate", "temperate"))
+			new_plan = WorldPlan.generate(int(options.get("seed", randi())), preset, climate, registry)
+			if new_plan == null:
+				# A planned server must never fall through to the old random
+				# world: format 6 would be written and then refused on reopen.
+				open_error = "не удалось создать глобальный план мира (пресет %s, климат %s)" % [preset, climate]
+				s.close()
+				return null
+		if supplied != null and new_plan == null:
+			open_error = "неверный глобальный план мира"
+			s.close()
+			return null
+		var seed_value := new_plan.seed_value if new_plan else int(options.get("seed", randi()))
+		var new_format := PLANNED_WORLD_FORMAT if new_plan else WORLD_FORMAT
+		var plan_text := JSON.stringify(new_plan.to_dict()) if new_plan else ""
+		if not (s.begin() and s.write_meta("seed", str(seed_value)) and s.write_meta("world_id", Uuid.v4())
+				and s.write_meta("world_format", str(new_format)) and (not new_plan or s.write_meta("world_plan", plan_text)) and s.commit()):
+			s.rollback()
 			open_error = "не удалось записать новый мир: " + s.last_error
 			push_error(s.last_error)
 			s.close()
 			return null
 	var format := int(s.read_meta("world_format")) if s.read_meta("world_format").is_valid_int() else 1
-	if format != WORLD_FORMAT:
+	if format != WORLD_FORMAT and format != PLANNED_WORLD_FORMAT:
 		open_error = ("Этот мир сохранён старой версией игры (формат %d, нужен %d): земля, вещи или знания в нём " \
 			+ "устроены по-старому, и эта версия его не откроет. Начните новый мир.") % [format, WORLD_FORMAT] \
 			if format < WORLD_FORMAT else "Этот мир сохранён более новой версией игры (формат %d): обновите игру." % format
 		s.close()
 		return null
+	var plan: WorldPlan = null
+	if format == PLANNED_WORLD_FORMAT:
+		var json := JSON.new()
+		var parsed := json.parse(s.read_meta("world_plan"))
+		var raw: Variant = json.data if parsed == OK else null
+		plan = WorldPlan.from_dict(raw) if raw is Dictionary else null
+		if plan == null or plan.seed_value != int(s.read_meta("seed")):
+			open_error = "глобальный план мира повреждён или не соответствует сиду"
+			s.close()
+			return null
 	var w := StoreWriter.new()
 	if not w.start(db_path, options):
 		push_error(w.last_error())
@@ -186,12 +226,13 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	if saved_time.is_valid_int():
 		world.world_time = int(saved_time)
 	world.levels.load_rows(s.all_locations())
-	var g := SurfaceGenerator.new(world.world_seed, registry)
+	var g := SurfaceGenerator.new(world.world_seed, registry, plan)
 	world.generator = g if g.can_generate() else null
+	world.topology = PlanetTopology.new(plan)
 	var ug := UndergroundGenerator.new(world.world_seed, registry)
 	world.underground = ug if ug.can_generate() else null
 	var spawn_way := world._spawn_way()
-	var lg := SurfaceGenerator.new(world.world_seed, registry) if world.generator else null
+	var lg := SurfaceGenerator.new(world.world_seed, registry, plan) if world.generator else null
 	var lug := UndergroundGenerator.new(world.world_seed, registry) if world.underground else null
 	for gen: UndergroundGenerator in [world.underground, lug]:
 		if gen and spawn_way != NO_CELL:
@@ -210,6 +251,38 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		return null
 	world._open_spawn_way(spawn_way)
 	return world
+
+
+## Check old saves before opening the write connection or migrating schema.
+static func _check_planned_format(db_path: String) -> bool:
+	# The bundled SQLite VFS cannot query a WAL database read-only without
+	# opening auxiliary files. Inspect a temporary copy so an old database is
+	# never checkpointed or migrated by the compatibility check.
+	var temp := ProjectSettings.globalize_path("user://world-inspection/" + Uuid.v4())
+	if DirAccess.make_dir_recursive_absolute(temp) != OK:
+		open_error = "не удалось проверить формат мира"
+		return false
+	var target := temp.path_join("world.db")
+	var copied := DirAccess.copy_absolute(db_path, target) == OK
+	if copied and FileAccess.file_exists(db_path + "-wal"):
+		copied = DirAccess.copy_absolute(db_path + "-wal", target + "-wal") == OK
+	var saved := ""
+	if copied:
+		var db := SQLite.new()
+		db.path = target
+		db.verbosity_level = SQLite.QUIET
+		if db.open_db():
+			var queried := db.query("SELECT value FROM meta WHERE key='world_format'")
+			if queried and not db.query_result.is_empty():
+				saved = String(db.query_result[0]["value"])
+			db.close_db()
+	for filename in DirAccess.get_files_at(temp):
+		DirAccess.remove_absolute(temp.path_join(filename))
+	DirAccess.remove_absolute(temp)
+	if saved != str(PLANNED_WORLD_FORMAT):
+		open_error = "Этот мир использует старый тип генерации или повреждён и не поддерживает новую модель мира. Сохранение не изменено."
+		return false
+	return true
 
 
 ## Every world has a way into the underground near its spawn point (ADR-0017),
@@ -318,6 +391,99 @@ static func chunk_key(location: String, cx: int, cy: int) -> String:
 	return "%s|%d|%d" % [location, cx, cy]
 
 
+## Canonical chunk identity on a planned world (chunk coordinates).
+func storage_chunk(cx: int, cy: int) -> Vector2i:
+	if topology:
+		return topology.canonical_chunk(Vector2i(cx, cy))
+	return Vector2i(cx, cy)
+
+
+## Whether this chunk is seen with its rows reversed (the far side of a pole).
+func reflected_chunk(cy: int) -> bool:
+	return topology != null and topology.mirrored_chunk(Vector2i(0, cy))
+
+func storage_key(location: String, cx: int, cy: int) -> String:
+	var point := storage_chunk(cx, cy)
+	return chunk_key(location, point.x, point.y)
+
+
+## The canonical name of a cell of a location (a planet folds it at the
+## seam and the poles; a continent's cells are already their own names).
+func canonical_cell(cell: Vector2i) -> Vector2i:
+	return topology.canonical_cell(cell) if topology else cell
+
+
+## The canonical chunk a cell falls in (its own name on a continent).
+func canonical_chunk_at(cell: Vector2i) -> Vector2i:
+	return topology.chunk_of_cell(cell) if topology else Vector2i(cell.x >> 5, cell.y >> 5)
+
+
+## The short way from `a` to `b` in movement units (a planet folds at the seam).
+func vector(a: Vector2i, b: Vector2i) -> Vector2:
+	return Vector2(topology.delta(a, b)) if topology else Vector2(b - a)
+
+
+## How far apart two positions are, the short way round a planet's seam.
+func distance(a: Vector2i, b: Vector2i) -> float:
+	return topology.distance(a, b) if topology else Vector2(a).distance_to(Vector2(b))
+
+
+## The short way from cell `a` to cell `b`, across a planet's seam.
+func cell_vector(a: Vector2i, b: Vector2i) -> Vector2i:
+	return topology.cell_delta(a, b) if topology else b - a
+
+
+## How far apart two cells are, the short way round a planet's seam.
+func cell_distance(a: Vector2i, b: Vector2i) -> float:
+	return topology.cell_distance(a, b) if topology else Vector2(a).distance_to(Vector2(b))
+
+
+## Where a position (movement units) is, named on the side of the seam
+## `around` is on: a place loaded by its canonical name is drawn and compared
+## next to the observer.
+func near(pos: Vector2i, around: Vector2i) -> Vector2i:
+	return topology.nearest(pos, around) if topology else pos
+
+
+## Where cell `cell` is, named on the side of the seam cell `around` is on.
+func near_cell(cell: Vector2i, around: Vector2i) -> Vector2i:
+	return topology.nearest_cell(cell, around) if topology else cell
+
+
+## The canonical chunks a band of chunk names covers, each once: a planet's
+## seam and its poles fold many names into one chunk, and a scan of what is
+## near must not look through one twice (nor miss one a lap away).
+func chunk_band(from: Vector2i, to: Vector2i) -> Array:
+	var out := []
+	var seen := {}
+	for cy in range(from.y, to.y + 1):
+		for cx in range(from.x, to.x + 1):
+			var at := canonical_chunk_at(Vector2i(cx * Chunk.SIZE, cy * Chunk.SIZE))
+			if seen.has(at):
+				continue
+			seen[at] = true
+			out.append(at)
+	return out
+
+
+## Whether two positions are within `reach` of each other on each axis, the
+## short way round a planet's seam (the box a view covers).
+func near_pos(a: Vector2i, b: Vector2i, reach: int) -> bool:
+	if topology == null or not topology.wraps():
+		return absi(a.x - b.x) <= reach and absi(a.y - b.y) <= reach
+	var d := topology.delta(a, b)
+	return absi(d.x) <= reach and absi(d.y) <= reach
+
+
+## Whether two cells are within `reach` of each other on each axis, the
+## short way round a planet's seam.
+func near_cells(a: Vector2i, b: Vector2i, reach: int) -> bool:
+	if topology == null or not topology.wraps():
+		return absi(a.x - b.x) <= reach and absi(a.y - b.y) <= reach
+	var d := topology.cell_delta(a, b)
+	return absi(d.x) <= reach and absi(d.y) <= reach
+
+
 ## A chunk, loaded or generated now if the loader has not brought it yet.
 ## The chunk last asked for: most asks come in runs for one chunk (a
 ## creature's steps and sight, light around a cell), and building its key is
@@ -327,17 +493,24 @@ var _last_chunk: Chunk = null
 var chunks_epoch := 0
 var _last_chunk_at := Vector2i(1 << 30, 0)
 var _last_chunk_location := ""
+var _last_reflected: ReflectedChunk
 
 
 func chunk(location: String, cx: int, cy: int) -> Chunk:
-	if _last_chunk != null and cx == _last_chunk_at.x and cy == _last_chunk_at.y and location == _last_chunk_location:
-		return _last_chunk
-	var c := _chunk(location, cx, cy)
-	_last_chunk = c
-	_last_chunk_at = Vector2i(cx, cy)
-	_last_chunk_location = location
-	return c
-
+	var reflected := reflected_chunk(cy)
+	var at := storage_chunk(cx, cy)
+	if _last_chunk == null or at != _last_chunk_at or location != _last_chunk_location:
+		_last_chunk = _chunk(location, at.x, at.y)
+		_last_chunk_at = at
+		_last_chunk_location = location
+		_last_reflected = null
+	if reflected:
+		if _last_reflected == null:
+			_last_reflected = ReflectedChunk.new(_last_chunk)
+		else:
+			_last_reflected.refresh()
+		return _last_reflected
+	return _last_chunk
 
 func _chunk(location: String, cx: int, cy: int) -> Chunk:
 	var key := chunk_key(location, cx, cy)
@@ -371,7 +544,70 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 
 ## Ids of things lying in a chunk.
 func items_in_chunk(location: String, cx: int, cy: int) -> Array:
-	return (_items_by_chunk.get(chunk_key(location, cx, cy), {}) as Dictionary).keys()
+	return (_items_by_chunk.get(storage_key(location, cx, cy), {}) as Dictionary).keys()
+
+
+## Whether something lies on the ground of this cell.
+func _thing_at(location: String, cx: int, cy: int, at: Vector2i) -> bool:
+	for id: String in items_in_chunk(location, cx, cy):
+		var it: Dictionary = items[id]
+		if String(it["location"]) == location \
+				and Movement.cell_of(Vector2i(int(it["x"]), int(it["y"]))) == at:
+			return true
+	return false
+
+
+## Old worlds were laid before every cell of a way was checked: a road may run
+## into open water where it now crosses. The audit goes over the stored surface
+## chunks and names such cells; with `apply` it lays a bridge deck in place of
+## common water where the cell is clear. It never lays road on land and never
+## touches deep water, a building, a plant, props or something lying there:
+## those cells are only named (ADR-0038). Returns counts and the cells.
+func road_audit(apply := false) -> Dictionary:
+	var out := {"checked": 0, "chunks": 0, "bridged": [], "deep": [], "blocked": []}
+	if generator == null or generator.settlements == null:
+		return out
+	var seen := {}
+	var stored := store.chunks_of(SURFACE)
+	out["chunks"] = stored.size()
+	for row: Dictionary in stored:
+		var cx := int(row["cx"])
+		var cy := int(row["cy"])
+		var c := chunk(SURFACE, cx, cy)
+		for road: Dictionary in generator.settlements.roads_touching(cx, cy):
+			var cells: Dictionary = road["cells"]
+			for at: Vector2i in cells:
+				var lx := at.x - cx * Chunk.SIZE
+				var ly := at.y - cy * Chunk.SIZE
+				if lx < 0 or ly < 0 or lx >= Chunk.SIZE or ly >= Chunk.SIZE:
+					continue
+				var seen_key := "%d|%d" % [at.x, at.y]
+				if seen.has(seen_key):
+					continue
+				seen[seen_key] = true
+				out["checked"] = int(out["checked"]) + 1
+				if not Terrain.is_water(c, lx, ly, content):
+					continue  # land is left exactly as it is
+				var ground := c.get_cell("ground", lx, ly)
+				var land := String(generator.land_at(at.x, at.y, false).get("what", "land"))
+				if land == "deep" or (generator.deep_ground() != "" and ground == generator.deep_ground()):
+					(out["deep"] as Array).append(at)
+					continue
+				if land != "water":
+					continue  # a ford or an unclear cell: no bridge guessed
+				var bridge := String((cells[at] as Dictionary).get("over_water", ""))
+				if bridge == "" or c.get_cell("structure", lx, ly) != "" \
+						or c.get_cell("cover", lx, ly) != "" or not c.get_props(lx, ly).is_empty() \
+						or _thing_at(SURFACE, cx, cy, at):
+					(out["blocked"] as Array).append(at)
+					continue
+				(out["bridged"] as Array).append(at)
+				if apply:
+					c.set_cell("ground", lx, ly, bridge)
+					c.set_cell("cover", lx, ly, "")
+					c.set_cell("structure", lx, ly, "")
+					_changed(chunk_key(SURFACE, cx, cy))
+	return out
 
 
 func _take_items(location: String, rows: Array) -> void:
@@ -400,16 +636,17 @@ func _place_item(id: String, it: Dictionary) -> void:
 
 func _item_chunk_key(it: Dictionary) -> String:
 	var cell := Movement.cell_of(Vector2i(it["x"], it["y"]))
-	return chunk_key(it["location"], floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
+	var at := canonical_chunk_at(cell)
+	return chunk_key(it["location"], at.x, at.y)
 
 
 func has_chunk(location: String, cx: int, cy: int) -> bool:
-	return _chunks.has(chunk_key(location, cx, cy))
+	return _chunks.has(storage_key(location, cx, cy))
 
 
 ## Players need these chunks now (keeps them from being unloaded).
 func mark_needed(location: String, cx: int, cy: int) -> void:
-	_needed[chunk_key(location, cx, cy)] = tick
+	_needed[storage_key(location, cx, cy)] = tick
 
 
 ## Unloads chunks nobody needed for `idle_ticks`, if nothing about them is
@@ -422,7 +659,8 @@ func unload_idle(idle_ticks: int) -> int:
 		dirty_item_chunks[_item_chunk_key(items[id])] = true
 	for id: String in _dirty_entities:  # creatures and other state not yet handed to the writer
 		var e: Array = _entities[id]  # [location, cell x, cell y, ...]
-		dirty_item_chunks[chunk_key(e[0], floori(float(e[1]) / Chunk.SIZE), floori(float(e[2]) / Chunk.SIZE))] = true
+		var at := canonical_chunk_at(Vector2i(e[1], e[2]))
+		dirty_item_chunks[chunk_key(e[0], at.x, at.y)] = true
 	var gone := 0
 	for key: String in _chunks.keys():
 		if tick - int(_needed.get(key, -idle_ticks - 1)) <= idle_ticks:
@@ -454,8 +692,9 @@ func loaded_chunks() -> int:
 
 ## Asks the loader thread for a chunk that is not in memory yet.
 func prefetch(location: String, cx: int, cy: int) -> void:
-	if not _chunks.has(chunk_key(location, cx, cy)):
-		loader.request(location, cx, cy)
+	var at := storage_chunk(cx, cy)
+	if not _chunks.has(chunk_key(location, at.x, at.y)):
+		loader.request(location, at.x, at.y)
 
 
 ## Takes chunks the loader finished (call every tick).
@@ -475,6 +714,7 @@ func poll_loaded() -> void:
 			_dirty_chunks[key] = true
 		_settle_stairs(r[0], r[1], r[2], r[3])  # after its encoding is kept: a change makes it stale
 		growth.arrived(r[0], r[1], r[2], r[3])
+		chronicles.lie_lost(r[0], r[1], r[2])  # the same as _chunk: a lost thing lies again
 
 
 func inventory(owner: String) -> Inventory:
@@ -641,27 +881,31 @@ func _flush_explored() -> void:
 ## is there, else from the store without loading it into the world (no
 ## creatures woken, nothing generated); empty if it was never made.
 func map_tile(location: String, cx: int, cy: int) -> PackedByteArray:
-	var key := chunk_key(location, cx, cy)
+	var key := storage_key(location, cx, cy)
+	var reflected := reflected_chunk(cy)
 	var rev: int = _chunk_rev.get(key, 0)
-	var cached: Array = _map_tiles.get(key, [])
+	var cached: Array = _map_tiles.get(key, []) if not reflected else []
 	if not cached.is_empty() and cached[0] == rev:
 		return cached[1]
+	var at := storage_chunk(cx, cy)
 	var c: Chunk = _chunks.get(key)
 	if c == null:
-		var data := store.get_chunk(location, cx, cy)
+		var data := store.get_chunk(location, at.x, at.y)
 		if data.is_empty():
 			return PackedByteArray()
 		c = ChunkCodec.decode(data)
 		if c == null:
 			return PackedByteArray()
-	# Shut-in ore shows as rock on the map too; chunks not in memory count as
-	# solid round it (a map is no way to find veins).
-	var bytes := MapTile.encode(MapTile.of(shown_chunk(location, cx, cy, c, func(x: int, y: int) -> bool:
-		var k := chunk_key(location, floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
-		return not _chunks.has(k) or is_solid(location, x, y))))
-	if _map_tiles.size() > 4096:
-		_map_tiles.clear()  # a cache, not a store
-	_map_tiles[key] = [rev, bytes]
+	if reflected:
+		c = ReflectedChunk.new(c)
+	var shown := shown_chunk(location, cx, cy, c, func(x: int, y: int) -> bool:
+		var k := storage_key(location, floori(float(x) / Chunk.SIZE), floori(float(y) / Chunk.SIZE))
+		return not _chunks.has(k) or is_solid(location, x, y))
+	var bytes := MapTile.encode(MapTile.of(shown.snapshot() if shown is ReflectedChunk else shown))
+	if not reflected:
+		if _map_tiles.size() > 4096:
+			_map_tiles.clear()
+		_map_tiles[key] = [rev, bytes]
 	return bytes
 
 
@@ -720,7 +964,8 @@ func remove_entity(id: String, location: String, cell: Vector2i) -> void:
 	_entities.erase(id)
 	_dirty_entities.erase(id)
 	_operation_entities.erase(id)
-	_removed_items[id] = chunk_key(location, cell.x >> 5, cell.y >> 5)
+	var at := canonical_chunk_at(cell)
+	_removed_items[id] = chunk_key(location, at.x, at.y)
 
 
 func touch_inventory(owner: String) -> void:
@@ -845,14 +1090,18 @@ func is_solid(location: String, x: int, y: int) -> bool:
 
 
 func chunk_revision(location: String, cx: int, cy: int) -> int:
-	return _chunk_rev.get(chunk_key(location, cx, cy), 0)
+	return _chunk_rev.get(storage_key(location, cx, cy), 0)
 
 
 ## The chunk as clients receive it, encoded once per revision: what is
 ## shut in rock is told as the rock it looks like (shown_chunk).
 func encoded_chunk(location: String, cx: int, cy: int) -> PackedByteArray:
-	var key := chunk_key(location, cx, cy)
+	var key := storage_key(location, cx, cy)
 	var rev: int = _chunk_rev.get(key, 0)
+	if reflected_chunk(cy):
+		var view := shown_chunk(location, cx, cy, chunk(location, cx, cy),
+			func(x: int, y: int) -> bool: return is_solid(location, x, y))
+		return ChunkCodec.encode(view.snapshot() if view is ReflectedChunk else view)
 	var cached: Array = _encoded.get(key, [])
 	if cached.is_empty() or cached[0] != rev:
 		cached = [rev, ChunkCodec.encode(shown_chunk(location, cx, cy, chunk(location, cx, cy),
@@ -930,9 +1179,16 @@ func give(owner: String, item: String, n: int, with: Array = []) -> int:
 
 
 ## Frequently changing state of an entity (position, needs...). CBOR-compatible.
+## The chunk row is canonical: a creature past the seam is kept with the
+## chunk it belongs to, so the far side finds it again.
 func set_entity(id: String, location: String, x: int, y: int, kind: String, data: Dictionary) -> void:
 	_entities[id] = [location, x, y, kind, data]
 	_dirty_entities[id] = true
+
+
+## The canonical chunk row an entity at a cell is kept under.
+func entity_chunk(cell: Vector2i) -> Vector2i:
+	return canonical_chunk_at(cell)
 
 
 ## Include a creature's current state in the same batch as a trade or death,
@@ -998,7 +1254,8 @@ func commit_async(force := false) -> void:
 		if not _entities.has(id):
 			continue
 		var e: Array = _entities[id]
-		b.entities.append([id, e[0], floori(float(e[1]) / Chunk.SIZE), floori(float(e[2]) / Chunk.SIZE), e[3], (e[4] as Dictionary).duplicate(true)])
+		var at := canonical_chunk_at(Vector2i(e[1], e[2]))
+		b.entities.append([id, e[0], at.x, at.y, e[3], (e[4] as Dictionary).duplicate(true)])
 		_dirty_entities.erase(id)
 	_operation_entities.clear()
 	for key: String in _operation_meta:
@@ -1023,7 +1280,8 @@ func commit_async(force := false) -> void:
 		if it.has("for"):
 			data["for"] = it["for"]
 			data["until"] = it["until"]
-		b.items.append([id, it["location"], floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE), "item", data])
+		var at := canonical_chunk_at(cell)
+		b.items.append([id, it["location"], at.x, at.y, "item", data])
 	_dirty_items.clear()
 	b.removed_entities = _removed_items.keys()
 	var touched: Array = _dirty_chunks.keys()
@@ -1127,7 +1385,7 @@ func fact(key: String) -> String:
 
 
 func mark_chunk_dirty(location: String, cx: int, cy: int) -> void:
-	_dirty_chunks[chunk_key(location, cx, cy)] = true
+	_dirty_chunks[storage_key(location, cx, cy)] = true
 
 
 ## Whether players needed a chunk within the last `ticks` ticks (they are near).
@@ -1156,8 +1414,7 @@ class SolidIn:
 		if here != _at or _epoch != world.chunks_epoch:
 			_at = here
 			_epoch = world.chunks_epoch
-			_chunk = world._chunks.get(ServerWorld.chunk_key(location, here.x, here.y)) if loaded_only \
-				else world.chunk(location, here.x, here.y)
+			_chunk = world.chunk(location, here.x, here.y) if not loaded_only or world.has_chunk(location, here.x, here.y) else null
 		if _chunk == null:
 			_at = Vector2i(1 << 30, 0)  # asked again next time: it may have come by then
 			return true
@@ -1203,21 +1460,27 @@ func light_at(location: String, cell: Vector2i) -> float:
 ## Each chunk's sources are found once and kept until the chunk changes.
 func light_sources(location: String, around: Vector2i, radius: int) -> Array:
 	var out := []
-	for cy in range(floori(float(around.y - radius) / Chunk.SIZE), floori(float(around.y + radius) / Chunk.SIZE) + 1):
-		for cx in range(floori(float(around.x - radius) / Chunk.SIZE), floori(float(around.x + radius) / Chunk.SIZE) + 1):
-			for src: Array in _chunk_lights(location, cx, cy):
-				var at: Vector2i = src[0]
-				if absi(at.x - around.x) <= radius and absi(at.y - around.y) <= radius:
-					out.append(src)
+	var band := chunk_band(Vector2i((around.x - radius) >> 5, (around.y - radius) >> 5),
+		Vector2i((around.x + radius) >> 5, (around.y + radius) >> 5))
+	for chunk_at: Vector2i in band:
+		for src: Array in _chunk_lights(location, chunk_at.x, chunk_at.y):
+			var at: Vector2i = src[0]
+			# A planet's seam is short: a light a lap away may be next to us.
+			if near_cells(at, around, radius):
+				# The offset, so light is never measured across the whole map.
+				out.append([at, src[1], src[2], cell_vector(around, at)])
 	return out
 
 
 func _chunk_lights(location: String, cx: int, cy: int) -> Array:
 	var key := chunk_key(location, cx, cy)
-	if _lights_by_chunk.has(key):
+	var alias := key != storage_key(location, cx, cy) or reflected_chunk(cy)
+	if not alias and _lights_by_chunk.has(key):
 		return _lights_by_chunk[key]
 	var out := []
 	var c := chunk(location, cx, cy)
+	if c is ReflectedChunk:
+		c = c.snapshot()
 	var cells: PackedInt32Array = c.layers.get("structure", PackedInt32Array())
 	if not cells.is_empty():
 		var lit := {}
@@ -1231,7 +1494,8 @@ func _chunk_lights(location: String, cx: int, cy: int) -> Array:
 					var l: Dictionary = lit[cells[i]]
 					out.append([Vector2i(cx * Chunk.SIZE + i % Chunk.SIZE, cy * Chunk.SIZE + i / Chunk.SIZE),
 						float(l["intensity"]), float(l["radius"])])
-	_lights_by_chunk[key] = out
+	if not alias:
+		_lights_by_chunk[key] = out
 	return out
 
 
@@ -1263,9 +1527,8 @@ func flush_state(limit := -1) -> void:
 		if limit >= 0 and b.entities.size() >= limit:
 			break
 		var e: Array = _entities[id]
-		var cx := floori(float(e[1]) / Chunk.SIZE)
-		var cy := floori(float(e[2]) / Chunk.SIZE)
-		b.entities.append([id, e[0], cx, cy, e[3], (e[4] as Dictionary).duplicate(true)])
+		var at := canonical_chunk_at(Vector2i(e[1], e[2]))
+		b.entities.append([id, e[0], at.x, at.y, e[3], (e[4] as Dictionary).duplicate(true)])
 		_dirty_entities.erase(id)
 	if b.entities.is_empty() and b.world_characters.is_empty() and b.meta.is_empty():
 		return
@@ -1432,7 +1695,7 @@ func _reaches(actor: String, location: String, x: int, y: int, reach: int) -> bo
 	if p["location"] != location:
 		return false
 	var centre := Vector2(x * Movement.UNIT + Movement.UNIT / 2, y * Movement.UNIT + Movement.UNIT / 2)
-	return Vector2(p["pos"]).distance_to(centre) <= reach
+	return distance(p["pos"], centre) <= reach
 
 
 func _use(actor: String, r: Dictionary) -> Dictionary:
@@ -1605,7 +1868,7 @@ func _pickup(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "gone"}
 	if present.has(actor):
 		var p: Dictionary = present[actor]
-		if p["location"] != it["location"] or Vector2(p["pos"]).distance_to(Vector2(it["x"], it["y"])) > PICKUP_REACH:
+		if p["location"] != it["location"] or distance(p["pos"], Vector2i(int(it["x"]), int(it["y"]))) > PICKUP_REACH:
 			return {"ok": false, "reason": "too_far"}
 	if boats.crews.has(id):
 		return {"ok": false, "reason": "crewed"}  # someone is in it (ADR-0052)
@@ -1666,6 +1929,9 @@ func build_rain(location: String, x: int, y: int) -> float:
 
 
 func _changed(key: String) -> void:
+	var coordinate := key.rsplit("|", true, 2)
+	if coordinate.size() == 3:
+		key = storage_key(coordinate[0], int(coordinate[1]), int(coordinate[2]))
 	_dirty_chunks[key] = true
 	_lights_by_chunk.erase(key)
 	_chunk_rev[key] = _chunk_rev.get(key, 0) + 1
@@ -2853,7 +3119,7 @@ func _trader(actor: String, r: Dictionary) -> Array:
 	if trade.is_empty():
 		return [null, "no_trade"]
 	var p: Dictionary = present[actor]
-	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+	if p["location"] != c.location or distance(p["pos"], c.pos) > USE_REACH + float(combat.size_of(c.id)["radius"]):
 		return [null, "too_far"]
 	if c.asleep or c.state == "flee":
 		return [null, "not_now"]
@@ -2900,7 +3166,7 @@ func _trader_talk(actor: String, c: Creature) -> Dictionary:
 	if not present.has(actor):
 		return {"ok": false, "reason": "not_here"}
 	var p: Dictionary = present[actor]
-	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+	if p["location"] != c.location or distance(p["pos"], c.pos) > USE_REACH + float(combat.size_of(c.id)["radius"]):
 		return {"ok": false, "reason": "too_far"}
 	var stock := inventory("trade|" + c.id)
 	var load := PackedStringArray()
@@ -2969,7 +3235,7 @@ func _dweller(actor: String, r: Dictionary) -> Array:
 	if c == null or not c.job.has("village"):
 		return [null, "nothing_there"]
 	var p: Dictionary = present[actor]
-	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+	if p["location"] != c.location or distance(p["pos"], c.pos) > USE_REACH + float(combat.size_of(c.id)["radius"]):
 		return [null, "too_far"]
 	if c.asleep:
 		return [null, "not_now"]
@@ -3174,7 +3440,7 @@ func _fill(actor: String, r: Dictionary) -> Dictionary:
 		if into == "":
 			return {"ok": false, "reason": "nothing_to_fill"}
 		var p: Dictionary = present[actor]
-		if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+		if p["location"] != c.location or distance(p["pos"], c.pos) > USE_REACH + float(combat.size_of(c.id)["radius"]):
 			return {"ok": false, "reason": "too_far"}
 		if c.owner != actor:
 			return {"ok": false, "reason": "not_yours"}
@@ -3312,7 +3578,7 @@ func _feed(actor: String, r: Dictionary) -> Dictionary:
 	if tame.is_empty():
 		return {"ok": false, "reason": "not_tameable"}
 	var p: Dictionary = present[actor]
-	if p["location"] != c.location or Vector2(p["pos"]).distance_to(Vector2(c.pos)) > USE_REACH + float(combat.size_of(c.id)["radius"]):
+	if p["location"] != c.location or distance(p["pos"], c.pos) > USE_REACH + float(combat.size_of(c.id)["radius"]):
 		return {"ok": false, "reason": "too_far"}
 	var why := check_held(actor, r)
 	if why != "":

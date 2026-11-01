@@ -98,7 +98,13 @@ func _ready() -> void:
 			if WorldLibrary.seed_of(worlds.read(id)) != 431:
 				show_start_screen("Мир quality_431 уже существует с другим seed; файлы сохранены. Используйте новый отдельный профиль.")
 				return
-		start_game({"mode": "local", "world": id, "world_path": worlds.db_path(id), "rules": worlds.read(id)})
+		# A world created in the menu has its plan in world.json before world.db
+		# exists; read() returns {} without the database, which would silently
+		# replace the chosen planet with the old fallback.
+		var rules := worlds.read_meta_only(id)
+		if rules.is_empty():
+			rules = worlds.read(id)
+		start_game({"mode": "local", "world": id, "world_path": worlds.db_path(id), "rules": rules})
 	else:
 		show_start_screen()
 		# Dev: --menu=SCREEN opens that screen (with --screenshot, for pictures).

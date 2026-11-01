@@ -150,12 +150,10 @@ func _beasts_call(delta: float) -> void:
 
 ## Whether a tree stands on a cell (a tall solid plant).
 func _tree_at(location: String, cell: Vector2i) -> bool:
-	var cx := floori(cell.x / float(Chunk.SIZE))
-	var cy := floori(cell.y / float(Chunk.SIZE))
-	var c: Chunk = client.chunks.get(ServerWorld.chunk_key(location, cx, cy))
-	if c == null:
+	var id := client.cell_at(location, cell, "cover")
+	if id == "":
 		return false
-	var d := content.get_def(c.get_cell("cover", cell.x - cx * Chunk.SIZE, cell.y - cy * Chunk.SIZE))
+	var d := content.get_def(id)
 	return bool(d.get("solid", false)) and float(d.get("height", 0.0)) >= 2.0
 
 

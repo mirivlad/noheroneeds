@@ -26,6 +26,9 @@ var _queued := {}
 var _job := {}
 var _actors := {}
 var _height_around := Vector2i(1 << 30, 0)
+## Rock cell -> whether it is a cliff (the edge of a level): the mesh is drawn
+## flush there, and a crag elsewhere. Decided once per cell, like the heights.
+var _rock_flush := {}
 var _land: SurfaceGenerator
 var _cursor := {}
 var _ghost_root := Node3D.new()
@@ -175,7 +178,8 @@ func update_view(alpha: float, delta: float) -> void:
 		_resize()
 	if client.geography and _land == null:
 		# Call the ORIGINAL surface sampler, never a new world generator.
-		_land = SurfaceGenerator.new(client.geography.world_seed, content)
+		var plan: WorldPlan = (client.geography as PlannedGeography).plan if client.geography is PlannedGeography else null
+		_land = SurfaceGenerator.new(client.geography.world_seed, content, plan)
 		terrain = _new_terrain()
 	if client.location != _location:
 		_location = client.location
@@ -202,6 +206,10 @@ func update_view(alpha: float, delta: float) -> void:
 	if around != _height_around:
 		_height_around = around
 		if terrain: terrain.prune(around * Chunk.SIZE, (RADIUS + 2) * Chunk.SIZE)
+		if _rock_flush.size() > 20000:
+			for c: Vector2i in _rock_flush.keys():
+				if absi(c.x - around.x * Chunk.SIZE) > (RADIUS + 2) * Chunk.SIZE or absi(c.y - around.y * Chunk.SIZE) > (RADIUS + 2) * Chunk.SIZE:
+					_rock_flush.erase(c)
 
 	for key: String in client.chunks:
 		var k := key.split("|")
@@ -267,6 +275,7 @@ func _clear_geometry() -> void:
 	if terrain:
 		terrain.extra_pads.clear()
 		terrain.heights.clear()
+	_rock_flush.clear()
 
 func _refresh_foundations(changed: Array) -> void:
 	var dirty := false
@@ -338,15 +347,26 @@ func corner_height(c: Vector2i) -> float:
 func _rock_at(c: Vector2i) -> bool:
 	return content.get_def(_cell_layer(c, "structure")).get("role") == "rock"
 
+## Whether a rock cell is the edge of a level (a cliff, ADR-0061): only such a
+## cell is drawn flush with the ground round it. Any other rock is a crag and
+## stands up out of its ground, so a cell one cannot walk on never looks level
+## and walkable. The server decides the same with `is_cliff`, so the picture
+## and the block agree whatever made the rock (a level's edge or a peak).
+func _rock_cliff(c: Vector2i) -> bool:
+	if client.z < 0 or _land == null:
+		return false
+	if not _rock_flush.has(c):
+		_rock_flush[c] = _land.is_cliff(c.x, c.y, _land.height_at(c.x, c.y))
+	return bool(_rock_flush[c])
+
 ## The top of a rock cell at one of its corners, metres: flush with its level
-## when it is a level's edge, else a crag (RockCells3D.top).
+## when it is a shelf's edge, else a crag (RockCells3D.top).
 func _rock_top(c: Vector2i, corner: Vector2i) -> float:
 	if client.z < 0 or terrain == null:
 		return RockCells3D.top(corner)
 	var ground := terrain.cell(c)
-	for d: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
-		if not _rock_at(c + d) and terrain.cell(c + d) >= ground - .5:
-			return ground + .05
+	if _rock_cliff(c):
+		return ground + .05
 	return ground + RockCells3D.top(corner)
 
 ## The land's shape: rock and chasms stand no corner (the ground round them is
@@ -499,7 +519,8 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		mesh = RockCells3D.mesh(cell, (terrain.cell(cell) if client.z >= 0 and terrain else 0.0) - floor_y,
 			func(c: Vector2i) -> float: return (terrain.low(c) if client.z >= 0 and terrain else 0.0) - floor_y,
 			_rock_at, func(c: Vector2i) -> bool: return client.z >= 0 and terrain != null and not _rock_at(c) and terrain.cell(c) >= terrain.cell(cell) - .5,
-			buildings.rock, func(n: Vector2i, corner: Vector2i) -> float: return _rock_top(n, corner) - floor_y)
+			buildings.rock, func(n: Vector2i, corner: Vector2i) -> float: return _rock_top(n, corner) - floor_y,
+			_rock_cliff)
 		instance_id = "rock:" + str(cell)
 		basis = Basis.IDENTITY
 	elif role == "fence" or (role == "door" and float(d.get("height", 1.0)) < 1.0):
@@ -979,9 +1000,14 @@ func _update_actors(alpha: float, delta: float) -> void:
 				and Vector2(actor.position.x, actor.position.z).distance_to(Vector2(at.x, at.z)) < .05:
 			actor.facing = Vector2(int(face[0]), int(face[1])).normalized()
 		if String(e.get("horse", "")) != "":
-			var heading: Array = e.get("caravan_heading", [0, 1])
+			# A wagon turns as its own slow body does; a trader on foot turns
+			# with the horse that leads it.
+			var key := "caravan_heading" if String(e.get("caravan_type", "cart")) == "cart" else "horse_heading"
+			var heading: Array = e.get(key, e.get("caravan_heading", [0, 1]))
 			if heading.size() == 2:
-				actor.facing = Vector2(float(heading[0]), float(heading[1])).normalized()
+				actor.tell_heading(Vector2(float(heading[0]), float(heading[1])))
+		elif e.get("profession", "") == "base:trader":
+			actor.forget_heading()  # a walking trader turns by where it goes
 		var asleep := bool(e.get("asleep", false))
 		var bed := Movement.cell_of(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
 		var in_bed: bool = asleep and content.get_def(_cell_layer(bed, "structure")).get("bed", false)
@@ -1052,9 +1078,17 @@ func _update_actors(alpha: float, delta: float) -> void:
 		var driver_id := String(e.get("caravan_driver", ""))
 		if driver_id != "":
 			var driver := _actors.get(driver_id) as BillboardActor3D
-			if driver:
+			var driven: Dictionary = entities.get(driver_id, {})
+			var told: Array = driven.get("horse_heading", driven.get("caravan_heading", []))
+			if told.size() == 2:
+				actor.tell_heading(Vector2(float(told[0]), float(told[1])))
+			elif driver:
 				actor.facing = driver.facing
 				actor.doll._face(actor.facing.rotated(-yaw))
+			else:
+				actor.forget_heading()
+		elif e.get("creature", "") == "base:horse":
+			actor.forget_heading()  # loose, it turns by where it walks
 		if e.get("creature", "") == "base:horse":
 			actor.show_packs(bool(e.get("pack", false)))
 	for id: String in _actors.keys():

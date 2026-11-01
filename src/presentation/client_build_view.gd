@@ -12,7 +12,7 @@ func _init(game_client: GameClient) -> void:
 
 
 func build_chunk(location: String, cx: int, cy: int) -> Chunk:
-	return client.chunks.get(ServerWorld.chunk_key(location, cx, cy))
+	return client.chunk_at(location, cx * Chunk.SIZE, cy * Chunk.SIZE)
 
 
 func build_kind(location: String) -> String:

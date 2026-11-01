@@ -27,11 +27,18 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(release['with']['body_path'], 'build/release-notes.md')
         self.assertFalse(release['with']['generate_release_notes'])
 
+    def test_game_tests_only_run_when_called_by_the_release_workflow(self):
+        workflow = self.workflow('tests')
+        events = workflow.get('on', workflow.get(True))
+        self.assertEqual(set(events), {'workflow_call'})
+        self.assertEqual(self.workflow('release')['jobs']['tests']['uses'], './.github/workflows/tests.yml')
+
     def test_website_checks_include_actual_generator_policy_and_browser_tests(self):
         workflow = self.workflow('site-check')
         events = workflow.get('on', workflow.get(True))
-        self.assertIn('pull_request', events)
-        self.assertIn('workflow_call', events)
+        self.assertEqual(set(events), {'workflow_call'})
+        self.assertNotIn('push', events)
+        self.assertNotIn('pull_request', events)
         self.assertEqual(workflow['permissions']['contents'], 'read')
         commands = '\n'.join(s.get('run', '') for s in workflow['jobs']['documentation']['steps'])
         for command in ['tools/site/sync_releases.py', 'tools/site/check.py', '--release', 'unittest discover', 'npm test']:
@@ -41,7 +48,9 @@ class WorkflowTests(unittest.TestCase):
         pages = self.workflow('pages')
         events = pages.get('on', pages.get(True))
         self.assertNotIn('pull_request', events)
-        self.assertEqual(events['push']['branches'], ['main'])
+        self.assertNotIn('push', events)
+        self.assertIn('workflow_call', events)
+        self.assertIn('workflow_dispatch', events)
         self.assertIn('published', events['release']['types'])
         self.assertEqual(pages['jobs']['deploy']['needs'], 'build')
         commands = '\n'.join(s.get('run', '') for s in pages['jobs']['build']['steps'])

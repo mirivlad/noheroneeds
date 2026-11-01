@@ -19,6 +19,22 @@
       ]
     },
     {
+      "id": "characters",
+      "guide": "start",
+      "sources": [
+        "src/app/character_library.gd",
+        "src/presentation/app.gd",
+        "src/presentation/art.gd",
+        "src/presentation/character_editor.gd",
+        "src/presentation/character_panel.gd",
+        "src/presentation/character_preview.gd",
+        "src/presentation/main_menu.gd",
+        "src/presentation/world_view.gd",
+        "content/base/character_editor.json"
+      ],
+      "kinds": []
+    },
+    {
       "id": "controls",
       "guide": "controls",
       "sources": [

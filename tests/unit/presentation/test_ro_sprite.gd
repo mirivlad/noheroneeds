@@ -219,6 +219,11 @@ func test_the_editor_offers_the_ro_bodies() -> void:
 	var editor := CharacterEditor.new()
 	(Engine.get_main_loop() as SceneTree).root.add_child(editor)
 	editor.setup(content)
+	eq(CharacterEditor.PLANS, ["base:human_ro_m", "base:human_ro_f"], "only the two RO bodies are offered")
+	eq(editor.sex_pick.item_count, 2, "the editor has two choices")
+	eq(editor.sex_pick.get_item_text(0), "Мужской", "the familiar male label")
+	eq(editor.sex_pick.get_item_text(1), "Женский", "the familiar female label")
+	check(not editor.face_pick.get_parent().visible, "the old face selector is not offered")
 	for plan: String in PLANS:
 		editor.sex_pick.select(CharacterEditor.PLANS.find(plan))
 		editor.sex_pick.item_selected.emit(editor.sex_pick.selected)
@@ -244,6 +249,29 @@ func test_the_editor_offers_the_ro_bodies() -> void:
 		check(doll is RoSprite and doll._layers.size() == 2 + WorldLibrary.STARTER_OUTFIT.size(), plan + " is dressed")
 		doll.free()
 	editor.free()
+
+
+func test_old_signed_characters_are_shown_as_ro_without_changing_their_data() -> void:
+	var content := _content()
+	for case: Array in [["base:human_m", "base:human_ro_m"], ["base:human_f", "base:human_ro_f"]]:
+		var old := {"body_plan": case[0], "styles": {"hair": "base:human_hair_braid", "face": "base:human_face_soft"},
+			"colors": {"hair": "#3366cc"}, "worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
+		var copy := old.duplicate(true)
+		var shown := Art.presentation_look(old)
+		eq(shown["body_plan"], case[1], "the matching RO body is displayed")
+		eq(shown["styles"], {"hair": "base:human_ro_hair_side_tail"}, "an available RO hairstyle replaces the old one")
+		eq(old, copy, "the saved appearance is not modified")
+		var view := WorldView.new()
+		view.content = content
+		var doll := view.doll_for("old-character", old)
+		check(doll is RoSprite, "the world draws an RO sprite")
+		eq(doll.look["body_plan"], case[1], "the sprite uses the displayed body")
+		doll.free()
+		view.free()
+		var preview := CharacterPreview.new()
+		preview.show_look(content, old)
+		check(preview.doll is RoSprite, "the paper doll also uses RO")
+		preview.free()
 
 
 func test_every_hairstyle_on_both_bodies_painted_its_colours() -> void:

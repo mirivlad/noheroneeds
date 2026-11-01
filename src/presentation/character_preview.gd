@@ -30,8 +30,9 @@ func _init() -> void:
 
 
 func show_look(content: ContentRegistry, looks: Dictionary) -> void:
+	looks = Art.presentation_look(looks)
 	_content = content
-	_visual = content.visual_of(String(looks.get("body_plan", "base:human_m")))
+	_visual = content.visual_of(String(looks.get("body_plan", "base:human_ro_m")))
 	if doll and Art.same_kind(doll, _visual):
 		Art.dress(doll, content, _visual, looks)
 	else:

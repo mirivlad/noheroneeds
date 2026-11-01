@@ -151,9 +151,10 @@ func loose_own(_dir: Vector2) -> void:
 ## The visual a being is drawn by: its body's, in its own variant of the
 ## body's alternates (a creature keeps one across frames, reloads and clients).
 func visual_for(id: String, looks: Dictionary) -> Dictionary:
+	looks = Art.presentation_look(looks)
 	var v := content.visual_of(String(looks.get("body_plan", "")))
 	if v.is_empty():
-		v = content.visual_of("base:human_m")
+		v = content.visual_of("base:human_ro_m")
 	var alternates: Array = v.get("alternates", [])
 	var variant := posmod(id.hash(), alternates.size() + 1)
 	return v.merged(alternates[variant - 1], true) if variant > 0 else v
@@ -162,6 +163,7 @@ func visual_for(id: String, looks: Dictionary) -> Dictionary:
 ## A being's doll for its looks: `old` itself when they are the same, `old`
 ## dressed anew when it can be (its walk, facing, tool and blow go on), else a new one.
 func doll_for(id: String, looks: Dictionary, old: CharacterSprite = null) -> CharacterSprite:
+	looks = Art.presentation_look(looks)
 	if old and old.look == looks:
 		return old
 	var v := visual_for(id, looks)

@@ -72,7 +72,7 @@ func test_characters_create_list_and_choose() -> void:
 	var lib := CharacterLibrary.new(root.path_join("characters"), _content, me)
 	var first := lib.current("")
 	check(first != "", "a default character when there is none")
-	var second := lib.create("Мара", {"hair": "base:human_hair_braid"})
+	var second := lib.create("Мара", {"hair": "base:human_ro_hair_side_tail"})
 	check(second != "", "created")
 	eq(lib.create("X", {"hair": "base:no_such_hair"}), "", "an unknown style is refused")
 	var names := []
@@ -81,7 +81,7 @@ func test_characters_create_list_and_choose() -> void:
 	eq(names, ["Мара", "Путник"])
 	eq(lib.current(second), second, "the chosen one")
 	eq(lib.current("gone"), lib.list()[0]["file"], "a missing choice falls back")
-	eq(lib.load_character(second).styles["hair"], "base:human_hair_braid")
+	eq(lib.load_character(second).styles["hair"], "base:human_ro_hair_side_tail")
 	check(CharacterFile.read(lib.file_bytes(second), _content).ok, "a signed file")
 
 

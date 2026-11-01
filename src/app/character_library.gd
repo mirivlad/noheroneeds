@@ -51,7 +51,7 @@ func file_bytes(file_id: String) -> PackedByteArray:
 
 ## A new character with the player's choices; returns its file id ("" if
 ## it could not be written).
-func create(char_name: String, styles: Dictionary, colors: Dictionary = {}, body_plan := "base:human_m") -> String:
+func create(char_name: String, styles: Dictionary, colors: Dictionary = {}, body_plan := "base:human_ro_m") -> String:
 	var clean := char_name.strip_edges().left(PortableCharacter.NAME_MAX)
 	var c := PortableCharacter.create(clean if clean != "" else "Путник", body_plan)
 	for slot: String in STYLE_DEFAULTS:

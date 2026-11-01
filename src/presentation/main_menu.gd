@@ -299,7 +299,7 @@ func show_characters() -> void:
 	var c := characters.load_character(current)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_child(_doll(c.body_plan if c else "base:human_m", String(c.styles.get("hair", "")) if c else "", c.styles if c else {}, c.colors if c else {}))
+	row.add_child(_doll(c.body_plan if c else "base:human_ro_m", String(c.styles.get("hair", "")) if c else "", c.styles if c else {}, c.colors if c else {}))
 	var about := VBoxContainer.new()
 	about.alignment = BoxContainer.ALIGNMENT_CENTER
 	var nm := Label.new()
@@ -658,8 +658,10 @@ func _check(text: String, on: bool) -> CheckBox:
 
 ## A character's looks in a few words: the body and the hairstyle.
 static func _look_name(body: String, hair: String) -> String:
-	var sex := "женщина" if body.begins_with("base:human_f") or body == "base:human_ro_f" else "мужчина"
-	var style := String(CharacterEditor.HAIRS.get(hair, CharacterEditor.RO_HAIRS.get(hair, ""))).to_lower()
+	var shown := Art.presentation_look({"body_plan": body, "styles": {"hair": hair}})
+	var sex := "женщина" if String(shown["body_plan"]) == "base:human_ro_f" else "мужчина"
+	var shown_hair := String((shown["styles"] as Dictionary).get("hair", ""))
+	var style := String(CharacterEditor.RO_HAIRS.get(shown_hair, "")).to_lower()
 	return sex + (", причёска: " + style if style != "" else "")
 
 
@@ -667,11 +669,11 @@ static func _look_name(body: String, hair: String) -> String:
 func _doll(body_plan: String, hair: String, styles: Dictionary = {}, colors: Dictionary = {}) -> Control:
 	var box := Control.new()
 	box.custom_minimum_size = Vector2(48, 48)
-	var body := content.visual_of(body_plan)
+	var look := Art.presentation_look({"body_plan": body_plan, "styles": styles if not styles.is_empty() else {"hair": hair}, "colors": colors,
+		"worn": WorldLibrary.STARTER_OUTFIT.duplicate()})
+	var body := content.visual_of(String(look["body_plan"]))
 	if body.is_empty():
 		return box
-	var look := {"styles": styles if not styles.is_empty() else {"hair": hair}, "colors": colors,
-		"worn": WorldLibrary.STARTER_OUTFIT.duplicate()}
 	var doll := Art.character_sprite(content, body, look)
 	doll.scale = Vector2.ONE / maxf(0.5, float(body.get("pixel_scale", 1.0)))  # an LPC texel a pixel; finer ones (RO) as in the world
 	doll.position = Vector2(24, 46)

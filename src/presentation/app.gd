@@ -115,7 +115,7 @@ func _ready() -> void:
 			var p := String(_opts["preview"]).split(",")
 			for ed: Node in menu.find_children("*", "CharacterEditor", true, false):
 				var editor := ed as CharacterEditor
-				editor.sex_pick.selected = 2
+				editor.sex_pick.selected = 0
 				editor._plan_changed()
 				var ai := CharacterEditor.ACTIONS.values().find(p[0])
 				editor.action_pick.select(ai)

@@ -119,7 +119,7 @@
     {
       "id": "base:human_ro_m",
       "kind": "body_plan",
-      "name": "Мужской · RO",
+      "name": "Мужской · Обычное",
       "body_size": [
         20,
         32
@@ -176,7 +176,7 @@
       "id": "base:human_ro_f",
       "kind": "body_plan",
       "feminine": true,
-      "name": "Женский · RO",
+      "name": "Женский · Обычное",
       "body_size": [
         20,
         32

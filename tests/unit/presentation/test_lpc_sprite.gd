@@ -125,7 +125,7 @@ func test_swings_play_once_with_the_tool_in_its_frames() -> void:
 	var content := _content()
 	var view := WorldView.new()
 	view.content = content
-	var doll := view.doll_for("me", _look("base:human_m")) as LpcSprite
+	var doll := Art.character_sprite(content, content.visual_of("base:human_m"), _look("base:human_m")) as LpcSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	for case: Array in [["base:axe", "chop", "chop"], ["base:pickaxe", "mine", "chop"],
 			["base:spear", "thrust", "thrust"], ["base:bow", "draw", "shoot"], ["base:iron_sword", "slash", "slash"], ["", "lunge", "slash"]]:
@@ -161,7 +161,7 @@ func test_a_rod_is_cast_with_its_own_frames_and_carried_as_a_picture() -> void:
 	var content := _content()
 	var view := WorldView.new()
 	view.content = content
-	var doll := view.doll_for("me", _look("base:human_f")) as LpcSprite
+	var doll := Art.character_sprite(content, content.visual_of("base:human_f"), _look("base:human_f")) as LpcSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	doll.hold(view.item_picture("base:fishing_rod"), view.item_grip("base:fishing_rod"), "base:fishing_rod")
 	eq(doll._held_item, "base:fishing_rod")

@@ -14,11 +14,8 @@ const SKIN := {"#e4a47c": "Светлый", "#ea9f54": "Тёплый", "#ae6b3f"
 const HAIR_COLORS := {"#1c2222": "Чёрный", "#421603": "Тёмно-каштановый", "#7d4513": "Каштановый", "#cc6901": "Рыжий",
 	"#bf9d5a": "Русый", "#c0ab81": "Светлый", "#777777": "Седой"}
 const EYE_COLORS := {"#544c2e": "Карие", "#5686ae": "Голубые", "#53b351": "Зелёные", "#8b8979": "Серые"}
-## One build of each body for now (LPC's muscular body lacks clothes and a bow
-## shot); old broad bodies are drawn as these and become them when edited.
-## The RO-style bodies (tools/art/ro_sprites) have their own faces drawn on, hairstyles
-## of their own and hair of any colour (a colour wheel instead of the list).
-const PLANS := ["base:human_m", "base:human_f", "base:human_ro_m", "base:human_ro_f"]
+## Only the two RO bodies are offered to the player.
+const PLANS := ["base:human_ro_m", "base:human_ro_f"]
 const RO_HAIRS := {"base:human_ro_hair_tousled": "Взъерошенная", "base:human_ro_hair_twintails": "Два хвоста",
 	"base:human_ro_hair_bob": "Каре", "base:human_ro_hair_fluffy_bob": "Пышное каре", "base:human_ro_hair_fringe": "С чёлкой",
 	"base:human_ro_hair_long": "Длинные", "base:human_ro_hair_side_tail": "Хвост набок", "base:human_ro_hair_cat_ears": "С ушками",
@@ -93,8 +90,9 @@ func setup(registry: ContentRegistry, character: PortableCharacter = null) -> vo
 	name_edit.max_length = PortableCharacter.NAME_MAX
 	name_edit.text = character.name if character else ""
 	_field("Имя", name_edit)
-	sex_pick = _choice("Пол", "SexChoice", ["Мужской", "Женский", "Мужской · RO", "Женский · RO"], _plan_changed)
+	sex_pick = _choice("Пол", "SexChoice", ["Мужской", "Женский"], _plan_changed)
 	face_pick = _choice("Лицо", "FaceChoice", FACES.values())
+	face_pick.get_parent().visible = false  # RO faces are part of the body
 	hair_pick = _choice("Причёска", "HairChoice", HAIRS.values())
 	skin_pick = _choice("Кожа", "SkinChoice", SKIN.values())
 	color_pick = _choice("Волосы", "HairColorChoice", HAIR_COLORS.values())
@@ -108,14 +106,15 @@ func setup(registry: ContentRegistry, character: PortableCharacter = null) -> vo
 	_field("Волосы", color_wheel)
 	eye_pick = _choice("Глаза", "EyeColorChoice", EYE_COLORS.values())
 	if character:
-		sex_pick.selected = PLANS.find(character.body_plan) if RO_HAIR.has(character.body_plan) \
-			else (1 if character.body_plan.begins_with("base:human_f") else 0)
+		var shown := Art.presentation_look({"body_plan": character.body_plan, "styles": character.styles})
+		sex_pick.selected = maxi(0, PLANS.find(String(shown["body_plan"])))
 		face_pick.selected = maxi(0, FACES.keys().find(character.styles.get("face", "")))
 		skin_pick.selected = maxi(0, SKIN.keys().find(character.colors.get("skin", "")))
 		color_pick.selected = maxi(0, HAIR_COLORS.keys().find(character.colors.get("hair", "")))
 		color_wheel.color = Color.from_string(String(character.colors.get("hair", "")), Color(RO_HAIR_COLOR))
 		eye_pick.selected = maxi(0, EYE_COLORS.keys().find(character.colors.get("eyes", "")))
-	_list_hairs(String(character.styles.get("hair", "")) if character else "")
+	var initial := Art.presentation_look({"body_plan": character.body_plan, "styles": character.styles}) if character else {}
+	_list_hairs(String((initial.get("styles", {}) as Dictionary).get("hair", "")))
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_END
 	add_child(buttons)

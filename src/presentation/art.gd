@@ -93,9 +93,24 @@ static func worn_visual(content: ContentRegistry, body: Dictionary, item: String
 	return body.get("worn_overrides", {}).get(item, content.visual_of(item).get("worn", {}))
 
 
-## A paper doll for looks: an LPC human (lpc_visuals.json), an RO-style
-## human (ro_visuals.json) or a creature's own sheet. Changing looks later:
-## dress() with the same arguments.
+## Old signed characters retain their original data, but use the corresponding
+## RO appearance everywhere they are displayed. No character file is rewritten.
+static func presentation_look(looks: Dictionary) -> Dictionary:
+	var body := String(looks.get("body_plan", ""))
+	if body not in ["base:human_m", "base:human_f"]:
+		return looks
+	var out := looks.duplicate(true)
+	out["body_plan"] = "base:human_ro_f" if body == "base:human_f" else "base:human_ro_m"
+	var hair := String((looks.get("styles", {}) as Dictionary).get("hair", ""))
+	var mapped := {"base:human_hair_short": "base:human_ro_hair_tousled", "base:human_hair_plain": "base:human_ro_hair_bob",
+		"base:human_hair_long": "base:human_ro_hair_long", "base:human_hair_ponytail": "base:human_ro_hair_side_tail",
+		"base:human_hair_braid": "base:human_ro_hair_side_tail", "base:human_hair_bald": "base:human_hair_bald"}
+	out["styles"] = {"hair": String(mapped.get(hair, "base:human_ro_hair_twintails" if body == "base:human_f" else "base:human_ro_hair_tousled"))}
+	return out
+
+
+## A paper doll from the selected visual. Low-level LPC sheets remain usable
+## by creatures and compatibility tests; player presentation uses RO above.
 static func character_sprite(content: ContentRegistry, visual: Dictionary, looks: Dictionary) -> CharacterSprite:
 	var body := character_texture(visual, looks.get("colors", {}))
 	var layers := character_layers(content, visual, looks)

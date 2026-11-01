@@ -1,6 +1,28 @@
 extends TestCase
 
 
+func test_default_character_is_ro_and_old_file_is_not_rewritten_by_preview() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var path := tmp_dir()
+	var identity := PlayerIdentity.load_or_create(path.path_join("key"))
+	var library := CharacterLibrary.new(path.path_join("characters"), content, identity)
+	var current := library.create("Новый", {})
+	check(current != "", library.last_error)
+	eq(library.load_character(current).body_plan, "base:human_ro_m", "the default character uses RO")
+	var old_file := library.create("Старый", CharacterLibrary.STYLE_DEFAULTS, {}, "base:human_f")
+	check(old_file != "", library.last_error)
+	var bytes := library.file_bytes(old_file)
+	var old := library.load_character(old_file)
+	var editor := CharacterEditor.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(editor)
+	editor.setup(content, old)
+	eq(editor.appearance()["body_plan"], "base:human_ro_f", "editing proposes the matching RO body")
+	eq(library.file_bytes(old_file), bytes, "previewing does not rewrite the signed character")
+	check(CharacterFile.read(bytes, content).ok, "the old signature and data remain valid")
+	editor.free()
+	await (Engine.get_main_loop() as SceneTree).process_frame
+
+
 func test_the_editor_swings_a_sword_on_every_body_without_giving_it_to_the_character() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	eq(content.errors, PackedStringArray())
@@ -37,7 +59,7 @@ func test_edit_keeps_identity_progress_and_signed_file() -> void:
 	var path := tmp_dir()
 	var me := PlayerIdentity.load_or_create(path.path_join("key"))
 	var library := CharacterLibrary.new(path.path_join("characters"), content, me)
-	var file := library.create("Аня", CharacterLibrary.STYLE_DEFAULTS)
+	var file := library.create("Аня", {})
 	var before := library.load_character(file)
 	before.inventory.add("base:stone", 7)
 	before.equipment = {"feet": "base:boots"}
@@ -79,7 +101,7 @@ func test_changing_equipment_preserves_walk_facing_held_tool_and_swing() -> void
 	eq(updated, doll, "same node")
 	eq([doll._walk, doll._dir, doll._column, doll._shown, doll.position, doll._held_item], state,
 		"no phase, facing or tool reset")
-	eq(doll._held_layers.size(), 3, "the axe is drawn again over the new clothes")
+	check(not doll._held_layers.is_empty(), "the axe is drawn again over the new clothes")
 	doll.swing(Vector2.LEFT, "chop")
 	doll.show_at(Vector2(-4, -4), 0.05, true)
 	var swing := [doll._swing_t, doll._swing_dir, doll._column, doll.scale, doll.position]

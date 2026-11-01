@@ -1,0 +1,26 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "В выборе персонажа остаются мужская и женская модели RO; прежние подписанные персонажи отображаются соответствующей новой моделью без автоматического изменения файла.",
+      "sources": {
+        "src/app/character_library.gd": "26926d7d0dbd223203c2a08f52774c79ee0fe51b5462328ab7ba906039c9e0fc",
+        "src/presentation/app.gd": "2eb013d2eb395daa85712af4a0d494376619b4ad4a7c533985c5e02e4a46054c",
+        "src/presentation/art.gd": "d649f1bf2c9f0bbde671462a84bdd447861e8052a26021caa48f4d89d3a50a49",
+        "src/presentation/character_editor.gd": "7eb5d9959270a3b812dfcf63a6029310550760808ee705b6f395f004440ef229",
+        "src/presentation/character_panel.gd": "47d88acc6a82fc1764234100639439ba065ecbd058a6f9e7e17f7eb465ff809b",
+        "src/presentation/character_preview.gd": "e084b93d195b292e726b8860615c9b187d139cd8cec8b8061053ae0bc5a64b13",
+        "src/presentation/main_menu.gd": "abec9e73cb02014e538d4451490f39579605a4471a2f4676029e373b14515781",
+        "src/presentation/world_view.gd": "f9ced0028d4d8583ebf2dc7259e9d9e0dcf7ebed076c857917eda685be671c40",
+        "content/base/character_editor.json": "fe19be0307ebad2bfb38ff2d94cba5b345a60b796a635947daf5830bb69a15f0"
+      },
+      "mechanics": [
+        "characters"
+      ],
+      "guides": {
+        "site/content/guides/start.html": "9529d3ca37e154f1046e0690b7379327776ce4aba0885b961d302e080a9ff9bf"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

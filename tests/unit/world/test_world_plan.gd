@@ -405,11 +405,61 @@ func test_old_world_is_refused_before_any_migration() -> void:
 	var before := FileAccess.get_sha256(path)
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	check(ServerWorld.open(path, content, {"require_planned": true}) == null, "old generation is refused")
-	check(ServerWorld.open_error.contains("старый тип генерации"), "reason identifies the old generation")
+	eq(ServerWorld.open_error, ServerWorld.OLD_WORLD_ERROR, "reason identifies the incompatible generation")
 	eq(FileAccess.get_sha256(path), before, "refusal does not change the old database")
+	check(ServerWorld.open(path, content) == null, "old worlds are refused without require_planned too")
+	eq(ServerWorld.open_error, ServerWorld.OLD_WORLD_ERROR, "the same explanation is shown")
+	eq(FileAccess.get_sha256(path), before, "the ordinary open also leaves the old database intact")
 	store = WorldStore.new()
 	check(store.open(path, {"migrations": WorldStore.MIGRATIONS.slice(0, 1)}), "the old schema is still readable")
 	eq(store.schema_version(), 1, "no migration happened")
+	store.write_meta("world_format", "7")
+	store.close()
+	before = FileAccess.get_sha256(path)
+	check(ServerWorld.open(path, content) == null, "the previous planned-world format is refused too")
+	eq(ServerWorld.open_error, ServerWorld.OLD_WORLD_ERROR, "planned worlds get the same explanation")
+	eq(FileAccess.get_sha256(path), before, "the previous planned world is not modified")
+
+
+func test_world_generator_versions_are_recorded_and_checked_before_open() -> void:
+	var path := tmp_dir().path_join("versions.db")
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var world := ServerWorld.open(path, content, {"seed": 17})
+	if not check(world != null, "a new world opens"):
+		return
+	world.close()
+	var store := WorldStore.new()
+	check(store.open(path), "the new world can be inspected")
+	eq(store.read_meta("surface_generator_version"), str(SurfaceGenerator.VERSION), "surface version is saved")
+	eq(store.read_meta("settlement_generator_version"), str(Settlements.VERSION), "settlement version is saved")
+	store.close()
+	world = ServerWorld.open(path, content)
+	check(world != null, "matching versions reopen")
+	if world:
+		world.close()
+	store = WorldStore.new()
+	check(store.open(path), "the version can be changed for the failure case")
+	check(store.write_meta("settlement_generator_version", "999"), "write an incompatible version")
+	store.close()
+	var before := FileAccess.get_sha256(path)
+	check(ServerWorld.open(path, content) == null, "a different generator is refused")
+	check(ServerWorld.open_error.contains("Версия генератора"), "the error explains the mismatch")
+	eq(FileAccess.get_sha256(path), before, "refusal leaves the database intact")
+
+
+func test_refusing_old_world_does_not_touch_its_live_wal() -> void:
+	var path := tmp_dir().path_join("old-wal.db")
+	var store := WorldStore.new()
+	check(store.open(path), "the old store opens")
+	check(store.write_meta("seed", "12") and store.write_meta("world_format", "7"), "the old world has a format")
+	check(FileAccess.file_exists(path + "-wal"), "there is an active WAL to preserve")
+	var before_db := FileAccess.get_sha256(path)
+	var before_wal := FileAccess.get_sha256(path + "-wal")
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	check(ServerWorld.open(path, content) == null, "the old world is refused while its WAL exists")
+	eq(ServerWorld.open_error, ServerWorld.OLD_WORLD_ERROR, "the old-world message is shown")
+	eq(FileAccess.get_sha256(path), before_db, "the original database is untouched")
+	eq(FileAccess.get_sha256(path + "-wal"), before_wal, "the original WAL is untouched")
 	store.close()
 
 

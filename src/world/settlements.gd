@@ -19,13 +19,16 @@ extends RefCounted
 ## fishes, by the mountains it mines and forges, on open grassland it herds,
 ## else it farms — more houses of that trade.
 ##
-## A village: rows of buildings, each with its door onto a street south of
-## it (the doors and windows face south), a fire on the first street, fields
-## and a pen beyond the last street. Every cell it sets is in its plan:
+## A village: rows of buildings with doors onto connected streets, a public
+## square by the first street, fields and a pen beyond the last street. Every
+## cell it sets is in its plan:
 ## {cell: {"ground", "cover", "structure", "roof", "props"}} — only the layers
 ## it sets; the rest of the land stays as the generator made it.
 
 const NONE := Vector2i(1 << 30, 1 << 30)
+## The plan is reconstructed from the seed; changing its rules requires a new
+## version and an explicit world-format decision.
+const VERSION := 1
 ## Cells round each building, field and pen kept free of any plant.
 const MARGIN := 1
 ## Cells round the whole settlement kept free of trees and bushes.
@@ -401,6 +404,8 @@ func _layout(k: int, rx: int, ry: int, d: Dictionary) -> Dictionary:
 	var streets := []
 	for r in rows.size():
 		streets.append(Rect2i(-widest / 2 - 2, r * row_step, widest + 4, 2))
+	if rows.size() > 1:
+		streets.append(Rect2i(-widest / 2 - 2, 0, 2, (rows.size() - 1) * row_step + 2))
 	var low := (rows.size() - 1) * row_step + 4
 	var fields := []
 	var fx := -widest / 2
@@ -417,9 +422,13 @@ func _layout(k: int, rx: int, ry: int, d: Dictionary) -> Dictionary:
 	var pd: Dictionary = d.get("pen", {})
 	if not pd.is_empty():
 		pen = {"rect": Rect2i(fx + 1, low, int(pd["size"][0]), int(pd["size"][1])), "animals": pd.get("animals", {})}
-	var far := maxi(widest / 2 + 3, fx + 1 + int(pd.get("size", [0, 0])[0]))
+	# A modest public square adjoins the street; the larger cart yard is
+	# separate so that the social centre is not an oversized parking lot.
+	var square := Rect2i(widest / 2 + 2, -8, 10, 10)
+	var yard := Rect2i(square.end.x + 1, -12, 25, 14)
+	var far := maxi(yard.end.x + 1, fx + 1 + int(pd.get("size", [0, 0])[0]))
 	return {"buildings": buildings, "streets": streets, "fields": fields, "pen": pen,
-		"half": far, "fire": Vector2i(0, 1)}
+		"half": far, "square": square, "yard": yard, "fire": square.position + Vector2i(1, 2)}
 
 
 ## The layout put at `centre`: every cell it sets.
@@ -443,6 +452,43 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 			for x in range(r.position.x, r.end.x):
 				put.call(Vector2i(x, y), "ground", String(d["road"]))
 				put.call(Vector2i(x, y), "cover", "")
+	var square := Rect2i((layout["square"] as Rect2i).position + centre, (layout["square"] as Rect2i).size)
+	var yard := Rect2i((layout["yard"] as Rect2i).position + centre, (layout["yard"] as Rect2i).size)
+	var market_site := Rect2i(square.position + Vector2i(0, 8), Vector2i(2, 2))
+	# A third, separate yard is the reserve when both main berths are occupied.
+	var reserve := Rect2i(yard.position + Vector2i(6, -13), Vector2i(13, 14))
+	bounds = bounds.merge(square)
+	bounds = bounds.merge(yard)
+	bounds = bounds.merge(reserve)
+	for y in range(reserve.position.y, reserve.end.y):
+		for x in range(reserve.position.x, reserve.end.x):
+			var at := Vector2i(x, y)
+			put.call(at, "cover", "")
+			put.call(at, "structure", "")
+			if Vector2(at - reserve.get_center()).length() <= 5.5 or (x >= yard.position.x + 10 and x <= yard.position.x + 14 and y >= yard.position.y - 4):
+				put.call(at, "ground", String(d["road"]))
+	for y in range(square.position.y, square.end.y):
+		for x in range(square.position.x, square.end.x):
+			var at := Vector2i(x, y)
+			put.call(at, "cover", "")
+			put.call(at, "structure", "")
+			var local := at - square.position
+			if market_site.has_point(at) or local.y >= 8 or Vector2(local - Vector2i(5, 4)).length() <= 5.0:
+				put.call(at, "ground", String(d["road"]))
+	# A short connection to the yard is also part of the street.
+	for y in range(centre.y, centre.y + 2):
+		var at := Vector2i(square.end.x, y)
+		put.call(at, "ground", String(d["road"]))
+		put.call(at, "cover", "")
+		put.call(at, "structure", "")
+	for y in range(yard.position.y, yard.end.y):
+		for x in range(yard.position.x, yard.end.x):
+			var at := Vector2i(x, y)
+			put.call(at, "cover", "")
+			put.call(at, "structure", "")
+			var local := at - yard.position
+			if local.y >= 9 or (local.x >= 10 and local.x <= 14) or Vector2(local - Vector2i(6, 5)).length() <= 6.0 or Vector2(local - Vector2i(19, 5)).length() <= 5.5:
+				put.call(at, "ground", String(d["road"]))
 	var homes := []
 	for b: Dictionary in layout["buildings"]:
 		var r := Rect2i((b["rect"] as Rect2i).position + centre, (b["rect"] as Rect2i).size)
@@ -505,12 +551,14 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 				else:
 					put.call(at, "structure", "")
 		pen = {"rect": r, "gate": gate, "animals": p["animals"]}
-	# Where roads come in: either end of the first street, and how far out
-	# its fields and pen reach on each side (a road turns beyond them).
-	var first: Rect2i = layout["streets"][0]
-	var ends := [Vector2i(first.position.x - 1, first.position.y) + centre, Vector2i(first.end.x, first.position.y) + centre]
+	# Both approaches start at the public ground: the westward approach follows
+	# the first street, and the eastward one leaves the square directly.
+	var road_start := Vector2i(square.get_center().x, centre.y)
+	var ends := [road_start, road_start]
 	return {"id": id, "kind": String(d.get("id", "")), "name": String(d.get("name", "")), "centre": centre,
 		"bounds": bounds, "cells": cells, "homes": homes, "fields": fields, "pen": pen, "fire": fire,
+		"square": square, "market_sites": [market_site], "parking_yard": yard, "parking_reserve": reserve,
+		"parking": [yard.position + Vector2i(6, 5), yard.position + Vector2i(19, 5), reserve.get_center()],
 		"ends": ends, "half": int(layout["half"]), "road": String(d["road"]), "bridge": String(d.get("bridge", "")),
 		"way": String(d.get("way", "")), "way_name": String(d.get("way_name", ""))}
 
@@ -745,15 +793,20 @@ static func _turns(path: Array[Vector2i], i: int) -> bool:
 	return before != Vector2i.ZERO and after != Vector2i.ZERO and before != after
 
 
-## A village's way out toward `to`: along its first street past its side,
-## ROAD_OUT beyond its fields and pen.
+## A village's way out toward `to`: along its first street past its actual
+## side. The two sides need not be equally far from the centre (the caravan
+## yards are to the east); using the eastern reach on the west can send a
+## road through its neighbouring village. Leave room for grid rounding.
 func _way_out(p: Dictionary, to: Vector2i) -> Array[Vector2i]:
 	var ends: Array = p["ends"]
 	var centre: Vector2i = p["centre"]
 	var side := 1 if to.x >= centre.x else -1
 	var from: Vector2i = ends[1] if side > 0 else ends[0]
+	var bounds: Rect2i = p["bounds"]
+	var margin := ROAD_OUT + ROUTE_STEP / 2 + 2
+	var edge := bounds.end.x + margin if side > 0 else bounds.position.x - margin
 	var out: Array[Vector2i] = []
-	_line(out, from, Vector2i(centre.x + side * (int(p["half"]) + ROAD_OUT), from.y))
+	_line(out, from, Vector2i(edge, from.y))
 	return out
 
 
@@ -923,6 +976,20 @@ func _dry(p: Dictionary) -> bool:
 	var r: Rect2i = p["bounds"]
 	if r.intersects(Rect2i(-_clearing - 1, -_clearing - 1, 2 * _clearing + 3, 2 * _clearing + 3)):
 		return false
+	if _land.is_valid():
+		for area: Rect2i in [p["square"], p["parking_yard"], p["parking_reserve"]]:
+			for y in range(area.position.y, area.end.y):
+				for x in range(area.position.x, area.end.x):
+					if String((_land.call(x, y) as Dictionary).get("what", "")) != "land":
+						return false
+		# The fixed approaches must reach dry land beyond either side. The
+		# coarse road search cannot reroute a submerged endpoint afterwards.
+		var margin := ROAD_OUT + ROUTE_STEP / 2 + 2
+		var middle: Vector2i = p["centre"]
+		for x in range(r.position.x - margin, r.end.x + margin + 1):
+			for y in range(middle.y, middle.y + 2):
+				if String((_land.call(x, y) as Dictionary).get("what", "")) in ["water", "deep"]:
+					return false
 	var wet := 0
 	var all := 0
 	for y in range(r.position.y, r.end.y, 2):

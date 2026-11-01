@@ -135,20 +135,22 @@ var topology: PlanetTopology
 ## their own, buckets single (ADR-0048). 4: the land from geography
 ## (ADR-0049) — places not yet visited would not meet the old ones. 5:
 ## shallows, fords and deep water (ADR-0051). 6: villages in clusters, their
-## ids and places new (ADR-0054).
-const WORLD_FORMAT := 6
+## ids and places new (ADR-0054). 8: new settlement plans, with their
+## generator versions recorded at world creation.
+const WORLD_FORMAT := 8
 ## 7: the finite world (ADR-0071): one saved plan, a closed planet's seam and
-## poles. Format 6 (the endless world) still opens, but its places have no
-## plan; a world made without one keeps the endless land.
-const PLANNED_WORLD_FORMAT := 7
+## poles. 9: the same planned geography with new settlement plans. Earlier
+## formats are refused before the database is opened for writing.
+const PLANNED_WORLD_FORMAT := 9
+const OLD_WORLD_ERROR := "Этот мир создан в предыдущей версии NHN и несовместим с текущей системой генерации. Создайте новый мир"
 ## Why the last open() failed, for people ("" — it did not).
 static var open_error := ""
 
 
 static func open(db_path: String, registry: ContentRegistry, options := {}) -> ServerWorld:
 	open_error = ""
-	if bool(options.get("require_planned", false)) and FileAccess.file_exists(db_path):
-		if not _check_planned_format(db_path):
+	if FileAccess.file_exists(db_path):
+		if not _check_world_format(db_path, bool(options.get("require_planned", false))):
 			return null
 	var s := WorldStore.new()
 	if not s.open(db_path, options):
@@ -165,7 +167,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 			new_plan = WorldPlan.generate(int(options.get("seed", randi())), preset, climate, registry)
 			if new_plan == null:
 				# A planned server must never fall through to the old random
-				# world: format 6 would be written and then refused on reopen.
+				# world: an unplanned world would otherwise be written.
 				open_error = "не удалось создать глобальный план мира (пресет %s, климат %s)" % [preset, climate]
 				s.close()
 				return null
@@ -177,7 +179,10 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 		var new_format := PLANNED_WORLD_FORMAT if new_plan else WORLD_FORMAT
 		var plan_text := JSON.stringify(new_plan.to_dict()) if new_plan else ""
 		if not (s.begin() and s.write_meta("seed", str(seed_value)) and s.write_meta("world_id", Uuid.v4())
-				and s.write_meta("world_format", str(new_format)) and (not new_plan or s.write_meta("world_plan", plan_text)) and s.commit()):
+				and s.write_meta("world_format", str(new_format))
+				and s.write_meta("surface_generator_version", str(SurfaceGenerator.VERSION))
+				and s.write_meta("settlement_generator_version", str(Settlements.VERSION))
+				and (not new_plan or s.write_meta("world_plan", plan_text)) and s.commit()):
 			s.rollback()
 			open_error = "не удалось записать новый мир: " + s.last_error
 			push_error(s.last_error)
@@ -254,7 +259,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 
 
 ## Check old saves before opening the write connection or migrating schema.
-static func _check_planned_format(db_path: String) -> bool:
+static func _check_world_format(db_path: String, require_planned: bool) -> bool:
 	# The bundled SQLite VFS cannot query a WAL database read-only without
 	# opening auxiliary files. Inspect a temporary copy so an old database is
 	# never checkpointed or migrated by the compatibility check.
@@ -267,6 +272,8 @@ static func _check_planned_format(db_path: String) -> bool:
 	if copied and FileAccess.file_exists(db_path + "-wal"):
 		copied = DirAccess.copy_absolute(db_path + "-wal", target + "-wal") == OK
 	var saved := ""
+	var surface_version := ""
+	var settlement_version := ""
 	if copied:
 		var db := SQLite.new()
 		db.path = target
@@ -275,12 +282,24 @@ static func _check_planned_format(db_path: String) -> bool:
 			var queried := db.query("SELECT value FROM meta WHERE key='world_format'")
 			if queried and not db.query_result.is_empty():
 				saved = String(db.query_result[0]["value"])
+			if db.query("SELECT key, value FROM meta WHERE key IN ('surface_generator_version', 'settlement_generator_version')"):
+				for row: Dictionary in db.query_result:
+					if row["key"] == "surface_generator_version":
+						surface_version = String(row["value"])
+					else:
+						settlement_version = String(row["value"])
 			db.close_db()
 	for filename in DirAccess.get_files_at(temp):
 		DirAccess.remove_absolute(temp.path_join(filename))
 	DirAccess.remove_absolute(temp)
-	if saved != str(PLANNED_WORLD_FORMAT):
-		open_error = "Этот мир использует старый тип генерации или повреждён и не поддерживает новую модель мира. Сохранение не изменено."
+	if saved.is_valid_int() and int(saved) < WORLD_FORMAT:
+		open_error = OLD_WORLD_ERROR
+		return false
+	if saved != str(PLANNED_WORLD_FORMAT) and (require_planned or saved != str(WORLD_FORMAT)):
+		open_error = "Неподдерживаемый или повреждённый формат мира. Сохранение не изменено."
+		return false
+	if surface_version != str(SurfaceGenerator.VERSION) or settlement_version != str(Settlements.VERSION):
+		open_error = "Версия генератора мира не совпадает с текущей. Сохранение не изменено."
 		return false
 	return true
 

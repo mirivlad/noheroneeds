@@ -26,7 +26,8 @@ const ID := "base:surface"
 ##     crag that is no level's edge stands up (so rock looks as it blocks).
 ## 15: a biome is judged cell by cell from the plan's climate, not taken whole
 ##     from a coarse point, and woods thin into glades with open trails.
-const VERSION := 15  # public houses, only in newly generated chunks
+## 16: settlement plans include public ground and caravan parking.
+const VERSION := 16
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography

@@ -71,6 +71,17 @@ func height(c: Vector2i) -> float:
 	if not pads.has(chunk):
 		var list := []
 		for p: Dictionary in land.settlements.plans_touching(chunk.x, chunk.y):
+			if p.has("square"):
+				var square: Rect2i = p["square"]
+				list.append([Rect2(square), natural(square.get_center()) + .04])
+			if p.has("parking_yard"):
+				var yard: Rect2i = p["parking_yard"]
+				var square: Rect2i = p["square"]
+				list.append([Rect2(yard), natural(square.get_center()) + .04])
+			if p.has("parking_reserve"):
+				var reserve: Rect2i = p["parking_reserve"]
+				var square: Rect2i = p["square"]
+				list.append([Rect2(reserve), natural(square.get_center()) + .04])
 			for home: Dictionary in p.get("homes", []):
 				var rect: Rect2i = home["rect"]
 				list.append([Rect2(rect), natural(Vector2i(rect.get_center())) + .04])

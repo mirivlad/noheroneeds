@@ -89,6 +89,102 @@ func _run_until_from(village: String, limit: int) -> bool:
 	return String(trader.job.get("from", "")) == village
 
 
+func test_stop_checks_fire_and_other_caravan_reservations() -> void:
+	var at := Vector2i(174, 170)
+	var centre := at * Movement.UNIT + Vector2i(128, 128)
+	var heading := Vector2.RIGHT
+	check(w.creatures._caravan_stop_clear(trader, centre, heading), "the empty place fits")
+	var chunk := w.chunk("surface", at.x >> 5, at.y >> 5)
+	chunk.set_cell("structure", at.x & 31, at.y & 31, "base:campfire")
+	check(not w.creatures._caravan_stop_clear(trader, centre, heading), "a non-solid fire cannot be under the cart")
+	chunk.set_cell("structure", at.x & 31, at.y & 31, "")
+	chunk.set_cell("structure", (at.x + 2) & 31, at.y & 31, "base:wood_door")
+	check(not w.creatures._caravan_stop_clear(trader, centre, heading), "a cart cannot block access to a door")
+	chunk.set_cell("structure", (at.x + 2) & 31, at.y & 31, "")
+	var saved_cells: Dictionary = road["cells"]
+	road["cells"] = {at: {}}
+	check(not w.creatures._caravan_stop_clear(trader, centre, heading), "a cart cannot park over a road")
+	road["cells"] = saved_cells
+	var other := w.creatures._spawn("base:villager", "surface", Vector2i(180, 175), {}, 4)
+	other.job = {"caravan_state": "arriving", "caravan_goal": [at.x, at.y]}
+	check(not w.creatures._caravan_stop_clear(trader, centre, heading), "a goal already reserved by another caravan is unavailable")
+	other.job = {"caravan_state": "departing", "caravan_stop": [at.x, at.y]}
+	check(not w.creatures._caravan_stop_clear(trader, centre, heading), "a departing caravan keeps its place until it moves away")
+	other.job = {"caravan_state": "travel", "horse": "horse-id"}
+	other.pos = centre
+	check(not w.creatures._caravan_stop_clear(trader, centre, heading), "a moving cart still occupies its present place")
+	other.job = {"caravan_state": "arriving", "caravan_goal": [at.x, at.y]}
+	var second := at + Vector2i(13, 0)
+	var second_centre := second * Movement.UNIT + Vector2i(128, 128)
+	for direction: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]:
+		check(w.creatures._caravan_stop_clear(trader, second_centre, direction), "a separate place remains free for heading %s" % direction)
+	var another := w.creatures._spawn("base:villager", "surface", Vector2i(180, 176), {}, 5)
+	another.job = {"caravan_state": "trading", "caravan_stop": [second.x, second.y]}
+	check(not w.creatures._caravan_stop_clear(trader, second_centre, heading), "the second place is reserved while trading")
+
+
+func test_occupied_berths_use_the_connected_reserve() -> void:
+	var home: Dictionary = w.generator.settlements.home_plan()
+	var area: Rect2i = (home["bounds"] as Rect2i).grow(8)
+	for cy in range(area.position.y >> 5, (area.end.y >> 5) + 1):
+		for cx in range(area.position.x >> 5, (area.end.x >> 5) + 1):
+			w.chunk("surface", cx, cy)
+	var start: Vector2i = home["ends"][0]
+	trader.pos = start * Movement.UNIT + Vector2i(128, 128)
+	road["to"] = home["id"]
+	var parking: Array = home["parking"]
+	for index in 2:
+		var other := w.creatures._spawn("base:villager", "surface", start, {}, index + 40)
+		var reserved: Vector2i = parking[index]
+		other.job = {"caravan_state": "trading", "caravan_stop": [reserved.x, reserved.y]}
+	var fallback: Vector2i = parking[2]
+	eq(w.creatures._caravan_stop_spot(trader), fallback, "both occupied berths lead to the separate reserve")
+	for spot: Vector2i in parking:
+		check(not w.creatures._caravan_route(trader, spot, 16).is_empty(), "the cart and horse have a route to %s" % spot)
+
+
+func test_two_caravans_reserve_and_trade_at_distinct_berths() -> void:
+	var home: Dictionary = w.generator.settlements.home_plan()
+	var area: Rect2i = (home["bounds"] as Rect2i).grow(8)
+	for cy in range(area.position.y >> 5, (area.end.y >> 5) + 1):
+		for cx in range(area.position.x >> 5, (area.end.x >> 5) + 1):
+			w.chunk("surface", cx, cy)
+	# Loading roads may spawn unrelated traders; isolate the two under test.
+	for spawned: Creature in w.creatures.creatures.values():
+		if spawned != trader and String(spawned.job.get("horse", "")) != "":
+			w.creatures.remove(String(spawned.job["horse"]))
+			w.creatures.remove(spawned.id)
+	road["to"] = home["id"]
+	var places: Array = home["parking"]
+	var first: Vector2i = places[0]
+	var second: Vector2i = places[1]
+	trader.pos = first * Movement.UNIT + Vector2i(128, 128)
+	trader.job["caravan_heading"] = [0, 1]
+	trader.job["horse_heading"] = [0, 1]
+	w.creatures._move_caravan_horse(trader)
+	w.creatures._caravan_arrive(trader)
+	eq(w.creatures._caravan_goal(trader), first, "the first caravan reserves its berth")
+	var other := w.creatures._spawn("base:villager", "surface", second, {}, 91)
+	other.route = {"road": road["key"], "i": 0, "step": 1}
+	other.job = {"profession": "base:trader", "purse": 600, "name": "Другой", "from": road["from"], "toward": road["to"]}
+	w.creatures._make_caravan(other, "cart")
+	other.job["caravan_heading"] = [0, 1]
+	other.job["horse_heading"] = [0, 1]
+	w.creatures._move_caravan_horse(other)
+	var second_centre := second * Movement.UNIT + Vector2i(128, 128)
+	check(w.creatures._fits(other, second), "the second trader fits")
+	check(w.creatures._caravan_cart_fits(other, second_centre, Vector2.DOWN), "the second cart fits")
+	check(w.creatures._caravan_horse_fits(other, second_centre, Vector2.DOWN), "the second horse fits")
+	check(w.creatures._caravan_stop_clear(other, second_centre, Vector2.DOWN), "the second berth is clear")
+	w.creatures._caravan_arrive(other)
+	eq(w.creatures._caravan_goal(other), second, "the second caravan takes the other berth")
+	w.creatures._caravan_at_stop(trader, "arriving")
+	w.creatures._caravan_at_stop(other, "arriving")
+	eq(String(trader.job.get("caravan_state", "")), "trading", "the first caravan can trade")
+	eq(String(other.job.get("caravan_state", "")), "trading", "the second caravan can trade")
+	check(trader.cell().distance_to(other.cell()) >= 12, "their carts and horses have separate space")
+
+
 func test_a_caravan_stops_trades_rests_and_only_then_goes_on() -> void:
 	var to := String(road["to"])
 	var before := w.economy.have(to, "base:iron_sword")

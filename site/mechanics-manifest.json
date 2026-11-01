@@ -107,6 +107,17 @@
       "kinds": []
     },
     {
+      "id": "settlements",
+      "guide": "trade",
+      "sources": [
+        "src/world/settlements.gd",
+        "src/world/surface_generator.gd",
+        "src/experiment_3d/terrain_shape_3d.gd",
+        "content/base/settlements.json"
+      ],
+      "kinds": []
+    },
+    {
       "id": "trade",
       "guide": "trade",
       "sources": [

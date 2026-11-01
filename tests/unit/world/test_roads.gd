@@ -48,6 +48,19 @@ func _is_contiguous(path: Array) -> bool:
 	return true
 
 
+func test_approaches_use_each_side_of_an_asymmetric_village() -> void:
+	var s := _world([], [])
+	var village := _village("a", Vector2i.ZERO)
+	village["bounds"] = Rect2i(-15, -25, 66, 44)
+	village["ends"] = [Vector2i(25, 0), Vector2i(25, 0)]
+	village["half"] = 54
+	var west := s._way_out(village, Vector2i(-100, 0))
+	var east := s._way_out(village, Vector2i(100, 0))
+	check(west[-1].x < -15 and west[-1].x > -35, "the west exit follows the west edge, not the long east side")
+	check(east[-1].x > 51, "the east exit clears the longer yard")
+	check(_is_contiguous(west) and _is_contiguous(east), "both approaches are continuous")
+
+
 func test_short_water_is_bridged_without_a_gap() -> void:
 	var road := _road(Vector2i.ZERO, Vector2i(200, 0), [Rect2i(96, -20, 5, 41)], [])
 	check(not road.is_empty(), "a road over a short river")

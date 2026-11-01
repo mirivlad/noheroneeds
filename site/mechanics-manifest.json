@@ -7,7 +7,8 @@
       "sources": [
         "src/app/world_library.gd",
         "src/characters/*.gd",
-        "src/app/character_library.gd"
+        "src/app/character_library.gd",
+        "content/base/pack.json"
       ],
       "kinds": [
         "item",

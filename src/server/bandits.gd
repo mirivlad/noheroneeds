@@ -82,7 +82,7 @@ func think(c: Creature) -> void:
 	if s.is_empty():
 		return
 	_meals(id)
-	if c.health < int(world.content.get_def(c.kind)["health"]) and c.cell().distance_to(c.home) < 8 \
+	if c.health < int(world.content.get_def(c.kind)["health"]) and world.cell_distance(c.cell(), c.home) < 8 \
 			and world.world_time - int(c.job.get("ate_at", -Daylight.DAY_MS)) <= Daylight.HOUR_MS * 6 \
 			and world.world_time - int(c.job.get("healed_at", 0)) >= Daylight.HOUR_MS:
 		world.combat.heal(c.id, 1)
@@ -91,7 +91,7 @@ func think(c: Creature) -> void:
 	sim._dress(c, "base:fishing_rod" if c.state == "fish" and not c.job.get("raid", false) else String(c.job.get("weapon", "base:spear")), false)
 	if not c.job.get("raid", false) and world.world_time >= int(s["next_raid"]) and not Daylight.is_night(world.world_time):
 		start_raid(id)
-	var retreat := c.health < 6 or c.cell().distance_to(plan["centre"]) > 110
+	var retreat := c.health < 6 or world.cell_distance(c.cell(), plan["centre"]) > 110
 	if c.job.get("weapon", "") == "base:bow" and world.inventory("gear|" + c.id).count("base:arrow") == 0:
 		retreat = true
 	if c.job.get("raid", false):
@@ -122,7 +122,7 @@ func think(c: Creature) -> void:
 		return
 	if Daylight.is_night(world.world_time) or c.health < 12:
 		return_home(c, plan)
-		if c.target == Creature.NO_TARGET and c.cell().distance_to(c.home) <= 1:
+		if c.target == Creature.NO_TARGET and world.cell_distance(c.cell(), c.home) <= 1:
 			sim._dress(c, String(c.job["weapon"]), true)
 		return
 	if not world.inventory("haul|" + c.id).stacks.is_empty():
@@ -148,7 +148,7 @@ func start_raid(id: String) -> Array:
 	var eligible: Array[Creature] = []
 	for member: String in s["members"]:
 		var c := world.creatures.get_creature(member)
-		if c != null and c.health >= 12 and not c.job.get("raid", false) and c.cell().distance_to(c.home) < 50:
+		if c != null and c.health >= 12 and not c.job.get("raid", false) and world.cell_distance(c.cell(), c.home) < 50:
 			eligible.append(c)
 	if eligible.is_empty():
 		s["next_raid"] = world.world_time + Daylight.HOUR_MS * 6
@@ -185,7 +185,7 @@ func attacked(c: Creature, attacker: String, at: Vector2i) -> void:
 		return
 	for member: String in state(camp).get("members", []):
 		var other := world.creatures.get_creature(member)
-		if other == null or other.location != c.location or other.cell().distance_to(c.cell()) > 12:
+		if other == null or other.location != c.location or world.cell_distance(other.cell(), c.cell()) > 12:
 			continue
 		other.memory[attacker] = {"pos": Movement.cell_of(at), "time": world.world_time, "what": "attacker"}
 		other.changed()
@@ -202,10 +202,10 @@ func _enemy(c: Creature, plan: Dictionary, raid: bool) -> String:
 		var other := world.creatures.get_creature(id)
 		var caravan: bool = other != null and (other.job.get("profession", "") == "base:trader" or other.job.has("guard_driver"))
 		var person := world.present.has(id)
-		var intruder := person and (m["pos"] as Vector2i).distance_to(plan["centre"]) <= 11
-		if not intruder and not (raid and (caravan or person) and (m["pos"] as Vector2i).distance_to(plan["raid_at"]) <= 30):
+		var intruder := person and world.cell_distance(m["pos"], plan["centre"]) <= 11
+		if not intruder and not (raid and (caravan or person) and world.cell_distance(m["pos"], plan["raid_at"]) <= 30):
 			continue
-		var d := c.cell().distance_to(m["pos"])
+		var d := world.cell_distance(c.cell(), m["pos"])
 		if d < distance:
 			distance = d
 			best = id
@@ -222,7 +222,7 @@ func _loot(c: Creature, raid: bool) -> bool:
 	if not raid and not FOOD.has(String(it["item"])) and not it["item"] in ["base:hide", "base:arrow"]:
 		return false
 	var at := Vector2i(int(it["x"]), int(it["y"]))
-	if Vector2(c.pos).distance_to(Vector2(at)) <= Movement.UNIT:
+	if world.distance(c.pos, at) <= Movement.UNIT:
 		world.take_item(item, world.inventory("haul|" + c.id))
 		world.touch_inventory("haul|" + c.id)
 		world.operation_creature(c)
@@ -232,7 +232,7 @@ func _loot(c: Creature, raid: bool) -> bool:
 
 
 func return_home(c: Creature, plan: Dictionary) -> void:
-	if c.cell().distance_to(plan["centre"]) > 7:
+	if world.cell_distance(c.cell(), plan["centre"]) > 7:
 		walk_to(c, plan["centre"], "return", true)
 		return
 	var haul := world.inventory("haul|" + c.id)
@@ -267,7 +267,7 @@ func return_home(c: Creature, plan: Dictionary) -> void:
 
 func walk_to(c: Creature, goal: Vector2i, activity: String, run := false) -> void:
 	var sim := world.creatures
-	if c.cell().distance_to(goal) <= 1:
+	if world.cell_distance(c.cell(), goal) <= 1:
 		sim._go(c, activity, Creature.NO_TARGET, false)
 		return
 	if c.path_to != goal or c.path.is_empty() or c.stuck > 12:
@@ -281,7 +281,7 @@ func walk_to(c: Creature, goal: Vector2i, activity: String, run := false) -> voi
 func _hunt(c: Creature) -> bool:
 	for id: String in c.memory:
 		var other := world.creatures.get_creature(id)
-		if other != null and other.kind in ["base:hare", "base:deer"] and c.cell().distance_to(c.memory[id]["pos"]) < 14:
+		if other != null and other.kind in ["base:hare", "base:deer"] and world.cell_distance(c.cell(), c.memory[id]["pos"]) < 14:
 			world.creatures._engage(c, id, c.memory[id]["pos"])
 			return true
 	return false
@@ -291,7 +291,7 @@ func _fish(c: Creature, plan: Dictionary) -> bool:
 	var spot: Vector2i = plan["water"]
 	if spot == Settlements.NONE:
 		return false
-	if c.cell().distance_to(spot) > 1:
+	if world.cell_distance(c.cell(), spot) > 1:
 		walk_to(c, spot, "fish")
 		return true
 	world.creatures._dress(c, "base:fishing_rod", false)
@@ -330,7 +330,7 @@ func _meals(id: String) -> void:
 				stock.add(recipe[1], n)
 	for member: String in s["members"]:
 		var c := world.creatures.get_creature(member)
-		if c == null or c.cell().distance_to(c.home) > 12:
+		if c == null or world.cell_distance(c.cell(), c.home) > 12:
 			continue
 		for food: String in FOOD:
 			if stock.count(food) > 0:

@@ -104,7 +104,7 @@ func board(actor: String, r: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "aboard"}
 	var p: Dictionary = world.present[actor]
 	var at := Vector2i(int(it["x"]), int(it["y"]))
-	if p["location"] != it["location"] or Vector2(p["pos"]).distance_to(Vector2(at)) > REACH:
+	if p["location"] != it["location"] or world.distance(p["pos"], at) > REACH:
 		return {"ok": false, "reason": "too_far"}
 	var cell := Movement.cell_of(at)
 	if blocks_boat(String(it["location"]), cell.x, cell.y):
@@ -196,5 +196,5 @@ func check() -> void:
 		var b := aboard(id)
 		var it: Dictionary = world.items.get(b, {})
 		if not world.present.has(id) or it.is_empty() or world.present[id]["location"] != it["location"] \
-				or Vector2(world.present[id]["pos"]).distance_to(Vector2(int(it["x"]), int(it["y"]))) > LOST * Movement.UNIT:
+				or world.distance(world.present[id]["pos"], Vector2i(int(it["x"]), int(it["y"]))) > LOST * Movement.UNIT:
 			leave(id)

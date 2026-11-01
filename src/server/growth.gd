@@ -142,7 +142,7 @@ func plant(actor: String, r: Dictionary) -> Dictionary:
 	var loc := String(p["location"])
 	var x := ServerWorld.ri(r, "x", 0)
 	var y := ServerWorld.ri(r, "y", 0)
-	if Vector2(Movement.cell_of(p["pos"])).distance_to(Vector2(x, y)) > 2.5:
+	if world.cell_distance(Movement.cell_of(p["pos"]), Vector2i(x, y)) > 2.5:
 		return {"ok": false, "reason": "too_far"}
 	var cx := floori(float(x) / Chunk.SIZE)
 	var cy := floori(float(y) / Chunk.SIZE)

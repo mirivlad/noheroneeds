@@ -110,6 +110,29 @@ func test_a_village_has_a_name_a_past_and_a_thing_lost_in_a_real_cave() -> void:
 		"not twice: the one who picked it up has it")
 
 
+func test_a_lost_thing_lies_again_when_the_loader_brings_its_cave() -> void:
+	var find: Array = (w.chronicles.of(id)["requests"] as Array).filter(
+		func(r: Dictionary) -> bool: return r["kind"] == "find")
+	check(find.size() == 1, "the village has a lost thing to look for")
+	if find.is_empty():
+		return
+	var spot := Vector2i(int(find[0]["spot"][0]), int(find[0]["spot"][1]))
+	var location := Levels.depth_id(-1)
+	var cx := floori(spot.x / float(Chunk.SIZE))
+	var cy := floori(spot.y / float(Chunk.SIZE))
+	check(not w.has_chunk(location, cx, cy), "the cave is not loaded yet")
+	var sync_before := w.sync_loads
+	w.prefetch(location, cx, cy)
+	var deadline := Time.get_ticks_msec() + 10000
+	while w.loader.waiting() > 0 and Time.get_ticks_msec() < deadline:
+		OS.delay_msec(5)
+	OS.delay_msec(20)
+	w.poll_loaded()
+	eq(w.sync_loads, sync_before, "the cave arrived on the loader thread")
+	check(w.items.values().any(func(it: Dictionary) -> bool: return AMULETS.has(String(it["item"]))),
+		"a lost thing lies there when its cave arrives from the loader, not only on a synchronous load")
+
+
 func test_a_lost_thing_taken_on_found_and_brought_back() -> void:
 	var r: Dictionary = (w.chronicles.of(id)["requests"] as Array).filter(func(x: Dictionary) -> bool: return x["kind"] == "find")[0]
 	var asker := _dweller(int(r["asker"]))

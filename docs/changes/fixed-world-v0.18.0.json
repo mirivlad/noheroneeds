@@ -4,7 +4,8 @@
       "impact": "player-facing-change",
       "summary": "Создание отдельного постоянного мира с сохранением выбранного размера, климата и географического плана; повторная загрузка использует подтверждённый план.",
       "sources": {
-        "src/app/world_library.gd": "bfbce916984b2b70f84d55e14064a4012ddb8fcea7d0234c46f5aabcbb416589"
+        "src/app/world_library.gd": "bfbce916984b2b70f84d55e14064a4012ddb8fcea7d0234c46f5aabcbb416589",
+        "content/base/pack.json": "9ced8d0d408c729a278e2e6d1f3bd9c0e83efbee2b8f1a9938b46ae5b37d6bed"
       },
       "mechanics": [
         "start"
@@ -73,7 +74,7 @@
         "src/world/surface_generator.gd": "39f2abd25980f97c94f0396e3bdd78f116bcaf6e4ddff511a18652050f1ec94c",
         "src/world/terrain.gd": "6b6dfca8e160d8edc928073c219ed97de104d48f6d703d675dfe9a21bfb66edc",
         "src/world/world_hydrology.gd": "b147bbf0a0e03ec920e7e21072ee5f44b5c1586f518c03b6ea534480f7820d65",
-        "src/world/world_plan.gd": "2bd42aee3c0ff415dbe97b42232de2adc1318da0744aaff67b27c0c0e31864e5"
+        "src/world/world_plan.gd": "ecf5c0c7ba3f51efbe6ddff54c92fb272d5833079e8a75297bc4d541776e62c1"
       },
       "mechanics": [
         "nature"

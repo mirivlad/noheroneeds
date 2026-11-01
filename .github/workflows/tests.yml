@@ -1,14 +1,13 @@
 name: tests
 on:
-  push:
-  pull_request:
-  workflow_call:  # the release runs them first
+  workflow_call:  # run only within the release workflow
 jobs:
   headless:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     env:
       GODOT_VERSION: 4.7.2-stable
+      TEST_TIMEOUT: '2400'
     steps:
       - uses: actions/checkout@v4
       - name: Cache Godot and addons

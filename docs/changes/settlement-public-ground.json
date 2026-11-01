@@ -1,0 +1,48 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Площадь, улицы и отдельные площадки для караванов входят в детерминированный план деревни.",
+      "sources": {
+        "src/world/settlements.gd": "fe2e2706e5364d207fbde6e92764e297785d2683fd75b7de3d946cb5b3f8917b",
+        "src/world/surface_generator.gd": "2527d9605e73a372d0bf67e1dcc679bb54cf6fc71b53e3f3247e43839db108e0",
+        "src/experiment_3d/terrain_shape_3d.gd": "8fbf14ce9188df09b21f2396eaf5fa9273bccd03990e6ad22e1b256968b10b5b"
+      },
+      "mechanics": [
+        "settlements"
+      ],
+      "guides": {
+        "site/content/guides/trade.html": "459aab64fd53da8367e21c11f19cf79be09324c87850a8810e2557651dca898b"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    },
+    {
+      "impact": "player-facing-change",
+      "summary": "Караван выбирает свободное место для стоянки и не ставит упряжку на огонь, входы и дорогу.",
+      "sources": {
+        "src/server/creature_sim.gd": "d01ca114da1cef7c4cec2c7443b6cd8624872a4ab0572731f19b02bd2df8ba5e"
+      },
+      "mechanics": [
+        "caravans"
+      ],
+      "guides": {
+        "site/content/guides/caravans.html": "5d243cf7461bead9d4ad4e0e3aea8aee315ef7417f6ca50620e4e66247b379a9"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    },
+    {
+      "impact": "player-facing-change",
+      "summary": "Новые миры сохраняют версии генерации; старые форматы и несовпадения версий отклоняются до изменения исходной базы.",
+      "sources": {
+        "src/server/server_world.gd": "7bd33589149bbe14718083f05db047f5656f24229675c9be7d5a51bcd57bc741"
+      },
+      "mechanics": [
+        "multiplayer"
+      ],
+      "guides": {
+        "site/content/guides/multiplayer.html": "3b226d41cc442df246a306c4abf635dca48b7d88375fd59aeabb87bfd29daa42"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

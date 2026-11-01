@@ -68,6 +68,86 @@ func test_any_order_of_chunks_makes_the_same_village() -> void:
 		check(b.generate(k.x, k.y).same_as(first[k]), "chunk %s the same either way" % k)
 
 
+func test_square_and_parking_are_part_of_the_generated_plan() -> void:
+	var g := SurfaceGenerator.new(12345, content)
+	var p := _home_plan(g)
+	var square: Rect2i = p["square"]
+	var cells: Dictionary = p["cells"]
+	check(square.has_point(p["fire"]), "the fire is on the public ground")
+	check((p["market_sites"] as Array).size() > 0, "the plan reserves space for a future market")
+	for site: Rect2i in p["market_sites"]:
+		check(square.encloses(site) and not site.has_point(p["fire"]), "the market space is on the square and away from the fire")
+		for y in range(site.position.y, site.end.y):
+			for x in range(site.position.x, site.end.x):
+				var at := Vector2i(x, y)
+				eq(String((cells[at] as Dictionary).get("structure", "")), "", "the future market is not obstructed")
+	eq((p["parking"] as Array).size(), 3, "two parking places and a reserve are planned")
+	for at: Vector2i in p["parking"]:
+		check((p["parking_yard"] as Rect2i).has_point(at) or (p["parking_reserve"] as Rect2i).has_point(at), "the parking candidate is in a planned yard")
+		eq(String((cells[at] as Dictionary).get("structure", "")), "", "the parking cell is clear")
+		check(at.distance_to(p["fire"] as Vector2i) > 5, "the parking cell is away from the fire")
+	var chunks := {}
+	for y in range(square.position.y, square.end.y):
+		for x in range(square.position.x, square.end.x):
+			var at := Vector2i(x, y)
+			if not cells.has(at) or not (cells[at] as Dictionary).has("ground"):
+				continue
+			var key := Vector2i(at.x >> 5, at.y >> 5)
+			if not chunks.has(key):
+				chunks[key] = g.generate(key.x, key.y)
+			var chunk: Chunk = chunks[key]
+			eq(chunk.get_cell("ground", posmod(at.x, 32), posmod(at.y, 32)), String(p["road"]), "the square is materialized as road ground")
+	var start: Vector2i = p["ends"][0]
+	var reached := {start: true}
+	var queue: Array[Vector2i] = [start]
+	var i := 0
+	while i < queue.size():
+		var at := queue[i]
+		i += 1
+		for direction: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+			var next := at + direction
+			if reached.has(next) or not cells.has(next):
+				continue
+			var spec: Dictionary = cells[next]
+			if spec.get("ground", "") != p["road"] or spec.get("structure", "") != "":
+				continue
+			reached[next] = true
+			queue.append(next)
+	for home: Dictionary in p["homes"]:
+		check(reached.has((home["door"] as Vector2i) + Vector2i.DOWN), "each doorstep joins the square")
+	for at: Vector2i in p["parking"]:
+		check(reached.has(at), "every parking place joins the square and streets")
+
+
+func test_settlement_plan_and_player_changes_survive_reopening() -> void:
+	var path := tmp_dir().path_join("settlement.db")
+	var world := ServerWorld.open(path, content, {"seed": 12345})
+	if not check(world != null, "a new world opens"):
+		return
+	var plan := world.generator.settlements.home_plan()
+	var cells: Dictionary = plan["cells"]
+	var samples: Array = [plan["fire"], plan["parking"][0], plan["parking"][2], plan["homes"][0]["door"]]
+	for at: Vector2i in samples:
+		var chunk := world.chunk("surface", at.x >> 5, at.y >> 5)
+		var spec: Dictionary = cells[at]
+		for layer: String in ["ground", "structure", "roof"]:
+			if spec.has(layer):
+				eq(chunk.get_cell(layer, at.x & 31, at.y & 31), String(spec[layer]), "generated %s matches its plan at %s" % [layer, at])
+	var edited: Vector2i = plan["parking"][0]
+	var changed := world.chunk("surface", edited.x >> 5, edited.y >> 5)
+	changed.set_cell("structure", edited.x & 31, edited.y & 31, "base:wood_fence")
+	world._changed(ServerWorld.chunk_key("surface", edited.x >> 5, edited.y >> 5))
+	world.close()
+	world = ServerWorld.open(path, content)
+	if not check(world != null, "the same world reopens"):
+		return
+	var restored := world.generator.settlements.plan_by_id(String(plan["id"]))
+	eq(restored["cells"], cells, "the reconstructed plan is stable")
+	eq(restored["parking"], plan["parking"], "all parking locations are stable")
+	eq(world.part_at("surface", edited.x, edited.y), "base:wood_fence", "a player change in a generated chunk survives")
+	world.close()
+
+
 func test_malformed_settlements_are_content_errors() -> void:
 	var good: Dictionary = content.get_def("base:village").duplicate(true)
 	good["id"] = "test:v"

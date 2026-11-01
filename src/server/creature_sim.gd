@@ -660,7 +660,7 @@ func _caravan_goal(c: Creature) -> Vector2i:
 
 ## The place in a village where a caravan stops: by the square (its fire), by
 ## a tavern, or a free place by the road. NO_TARGET if nothing fits.
-func _caravan_stop_spot(c: Creature) -> Vector2i:
+func _caravan_stop_spot(c: Creature, avoid := Creature.NO_TARGET) -> Vector2i:
 	var here := c.cell()
 	var heading := _heading_of(c.job.get("caravan_heading", [0, 1]))
 	var candidates: Array[Vector2i] = []
@@ -669,15 +669,9 @@ func _caravan_stop_spot(c: Creature) -> Vector2i:
 	var dest := String(road.get("to", "")) if step > 0 else String(road.get("from", ""))
 	var plan := world.generator.settlements.plan_by_id(dest) if world.generator and dest != "" else {}
 	if not plan.is_empty():
-		var fire: Vector2i = plan["fire"]
-		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
-				Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1), Vector2i(2, 0), Vector2i(-2, 0)]:
-			var at := fire + d
-			if world.cell_distance(at, here) <= 16:
+		for at: Vector2i in plan.get("parking", []):
+			if world.cell_distance(at, here) <= 64:
 				candidates.append(at)
-		for e: Vector2i in plan["ends"]:
-			if world.cell_distance(e, here) <= 16:
-				candidates.append(e)
 	var inn := world.hospitality.camp_spot(c)
 	if inn != Creature.NO_TARGET and world.cell_distance(inn, here) <= 16:
 		candidates.append(inn)
@@ -686,14 +680,59 @@ func _caravan_stop_spot(c: Creature) -> Vector2i:
 			Vector2i(2, 2), Vector2i(-2, 2), Vector2i(2, -2), Vector2i(-2, -2), Vector2i(4, 0), Vector2i(-4, 0)]:
 		candidates.append(here + d)
 	for at: Vector2i in candidates:
+		if at == avoid:
+			continue
+		if not plan.is_empty() and (plan["bounds"] as Rect2i).grow(2).has_point(at) \
+				and at not in plan.get("parking", []) and at != inn:
+			continue
 		if not world.has_chunk(c.location, at.x >> 5, at.y >> 5):
 			continue
 		if not _fits(c, at):
 			continue
 		var centre := at * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2)
-		if _caravan_cart_fits(c, centre, heading) and _caravan_horse_fits(c, centre, heading):
+		if _caravan_cart_fits(c, centre, heading) and _caravan_horse_fits(c, centre, heading) and _caravan_stop_clear(c, centre, heading):
 			return at
 	return Creature.NO_TARGET
+
+
+## A stop must also leave non-solid structures (notably fires and open doors)
+## free. Reserve space against other stopped or arriving harnesses as well.
+func _caravan_stop_clear(c: Creature, centre: Vector2i, heading: Vector2) -> bool:
+	var forward := heading.normalized()
+	var side := Vector2(-forward.y, forward.x)
+	var extent := forward.abs() * .95 + side.abs() * .70
+	var half := Vector2i(ceili(extent.x * Movement.UNIT), ceili(extent.y * Movement.UNIT))
+	var cells := BodySize.cells(centre, half)
+	var horse := get_creature(String(c.job.get("horse", "")))
+	if horse:
+		var horse_at := _horse_place(c, centre, heading)
+		if horse_at == Creature.NO_TARGET:
+			return false
+		cells.append_array(BodySize.cells(horse_at, _half(horse.kind)))
+	var road_cells: Dictionary = _road_of(c).get("cells", {})
+	for cell: Vector2i in cells:
+		if not world.has_chunk(c.location, cell.x >> 5, cell.y >> 5) or world.part_at(c.location, cell.x, cell.y) != "":
+			return false
+		if road_cells.has(cell):
+			return false
+		for direction: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+			var neighbor := cell + direction
+			if world.has_chunk(c.location, neighbor.x >> 5, neighbor.y >> 5) and world.content.get_def(world.part_at(c.location, neighbor.x, neighbor.y)).get("role", "") == "door":
+				return false
+	var at := Vector2i(floori(float(centre.x) / Movement.UNIT), floori(float(centre.y) / Movement.UNIT))
+	for other: Creature in creatures.values():
+		if other == c or other.location != c.location:
+			continue
+		# A departure can still occupy its old place after its phase changes.
+		# Check the live cart as well as any promised destination.
+		if String(other.job.get("horse", "")) != "" and world.cell_distance(at, other.cell()) < 12:
+			return false
+		if String(other.job.get("caravan_state", "")) not in ["arriving", "trading", "resting", "departing"]:
+			continue
+		var reserved: Array = other.job.get("caravan_goal", other.job.get("caravan_stop", []))
+		if reserved.size() == 2 and world.cell_distance(at, Vector2i(int(reserved[0]), int(reserved[1]))) < 12:
+			return false
+	return true
 
 
 ## The phases of a stop: walk in, trade (unload, sell, take a return load),
@@ -701,13 +740,26 @@ func _caravan_stop_spot(c: Creature) -> Vector2i:
 func _caravan_at_stop(c: Creature, phase: String) -> void:
 	match phase:
 		"arriving":
+			if c.route_retry > _tick:
+				return
 			var spot := _caravan_goal(c)
 			if spot == Creature.NO_TARGET:
-				# Nothing in the village fits the harness: trade on the road.
-				c.job["caravan_stop"] = [c.cell().x, c.cell().y]
-				_caravan_trade(c)
+				# A blocked place can become free later. Do not trade on an
+				# unverified cell while waiting for a safe place.
+				spot = _caravan_stop_spot(c)
+				if spot != Creature.NO_TARGET:
+					c.job["caravan_goal"] = [spot.x, spot.y]
+					c.changed()
+				else:
+					c.route_retry = _tick + Movement.TICK_RATE
 				return
 			if c.cell() == spot:
+				var heading := _heading_of(c.job.get("caravan_heading", [0, 1]))
+				if not _caravan_stop_clear(c, c.pos, heading):
+					c.job.erase("caravan_goal")
+					c.changed()
+					c.route_retry = _tick + Movement.TICK_RATE
+					return
 				c.job["caravan_stop"] = [spot.x, spot.y]
 				c.job.erase("caravan_goal")
 				_caravan_trade(c)
@@ -722,11 +774,11 @@ func _caravan_at_stop(c: Creature, phase: String) -> void:
 			if not c.path.is_empty():
 				_go(c, "detour", c.path[0], false)
 				return
-			# The yard may have been walled since the village was made: stand
-			# and trade where the caravan already is.
-			c.job["caravan_stop"] = [c.cell().x, c.cell().y]
-			c.job.erase("caravan_goal")
-			_caravan_trade(c)
+			# Try another place if a player has blocked the way meanwhile.
+			var alternative := _caravan_stop_spot(c, spot)
+			c.job["caravan_goal"] = [alternative.x, alternative.y] if alternative != Creature.NO_TARGET else []
+			c.changed()
+			c.route_retry = _tick + Movement.TICK_RATE
 		"trading":
 			if c.state != "trading" or c.target != Creature.NO_TARGET:
 				_go(c, "trading", Creature.NO_TARGET, false)
@@ -736,8 +788,6 @@ func _caravan_at_stop(c: Creature, phase: String) -> void:
 			if c.state != "rest" or c.target != Creature.NO_TARGET:
 				_go(c, "rest", Creature.NO_TARGET, false)
 			if world.world_time >= int(c.job.get("caravan_until", 0)):
-				c.job.erase("caravan_stop")
-				c.job.erase("caravan_stop_kind")
 				c.job.erase("caravan_goal")
 				c.path.clear()
 				c.path_to = Creature.NO_TARGET
@@ -825,6 +875,8 @@ func _traveller(c: Creature, def: Dictionary) -> void:
 		_caravan_at_stop(c, phase)
 		return
 	if phase == "departing" and world.world_time >= int(c.job.get("caravan_until", 0)):
+		c.job.erase("caravan_stop")
+		c.job.erase("caravan_stop_kind")
 		_set_caravan_state(c, "travel")
 	if Daylight.is_night(world.world_time):
 		world.caravans.rest(c)

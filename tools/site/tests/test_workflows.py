@@ -39,6 +39,11 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(set(events), {'workflow_call'})
         self.assertNotIn('push', events)
         self.assertNotIn('pull_request', events)
+        # Tag updates may leave github.event.before unreachable in a fresh clone.
+        preflight = next(s['run'] for s in workflow['jobs']['documentation']['steps']
+                         if s.get('name') == 'Documentation and release preflight')
+        self.assertIn('args+=(--release', preflight)
+        self.assertIn('args+=(--base "$BASE_REF")', preflight)
         self.assertEqual(workflow['permissions']['contents'], 'read')
         commands = '\n'.join(s.get('run', '') for s in workflow['jobs']['documentation']['steps'])
         for command in ['tools/site/sync_releases.py', 'tools/site/check.py', '--release', 'unittest discover', 'npm test']:

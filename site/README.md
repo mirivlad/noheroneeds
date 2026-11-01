@@ -57,6 +57,6 @@ npm ci --prefix site
 Нужная настройка владельца: **Settings → Pages → Source → GitHub Actions**.
 В окружении **github-pages → Deployment branches and tags** также разрешите
 **Branch: main** и **Tag: v*.*.***; сейчас разрешена только старая ветка сайта.
-Слияние PR требует разрешения автора. После него workflow **Published wiki**
+Слияние PR требует разрешения автора. После публикации игрового релиза workflow **Published wiki**
 публикует сайт в корне `https://mirivlad.github.io/noheroneeds/`, без `/site/`.
 До успешной проверки deploy новая публикация не заявляется как готовая.

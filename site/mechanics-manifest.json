@@ -193,7 +193,8 @@
         "src/server/game_server.gd",
         "src/server/dedicated_server.gd",
         "src/core/*.gd",
-        "src/server/server_main.gd"
+        "src/server/server_main.gd",
+        "src/server/server_world.gd"
       ],
       "kinds": []
     }

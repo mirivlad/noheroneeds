@@ -5,6 +5,14 @@ func test_plan_round_trip_and_validation() -> void:
 	var original := WorldPlan.generate(431, "small", "temperate")
 	var restored := WorldPlan.from_dict(original.to_dict())
 	check(restored != null, "the saved map is readable")
+	# These two noise fields are sampled by server and loader threads.
+	# Both must exist before the plan is shared across threads.
+	check(original._edge_warmth != null and original._edge_rain != null,
+		"generated plan initializes both biome-edge noise fields")
+	check(restored._edge_warmth != null and restored._edge_rain != null,
+		"loaded plan initializes both biome-edge noise fields")
+	eq(restored._edge_offset(12, 44), original._edge_offset(12, 44),
+		"the saved plan retains the same seeded biome boundary offsets")
 	eq(restored.to_dict(), original.to_dict(), "all generated data survives storage")
 	eq(WorldPlan.generate(431, "small", "temperate").fields, original.fields, "generation is deterministic")
 	var broken := original.to_dict()

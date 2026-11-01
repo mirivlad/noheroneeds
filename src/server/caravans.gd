@@ -7,9 +7,27 @@ const HIRE := 10
 const MAX_GUARDS := 6
 const WEAPONS := ["base:iron_sword", "base:spear", "base:bow"]
 const DAILY_PAY := 12
+## A caravan's stop in a village, in game ms (ADR-0068): unloading and
+## trading, a rest, then getting under way. A trader's job may set its own
+## (`caravan_trade_ms`, `caravan_rest_ms`, `caravan_depart_ms`).
+const TRADE_MS := 2 * Daylight.HOUR_MS
+const REST_MS := 1 * Daylight.HOUR_MS
+const DEPART_MS := 10 * 60 * 1000
 var world: ServerWorld
 var _contracts := {}
 var _seen_online := {}
+
+
+func trade_ms(c: Creature) -> int:
+	return maxi(0, int(c.job.get("caravan_trade_ms", TRADE_MS)))
+
+
+func rest_ms(c: Creature) -> int:
+	return maxi(0, int(c.job.get("caravan_rest_ms", REST_MS)))
+
+
+func depart_ms(c: Creature) -> int:
+	return maxi(0, int(c.job.get("caravan_depart_ms", DEPART_MS)))
 
 
 func _init(w: ServerWorld) -> void:
@@ -72,7 +90,7 @@ func spawn_guard(c: Creature, weapon := "base:iron_sword") -> Creature:
 		for cx in range((c.cell().x - 20) >> 5, ((c.cell().x + 20) >> 5) + 1):
 			for id: String in world.creatures.in_chunk(c.location, cx, cy, "base:caravan_guard"):
 				var available := world.creatures.get_creature(id)
-				if available.job.get("retired", false) and available.health >= 12 and available.cell().distance_to(c.cell()) <= 20:
+				if available.job.get("retired", false) and available.health >= 12 and world.cell_distance(available.cell(), c.cell()) <= 20:
 					available.job.erase("retired")
 					available.job["guard_driver"] = c.id
 					world.operation_creature(available)
@@ -96,7 +114,7 @@ func attacked(victim: Creature, attacker: String, at: Vector2i) -> void:
 		return
 	for id: String in guards(driver):
 		var guard := world.creatures.get_creature(id)
-		if guard == null or guard.location != victim.location or guard.cell().distance_to(victim.cell()) > 20:
+		if guard == null or guard.location != victim.location or world.cell_distance(guard.cell(), victim.cell()) > 20:
 			continue
 		guard.memory[attacker] = {"pos": Movement.cell_of(at), "time": world.world_time, "what": "attacker"}
 		guard.changed()
@@ -213,7 +231,7 @@ func step() -> void:
 			finish(actor, "no_route")
 			continue
 		var p: Dictionary = world.present[actor]
-		var nearby: bool = p["location"] == driver.location and Vector2(p["pos"]).distance_to(Vector2(driver.pos)) <= 18 * Movement.UNIT
+		var nearby: bool = p["location"] == driver.location and world.distance(p["pos"], driver.pos) <= 18 * Movement.UNIT
 		var was_near: bool = s.get("accompanying", false)
 		s["accompanying"] = nearby
 		# No offline/restart catch-up, and no payment for an interval spent away.
@@ -320,7 +338,7 @@ func rest(c: Creature) -> void:
 				in_village = true
 		c.job["rest_in_village"] = in_village
 		var heading: Array = c.job.get("caravan_heading", [0, 1])
-		var direction := Vector2i(int(heading[0]), int(heading[1]))
+		var direction := Vector2(float(heading[0]), float(heading[1]))
 		for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			if in_village:
 				break
@@ -334,7 +352,7 @@ func rest(c: Creature) -> void:
 		world.operation_creature(c)
 	var saved: Array = c.job["camp_spot"]
 	var spot := Vector2i(int(saved[0]), int(saved[1]))
-	if c.cell().distance_to(spot) > 1:
+	if world.cell_distance(c.cell(), spot) > 1:
 		var sim := world.creatures
 		if c.state == "detour" and c.target != Creature.NO_TARGET and c.path_to == spot:
 			return
@@ -376,10 +394,10 @@ func _fire_occupied(c: Creature, at: Vector2i) -> bool:
 		for cx in range((at.x - 2) >> 5, ((at.x + 2) >> 5) + 1):
 			for id: String in world.creatures.in_chunk(c.location, cx, cy):
 				var other := world.creatures.get_creature(id)
-				if other.cell().distance_to(at) < (2.2 if other.kind == "base:horse" else 1.6):
+				if world.cell_distance(other.cell(), at) < (2.2 if other.kind == "base:horse" else 1.6):
 					return true
 	for p: Dictionary in world.present.values():
-		if p["location"] == c.location and Movement.cell_of(p["pos"]).distance_to(at) < 1.6:
+		if p["location"] == c.location and world.cell_distance(Movement.cell_of(p["pos"]), at) < 1.6:
 			return true
 	return false
 

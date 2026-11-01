@@ -193,12 +193,28 @@ func test_a_traveller_walks_a_road() -> void:
 	var start := found.cell()
 	w.world_time = Daylight.DAY_MS + 10 * Daylight.HOUR_MS
 	found.last_time = w.world_time
+	# A traveller keeps to the road; a caravan also stops in a village
+	# (ADR-0068) and walks off the road to its square or tavern, so only the
+	# part of the walk before the stop is held to the road.
+	var on_road := true
+	var stopped := false
 	for i in 600:
 		w.tick += 1
 		w.mark_needed("surface", found.cell().x >> 5, found.cell().y >> 5)
 		w.creatures.step(w.tick)
+		if String(found.job.get("caravan_state", "travel")) != "travel":
+			stopped = true
+			continue
+		var near := false
+		for d: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			near = near or (road["cells"] as Dictionary).has(found.cell() + d)
+		on_road = on_road and near
 	check(Vector2(found.cell()).distance_to(Vector2(start)) > 6.0, "it went on: %s -> %s (%s)" % [start, found.cell(), found.state])
-	var near := false
-	for d: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-		near = near or (road["cells"] as Dictionary).has(found.cell() + d)
-	check(near, "along the road: %s" % found.cell())
+	check(on_road, "along the road: %s" % found.cell())
+	if not stopped:
+		return
+	var at := Vector2i(int(found.job["caravan_stop"][0]), int(found.job["caravan_stop"][1]))
+	check(Vector2(found.cell()).distance_to(Vector2(at)) <= 2.0,
+		"it stands at its stop: %s, %s" % [found.cell(), at])
+	check(String(found.job.get("caravan_stop_kind", "")) in ["square", "village", "roadside"],
+		"and the stop knows what kind of place it is: %s" % found.job.get("caravan_stop_kind", ""))

@@ -53,6 +53,7 @@ static func generate(seed_number: int, size_preset: String, climate_preset: Stri
 		return null
 	var plan := WorldPlan.new()
 	plan.seed_value = seed_number
+	plan._prepare_edge_noise()
 	plan.preset = size_preset
 	plan.climate = climate_preset
 	plan.size = PRESETS[size_preset]
@@ -852,16 +853,21 @@ func biome_index_at(cell: Vector2i, by_water := false, height := NAN) -> int:
 
 ## A slow warp of the climate at a cell: an edge between biomes follows a
 ## winding line, not the grain of the fields or the coarse grid.
+## Build both noise generators before sharing a plan with the server and
+## asynchronous chunk loader. Lazy initialization was racy: another thread
+## could observe _edge_warmth set while _edge_rain was still null.
+func _prepare_edge_noise() -> void:
+	_edge_warmth = FastNoiseLite.new()
+	_edge_warmth.seed = seed_value + 9643
+	_edge_warmth.frequency = 0.04
+	_edge_warmth.fractal_octaves = 2
+	_edge_rain = FastNoiseLite.new()
+	_edge_rain.seed = seed_value + 15331
+	_edge_rain.frequency = 0.04
+	_edge_rain.fractal_octaves = 2
+
+
 func _edge_offset(x: int, y: int) -> Vector2:
-	if _edge_warmth == null:
-		_edge_warmth = FastNoiseLite.new()
-		_edge_warmth.seed = seed_value + 9643
-		_edge_warmth.frequency = 0.04
-		_edge_warmth.fractal_octaves = 2
-		_edge_rain = FastNoiseLite.new()
-		_edge_rain.seed = seed_value + 15331
-		_edge_rain.frequency = 0.04
-		_edge_rain.fractal_octaves = 2
 	return Vector2(_edge_warmth.get_noise_2d(x, y), _edge_rain.get_noise_2d(x, y)) * 0.10
 
 
@@ -1007,6 +1013,7 @@ static func from_dict(data: Dictionary) -> WorldPlan:
 		return null
 	var plan := WorldPlan.new()
 	plan.seed_value = int(data.get("seed", 0))
+	plan._prepare_edge_noise()
 	plan.preset = preset_id
 	plan.climate = climate_id
 	plan.size = dimensions

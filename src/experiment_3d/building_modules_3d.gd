@@ -38,8 +38,8 @@ func _box(mesh: ArrayMesh, size: Vector3, at: Vector3, mat: Material, rotation :
 	st.set_material(mat)
 	st.commit(mesh)
 
-func wall(mask: int, stone_wall := false) -> Mesh:
-	var key := "wall:%d:%s" % [mask, stone_wall]
+func wall(mask: int, stone_wall := false, style := "") -> Mesh:
+	var key := "wall:%d:%s:%s" % [mask, stone_wall, style]
 	if cache.has(key): return cache[key]
 	var mesh := ArrayMesh.new()
 	var panel := stone if stone_wall else plaster
@@ -47,10 +47,15 @@ func wall(mask: int, stone_wall := false) -> Mesh:
 		if mask & (1 << i) == 0: continue
 		var angle := i * PI / 2
 		var along := Vector3(.25, 0, 0).rotated(Vector3.UP, angle)
+		if style == "log":
+			for course in 9:
+				_box(mesh, Vector3(.53, .21, .29), along + Vector3.UP * (.11 + course * .22), wood, angle)
+			continue
 		_box(mesh, Vector3(.5, 1.86, .18), along + Vector3.UP * .97, panel, angle)
-		for h: float in [.12, 1.91]:
-			_box(mesh, Vector3(.51, .14, .23), along + Vector3.UP * h, timber, angle)
-	_box(mesh, Vector3(.19, 2, .19), Vector3.UP, timber)
+		if not stone_wall and style != "plaster":
+			for h: float in [.12, 1.91]:
+				_box(mesh, Vector3(.51, .14, .23), along + Vector3.UP * h, timber, angle)
+	_box(mesh, Vector3(.19, 2, .19), Vector3.UP, panel if stone_wall or style == "plaster" else timber)
 	cache[key] = mesh
 	return mesh
 
@@ -206,6 +211,29 @@ func furniture(kind: String, decor := 0) -> Mesh:
 		_box(mesh, Vector3(1.02, .035, .04), Vector3(0, .94, .36), metal)
 		for x: float in [-.25, .08]:
 			_cylinder(mesh, .065, .16, Vector3(x, 1.11, -.04), metal)
+	elif kind == "well":
+		for side in 4:
+			var angle := side * PI / 2
+			_box(mesh, Vector3(.9, .65, .18), Vector3(0, .325, .38).rotated(Vector3.UP, angle), stone, angle)
+		_box(mesh, Vector3(.58, .02, .58), Vector3.UP * .12, glass)
+		for x: float in [-.38, .38]:
+			_box(mesh, Vector3(.1, 1.7, .1), Vector3(x, .85, 0), timber)
+		_box(mesh, Vector3(.9, .1, .1), Vector3.UP * 1.65, timber)
+		_box(mesh, Vector3(.025, .85, .025), Vector3.UP * 1.2, wood)
+		_cylinder(mesh, .12, .19, Vector3(0, .72, 0), metal)
+	elif kind == "hay_rack":
+		for x: float in [-.38, .38]:
+			for z: float in [-.3, .3]:
+				_box(mesh, Vector3(.07, .85, .07), Vector3(x, .425, z), timber)
+		_box(mesh, Vector3(.68, .3, .48), Vector3.UP * .47, _material(Color("b49a4e")))
+		for z: float in [-.3, .3]:
+			for x: float in [-.3, -.1, .1, .3]:
+				_box(mesh, Vector3(.04, .45, .04), Vector3(x, .55, z), wood)
+	elif kind == "shrine":
+		_box(mesh, Vector3(.9, .18, .85), Vector3.UP * .09, stone)
+		_box(mesh, Vector3(.65, .62, .5), Vector3.UP * .45, stone)
+		_box(mesh, Vector3(.95, .14, .8), Vector3.UP * .82, stone)
+		_cylinder(mesh, .12, .18, Vector3(0, .98, 0), metal)
 	elif kind == "sign":
 		_box(mesh, Vector3(.12, 1.9, .12), Vector3(.38, .95, 0), timber)
 		_box(mesh, Vector3(.95, .08, .09), Vector3(0, 1.83, 0), timber)
@@ -271,21 +299,28 @@ func stump() -> Mesh:
 	cache["stump"] = mesh
 	return mesh
 
-func opening(window: bool, opened: bool) -> Mesh:
-	var key := "opening:%s:%s" % [window, opened]
+func opening(window: bool, opened: bool, aperture := 1.0) -> Mesh:
+	aperture = clampf(aperture, .4, 1.0)
+	var key := "opening:%s:%s:%f" % [window, opened, aperture]
 	if cache.has(key): return cache[key]
 	var mesh := ArrayMesh.new()
 	for x: float in [-.455, .455]:
 		_box(mesh, Vector3(.09, 2, .23), Vector3(x, 1, 0), timber)
 	_box(mesh, Vector3(.82, .16, .23), Vector3(0, 1.92, 0), timber)
 	if window:
-		_box(mesh, Vector3(.82, .75, .18), Vector3(0, .375, 0), plaster)
-		_box(mesh, Vector3(.82, .27, .18), Vector3(0, 1.705, 0), plaster)
-		_box(mesh, Vector3(.68, .7, .06), Vector3(0, 1.16, -.02), glass)
+		var bottom := 1.16 - .41 * aperture
+		var top := 1.16 + .41 * aperture
+		_box(mesh, Vector3(.82, bottom, .18), Vector3(0, bottom * .5, 0), plaster)
+		_box(mesh, Vector3(.82, 1.84 - top, .18), Vector3(0, (1.84 + top) * .5, 0), plaster)
+		if aperture < 1.0:
+			var infill := .41 * (1.0 - aperture)
+			for sign_x: float in [-1, 1]:
+				_box(mesh, Vector3(infill, .82 * aperture, .18), Vector3(sign_x * (.41 - infill * .5), 1.16, 0), plaster)
+		_box(mesh, Vector3(.68 * aperture, .7 * aperture, .06), Vector3(0, 1.16, -.02), glass)
 		for x: float in [-.37, 0, .37]:
-			_box(mesh, Vector3(.055, .82, .23), Vector3(x, 1.16, 0), timber)
-		for h: float in [.75, 1.56]:
-			_box(mesh, Vector3(.82, .07, .28), Vector3(0, h, .015), wood)
+			_box(mesh, Vector3(.055, .82 * aperture, .23), Vector3(x * aperture, 1.16, 0), timber)
+		for h: float in [bottom, top]:
+			_box(mesh, Vector3(.82 * aperture, .07, .28), Vector3(0, h, .015), wood)
 	else:
 		# Rotate the entire leaf about its left jamb, never about its centre.
 		var angle := -PI / 2 if opened else 0.0
@@ -307,54 +342,157 @@ func floor_mesh() -> Mesh:
 	cache["floor"] = mesh
 	return mesh
 
-func roof(cell: Vector2i, footprint: Rect2i, eaves := 15) -> Mesh:
+func roof(cell: Vector2i, footprint: Rect2i, eaves := 15, options := {}) -> Mesh:
+	if not (options.get("sections", []) as Array).is_empty():
+		return _compound_roof(cell, eaves, options)
 	var local := cell - footprint.position
-	var key := "roof:%s:%s:%d" % [local, footprint.size, eaves]
+	var axis := int(options.get("axis", 0))
+	var pitch := float(options.get("pitch", .52))
+	var overhang := float(options.get("eaves", .45))
+	var kind := String(options.get("material", "tile"))
+	var key := "roof:%s:%s:%d:%d:%f:%f:%s" % [local, footprint.size, eaves, axis, pitch, overhang, kind]
 	if cache.has(key): return cache[key]
 	var mesh := ArrayMesh.new()
-	# Interior roof cells own their adjacent eaves. Missing interior parts
-	# leave real holes while the surviving patches retain the same ridge.
 	var low := Vector2(cell)
 	var high := low + Vector2.ONE
-	if cell.x == footprint.position.x + 1 and eaves & 4: low.x = footprint.position.x + .05
-	if cell.y == footprint.position.y + 1 and eaves & 2: low.y = footprint.position.y + .05
-	if cell.x == footprint.end.x - 2 and eaves & 1: high.x = footprint.end.x - .05
-	if cell.y == footprint.end.y - 2 and eaves & 8: high.y = footprint.end.y - .05
-	var middle := (footprint.position.x + footprint.size.x * .5)
-	var cuts: Array[float] = [low.x]
-	if middle > low.x and middle < high.x: cuts.append(middle)
-	cuts.append(high.x)
+	if cell.x == footprint.position.x + 1 and eaves & 4: low.x = footprint.position.x + .5 - overhang
+	if cell.y == footprint.position.y + 1 and eaves & 2: low.y = footprint.position.y + .5 - overhang
+	if cell.x == footprint.end.x - 2 and eaves & 1: high.x = footprint.end.x - .5 + overhang
+	if cell.y == footprint.end.y - 2 and eaves & 8: high.y = footprint.end.y - .5 + overhang
+	var middle := float(footprint.position[axis]) + float(footprint.size[axis]) * .5
+	var cuts: Array[float] = [low[axis]]
+	if middle > low[axis] and middle < high[axis]: cuts.append(middle)
+	cuts.append(high[axis])
+	var across := 1 - axis
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in range(cuts.size() - 1):
 		var a := cuts[i]
 		var b := cuts[i + 1]
-		var p: Array[Vector3] = [Vector3(a, _roof_height(a, footprint), low.y), Vector3(b, _roof_height(b, footprint), low.y), Vector3(a, _roof_height(a, footprint), high.y), Vector3(b, _roof_height(b, footprint), high.y)]
-		var n := (p[2] - p[0]).cross(p[1] - p[0]).normalized()
-		for j in [0, 1, 2, 1, 3, 2]:
-			st.set_normal(n)
-			st.set_uv(Vector2(p[j].x - footprint.position.x, p[j].z - footprint.position.y))
-			st.add_vertex(p[j] - Vector3(cell.x + .5, 0, cell.y + .5))
-	st.set_material(tiles)
+		var points := [_roof_point(a, low[across], footprint, pitch, axis), _roof_point(b, low[across], footprint, pitch, axis),
+			_roof_point(a, high[across], footprint, pitch, axis), _roof_point(b, high[across], footprint, pitch, axis)]
+		var normal: Vector3 = (points[2] - points[0]).cross(points[1] - points[0]).normalized()
+		if axis == 1: normal = -normal
+		for j in ([0, 1, 2, 1, 3, 2] if axis == 0 else [0, 2, 1, 1, 2, 3]):
+			st.set_normal(normal)
+			st.set_uv(Vector2(points[j].x - footprint.position.x, points[j].z - footprint.position.y))
+			st.add_vertex(points[j] - Vector3(cell.x + .5, 0, cell.y + .5))
+	st.set_material(_roof_material(kind))
 	st.commit(mesh)
-	# Timber fascia follows the actual sloping edge; no prefab distortion.
-	for z: float in [footprint.position.y + .5, footprint.end.y - .5]:
-		if z < low.y or z > high.y: continue
+	for edge: float in [footprint.position[across] + .5, footprint.end[across] - .5]:
+		if edge < low[across] or edge > high[across]: continue
 		for i in range(cuts.size() - 1):
-			var a := cuts[i]
-			var b := cuts[i + 1]
-			var y1 := _roof_height(a, footprint)
-			var y2 := _roof_height(b, footprint)
+			var top_a := _roof_point(cuts[i], edge, footprint, pitch, axis)
+			var top_b := _roof_point(cuts[i + 1], edge, footprint, pitch, axis)
+			var bottom_a := Vector3(top_a.x, 0, top_a.z)
+			var bottom_b := Vector3(top_b.x, 0, top_b.z)
+			var points := [bottom_a, bottom_b, top_a, top_b]
 			var face := SurfaceTool.new()
 			face.begin(Mesh.PRIMITIVE_TRIANGLES)
-			var p := [Vector3(a, 0, z), Vector3(b, 0, z), Vector3(a, y1 - .04, z), Vector3(b, y2 - .04, z)]
-			for j in ([0, 1, 2, 1, 3, 2] if z < (footprint.position.y + footprint.size.y * .5) else [0, 2, 1, 1, 2, 3]):
-				face.set_normal(Vector3.FORWARD if z < (footprint.position.y + footprint.size.y * .5) else Vector3.BACK)
-				face.add_vertex(p[j] - Vector3(cell.x + .5, 0, cell.y + .5))
+			var near_edge := edge < footprint.position[across] + footprint.size[across] * .5
+			var reverse := (axis == 0 and not near_edge) or (axis == 1 and near_edge)
+			var normal := (Vector3.FORWARD if near_edge else Vector3.BACK) if axis == 0 else (Vector3.LEFT if near_edge else Vector3.RIGHT)
+			for j in ([0, 2, 1, 1, 2, 3] if reverse else [0, 1, 2, 1, 3, 2]):
+				face.set_normal(normal)
+				face.add_vertex(points[j] - Vector3(cell.x + .5, 0, cell.y + .5))
 			face.set_material(plaster)
 			face.commit(mesh)
 	cache[key] = mesh
 	return mesh
 
-func _roof_height(x: float, footprint: Rect2i) -> float:
-	return .12 + (footprint.size.x * .5 - absf(x - (footprint.position.x + footprint.size.x * .5))) * .52
+func _roof_point(along: float, across: float, footprint: Rect2i, pitch: float, axis: int) -> Vector3:
+	var height := _roof_height(along, footprint, pitch, axis)
+	return Vector3(along, height, across) if axis == 0 else Vector3(across, height, along)
+
+func _roof_height(along: float, footprint: Rect2i, pitch := .52, axis := 0) -> float:
+	var middle := footprint.position[axis] + footprint.size[axis] * .5
+	return .12 + (footprint.size[axis] * .5 - absf(along - middle)) * pitch
+
+func _roof_material(kind: String) -> Material:
+	if kind == "tile": return tiles
+	var key := "roof-material:" + kind
+	if cache.has(key): return cache[key]
+	var material := tiles.duplicate() as ShaderMaterial
+	material.set_shader_parameter("roof_kind", {"thatch": 1, "wood": 2, "stone": 3, "flat": 4}.get(kind, 0))
+	cache[key] = material
+	return material
+
+## All adjoining modules sample the same upper envelope at shared vertices.
+## This joins intersecting gables without cracks or a roof over missing rooms.
+func _compound_roof(cell: Vector2i, eaves: int, options: Dictionary) -> Mesh:
+	var sections: Array = options["sections"]
+	var relative := []
+	for section: Array in sections:
+		relative.append([int(section[0]) - cell.x, int(section[1]) - cell.y, section[2], section[3], section[4]])
+	var pitch := float(options.get("pitch", .52))
+	var width := float(options.get("eaves", .2))
+	var kind := String(options.get("material", "thatch"))
+	var gable := String(options.get("gable", "plaster"))
+	var key := "compound:%s:%d:%f:%f:%s:%s" % [relative, eaves, pitch, width, kind, gable]
+	if cache.has(key): return cache[key]
+	var low := Vector2(cell)
+	var high := low + Vector2.ONE
+	if eaves & 4: low.x -= .5 + width
+	if eaves & 2: low.y -= .5 + width
+	if eaves & 1: high.x += .5 + width
+	if eaves & 8: high.y += .5 + width
+	var cuts := [[low.x, high.x], [low.y, high.y]]
+	for section: Array in sections:
+		var axis := int(section[4])
+		var ridge := float(section[axis]) + float(section[axis + 2]) * .5
+		if ridge > low[axis] and ridge < high[axis] and ridge not in cuts[axis]:
+			cuts[axis].append(ridge)
+	(cuts[0] as Array).sort()
+	(cuts[1] as Array).sort()
+	var mesh := ArrayMesh.new()
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var origin := Vector3(cell.x + .5, 0, cell.y + .5)
+	for x in (cuts[0] as Array).size() - 1:
+		for z in (cuts[1] as Array).size() - 1:
+			var points: Array[Vector3] = []
+			for point: Vector2 in [Vector2(cuts[0][x], cuts[1][z]), Vector2(cuts[0][x + 1], cuts[1][z]),
+					Vector2(cuts[0][x], cuts[1][z + 1]), Vector2(cuts[0][x + 1], cuts[1][z + 1])]:
+				points.append(Vector3(point.x, _roof_envelope(point, sections, pitch), point.y))
+			for triangle: Array in [[0, 1, 2], [1, 3, 2]]:
+				var normal := (points[triangle[2]] - points[triangle[0]]).cross(points[triangle[1]] - points[triangle[0]]).normalized()
+				for index: int in triangle:
+					surface.set_normal(normal)
+					surface.set_uv(Vector2(points[index].x, points[index].z))
+					surface.add_vertex(points[index] - origin)
+	surface.set_material(_roof_material(kind))
+	surface.commit(mesh)
+	var fascia := SurfaceTool.new()
+	fascia.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var faces := 0
+	for side in 4:
+		if eaves & (1 << side) == 0: continue
+		var axis := 1 if side in [0, 2] else 0
+		var edge := (high.x if side == 0 else low.x) if axis == 1 else (low.y if side == 1 else high.y)
+		for index in (cuts[axis] as Array).size() - 1:
+			var a := Vector2(edge, cuts[axis][index]) if axis == 1 else Vector2(cuts[axis][index], edge)
+			var b := Vector2(edge, cuts[axis][index + 1]) if axis == 1 else Vector2(cuts[axis][index + 1], edge)
+			var points := [Vector3(a.x, 0, a.y), Vector3(b.x, 0, b.y),
+				Vector3(a.x, _roof_envelope(a, sections, pitch), a.y), Vector3(b.x, _roof_envelope(b, sections, pitch), b.y)]
+			var reverse := side in [2, 3]
+			var normal: Vector3 = [Vector3.RIGHT, Vector3.FORWARD, Vector3.LEFT, Vector3.BACK][side]
+			for j in ([0, 2, 1, 1, 2, 3] if reverse else [0, 1, 2, 1, 3, 2]):
+				fascia.set_normal(normal)
+				fascia.add_vertex(points[j] - origin)
+			faces += 1
+	if faces > 0:
+		fascia.set_material(wood if gable == "wood" else (stone if gable == "stone" else plaster))
+		fascia.commit(mesh)
+	cache[key] = mesh
+	return mesh
+
+func _roof_envelope(point: Vector2, sections: Array, pitch: float) -> float:
+	var height := .12
+	for section: Array in sections:
+		if point.x < float(section[0]) or point.x > float(section[0]) + float(section[2]) or point.y < float(section[1]) or point.y > float(section[1]) + float(section[3]):
+			continue
+		var axis := int(section[4])
+		var span := float(section[axis + 2])
+		var middle := float(section[axis]) + span * .5
+		height = maxf(height, .12 + (span * .5 - absf(point[axis] - middle)) * pitch)
+	return height

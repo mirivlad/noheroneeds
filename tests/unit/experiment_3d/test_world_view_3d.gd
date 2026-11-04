@@ -242,9 +242,25 @@ func test_real_mountain_route_is_levels_cliffs_and_ramps() -> void:
 	check(high - low > 8, "the mountain rises in levels: %.1f m" % (high - low))
 	check(cliffs > 0, "and drops in cliffs on rock cells: %d" % cliffs)
 	check(steepest < SurfaceGenerator.LEVEL_METRES, "walkable ground is ramps, not sheer: %.2f m a cell" % steepest)
-	var chunk: Chunk = client.chunks[ServerWorld.chunk_key("surface", floori(at.x/32.0), floori(at.y/32.0))]
-	eq(chunk.get_cell("ground", posmod(at.x,32), posmod(at.y,32)), "base:dirt", "actual original mountain road")
-	eq(chunk.get_cell("structure", posmod(at.x,32), posmod(at.y,32)), "", "road has no server rock obstruction")
+	# The terrain fixture is stable; settlement placement can move its road.
+	# Inspect a real planned road in this mountain region instead of assuming
+	# a particular historical road cell is still on the current route.
+	var road_at := Settlements.NONE
+	var nearest := INF
+	var district := view._land.settlements._district_of(0, at)
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			for road: Dictionary in view._land.settlements.roads_of(0, district.x + dx, district.y + dy):
+				for candidate: Vector2i in road["path"]:
+					var distance := candidate.distance_squared_to(at)
+					if distance < nearest and view._land.height_at(candidate.x, candidate.y) >= Geography.HILLS:
+						nearest = distance
+						road_at = candidate
+	if not check(road_at != Settlements.NONE and nearest < 128 * 128, "a real road crosses this mountain region"):
+		return
+	var chunk := view._land.generate(road_at.x >> 5, road_at.y >> 5)
+	eq(chunk.get_cell("ground", posmod(road_at.x,32), posmod(road_at.y,32)), "base:dirt", "actual generated mountain road")
+	eq(chunk.get_cell("structure", posmod(road_at.x,32), posmod(road_at.y,32)), "", "road has no server rock obstruction")
 
 func test_house_platform_joints_and_door_hinge() -> void:
 	var rect: Rect2i = view._land.settlements.home_plan()["homes"][0]["rect"]
@@ -257,6 +273,47 @@ func test_house_platform_joints_and_door_hinge() -> void:
 	var opened := view.buildings.opening(false,true).get_aabb()
 	check(closed.size.x > .9 and closed.size.z < .3, "closed leaf lies inside frame")
 	check(opened.end.z > .7 and opened.position.x < -.4, "open leaf rotates around left jamb")
+
+func test_cold_window_keeps_wall_height_with_a_smaller_opening() -> void:
+	var full := view.buildings.opening(true, false)
+	var small := view.buildings.opening(true, false, .65)
+	check(is_equal_approx(full.get_aabb().size.y, small.get_aabb().size.y), "the wall remains full height")
+	var glass_sizes: Array[Vector2] = []
+	for mesh: Mesh in [full, small]:
+		for surface in mesh.get_surface_count():
+			if mesh.surface_get_material(surface) != view.buildings.glass: continue
+			var vertices: PackedVector3Array = mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
+			var low := Vector2(INF, INF)
+			var high := Vector2(-INF, -INF)
+			for vertex: Vector3 in vertices:
+				low = low.min(Vector2(vertex.x, vertex.y))
+				high = high.max(Vector2(vertex.x, vertex.y))
+			glass_sizes.append(high - low)
+	if check(glass_sizes.size() == 2, "both windows contain real glass geometry"):
+		check(glass_sizes[1].x < glass_sizes[0].x and glass_sizes[1].y < glass_sizes[0].y, "the cold window is narrower and lower")
+
+
+func test_compound_roof_sections_join_without_cracks() -> void:
+	var options := {"sections": [[0, 3, 7, 5, 0], [0, 0, 3, 5, 1]], "pitch": .72, "eaves": .2, "material": "wood"}
+	var seen := {}
+	var shared := 0
+	for cell: Vector2i in [Vector2i(1, 2), Vector2i(1, 3), Vector2i(1, 4), Vector2i(2, 4)]:
+		var mesh := view.buildings.roof(cell, Rect2i(0, 0, 7, 8), 0, options)
+		var arrays := mesh.surface_get_arrays(0)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+		for index in range(0, vertices.size(), 3):
+			var normal := (vertices[index + 2] - vertices[index]).cross(vertices[index + 1] - vertices[index]).normalized()
+			check(normal.dot(normals[index]) > .99 and normal.y > 0, "compound roof triangles face up")
+		for vertex: Vector3 in vertices:
+			var point := vertex + Vector3(cell.x + .5, 0, cell.y + .5)
+			var key := Vector2(point.x, point.z)
+			if seen.has(key):
+				check(is_equal_approx(float(seen[key]), point.y), "neighbouring roof modules share exactly the same height")
+				shared += 1
+			seen[key] = point.y
+	check(shared > 4, "the test covers several common vertices")
+
 
 func test_roof_patches_share_ridge_and_preserve_removed_cell() -> void:
 	var rect := Rect2i(0,0,5,4)
@@ -510,3 +567,103 @@ func test_a_beings_figure_is_its_picture() -> void:
 	check(hare.y < 2.0, "but not its whole frame: %s" % hare)
 	var man := view._figure(content.visual_of("base:human_ro_m"))
 	check(man.y > 1.2 and man.y < 2.2, "a person about his height: %s" % man)
+
+func test_generated_wall_and_roof_modules_keep_their_authored_feet() -> void:
+	view._land = null  # isolate placement from terrain; the floor is at zero
+	for level in [0, 1]:
+		client.location = "surface" if level == 0 else "test-upper"
+		client.z = level
+		for id: String in ["base:wood_wall", "base:log_wall", "base:plaster_wall", "base:stone_wall",
+				"base:thatch_roof", "base:shingle_roof", "base:slate_roof", "base:flat_roof"]:
+			view._clear_geometry()
+			client.chunks.clear()
+			var c := Chunk.new()
+			var roof := String(content.get_def(id).get("role", "")) == "roof"
+			c.set_cell("ground", 0, 0, "base:wood_floor")
+			c.set_cell("roof" if roof else "structure", 0, 0, id)
+			c.set_props(0, 0, {"wall_height": 1.6 if level == 1 else 2.0,
+				"roof": {"sections": [[0, 0, 3, 3, 0]], "pitch": .5, "eaves": .2}})
+			var key := ServerWorld.chunk_key(client.location, 0, 0)
+			client.chunks[key] = c
+			view._queued[key] = true
+			view._begin_chunk(Vector2i.ZERO)
+			view._build_row()
+			var checked := false
+			for instance: String in view._job["parts"]:
+				var parts: Array = view._job["parts"][instance]
+				if not parts.any(func(part: Array) -> bool: return not part.is_empty()):
+					continue
+				var transform: Transform3D = view._job["instances"][instance][0]
+				var foot := float(level) * WorldView3D.STOREY
+				var wall_height := 1.6 if level == 1 else 2.0
+				var expected := foot + wall_height if roof else foot
+				check(is_equal_approx(transform.origin.y, expected), "%s on level %d: the authored module is placed at the floor/wall top, without a fallback-box offset" % [id, level])
+				if not roof:
+					var mesh: Mesh = view._job["meshes"][instance]
+					var bounds := transform * mesh.get_aabb()
+					check(is_equal_approx(bounds.position.y, foot), "%s: wall reaches the floor" % id)
+					check(is_equal_approx(bounds.end.y, foot + wall_height), "%s: wall reaches exactly the roof base" % id)
+				checked = true
+			check(checked, "the actual module transform was inspected")
+
+func test_exterior_roof_over_a_stairwell_renders_without_an_upper_floor_cell() -> void:
+	var c := Chunk.new()
+	c.meta = {"building_z": 1, "exterior": true}
+	c.set_cell("roof", 2, 2, "base:shingle_roof")
+	c.set_props(2, 2, {"wall_height": 2.0, "roof": {"sections": [[0, 0, 5, 5, 0]], "pitch": .5}})
+	client.chunks["closed-upper|0|0"] = c
+	view._queued["closed-upper|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in 3:
+		view._build_row()
+	check(view._job["targets"].any(func(t: Dictionary) -> bool: return t.get("cell") == Vector2i(2, 2) and t.get("layer") == "roof"), "the roof above the stair opening is visible from the street even though the floor and private stair marker are absent")
+	view._clear_geometry()
+	c.set_cell("roof", 2, 2, "")
+	view._queued["closed-upper|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in 3:
+		view._build_row()
+	check(not view._job["targets"].any(func(t: Dictionary) -> bool: return t.get("layer") == "roof"), "a roof actually removed by a player remains an opening")
+
+func test_storey_slabs_end_inside_exterior_walls() -> void:
+	view._land = null
+	for level in [0, 1, 2]:
+		for material: String in ["wood", "stone"]:
+			view._clear_geometry()
+			client.chunks.clear()
+			client.location = "surface" if level == 0 else "slab-test"
+			client.z = level
+			var c := Chunk.new()
+			for y in 3:
+				for x in 3:
+					c.set_cell("ground", x, y, "base:%s_floor" % material)
+					c.set_cell("ceiling", x, y, "base:wood_ceiling")
+					if x in [0, 2] or y in [0, 2]:
+						c.set_cell("structure", x, y, "base:plaster_wall")
+			var key := ServerWorld.chunk_key(client.location, 0, 0)
+			client.chunks[key] = c
+			view._queued[key] = true
+			view._begin_chunk(Vector2i.ZERO)
+			view._build_row()
+			var inspected := false
+			for instance: String in view._job["parts"]:
+				var parts: Array = view._job["parts"][instance]
+				if parts.is_empty() or parts[0].is_empty() or not parts[0][1]:
+					continue
+				var t: Transform3D = view._job["instances"][instance][0]
+				var bounds: AABB = t * (view._job["meshes"][instance] as Mesh).get_aabb()
+				check(bounds.position.x >= .41 and bounds.position.z >= .41, "ceiling corner stays inside the exterior wall on storey %d" % level)
+				check(is_equal_approx(bounds.end.y, (level + 1) * WorldView3D.STOREY), "the ceiling top meets the next storey's floor plane")
+				inspected = true
+			check(inspected, "actual ceiling geometry inspected")
+			if level > 0:
+				var instance := "module:floor" if material == "wood" else "base:stone_floor"
+				var t: Transform3D = view._job["instances"][instance][0]
+				var bounds: AABB = t * (view._job["meshes"][instance] as Mesh).get_aabb()
+				check(bounds.position.x >= .41 and bounds.position.z >= .41, "upper floor stays inside the exterior wall")
+				for point: Vector3 in (view._job["faces"] as Array).slice(0, 6):
+					check(point.x >= .41 and point.z >= .41, "the upper floor's substrate also stays inside")
+			view._drawing_location = client.location
+			eq(view.slab_bounds(Vector2i.ONE, "ceiling"), Rect2(-.5, -.5, 1, 1), "interior tiles keep their full extent")
+			c.set_cell("structure", 0, 0, "")
+			eq(view.slab_bounds(Vector2i.ZERO, "ceiling"), Rect2(-.5, -.5, 1, 1), "open platforms keep their full extent")

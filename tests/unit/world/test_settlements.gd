@@ -44,8 +44,13 @@ func test_houses_have_a_door_onto_the_street_a_roof_and_a_bed() -> void:
 		eq(cell.call(h["door"], "structure"), "base:wood_door", "%s: a door" % h["name"])
 		eq((h["door"] as Vector2i).y, r.end.y - 1, "in its south wall")
 		eq(cell.call(h["door"] + Vector2i(0, 1), "ground"), "base:dirt", "onto a street")
-		eq(cell.call(r.position + Vector2i(2, 2), "roof"), "base:thatch_roof", "a roof over the room")
-		eq(cell.call(r.position, "structure"), "base:wood_wall", "walls round it")
+		var occupied: Dictionary = h["architecture"]["occupied"]
+		for local: Vector2i in occupied:
+			var at := r.position + local
+			if SettlementArchitecture._edge(occupied, local):
+				check(content.get_def(cell.call(at, "structure")).get("role", "") in ["wall", "window", "door"], "a real wall around the footprint at %s" % at)
+			else:
+				check(cell.call(at, "roof") != "" or cell.call(at, "ceiling") != "" or cell.call(at, "structure") == "base:wood_stairs", "every indoor cell has a roof, ceiling or stair opening at %s" % at)
 		check(h["bed"] != Settlements.NONE and cell.call(h["bed"], "structure") == "base:bed", "a bed to sleep in")
 	check(cell.call(p["fire"], "structure") == "base:campfire", "a fire in the street")
 	var pen: Dictionary = p["pen"]
@@ -126,13 +131,25 @@ func test_settlement_plan_and_player_changes_survive_reopening() -> void:
 		return
 	var plan := world.generator.settlements.home_plan()
 	var cells: Dictionary = plan["cells"]
-	var samples: Array = [plan["fire"], plan["parking"][0], plan["parking"][2], plan["homes"][0]["door"]]
+	var samples: Array = [plan["fire"], plan["parking"][0], plan["parking"][2]]
+	for home: Dictionary in plan["homes"]:
+		for local: Vector2i in home["architecture"]["occupied"]:
+			samples.append((home["rect"] as Rect2i).position + local)
+	var roof_cell := Settlements.NONE
 	for at: Vector2i in samples:
 		var chunk := world.chunk("surface", at.x >> 5, at.y >> 5)
 		var spec: Dictionary = cells[at]
 		for layer: String in ["ground", "structure", "roof"]:
 			if spec.has(layer):
 				eq(chunk.get_cell(layer, at.x & 31, at.y & 31), String(spec[layer]), "generated %s matches its plan at %s" % [layer, at])
+		if spec.get("roof", "") != "":
+			roof_cell = at
+		if spec.has("props"):
+			eq(chunk.get_props(at.x & 31, at.y & 31), spec["props"], "architecture parameters match the materialized cell")
+	check(roof_cell != Settlements.NONE, "a generated roof can be edited")
+	var roof_chunk := world.chunk("surface", roof_cell.x >> 5, roof_cell.y >> 5)
+	roof_chunk.set_cell("roof", roof_cell.x & 31, roof_cell.y & 31, "")
+	world._changed(ServerWorld.chunk_key("surface", roof_cell.x >> 5, roof_cell.y >> 5))
 	var edited: Vector2i = plan["parking"][0]
 	var changed := world.chunk("surface", edited.x >> 5, edited.y >> 5)
 	changed.set_cell("structure", edited.x & 31, edited.y & 31, "base:wood_fence")
@@ -145,13 +162,14 @@ func test_settlement_plan_and_player_changes_survive_reopening() -> void:
 	eq(restored["cells"], cells, "the reconstructed plan is stable")
 	eq(restored["parking"], plan["parking"], "all parking locations are stable")
 	eq(world.part_at("surface", edited.x, edited.y), "base:wood_fence", "a player change in a generated chunk survives")
+	eq(world._part_at("surface", roof_cell.x, roof_cell.y, "roof"), "", "a removed roof stays removed after reopening")
 	world.close()
 
 
 func test_malformed_settlements_are_content_errors() -> void:
 	var good: Dictionary = content.get_def("base:village").duplicate(true)
 	good["id"] = "test:v"
-	for bad: Dictionary in [{"houses": [3]}, {"cluster_chance": 2}, {"villages": [3, 1]}, {"ways": [{"id": "x", "near": "moon"}]},
+	for bad: Dictionary in [{"houses": [3]}, {"cluster_chance": 2}, {"villages": [3, 1]}, {"tradition": "moon"}, {"ways": [{"id": "x", "near": "moon"}]},
 			{"ways": [{"id": "x", "buildings": {"castle": {"weight": 2}}}]}, {"wall": "base:grass"}, {"buildings": []},
 			{"buildings": [{"size": [2, 2], "dweller": "x"}]}, {"buildings": [{"size": [5, 4]}]},
 			{"buildings": [{"size": [4, 4], "dweller": "x", "furniture": ["base:bed", "base:chest", "base:forge"]}]}]:
@@ -280,3 +298,32 @@ func test_every_biome_is_met_and_cold_keeps_from_the_steppe() -> void:
 	for b: String in ["base:meadow", "base:forest", "base:taiga", "base:grove", "base:swamp", "base:steppe", "base:tundra", "base:rocky"]:
 		check(seen.has(b), "%s is met" % b)
 	eq(touching, 0, "tundra and steppe apart")
+
+
+func test_settlement_scales_have_distinct_housing_and_public_buildings() -> void:
+	var settlements := Settlements.new(431, content, func(_x: int, _y: int) -> bool: return false, 8)
+	var seen := {}
+	var definition := content.get_def("base:village")
+	for index in 24:
+		var layout := settlements._layout(0, 10, index, definition, "scale-%d" % index)
+		var plan := settlements._place(layout, Vector2i(300, 300), "scale-%d" % index, definition)
+		check(Rect2i(Vector2i(300, 300) - Vector2i.ONE * Settlements.REACH, Vector2i.ONE * Settlements.REACH * 2).encloses(plan["bounds"]), "chunk discovery covers the entire town footprint")
+		var scale := String(plan["scale"])
+		seen[scale] = true
+		var count := (plan["homes"] as Array).size()
+		if scale == "hamlet":
+			check(count >= 2 and count <= 3, "a hamlet is a small group of homes")
+		elif scale == "trading_town":
+			check(count >= 8 and count <= 12, "a trading town has more housing")
+		else:
+			check(count >= 4 and count <= 7, "a village is the intermediate scale")
+		for building: Dictionary in plan["buildings"]:
+			var door: Vector2i = building["door"]
+			check(not content.get_def(String(plan["cells"][door + Vector2i.DOWN].get("structure", ""))).get("solid", false), "each public building also opens onto a clear street")
+		var ids := (plan["buildings"] as Array).map(func(b: Dictionary) -> String: return String(b["building_id"]).get_slice(":", 0))
+		check(ids.has("barn"), "even a hamlet has an actual barn")
+		if scale == "trading_town":
+			check(ids.has("warehouse") and ids.has("guardhouse"), "a town has additional civic buildings")
+		elif scale == "village":
+			check(ids.has("stable") and ids.has("workshop") and ids.has("elder") and ids.has("shrine"), "a village has household and civic spaces")
+	eq(seen.size(), 3, "all three scales are generated")

@@ -1,6 +1,12 @@
 {
   "format": 1,
   "defs": [
+    {"id": "base:village_well", "kind": "structure", "role": "furniture", "name": "Колодец", "furniture_model": "well",
+     "fills": {"base:bucket": "base:water_bucket"}, "cost": {"base:stone": 10, "base:plank": 4}, "durability": 1800, "material": "stone"},
+    {"id": "base:hay_rack", "kind": "structure", "role": "furniture", "name": "Ясли с сеном", "furniture_model": "hay_rack",
+     "cost": {"base:plank": 4}, "durability": 600, "material": "wood"},
+    {"id": "base:shrine", "kind": "structure", "role": "furniture", "name": "Каменный алтарь", "furniture_model": "shrine",
+     "cost": {"base:stone": 8}, "durability": 1800, "material": "stone"},
     {"id": "base:bandit_shelter", "kind": "structure", "role": "furniture", "name": "Лесной шалаш", "solid": false, "natural": true,
      "cost": {"base:log": 4}, "durability": 300, "material": "wood"},
     {"id": "base:wood_floor", "kind": "ground", "name": "Дощатый пол"},
@@ -13,6 +19,9 @@
     {"id": "base:wood_ceiling", "kind": "structure", "role": "ceiling", "floor": "base:wood_floor", "name": "Деревянное перекрытие", "cost": {"base:plank": 2},
      "durability": 1040, "material": "wood"},
     {"id": "base:thatch_roof", "kind": "structure", "role": "roof", "name": "Соломенная кровля", "cost": {"base:log": 1}, "durability": 520, "material": "thatch"},
+    {"id": "base:shingle_roof", "kind": "structure", "role": "roof", "name": "Дранковая кровля", "cost": {"base:plank": 2}, "durability": 780, "material": "wood"},
+    {"id": "base:slate_roof", "kind": "structure", "role": "roof", "name": "Каменная кровля", "cost": {"base:stone": 3}, "durability": 1500, "material": "stone"},
+    {"id": "base:flat_roof", "kind": "structure", "role": "roof", "name": "Плоская каменная кровля", "cost": {"base:stone": 3}, "durability": 1500, "material": "stone"},
     {"id": "base:wood_stairs", "kind": "structure", "role": "stairs", "solid": false, "rotations": ["n", "e", "w"], "name": "Деревянная лестница", "cost": {"base:plank": 4},
      "durability": 780, "material": "wood"},
     {"id": "base:torch", "kind": "structure", "role": "furniture", "solid": false, "name": "Факел на шесте", "cost": {"base:log": 1},

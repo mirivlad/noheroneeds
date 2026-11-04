@@ -1840,9 +1840,15 @@ func _dweller_spot(c: Creature, phase: String) -> Vector2i:
 		return (plan["pen"]["gate"] as Vector2i) + Vector2i(0, -1)
 	if work == "water":
 		var kept: Array = c.job.get("water", [])
-		if kept.is_empty() or not _by_water(Vector2i(int(kept[0]), int(kept[1]))):  # (a spot of old, back from the water: found anew)
+		var previous := Vector2i(int(kept[0]), int(kept[1])) if not kept.is_empty() else Creature.NO_TARGET
+		# A failed search is also a result: an inland or blocked shore must not
+		# be searched on every think. Reconsider after an hour, or immediately
+		# when a previously usable shore becomes blocked by a player.
+		var retry := world.world_time >= int(c.job.get("water_retry", 0)) if previous == Creature.NO_TARGET else not _by_water(previous)
+		if kept.is_empty() or retry:
 			var spot := _water_spot(plan["fire"], int(c.job.get("home", 0)))
 			c.job["water"] = [spot.x, spot.y]
+			c.job["water_retry"] = world.world_time + Daylight.HOUR_MS
 			c.changed()
 		var w: Array = c.job["water"]
 		if Vector2i(int(w[0]), int(w[1])) != Creature.NO_TARGET:
@@ -2308,7 +2314,10 @@ func _move(c: Creature) -> void:
 	if np != c.pos and String(c.job.get("horse", "")) != "":
 		var along := Vector2(np - c.pos)
 		var horse := _hauler_heading(c)
-		var turned := _turn_caravan(c, along)
+		# A precise waypoint can have a tiny lateral correction. Steering
+		# toward that diagonal step pins the horse against a nearby rock;
+		# aim the harness at the waypoint while the wheels finish both axes.
+		var turned := _turn_caravan(c, Vector2(d) if precise else along)
 		var turn_cart: Vector2 = turned[0]
 		var turn_horse: Vector2 = turned[1]
 		if not _caravan_cart_fits(c, np, along):

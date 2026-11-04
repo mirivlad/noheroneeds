@@ -24,7 +24,9 @@ func test_up_the_stairs_and_back() -> void:
 			cl.request({"type": "build", "location": "surface", "x": x, "y": y, "part": "base:wood_ceiling"})
 	cl.request({"type": "build", "location": "surface", "x": 2, "y": 2, "part": "base:wood_stairs"})
 	_steps(g, view, 10)
-	eq(g.world.levels.info.size(), 1, "the ceiling made a level")
+	var building := g.world._ceiling_building("surface", 2, 3)
+	var upper := g.world.levels.level(building, 1)
+	check(upper != "", "the ceiling made this building's level, independent of generated village floors")
 	# Stand by the stairs (as if walked there) and look at the room from
 	# inside: its cover is hidden, all but the opening over the stairs.
 	g.world.move_character(cl.character_id, Vector2i(2 * 256 + 128, 3 * 256 + 128))
@@ -33,6 +35,7 @@ func test_up_the_stairs_and_back() -> void:
 	cl.request({"type": "climb", "location": "surface", "x": 2, "y": 2})
 	_steps(g, view, 15)
 	eq(cl.z, 1, "on the first floor")
+	eq(cl.location, upper, "the staircase reaches the level of the player-built ceiling")
 	check(cl.location != "surface" and cl.has_position, "placed on the level")
 	check(cl.chunks.has(ServerWorld.chunk_key(cl.location, 0, 0)), "the level's chunk arrived")
 	var corrections_before := cl.corrections  # the test's own teleport counted earlier

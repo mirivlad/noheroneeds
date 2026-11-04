@@ -101,7 +101,7 @@ static func of(content: ContentRegistry, client: GameClient, view: WorldView, he
 			and content.get_def(String(target.get("id", ""))).get("farmland", false):
 		out.append({"id": "sow", "name": "Посеять", "primary": true,
 			"request": {"type": "sow", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
-	if kind == "ground" and held != "" and content.get_def(String(target.get("id", ""))).get("fills", {}).has(held):
+	if (kind == "ground" or (kind == "part" and target.get("layer", "") == "structure")) and held != "" and content.get_def(String(target.get("id", ""))).get("fills", {}).has(held):
 		out.append({"id": "fill", "name": "Набрать", "primary": true, "quick": true,
 			"request": {"type": "fill", "location": loc, "x": cell.x, "y": cell.y, "item": held}})
 	# A sapling in the hands is planted on open ground (ADR-0056).

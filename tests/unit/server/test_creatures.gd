@@ -88,7 +88,7 @@ func test_chunks_get_their_animals_once_and_villagers_come() -> void:
 		for h: Dictionary in p["homes"]:
 			if h["bed"] != Settlements.NONE and made.has_point(h["bed"]):
 				homes.append(h)
-	var villagers := w.creatures.creatures.values().filter(func(c: Creature) -> bool: return c.kind == "base:villager" and not c.job.is_empty() and not c.job.has("hospitality"))
+	var villagers := w.creatures.creatures.values().filter(func(c: Creature) -> bool: return c.kind == "base:villager" and c.job.has("village") and int(c.job.get("home", -1)) >= 0)
 	eq(villagers.size(), homes.size(), "a dweller a home in the villages made")
 	check(not (villagers[0] as Creature).looks.is_empty(), "with looks of their own")
 	for c: Creature in w.creatures.creatures.values():
@@ -334,6 +334,14 @@ func test_pack_caravan_finishes_a_diagonal_detour_from_off_centre() -> void:
 	for y in range(-1, 2):
 		for x in range(-1, 2):
 			w.chunk("surface", x, y)
+	# This fixture preserves the fractional corner, not the old world's
+	# coastline: the generator intentionally no longer recreates old worlds.
+	for y in range(-1, 8):
+		for x in range(22, 32):
+			var c := w.chunk("surface", x >> 5, y >> 5)
+			c.set_cell("ground", x & 31, y & 31, "base:grass")
+			c.set_cell("cover", x & 31, y & 31, "")
+			c.set_cell("structure", x & 31, y & 31, "")
 	var trader := _spawn("base:villager", Vector2i(27, 3))
 	trader.job = {"profession": "base:trader"}
 	# The actual stuck return leg in the author's world ccc. Its fractional
@@ -652,3 +660,27 @@ func test_bodies_have_their_own_size() -> void:
 		check(not errors.is_empty(), "malformed size refused: %s" % str(bad))
 	eq(BodySize.cells(Vector2i(384, 384), Vector2i(256, 128)), [Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1)] as Array[Vector2i],
 		"the cells a body covers")
+
+func test_a_cart_turns_its_horse_toward_an_off_centre_waypoint() -> void:
+	_field()
+	var offset := Vector2i(193, 93)
+	for rock: Vector2i in [Vector2i(-20, 74), Vector2i(-20, 75), Vector2i(-21, 76)]:
+		var at := rock + offset
+		w.chunk("surface", at.x >> 5, at.y >> 5).set_cell("structure", at.x & 31, at.y & 31, "base:rock")
+	var trader := _spawn("base:villager", Vector2i(170, 170))
+	trader.pos = Vector2i(-5796, 19916) + offset * Movement.UNIT
+	trader.face = Vector2i(1, -1)
+	trader.job = {"profession": "base:trader"}
+	w.creatures._make_caravan(trader, "cart")
+	var goal := Vector2i(-23, 76) + offset
+	w.creatures._go(trader, "detour", goal, false)
+	var horse := w.creatures.get_creature(String(trader.job["horse"]))
+	for i in 80:
+		w.creatures._move(trader)
+		check(w.creatures._caravan_cart_fits(trader, trader.pos, w.creatures._heading_of(trader.job["caravan_heading"])), "the actual cart orientation remains clear of the rocks")
+		for at: Vector2i in BodySize.cells(horse.pos, BodySize.of(_content.get_def(horse.kind))["half"]):
+			check(not w.is_solid("surface", at.x, at.y), "the horse never clips a rock while turning")
+		if trader.target == Creature.NO_TARGET:
+			break
+	eq(trader.cell(), goal, "small lateral correction must not lock the horse into the blocked diagonal")
+	eq(trader.target, Creature.NO_TARGET, "the precise waypoint is completed")

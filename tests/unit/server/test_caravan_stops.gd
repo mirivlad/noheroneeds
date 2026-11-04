@@ -260,8 +260,8 @@ func test_it_stops_in_the_village_it_came_to() -> void:
 	check(_run_until("trading", 4000), "the caravan gets in and trades")
 	check(String(trader.job.get("caravan_stop_kind", "")) in ["square", "village"],
 		"it stops at the village, not out on the road: " + str(trader.job.get("caravan_stop_kind", "")))
-	check(trader.cell().distance_to(home["fire"] as Vector2i) <= 20,
-		"its place is by the village: %s, fire %s" % [trader.cell(), home["fire"]])
+	check((home["parking"] as Array).has(trader.cell()),
+		"its place is one of this village's planned berths, including the reserve: %s" % trader.cell())
 
 
 func test_a_restart_in_the_middle_of_a_stop_does_not_send_the_caravan_off() -> void:

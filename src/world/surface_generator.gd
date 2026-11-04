@@ -27,7 +27,7 @@ const ID := "base:surface"
 ## 15: a biome is judged cell by cell from the plan's climate, not taken whole
 ##     from a coarse point, and woods thin into glades with open trails.
 ## 16: settlement plans include public ground and caravan parking.
-const VERSION := 16
+const VERSION := 17
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -232,7 +232,7 @@ func generate(cx: int, cy: int) -> Chunk:
 			var spec: Dictionary = cells[at]
 			if not spec.has("structure") and c.get_cell("structure", lx, ly) == _rock:
 				c.set_cell("structure", lx, ly, "")  # a settlement's ground is cleared of rock
-			for layer: String in ["ground", "cover", "structure", "roof"]:
+			for layer: String in ["ground", "cover", "structure", "ceiling", "roof"]:
 				if spec.has(layer):
 					c.set_cell(layer, lx, ly, spec[layer])
 			if _wet(c.get_cell("ground", lx, ly)):

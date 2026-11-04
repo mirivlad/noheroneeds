@@ -113,7 +113,29 @@
         "src/world/settlements.gd",
         "src/world/surface_generator.gd",
         "src/experiment_3d/terrain_shape_3d.gd",
-        "content/base/settlements.json"
+        "content/base/settlements.json",
+        "src/server/creature_sim.gd"
+      ],
+      "kinds": []
+    },
+    {
+      "id": "settlement-architecture",
+      "guide": "building",
+      "sources": [
+        "src/world/settlement_architecture.gd",
+        "src/world/settlements.gd",
+        "src/experiment_3d/building_modules_3d.gd",
+        "src/experiment_3d/world_view_3d.gd",
+        "src/experiment_3d/roof.gdshader",
+        "content/base/settlements.json",
+        "content/base/building.json",
+        "content/base/structures.json",
+        "src/server/server_world.gd",
+        "src/server/game_server.gd",
+        "src/client/game_client.gd",
+        "src/presentation/actions.gd",
+        "src/content/content_registry.gd",
+        "src/world/settlement_architecture.gd.uid"
       ],
       "kinds": []
     },

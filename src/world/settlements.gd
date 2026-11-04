@@ -28,7 +28,7 @@ extends RefCounted
 const NONE := Vector2i(1 << 30, 1 << 30)
 ## The plan is reconstructed from the seed; changing its rules requires a new
 ## version and an explicit world-format decision.
-const VERSION := 1
+const VERSION := 3
 ## Cells round each building, field and pen kept free of any plant.
 const MARGIN := 1
 ## Cells round the whole settlement kept free of trees and bushes.
@@ -120,7 +120,9 @@ func _district_rect(k: int, dx: int, dy: int) -> Rect2i:
 
 ## Cells a village's plan reaches past its district's inner edge (EDGE): its
 ## half (houses, fields, pen) at most.
-const REACH := 64
+# Includes the longest town layout (twelve homes plus civic buildings,
+# their yards, connecting streets, fields and the livestock pen).
+const REACH := 160
 
 
 ## Plans of every settlement whose cells may fall in chunk (cx, cy). Only
@@ -216,6 +218,7 @@ func _cluster(k: int, dx: int, dy: int) -> Array:
 			out.append(p)
 			seat = p["centre"]
 	var spread := int(d["spread"])
+	var layouts := {}
 	for i in range(out.size(), n * 2):
 		if out.size() >= n:
 			break
@@ -238,28 +241,43 @@ func _cluster(k: int, dx: int, dy: int) -> Array:
 				continue
 			var id := "%s@%d,%d#%d" % [_kinds[k]["id"], dx, dy, out.size()]
 			var built := _way(style_at(d, centre), centre)
-			var placed := _place(_layout(k, dx, dy * 16 + out.size(), built), centre, id, built)
-			if _dry(placed) and not out.any(func(o: Dictionary) -> bool:
-					return (o["bounds"] as Rect2i).grow(4).intersects(placed["bounds"])):
-				best = placed
+			var key := id + "|" + JSON.stringify(built)
+			if not layouts.has(key):
+				layouts[key] = _layout(k, dx, dy * 16 + out.size(), built, id)
+			var layout: Dictionary = layouts[key]
+			var site := _site(layout, centre)
+			if _dry(site) and not out.any(func(o: Dictionary) -> bool:
+					return (o["bounds"] as Rect2i).grow(4).intersects(site["bounds"])):
+				best = {"layout": layout, "centre": centre, "id": id, "definition": built}
 				best_score = score
 		if not best.is_empty():
-			out.append(best)
+			out.append(_place(best["layout"], best["centre"], best["id"], best["definition"]))
 			if seat == NONE:
 				seat = best["centre"]
 	return out
 
 
 ## The village by the spawn point: a short walk from it, out of its clearing
-## (its own look: no style, the first place one sees).
+## (the local tradition is selected at each candidate site too).
 func _home(k: int, dx: int, dy: int, d: Dictionary) -> Dictionary:
 	var built := _way(d, Vector2i.ZERO)
-	var home := _layout(k, dx, dy * 16, built)
+	var village_id := "%s@%d,%d#0" % [_kinds[k]["id"], dx, dy]
+	var home := _layout(k, dx, dy * 16, built, village_id)
 	var east := _clearing + 4 + int(home["half"])
-	for centre: Vector2i in [Vector2i(east, 0), Vector2i(-east - 2, 0), Vector2i(0, east + 6), Vector2i(0, -east - 10),
-			Vector2i(east + 10, 14), Vector2i(-east - 12, -14), Vector2i(east + 20, -20), Vector2i(-east - 20, 22)]:
-		var placed := _place(home, centre, "%s@%d,%d#0" % [_kinds[k]["id"], dx, dy], built)
-		if _dry(placed):
+	var candidates: Array[Vector2i] = [Vector2i(east, 0), Vector2i(-east - 2, 0), Vector2i(0, east + 6), Vector2i(0, -east - 10)]
+	# A larger footprint can invalidate the old eight sites. Search dry sites
+	# around the clearing as well; never relax the safety of the cart yards.
+	for radius: int in [east, 96, 112]:
+		for direction in 24:
+			candidates.append(Vector2i(Vector2.from_angle(direction * TAU / 24.0) * radius))
+	var layouts := {}
+	for centre: Vector2i in candidates:
+		var local := _way(style_at(d, centre), centre)
+		var key := JSON.stringify(local)
+		if not layouts.has(key):
+			layouts[key] = _layout(k, dx, dy * 16, local, village_id)
+		if _dry(_site(layouts[key], centre)):
+			var placed := _place(layouts[key], centre, village_id, local)
 			placed["home"] = true
 			return placed
 	return {}
@@ -350,8 +368,17 @@ func style_at(d: Dictionary, at: Vector2i) -> Dictionary:
 
 ## What a settlement has, before it is put anywhere: its buildings (sizes,
 ## furniture, dwellers), fields and pen, laid out relative to its centre.
-func _layout(k: int, rx: int, ry: int, d: Dictionary) -> Dictionary:
+func _layout(k: int, rx: int, ry: int, d: Dictionary, village_id: String) -> Dictionary:
 	var houses: Array = d["houses"]
+	var scale_roll := absi(hash([world_seed, village_id, "scale"])) % 10
+	var scale := "hamlet" if scale_roll < 3 else ("trading_town" if scale_roll >= 8 else "village")
+	# Keep the starting settlement a useful, modest village.
+	if d.get("near_spawn", false) and _district_of(k, Vector2i.ZERO) == Vector2i(rx, floori(ry / 16.0)) and ry % 16 == 0:
+		scale = "village"
+	if scale == "hamlet":
+		houses = [2, 3]
+	elif scale == "trading_town":
+		houses = [8, 12]
 	var n := int(houses[0]) + int(_hash(k, rx, ry, 2) * (int(houses[1]) - int(houses[0]) + 1))
 	var kinds: Array = d["buildings"]
 	var used := {}
@@ -375,21 +402,40 @@ func _layout(k: int, rx: int, ry: int, d: Dictionary) -> Dictionary:
 				chosen.append(b)
 				used[b["id"]] = int(used.get(b["id"], 0)) + 1
 				break
+	for template: Dictionary in d.get("civic_buildings", []):
+		if scale == "hamlet" and template["id"] not in ["barn"]:
+			continue
+		if scale != "trading_town" and template["id"] in ["warehouse", "guardhouse"]:
+			continue
+		chosen.append(template)
+	var designed := []
+	for index in chosen.size():
+		var b: Dictionary = (chosen[index] as Dictionary).duplicate(true)
+		if index == 0 and scale != "hamlet":
+			b["min_wealth"] = 2 if scale == "trading_town" else 1
+			b["storeys"] = 2
+		var building_id := "%s:%d" % [String(b["id"]), index]
+		var design := SettlementArchitecture.plan(world_seed, village_id, building_id, b, String(d.get("tradition", "plains")))
+		b["architecture"] = design
+		var size: Vector2i = design["size"]
+		b["size"] = [size.x, size.y]
+		designed.append(b)
+	chosen = designed
 	# Rows along streets: a row is at most WIDTH cells; a building's door on
 	# its south wall opens onto the street just below it.
-	const WIDTH := 30
+	var width_limit := 40 if scale == "trading_town" else 30
 	var rows := [[]]
 	var x := 0
 	var tallest := 4
 	for b: Dictionary in chosen:
 		var w := int(b["size"][0])
 		tallest = maxi(tallest, int(b["size"][1]))
-		if x > 0 and x + w > WIDTH:
+		if x > 0 and x + w > width_limit:
 			rows.append([])
 			x = 0
 		(rows[-1] as Array).append([b, x])
 		x += w + 2
-	var row_step := tallest + 4
+	var row_step := tallest + 10
 	var buildings := []
 	var widest := 0
 	for r in rows.size():
@@ -428,13 +474,41 @@ func _layout(k: int, rx: int, ry: int, d: Dictionary) -> Dictionary:
 	var yard := Rect2i(square.end.x + 1, -12, 25, 14)
 	var far := maxi(yard.end.x + 1, fx + 1 + int(pd.get("size", [0, 0])[0]))
 	return {"buildings": buildings, "streets": streets, "fields": fields, "pen": pen,
-		"half": far, "square": square, "yard": yard, "fire": square.position + Vector2i(1, 2)}
+		"scale": scale, "half": far, "square": square, "yard": yard, "fire": square.position + Vector2i(1, 2)}
+
+
+## Bounds and public ground can be checked before making thousands of cells.
+## Use this same footprint for placement and discovery; rejected sites never
+## need walls, furniture or upper-floor chunks to be materialized.
+func _site(layout: Dictionary, centre: Vector2i) -> Dictionary:
+	var bounds := Rect2i(centre, Vector2i.ONE)
+	for street: Rect2i in layout["streets"]:
+		bounds = bounds.merge(Rect2i(street.position + centre, street.size))
+	var square := Rect2i((layout["square"] as Rect2i).position + centre, (layout["square"] as Rect2i).size)
+	var yard := Rect2i((layout["yard"] as Rect2i).position + centre, (layout["yard"] as Rect2i).size)
+	var reserve := Rect2i(yard.position + Vector2i(6, -13), Vector2i(13, 14))
+	for area: Rect2i in [square, yard, reserve]:
+		bounds = bounds.merge(area)
+	for building: Dictionary in layout["buildings"]:
+		var rect: Rect2i = building["rect"]
+		bounds = bounds.merge(Rect2i(rect.position + centre, rect.size).grow(MARGIN))
+		var plot: Rect2i = building["template"]["architecture"]["yard"]
+		if plot.has_area():
+			bounds = bounds.merge(Rect2i(plot.position + rect.position + centre, plot.size).grow(MARGIN))
+	for field: Dictionary in layout["fields"]:
+		var rect: Rect2i = field["rect"]
+		bounds = bounds.merge(Rect2i(rect.position + centre, rect.size).grow(MARGIN))
+	if not (layout["pen"] as Dictionary).is_empty():
+		var rect: Rect2i = layout["pen"]["rect"]
+		bounds = bounds.merge(Rect2i(rect.position + centre, rect.size).grow(MARGIN))
+	return {"bounds": bounds, "centre": centre, "square": square, "parking_yard": yard, "parking_reserve": reserve}
 
 
 ## The layout put at `centre`: every cell it sets.
 func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> Dictionary:
 	var cells := {}
-	var bounds := Rect2i(centre, Vector2i.ONE)
+	var site := _site(layout, centre)
+	var bounds: Rect2i = site["bounds"]
 	var village := {"village": id}
 	var put := func(at: Vector2i, layer: String, what: String, props := {}) -> void:
 		var cell: Dictionary = cells.get_or_add(at, {})
@@ -452,11 +526,11 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 			for x in range(r.position.x, r.end.x):
 				put.call(Vector2i(x, y), "ground", String(d["road"]))
 				put.call(Vector2i(x, y), "cover", "")
-	var square := Rect2i((layout["square"] as Rect2i).position + centre, (layout["square"] as Rect2i).size)
-	var yard := Rect2i((layout["yard"] as Rect2i).position + centre, (layout["yard"] as Rect2i).size)
+	var square: Rect2i = site["square"]
+	var yard: Rect2i = site["parking_yard"]
 	var market_site := Rect2i(square.position + Vector2i(0, 8), Vector2i(2, 2))
 	# A third, separate yard is the reserve when both main berths are occupied.
-	var reserve := Rect2i(yard.position + Vector2i(6, -13), Vector2i(13, 14))
+	var reserve: Rect2i = site["parking_reserve"]
 	bounds = bounds.merge(square)
 	bounds = bounds.merge(yard)
 	bounds = bounds.merge(reserve)
@@ -490,39 +564,39 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 			if local.y >= 9 or (local.x >= 10 and local.x <= 14) or Vector2(local - Vector2i(6, 5)).length() <= 6.0 or Vector2(local - Vector2i(19, 5)).length() <= 5.5:
 				put.call(at, "ground", String(d["road"]))
 	var homes := []
+	var buildings := []
+	var upper := {}
 	for b: Dictionary in layout["buildings"]:
 		var r := Rect2i((b["rect"] as Rect2i).position + centre, (b["rect"] as Rect2i).size)
 		bounds = bounds.merge(r.grow(MARGIN))
 		clear_round.call(r)
-		var door := Vector2i(r.position.x + r.size.x / 2, r.end.y - 1)
-		for y in range(r.position.y, r.end.y):
-			for x in range(r.position.x, r.end.x):
-				var at := Vector2i(x, y)
-				put.call(at, "ground", String(d["floor"]))
-				var edge := x == r.position.x or x == r.end.x - 1 or y == r.position.y or y == r.end.y - 1
-				if not edge:
-					put.call(at, "roof", String(d["roof"]))
-					put.call(at, "structure", "")
-					continue
-				if at == door:
-					put.call(at, "structure", String(d["door"]), village)
-				elif y == r.end.y - 1 and r.size.x >= 5 and (x == r.position.x + 1 or x == r.end.x - 2):
-					put.call(at, "structure", String(d["window"]), village.merged({"facing": "s"}))
-				else:
-					put.call(at, "structure", String(d["wall"]), village)
-		# Furniture along the back wall; the first is where its dweller sleeps.
-		var furniture: Array = b["template"].get("furniture", [])
+		var design: Dictionary = b["template"]["architecture"]
+		var door: Vector2i = design["door"] + r.position
+		var made := SettlementArchitecture.cells(design, r.position, id, d, content)
+		for at: Vector2i in made:
+			(cells.get_or_add(at, {}) as Dictionary).merge(made[at], true)
+		var upstairs := SettlementArchitecture.upper_cells(design, r.position, id, d, content)
+		if not upstairs.is_empty():
+			upper[id + "|" + String(design["id"])] = upstairs
+		var plot: Rect2i = design["yard"]
+		if plot.has_area():
+			bounds = bounds.merge(Rect2i(plot.position + r.position, plot.size).grow(MARGIN))
+			clear_round.call(Rect2i(plot.position + r.position, plot.size))
+		buildings.append({"name": String(b["template"].get("name", "")), "rect": r, "door": door,
+			"building_id": design["id"], "seed": design["seed"], "shape": design["shape"],
+			"wealth": design["wealth"], "tradition": design["tradition"], "architecture": design})
+		if String(b["template"].get("dweller", "")) == "":
+			continue
 		var bed := NONE
-		for i in furniture.size():
-			var at := Vector2i(r.position.x + 1 + i, r.position.y + 1)
-			var props := village.duplicate()
-			if content.get_def(String(furniture[i])).has("container"):
-				props["store"] = "%s|%d|%d" % [id, at.x, at.y]  # its own inventory, the same every time
-			put.call(at, "structure", String(furniture[i]), props)
-			if content.get_def(String(furniture[i])).get("bed", false) and bed == NONE:
-				bed = at
+		for furniture: Dictionary in design["furniture"]:
+			if content.get_def(String(furniture["id"])).get("bed", false):
+				bed = (furniture["cell"] as Vector2i) + r.position
+				break
 		homes.append({"name": String(b["template"].get("name", "")), "dweller": String(b["template"]["dweller"]),
-			"rect": r, "door": door, "bed": bed})
+			"rect": r, "door": door, "bed": bed, "building_id": design["id"], "seed": design["seed"],
+			"shape": design["shape"], "wealth": design["wealth"], "tradition": design["tradition"], "architecture": design})
+	var well := square.position + Vector2i(5, 2)
+	put.call(well, "structure", "base:village_well", village)
 	var fire: Vector2i = layout["fire"] + centre
 	put.call(fire, "structure", String(d["square"]), village)
 	var fields := []
@@ -553,14 +627,16 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 		pen = {"rect": r, "gate": gate, "animals": p["animals"]}
 	# Both approaches start at the public ground: the westward approach follows
 	# the first street, and the eastward one leaves the square directly.
-	var road_start := Vector2i(square.get_center().x, centre.y)
+	# Cell-centred wagons need clearance on both sides. The northern street
+	# row adjoins house walls, so the through line uses the next row.
+	var road_start := Vector2i(square.get_center().x, centre.y + 1)
 	var ends := [road_start, road_start]
 	return {"id": id, "kind": String(d.get("id", "")), "name": String(d.get("name", "")), "centre": centre,
-		"bounds": bounds, "cells": cells, "homes": homes, "fields": fields, "pen": pen, "fire": fire,
+		"bounds": bounds, "cells": cells, "homes": homes, "buildings": buildings, "upper": upper, "scale": layout["scale"], "fields": fields, "pen": pen, "fire": fire,
 		"square": square, "market_sites": [market_site], "parking_yard": yard, "parking_reserve": reserve,
 		"parking": [yard.position + Vector2i(6, 5), yard.position + Vector2i(19, 5), reserve.get_center()],
 		"ends": ends, "half": int(layout["half"]), "road": String(d["road"]), "bridge": String(d.get("bridge", "")),
-		"way": String(d.get("way", "")), "way_name": String(d.get("way_name", ""))}
+		"way": String(d.get("way", "")), "way_name": String(d.get("way_name", "")), "tradition": String(d.get("tradition", "plains"))}
 
 
 ## Roads whose cells may fall in chunk (cx, cy): {"id", "key", "bounds",
@@ -987,7 +1063,7 @@ func _dry(p: Dictionary) -> bool:
 		var margin := ROAD_OUT + ROUTE_STEP / 2 + 2
 		var middle: Vector2i = p["centre"]
 		for x in range(r.position.x - margin, r.end.x + margin + 1):
-			for y in range(middle.y, middle.y + 2):
+			for y in range(middle.y + 1, middle.y + 3):
 				if String((_land.call(x, y) as Dictionary).get("what", "")) in ["water", "deep"]:
 					return false
 	var wet := 0

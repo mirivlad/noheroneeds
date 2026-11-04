@@ -259,6 +259,7 @@ func _validate() -> void:
 						func(v: Variant) -> bool: return typeof(v) not in [TYPE_INT, TYPE_FLOAT] or v < 0):
 					errors.append("%s: against maps a material to how much of a blow it takes" % id)
 			"structure":
+				_check_fills(id, d)
 				# Natural parts (rock, cave ways) are found, not built: no cost.
 				d["natural"] = bool(d.get("natural", false))
 				if not d["natural"] or d.has("cost"):
@@ -524,6 +525,8 @@ const BEHAVIORS := ["prey", "villager", "predator", "looter"]
 ## it is built of, its buildings (their size, furniture, who lives there),
 ## fields and a pen. The generator only lays them out.
 func _check_settlement(id: String, d: Dictionary) -> void:
+	if String(d.get("tradition", "plains")) not in ["plains", "forest", "cold", "mountain", "dry"]:
+		errors.append("%s: unknown building tradition" % id)
 	# Styles by biome (ADR-0038): what is built otherwise where its middle
 	# lies in one of "biomes" — each must make a whole settlement too.
 	var styles: Variant = d.get("styles", [])
@@ -611,6 +614,17 @@ func _check_settlement(id: String, d: Dictionary) -> void:
 			errors.append("%s: a building's dweller '%s' is not a profession" % [id, b["dweller"]])
 		if (b.get("furniture", []) as Array).size() > int(size[0]) - 2:
 			errors.append("%s: more furniture than fits along a building's back wall" % id)
+	var civic: Variant = d.get("civic_buildings", [])
+	if not civic is Array:
+		errors.append("%s: civic_buildings must be a list" % id)
+		civic = []
+	for b: Variant in civic:
+		if not b is Dictionary or String(b.get("id", "")) == "" or typeof(b.get("size")) != TYPE_ARRAY or (b["size"] as Array).size() != 2:
+			errors.append("%s: a civic building needs an id and a size" % id)
+			continue
+		if int(b["size"][0]) < 4 or int(b["size"][1]) < 4 or int(b["size"][0]) > 12 or int(b["size"][1]) > 10:
+			errors.append("%s: a civic building must be 4..12 by 4..10" % id)
+		_check_refs(id, "civic furniture", b.get("furniture", []), "structure")
 	var fields: Dictionary = d.get("fields", {})
 	if not fields.is_empty():
 		if kind_of(String(fields.get("ground", ""))) != "ground":

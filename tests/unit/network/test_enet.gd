@@ -4,7 +4,12 @@ extends TestCase
 
 func test_join_move_and_build_over_enet() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
-	var world := ServerWorld.open(tmp_dir().path_join("world.db"), content)
+	var world := ServerWorld.open(tmp_dir().path_join("world.db"), content, {"seed": 4})
+	# This deadline measures the ENet exchange, not procedural terrain work.
+	# Prepare the initial interest area before starting the protocol clock.
+	for cy in range(-2, 3):
+		for cx in range(-2, 3):
+			world.chunk("surface", cx, cy)
 	var st := ENetTransport.new()
 	var port := 0
 	for p in range(41000, 41050):

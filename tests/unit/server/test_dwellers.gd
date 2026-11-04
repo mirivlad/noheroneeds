@@ -218,3 +218,37 @@ func test_a_traveller_walks_a_road() -> void:
 		"it stands at its stop: %s, %s" % [found.cell(), at])
 	check(String(found.job.get("caravan_stop_kind", "")) in ["square", "village", "roadside"],
 		"and the stop knows what kind of place it is: %s" % found.job.get("caravan_stop_kind", ""))
+
+
+class FishSearch extends CreatureSim:
+	var searches := 0
+	var shore := Creature.NO_TARGET
+
+	func _water_spot(_from: Vector2i, _nth := 0) -> Vector2i:
+		searches += 1
+		return shore
+
+	func _by_water(at: Vector2i) -> bool:
+		return at != Creature.NO_TARGET and at == shore
+
+
+func test_fisher_reuses_a_missing_shore_until_retry_and_rechecks_blocked_work() -> void:
+	var sim := FishSearch.new(w)
+	var c: Creature = _dwellers()[0]
+	c.job["profession"] = "base:fisher"
+	c.job.erase("water")
+	w.world_time = Daylight.DAY_MS
+	var fallback: Vector2i = plan["fire"] + Vector2i.DOWN
+	eq(sim._dweller_spot(c, "work"), fallback)
+	for i in 100:
+		eq(sim._dweller_spot(c, "work"), fallback)
+	eq(sim.searches, 1, "a failed shore search is not repeated every think")
+	w.world_time += Daylight.HOUR_MS
+	sim.shore = (plan["fire"] as Vector2i) + Vector2i(30, 0)
+	eq(sim._dweller_spot(c, "work"), sim.shore, "a later retry can find newly accessible shore")
+	eq(sim.searches, 2)
+	eq(sim._dweller_spot(c, "work"), sim.shore)
+	eq(sim.searches, 2, "a valid workplace is reused")
+	sim.shore = Creature.NO_TARGET
+	eq(sim._dweller_spot(c, "work"), fallback, "a blocked workplace is reconsidered immediately")
+	eq(sim.searches, 3)

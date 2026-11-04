@@ -2,6 +2,8 @@
   "format": 1,
   "defs": [
     {"id": "base:wood_wall", "kind": "structure", "role": "wall", "name": "Деревянная стена", "cost": {"base:plank": 3}, "durability": 1040, "material": "wood"},
+    {"id": "base:log_wall", "kind": "structure", "role": "wall", "name": "Бревенчатая стена", "cost": {"base:log": 3}, "durability": 1200, "material": "wood"},
+    {"id": "base:plaster_wall", "kind": "structure", "role": "wall", "name": "Оштукатуренная стена", "cost": {"base:stone": 2, "base:plank": 1}, "durability": 1500, "material": "stone"},
     {"id": "base:stone_wall", "kind": "structure", "role": "wall", "name": "Каменная стена", "cost": {"base:stone": 2, "base:plank": 1},
       "durability": 2400, "material": "stone", "toughness": 0.15},
     {"id": "base:wood_door", "kind": "structure", "role": "door", "openable": true, "name": "Деревянная дверь", "cost": {"base:plank": 4}, "durability": 780, "material": "wood"},

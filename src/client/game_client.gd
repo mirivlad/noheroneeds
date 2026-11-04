@@ -297,7 +297,8 @@ func _on_message(m: Dictionary) -> void:
 					_note_changes(String(m["location"]), Vector2i(int(m["cx"]), int(m["cy"])) * Chunk.SIZE, old, c)
 				chunks[key] = c
 				changed_chunks.append(key)
-				_known_on_map(String(m["location"]), int(m["cx"]), int(m["cy"]), MapTile.of(c))
+				if m["location"] == location or not c.meta.has("building_z"):
+					_known_on_map(String(m["location"]), int(m["cx"]), int(m["cy"]), MapTile.of(c))
 		Protocol.MAP_KNOWN:
 			var known: Dictionary = map_known.get_or_add(String(m["location"]), {"z": int(m["z"]), "chunks": {}})
 			known["z"] = int(m["z"])

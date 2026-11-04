@@ -208,7 +208,7 @@ func test_a_world_of_an_older_format_is_refused_with_a_reason() -> void:
 	s.close()
 	var old := ServerWorld.open(_db, _content)
 	check(old == null, "not opened")
-	check(ServerWorld.open_error.contains("старой версией игры"), ServerWorld.open_error)
+	eq(ServerWorld.open_error, ServerWorld.OLD_WORLD_ERROR, "the explicit incompatible-world explanation")
 	var fresh := ServerWorld.open(tmp_dir().path_join("new.db"), _content, {"seed": 1})
 	check(fresh != null and ServerWorld.open_error == "", "a new world opens")
 	fresh.close()

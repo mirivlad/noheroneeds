@@ -41,6 +41,7 @@ func test_bad_hand_anchors_are_rejected_as_content_errors() -> void:
 
 
 func test_new_bodies_can_be_chosen_saved_and_played() -> void:
+	eq(CharacterEditor.PLANS, ["base:human_ro_m", "base:human_ro_f"], "only the two RO bodies are offered")
 	for choice in [0, 1]:
 		var app := App.new()
 		var profile := tmp_dir()
@@ -52,6 +53,8 @@ func test_new_bodies_can_be_chosen_saved_and_played() -> void:
 		pick.item_selected.emit(choice)
 		var hair: OptionButton = app.menu.find_child("HairChoice", true, false)
 		check(not hair.disabled, "hairstyles are independent of sex and body")
+		hair.select(CharacterEditor.RO_HAIRS.keys().find("base:human_ro_hair_bob"))
+		hair.item_selected.emit(hair.selected)
 		var name_edit: LineEdit = app.menu.find_children("*", "LineEdit", true, false).filter(
 			func(n: Node) -> bool: return not n.is_queued_for_deletion())[-1]
 		name_edit.text = "Новый облик %d" % choice
@@ -64,7 +67,7 @@ func test_new_bodies_can_be_chosen_saved_and_played() -> void:
 		var saved := app.characters.load_character(file)
 		check(saved != null, "signed file is readable")
 		eq(saved.body_plan, plan)
-		eq(saved.styles, {"face": "base:human_face_soft", "hair": "base:human_hair_short"}, "modular head and hair")
+		eq(saved.styles, {"hair": "base:human_ro_hair_bob"}, "the selected RO hairstyle is kept in the signed file")
 		eq(saved.check_content(app.content), PackedStringArray())
 		# Reopen the library: this uses the persisted, signed bytes.
 		var reopened := CharacterLibrary.new(profile.path_join("characters"), app.content, app.me)

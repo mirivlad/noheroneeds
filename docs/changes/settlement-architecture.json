@@ -1,0 +1,55 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Завершена модульная архитектура поселений: разные масштабы, материалы и формы домов, дворы/сараи, реальные жилые этажи и общественные здания. Верхние этажи передаются из сохранённых чанков; колодцы наполняют ведро.",
+      "sources": {
+        "content/base/building.json": "47487fa071f8294cdb463aae2c5a88985d2a905f533458af6850459e2aadde04",
+        "content/base/settlements.json": "fab5f05f195997e7a44c22551d998632c0b24197bddbcb34dac041e96c17163a",
+        "content/base/structures.json": "1b48887b1736baff92fb4d4682a2ed0260d26702827efa0f28a0814e472fd17f",
+        "src/client/game_client.gd": "d0cd267198516af801e44e29b38b7fa18615462c8c8cf7a0a668d8bd63da0dcf",
+        "src/content/content_registry.gd": "e010c6fe86b7bb52ad68e03e3e254537dd912da2b53c66bf1c65f45506315e93",
+        "src/experiment_3d/building_modules_3d.gd": "952b47f3ab17dce1599b7a6ca9b3d490a314a1493fede187c52627d86d8249c7",
+        "src/experiment_3d/roof.gdshader": "4d32b91675a11a7ffc13a3b4b157a121caa170d26ad1e96e804b68c70607e564",
+        "src/experiment_3d/world_view_3d.gd": "c1485568c4f44002fe750207a4c0579f485a5892946cf84d046084a8c48c22ed",
+        "src/presentation/actions.gd": "d0ba0c6416e965734d8e2da9a9b61f4942b44f657424147bfd0946df65b0f45d",
+        "src/server/game_server.gd": "5984fce2a9a7bd9267e449bbf73182137a353c27c74806085d665a43f51762d1",
+        "src/server/server_world.gd": "d92e045943c2a2a3a2c89a9ad2454ad066aac50ee24f2cba14b183371e203b0a",
+        "src/world/settlements.gd": "a00d74398b220668bad674a0b31fb2ea85529c3a958ac6f704e2c93149991c67",
+        "src/world/surface_generator.gd": "3894f70f72c6e69105fc66a2c0668e9e381df7670fb14da9093e44a03140de53",
+        "src/world/settlement_architecture.gd": "5e68df0ad8958d62f883866a64eebb60ebbed62a9ee683f9c6a3d060691cbbb8",
+        "src/world/settlement_architecture.gd.uid": "32191f607e6722d48a81364afbdb3373d9661fede49a8360688f745378c3fbde"
+      },
+      "mechanics": [
+        "settlement-architecture",
+        "settlements",
+        "multiplayer",
+        "craft",
+        "trade"
+      ],
+      "guides": {
+        "site/content/guides/building.html": "87470e9d83eabbd0b86de2434ae10a58933d3986a4a22f41fc4232c3ee8e0e9b",
+        "site/content/guides/trade.html": "ddf5d3f67b8ee58a8adaa3bbbb85feee0e520306275853b1a388afbd06c8531d",
+        "site/content/guides/multiplayer.html": "e95a043419566030374926f79acefee47d677dbf211ebe23abf867f2af640ef6",
+        "site/content/guides/craft.html": "9c8851d3f7e938ff6d9fe2685b80adfd253b200a9dc41f32b5d8a936435ac297"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    },
+    {
+      "impact": "player-facing-change",
+      "summary": "Рыбак повторяет неудачный поиск берега через игровой час; упряжка ориентируется на точную следующую цель и больше не застревает у камней при небольшой боковой поправке.",
+      "sources": {
+        "src/server/creature_sim.gd": "769b57a0abf51e68471ac174d64aaa1f42d5bf872a0e941f0cccfc6a9910514a"
+      },
+      "mechanics": [
+        "settlements",
+        "caravans"
+      ],
+      "guides": {
+        "site/content/guides/trade.html": "ddf5d3f67b8ee58a8adaa3bbbb85feee0e520306275853b1a388afbd06c8531d",
+        "site/content/guides/caravans.html": "474c4fb2ab87f68797e79df383b8e4906ca4138d06f90398cdfe1a20442109ab"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

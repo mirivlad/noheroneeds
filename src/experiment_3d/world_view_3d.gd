@@ -213,12 +213,12 @@ func update_view(alpha: float, delta: float) -> void:
 
 	for key: String in client.chunks:
 		var k := key.split("|")
-		if k[0] == client.location and absi(int(k[1]) - around.x) <= RADIUS and absi(int(k[2]) - around.y) <= RADIUS:
+		if _draws_chunk(key) and absi(int(k[1]) - around.x) <= RADIUS and absi(int(k[2]) - around.y) <= RADIUS:
 			if not _geometry.has(key) and _job.get("key", "") != key:
 				_queued[key] = true
 	for key: String in _geometry.keys():
 		var k := key.split("|")
-		if k[0] != client.location or absi(int(k[1]) - around.x) > RADIUS or absi(int(k[2]) - around.y) > RADIUS:
+		if not _draws_chunk(key) or absi(int(k[1]) - around.x) > RADIUS or absi(int(k[2]) - around.y) > RADIUS:
 			(_geometry[key] as Node).queue_free()
 			_geometry.erase(key)
 	var start := Time.get_ticks_usec()
@@ -388,12 +388,46 @@ func _hollow(c: Vector2i) -> bool:
 func corner_normal(c: Vector2i) -> Vector3:
 	return Vector3(corner_height(c + Vector2i.LEFT) - corner_height(c + Vector2i.RIGHT), 2, corner_height(c + Vector2i.UP) - corner_height(c + Vector2i.DOWN)).normalized()
 
+# A render job may belong to a saved upper floor seen from the street.
+# All neighbour/roof queries during that row use its actual location.
+var _drawing_location := ""
+var _drawing_z := 0
+
+func _draws_chunk(key: String) -> bool:
+	if not client.chunks.has(key):
+		return false
+	return key.get_slice("|", 0) == client.location or (client.location == Levels.SURFACE and int((client.chunks[key] as Chunk).meta.get("building_z", 0)) > 0)
+
+func _cell_layer(cell: Vector2i, layer: String) -> String:
+	return client.cell_at(_drawing_location if _drawing_location != "" else client.location, cell, layer)
+
+func props_at(cell: Vector2i) -> Dictionary:
+	return client.props_of(_drawing_location if _drawing_location != "" else client.location, cell)
+
+# Slabs meet the wall centreline rather than projecting half a cell outside it.
+# Open platforms keep the full cell; a stair opening is not an exterior edge.
+func slab_bounds(cell: Vector2i, layer: String) -> Rect2:
+	var bounds := Rect2(-.5, -.5, 1, 1)
+	if content.get_def(_cell_layer(cell, "structure")).get("role") not in ["wall", "window", "door"]:
+		return bounds
+	var low := bounds.position
+	var high := bounds.end
+	for offset: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var neighbor := cell + offset
+		if _cell_layer(neighbor, layer) != "" or props_at(neighbor).get("stairs_down", false) or content.get_def(_cell_layer(neighbor, "structure")).get("role") == "stairs":
+			continue
+		if offset.x < 0: low.x = -.08
+		if offset.x > 0: high.x = .08
+		if offset.y < 0: low.y = -.08
+		if offset.y > 0: high.y = .08
+	return Rect2(low, high - low)
+
 func _begin_chunk(around: Vector2i) -> void:
 	var best := ""
 	var distance := INF
 	for key: String in _queued:
 		var k := key.split("|")
-		if k.size() != 3 or k[0] != client.location or not client.chunks.has(key):
+		if k.size() != 3 or not _draws_chunk(key):
 			continue
 		var at := Vector2i(int(k[1]), int(k[2]))
 		var d := Vector2(at - around).length_squared()
@@ -415,36 +449,40 @@ func _begin_chunk(around: Vector2i) -> void:
 
 func _build_row() -> void:
 	var c: Chunk = _job["chunk"]
+	_drawing_location = String(_job["key"]).get_slice("|", 0)
+	_drawing_z = int(c.meta.get("building_z", client.z)) if _drawing_location != client.location else client.z
 	var y: int = _job["row"]
 	var origin: Vector2i = _job["origin"]
 	for x in Chunk.SIZE:
 		var cell := origin + Vector2i(x, y)
 		var ground := c.get_cell("ground", x, y)
-		if ground == "" and not c.get_props(x, y).get("stairs_down", false):
-			continue
-		var level := 0.0 if client.z < 0 else client.z * STOREY
+		if ground == "" and not c.get_props(x, y).get("stairs_down", false) \
+				and c.get_cell("roof", x, y) == "" and c.get_cell("ceiling", x, y) == "":
+			continue  # a stair opening removes the floor, not the roof above it
+		var level := 0.0 if _drawing_z < 0 else _drawing_z * STOREY
 		var points: Array[Vector3] = []
+		var slab := slab_bounds(cell, "ground") if _drawing_z > 0 and ground in ["base:wood_floor", "base:stone_floor"] else Rect2(-.5, -.5, 1, 1)
 		for d: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
-			var at := cell + d
+			var at := Vector2(cell) + Vector2.ONE * .5 + slab.position + Vector2(d) * slab.size
 			# Keep the substrate below laid floors and any ground drawn by a model
 			# (a cave's floor too). Coplanar top faces cause stripes/z-fighting.
 			var bed := .14 if ground in ["base:wood_floor", "base:stone_floor", "base:bridge"] or models.catalog.has(ground) else 0.0
-			points.append(Vector3(at.x, corner_height(at) + level - bed, at.y))
+			points.append(Vector3(at.x, surface_elevation(at) + level - bed, at.y))
 		var color := ground_color(ground)
 		# A way down is a hole in the ground (hole_mesh), not a floor with stairs on it.
 		if _hollow(cell):
 			_add_object(cell, ground, "chasm", {})
 			if _ground_is(cell, "hanging_bridge"):
 				_add_object(cell, ground, "ground", {})
-		elif content.get_def(c.get_cell("structure", x, y)).get("leads") != "down" and not c.get_props(x, y).get("stairs_down", false):
-			_quad(points, color, {"kind": "ground", "id": ground, "cell": cell, "location": client.location})
-		if models.catalog.has(ground) and not content.get_def(c.get_cell("structure", x, y)).get("role") == "rock":
+		elif _drawing_location == client.location and content.get_def(c.get_cell("structure", x, y)).get("leads") != "down" and not c.get_props(x, y).get("stairs_down", false):
+			_quad(points, color, {"kind": "ground", "id": ground, "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location})
+		if _drawing_location == client.location and models.catalog.has(ground) and not content.get_def(c.get_cell("structure", x, y)).get("role") == "rock":
 			_add_object(cell, ground, "ground", {})
 		for layer: String in ["cover", "structure", "ceiling", "roof"]:
 			var id := c.get_cell(layer, x, y)
 			if id != "":
 				_add_object(cell, id, layer, c.get_props(x, y))
-		if c.get_props(x, y).get("stairs_down", false):
+		if _drawing_location == client.location and c.get_props(x, y).get("stairs_down", false):
 			_add_object(cell, "base:stairs_down", "transition", {})
 		# Life over the land, by what lies there ("ambient"): a cell in AMBIENT_EVERY.
 		if absi(hash([cell.x, cell.y, 31])) % AMBIENT_EVERY == 0:
@@ -456,6 +494,7 @@ func _build_row() -> void:
 	_job["row"] = y + 1
 	if y + 1 == Chunk.SIZE:
 		_finish_chunk()
+	_drawing_location = ""
 
 func ground_color(id: String) -> Color:
 	var colors := {"base:grass": "739956", "base:grass_dry": "a8a065", "base:dirt": "aa8a65", "base:forest_floor": "657752", "base:moss": "688365", "base:sand": "d4c39b", "base:snow": "e0e6e4", "base:mud": "7c7661", "base:gravel": "92928b", "base:farmland": "725844", "base:water": "4a8eac", "base:shallows": "7baba9", "base:deep_water": "356b8d", "base:stone_floor": "797d83", "base:cave_floor": "737278"}
@@ -481,7 +520,9 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	var model_id := "base:surface_rock" if id == "base:rock" and client.z >= 0 else id
 	var mesh := models.mesh_for(model_id, d)
 	var at := Vector2(cell) + Vector2.ONE * .5
-	var lift := (0.0 if client.z < 0 else client.z * STOREY) + (STOREY if layer in ["ceiling", "roof"] else 0.0)
+	var lift := (0.0 if _drawing_z < 0 else _drawing_z * STOREY) + (STOREY if layer in ["ceiling", "roof"] else 0.0)
+	if layer == "roof" and props.has("wall_height"):
+		lift += float(props["wall_height"]) - STOREY
 	var position3 := Vector3(at.x, elevation(at) + lift, at.y)
 	if not models.catalog.has(model_id):
 		position3.y -= mesh.get_aabb().position.y
@@ -551,15 +592,19 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		basis = Basis.IDENTITY
 		instance_id = "module:campfire"
 	elif role in ["wall", "window", "door"] and not id.contains("rock"):
+		# Authored modules already have their feet at y=0. Discard the
+		# placeholder box's normalization before replacing its geometry.
+		position3.y = elevation(at) + lift
 		if role == "wall":
 			var mask := wall_mask(cell)
-			mesh = buildings.wall(mask, id.contains("stone"))
+			mesh = buildings.wall(mask, id.contains("stone"), "log" if id == "base:log_wall" else ("plaster" if id == "base:plaster_wall" else ""))
 			basis = Basis.IDENTITY
 		else:
-			mesh = buildings.opening(role == "window", bool(props.get("open", false)))
+			mesh = buildings.opening(role == "window", bool(props.get("open", false)), float(props.get("window_scale", 1.0)))
 		instance_id = "module:" + str(mesh.get_instance_id())
 	elif layer == "roof":
-		mesh = roof_mesh(cell)
+		position3.y = elevation(at) + lift
+		mesh = roof_mesh(cell, props)
 		basis = Basis.IDENTITY
 		instance_id = "module:" + str(mesh.get_instance_id())
 	elif (d.get("leads") == "down" and layer == "structure") or layer == "transition":
@@ -585,6 +630,15 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		position3.y += .1
 		basis = Basis.IDENTITY
 		instance_id = "module:floor"
+	if layer == "ceiling" or (layer == "ground" and _drawing_z > 0 and id in ["base:wood_floor", "base:stone_floor"]):
+		var slab := slab_bounds(cell, layer)
+		basis = Basis.IDENTITY.scaled(Vector3(slab.size.x, 1, slab.size.y))
+		var centre := slab.get_center()
+		position3.x += centre.x
+		position3.z += centre.y
+		position3.y = elevation(at) + lift - mesh.get_aabb().end.y
+	if role in ["wall", "window", "door"] and props.has("wall_height"):
+		basis = basis.scaled(Vector3(1, float(props["wall_height"]) / STOREY, 1))
 	if d.get("openable", false) and role != "door" and props.get("open", false):
 		var hinge := basis * Vector3(-.45, 0, 0)
 		basis = basis.rotated(Vector3.UP, PI / 2)
@@ -600,15 +654,15 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		# A house's parts, cut away while one is inside it: [cell, a cover (ceiling, roof) or not].
 		var parts: Array = _job["parts"].get_or_add(instance_id, [])
 		var cover := layer in ["ceiling", "roof"]
-		parts.append([cell, cover] if cover or role in ["wall", "window", "door"] else [])
+		parts.append([cell, cover, _drawing_location != client.location] if cover or role in ["wall", "window", "door"] or _drawing_location != client.location else [])
 	_job["count"] += 1
-	var target := {"kind": "part", "id": id, "layer": layer, "cell": cell, "location": client.location}
+	var target := {"kind": "part", "id": id, "layer": layer, "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location}
 	if props.has("inn_bed"):
 		target["props"] = {"inn_bed": props["inn_bed"], "bed_kind": props.get("bed_kind", "shared")}
 	if layer in ["transition", "chasm"]:
-		target = {"kind": "ground", "id": ground_at(client.location, cell), "cell": cell, "location": client.location}
+		target = {"kind": "ground", "id": ground_at(client.location, cell), "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location}
 	if layer == "ground":
-		target = {"kind": "ground", "id": id, "cell": cell, "location": client.location}
+		target = {"kind": "ground", "id": id, "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location}
 	# Picking boxes are independent of movement. No physics-driven walking.
 	if role == "rock" or layer == "roof":
 		var triangles := mesh.get_faces()
@@ -807,14 +861,20 @@ func wall_mask(cell: Vector2i) -> int:
 			mask |= 1 << i
 	return mask if mask != 0 else 5
 
-func roof_mesh(cell: Vector2i) -> Mesh:
+func roof_mesh(cell: Vector2i, props := {}) -> Mesh:
 	var eaves := 0
 	var directions := [Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT, Vector2i.DOWN]
 	for i in 4:
 		var neighbor: Vector2i = cell + directions[i]
 		if _cell_layer(neighbor, "roof") == "" and content.get_def(_cell_layer(neighbor, "structure")).get("role") in ["wall", "window", "door"]:
 			eaves |= 1 << i
-	return buildings.roof(cell, building_footprint(cell), eaves)
+	var options: Dictionary = (props.get("roof", {}) as Dictionary).duplicate()
+	var footprint := building_footprint(cell)
+	var section: Array = options.get("section", [])
+	if section.size() == 4:
+		footprint = Rect2i(int(section[0]), int(section[1]), int(section[2]), int(section[3]))
+	options["material"] = {"base:thatch_roof": "thatch", "base:shingle_roof": "wood", "base:slate_roof": "stone", "base:flat_roof": "flat"}.get(_cell_layer(cell, "roof"), "tile")
+	return buildings.roof(cell, footprint, eaves, options)
 
 func building_footprint(cell: Vector2i) -> Rect2i:
 	# Existing village footprints keep their ridge when a part is removed.
@@ -906,6 +966,7 @@ func _finish_chunk() -> void:
 			life.add_to_group("ambient_" + kind)
 			life.visible = kind != "fireflies" or _night
 			root.add_child(life)
+	root.set_meta("exterior", _drawing_location != client.location)
 	root.set_meta("count", _job["count"])
 	if not (_job["crops"] as Array).is_empty():
 		root.set_meta("crops", _job["crops"])
@@ -1250,6 +1311,8 @@ func _actor_at(at: Vector2) -> String:
 func _cut_off(t: Dictionary, at: Vector3) -> bool:
 	if _cut == Rect2i() or t.get("kind") != "part" or not _cut.has_point(t.get("cell", Vector2i.MAX)):
 		return false
+	if t.get("location", client.location) != client.location:
+		return true
 	if String(t.get("layer", "")) in ["roof", "ceiling"]:
 		return true
 	var role := String(content.get_def(String(t.get("id", ""))).get("role", ""))
@@ -1332,7 +1395,7 @@ func _cut_away(node: MultiMeshInstance3D) -> void:
 func cut_transform(t: Transform3D, part: Array) -> Transform3D:
 	if part.is_empty() or not _cut.has_point(part[0]):
 		return t
-	if part[1]:
+	if part[1] or (part.size() > 2 and part[2]):
 		return Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
 	return t * Transform3D(Basis.from_scale(Vector3(1, 1.0 / 6.0, 1)), Vector3.ZERO)
 

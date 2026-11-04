@@ -371,3 +371,18 @@ func test_a_floor_laid_on_the_land_and_walls_on_it() -> void:
 	eq(c.get_cell("structure", 4, 4), "base:wood_wall", "the wall stays")
 	eq(w.inventory(a).count("base:plank"), planks + 1, "its plank back")
 	eq(_req(a, {"type": "dismantle", "location": "surface", "x": 3, "y": 3, "layer": "ground"}).get("reason"), "natural", "the land itself is not taken up")
+
+
+func test_a_well_fills_a_bucket_and_checks_reach() -> void:
+	var a := _player("Аня")
+	var c := w.chunk("surface", 0, 0)
+	c.set_cell("structure", 4, 3, "base:village_well")
+	w.grant(a, "base:bucket", 1)
+	_req(a, {"type": "hold", "item": "base:bucket"})
+	eq(_req(a, {"type": "fill", "location": "surface", "x": 4, "y": 3, "item": "base:bucket"}).get("now"), "base:water_bucket")
+	eq(w.inventory(a).count("base:water_bucket"), 1)
+
+	w.grant(a, "base:bucket", 1)
+	_req(a, {"type": "hold", "item": "base:bucket"})
+	c.set_cell("structure", 14, 3, "base:village_well")
+	eq(_req(a, {"type": "fill", "location": "surface", "x": 14, "y": 3, "item": "base:bucket"}).get("reason"), "too_far")

@@ -553,6 +553,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		_take_items(location, rows)
 		creatures.take_rows(location, rows)
 		creatures.on_chunk_ready(location, cx, cy, c)
+		_settlement_levels(location, cx, cy)
 		hospitality.arrived(location, c)
 		_settle_stairs(location, cx, cy, c)
 		growth.arrived(location, cx, cy, c)  # what grew while it was away (ADR-0056)
@@ -709,6 +710,35 @@ func loaded_chunks() -> int:
 	return _chunks.size()
 
 
+## Generate inhabited upper floors once, through the same persisted Levels
+## contract as player buildings. A saved level must never regenerate edits.
+func _settlement_levels(location: String, cx: int, cy: int) -> void:
+	if location != SURFACE or generator == null:
+		return
+	for plan: Dictionary in generator.settlements.plans_touching(cx, cy):
+		for building: String in plan["upper"]:
+			var upper := levels.level(building, 1)
+			if upper != "":
+				# A floor evicted from memory (or reopened from disk) must also
+				# be available to the street view, without regenerating its cells.
+				var loaded := {}
+				for at: Vector2i in plan["upper"][building]:
+					var key := Vector2i(at.x >> 5, at.y >> 5)
+					if not loaded.has(key):
+						chunk(upper, key.x, key.y)
+						loaded[key] = true
+				continue
+			upper = levels.create_level(building, 1)
+			for at: Vector2i in plan["upper"][building]:
+				var spec: Dictionary = plan["upper"][building][at]
+				var c := chunk(upper, at.x >> 5, at.y >> 5)
+				c.meta["building_z"] = 1
+				for layer: String in ["ground", "cover", "structure", "ceiling", "roof"]:
+					c.set_cell(layer, at.x & 31, at.y & 31, String(spec.get(layer, "")))
+				c.set_props(at.x & 31, at.y & 31, spec["props"].duplicate(true))
+				_changed(chunk_key(upper, at.x >> 5, at.y >> 5))
+
+
 ## Asks the loader thread for a chunk that is not in memory yet.
 func prefetch(location: String, cx: int, cy: int) -> void:
 	var at := storage_chunk(cx, cy)
@@ -726,6 +756,7 @@ func poll_loaded() -> void:
 		_take_items(r[0], r[5])
 		creatures.take_rows(r[0], r[5])
 		creatures.on_chunk_ready(r[0], r[1], r[2], r[3])
+		_settlement_levels(r[0], r[1], r[2])
 		hospitality.arrived(r[0], r[3])
 		if not (r[6] as PackedByteArray).is_empty():
 			_encoded[key] = [_chunk_rev.get(key, 0), r[6]]
@@ -3476,6 +3507,8 @@ func _fill(actor: String, r: Dictionary) -> Dictionary:
 		if not _reaches(actor, at[0], ri(r, "x", 0), ri(r, "y", 0), USE_REACH):
 			return {"ok": false, "reason": "too_far"}
 		into = String(content.get_def(chunk(at[0], at[1], at[2]).get_cell("ground", at[3], at[4])).get("fills", {}).get(item, ""))
+		if into == "":
+			into = String(content.get_def(part_at(at[0], ri(r, "x", 0), ri(r, "y", 0))).get("fills", {}).get(item, ""))
 		if into == "":
 			return {"ok": false, "reason": "nothing_to_fill"}
 	var inv := inventory(actor)

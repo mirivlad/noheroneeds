@@ -730,6 +730,14 @@ func _mark_needed(s: Session) -> void:
 			for cx in range(mc.x - r, mc.x + r + 1):
 				world.mark_needed(loc, cx, cy)
 
+	if p["location"] == ServerWorld.SURFACE:
+		for key: String in world._chunks:
+			if int((world._chunks[key] as Chunk).meta.get("building_z", 0)) < 1:
+				continue
+			var parts := key.split("|")
+			if maxi(absi(int(parts[1]) - mc.x), absi(int(parts[2]) - mc.y)) <= r:
+				world.mark_needed(parts[0], int(parts[1]), int(parts[2]))
+
 
 ## What this client may see (id -> Replica), worked out again every few
 ## ticks (each session on its own beat), when the player moves to another
@@ -998,6 +1006,55 @@ func _stream_chunks(s: Session) -> void:
 					world.explore(s.character_id, shown, cx, cy)
 					_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": shown, "cx": cx, "cy": cy,
 						"data": world.encoded_chunk(shown, cx, cy)})
+
+	if loc == ServerWorld.SURFACE:
+		# Upper floors are streamed from their saved cells, including player
+		# edits. Do not reveal their inhabitants or explore their interior maps.
+		for key: String in world._chunks:
+			var c: Chunk = world._chunks[key]
+			if int(c.meta.get("building_z", 0)) < 1:
+				continue
+			var parts := key.split("|")
+			var cx := int(parts[1])
+			var cy := int(parts[2])
+			if maxi(absi(cx - mc.x), absi(cy - mc.y)) > view_chunks:
+				continue
+			var rev := world.chunk_revision(parts[0], cx, cy)
+			var exterior_revision := -rev - 2
+			if s.chunks.get(key, -1) == exterior_revision:
+				continue
+			if budget == 0:
+				s.streaming_unfinished = true
+				return
+			budget -= 1
+			s.chunks[key] = exterior_revision
+			_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": parts[0], "cx": cx, "cy": cy,
+				"data": ChunkCodec.encode(_exterior_chunk(c))})
+
+
+## Street clients receive the actual exterior, not a closed floor's contents.
+## Its revision namespace differs from the full chunk sent after climbing.
+func _exterior_chunk(source: Chunk) -> Chunk:
+	var out := Chunk.new()
+	out.meta = {"building_z": int(source.meta["building_z"]), "exterior": true}
+	for y in Chunk.SIZE:
+		for x in Chunk.SIZE:
+			var structure := source.get_cell("structure", x, y)
+			var roof := source.get_cell("roof", x, y)
+			var role := String(world.content.get_def(structure).get("role", ""))
+			if role not in ["wall", "window", "door"] and roof == "":
+				continue
+			out.set_cell("ground", x, y, source.get_cell("ground", x, y))
+			out.set_cell("roof", x, y, roof)
+			if role in ["wall", "window", "door"]:
+				out.set_cell("structure", x, y, structure)
+			var props := {}
+			var original := source.get_props(x, y)
+			for key: String in ["roof", "wall_height", "facing", "open", "window_scale"]:
+				if original.has(key):
+					props[key] = original[key]
+			out.set_props(x, y, props)
+	return out
 
 
 ## Map tiles a client may have (ADR-0020): only of chunks its character has

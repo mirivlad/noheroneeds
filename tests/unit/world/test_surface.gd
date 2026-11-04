@@ -151,6 +151,8 @@ func test_generated_once_then_kept_through_generator_changes() -> void:
 func test_loader_thread_brings_and_persists_chunks() -> void:
 	var db := tmp_dir().path_join("world.db")
 	var w := ServerWorld.open(db, _base(), {"seed": 5})
+	var initial_sync := w.sync_loads
+	var initial_aux := w._chunks.keys().filter(func(key: String) -> bool: return not key.begins_with("surface|")).size()
 	for cy in range(-3, 4):
 		for cx in range(-3, 4):
 			w.prefetch("surface", cx, cy)
@@ -159,7 +161,8 @@ func test_loader_thread_brings_and_persists_chunks() -> void:
 		OS.delay_msec(5)
 	OS.delay_msec(20)
 	w.poll_loaded()
-	eq(w.sync_loads, 0, "nothing loaded on the simulation thread")
+	var aux := w._chunks.keys().filter(func(key: String) -> bool: return not key.begins_with("surface|")).size()
+	eq(w.sync_loads - initial_sync, aux - initial_aux, "the surface arrives from the worker; only generated upper-floor chunks are initialized on the simulation thread")
 	check(w.has_chunk("surface", 3, -3) and w.has_chunk("surface", -3, 3), "all 49 arrived")
 	var made := SurfaceGenerator.new(5, _base()).generate(2, 2)
 	made.meta["fauna"] = CreatureSim.FAUNA_VERSION  # the ground as generated; its animals came once (ADR-0018)
@@ -167,7 +170,8 @@ func test_loader_thread_brings_and_persists_chunks() -> void:
 	w.close()
 	var s := WorldStore.new()
 	s.open(db)
-	eq(s.count_chunks(), 49, "generated chunks are stored")
+	eq(s.chunks_of("surface").size(), 49, "all generated surface chunks are stored")
+	eq(s.count_chunks(), 49 + aux, "the generated upper-floor chunks are stored too")
 	eq(s.get_chunk("surface", 2, 2), expected)
 	s.close()
 

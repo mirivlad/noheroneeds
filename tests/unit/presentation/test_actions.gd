@@ -155,6 +155,8 @@ func test_an_animal_is_fed_what_it_eats() -> void:
 func test_a_bucket_fills_at_water_and_pours() -> void:
 	var water := {"kind": "ground", "id": "base:water", "cell": Vector2i(5, 5), "location": "surface"}
 	eq(Actions.primary(Actions.of(content, client, view, "base:bucket", water, Vector2i.ZERO)).get("id"), "fill", "a bucket at water")
+	var well := _part("base:village_well", Vector2i(5, 5))
+	eq(Actions.primary(Actions.of(content, client, view, "base:bucket", well, Vector2i.ZERO)).get("id"), "fill", "a bucket at a well")
 	var crop := _part("base:wheat_crop", Vector2i(6, 6), "cover")
 	eq(Actions.primary(Actions.of(content, client, view, "base:water_bucket", crop, Vector2i.ZERO)).get("name"), "Полить")
 	var grass := {"kind": "ground", "id": "base:grass", "cell": Vector2i(5, 5), "location": "surface"}

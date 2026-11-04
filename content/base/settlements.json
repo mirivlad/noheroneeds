@@ -5,6 +5,7 @@
       "id": "base:village", "kind": "settlement", "name": "Деревня",
       "district_chunks": 24, "cluster_chance": 0.75, "villages": [2, 5], "spread": 300, "link_chance": 0.4, "near_spawn": true,
       "houses": [4, 7],
+      "tradition": "plains",
       "road": "base:dirt", "bridge": "base:bridge", "floor": "base:wood_floor", "wall": "base:wood_wall", "door": "base:wood_door",
       "window": "base:wood_window", "roof": "base:thatch_roof", "square": "base:campfire",
       "buildings": [
@@ -15,6 +16,15 @@
           "furniture": ["base:bed", "base:chest"], "dweller": "base:fisher"},
         {"id": "herder", "name": "Дом пастуха", "size": [5, 4], "weight": 2, "max": 1,
           "furniture": ["base:bed", "base:chest"], "dweller": "base:herder"}
+      ],
+      "civic_buildings": [
+        {"id": "barn", "name": "Амбар", "size": [6, 5], "furniture": ["base:chest", "base:chest"]},
+        {"id": "stable", "name": "Конюшня", "size": [6, 5], "furniture": ["base:hay_rack", "base:hay_rack"]},
+        {"id": "workshop", "name": "Общая мастерская", "size": [6, 5], "furniture": ["base:workbench", "base:chest"]},
+        {"id": "elder", "name": "Дом старосты", "size": [6, 5], "furniture": ["base:bed", "base:inn_table", "base:chest"]},
+        {"id": "shrine", "name": "Святилище", "size": [5, 4], "furniture": ["base:shrine", "base:inn_chair"]},
+        {"id": "warehouse", "name": "Склад", "size": [6, 5], "furniture": ["base:chest", "base:chest", "base:chest"]},
+        {"id": "guardhouse", "name": "Караульный дом", "size": [6, 5], "furniture": ["base:bed", "base:inn_table", "base:chest"]}
       ],
       "fields": {"count": [1, 3], "size": [6, 4], "ground": "base:farmland", "crops": {"base:wheat_crop": 2, "base:carrot_crop": 1}},
       "pen": {"size": [7, 5], "fence": "base:wood_fence", "gate": "base:wood_gate", "animals": {"base:sheep": 2, "base:chicken": 3}},
@@ -44,9 +54,12 @@
           "needs": {"base:raw_fish": 3, "base:leather": 1, "base:wool": 2, "base:stone": 3, "base:iron_ingot": 1}}
       ],
       "styles": [
-        {"biomes": ["base:tundra", "base:rocky"], "wall": "base:stone_wall", "houses": [3, 5],
+        {"biomes": ["base:forest", "base:grove"], "tradition": "forest", "wall": "base:log_wall", "roof": "base:shingle_roof"},
+        {"biomes": ["base:taiga", "base:tundra"], "tradition": "cold", "wall": "base:log_wall", "roof": "base:shingle_roof", "houses": [3, 5],
           "fields": {},
           "pen": {"size": [5, 4], "fence": "base:wood_fence", "gate": "base:wood_gate", "animals": {"base:chicken": 3}}},
+        {"biomes": ["base:rocky", "base:mountains"], "tradition": "mountain", "wall": "base:stone_wall", "roof": "base:slate_roof", "floor": "base:stone_floor"},
+        {"biomes": ["base:desert"], "tradition": "dry", "wall": "base:plaster_wall", "roof": "base:flat_roof", "fields": {}},
         {"biomes": ["base:steppe"], "houses": [4, 6],
           "fields": {"count": [2, 3], "size": [6, 4], "ground": "base:farmland", "crops": {"base:wheat_crop": 3, "base:carrot_crop": 1}},
           "pen": {"size": [9, 6], "fence": "base:wood_fence", "gate": "base:wood_gate", "animals": {"base:sheep": 4, "base:cow": 2, "base:chicken": 2}}},

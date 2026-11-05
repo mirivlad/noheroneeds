@@ -82,9 +82,14 @@ func height(c: Vector2i) -> float:
 				var reserve: Rect2i = p["parking_reserve"]
 				var square: Rect2i = p["square"]
 				list.append([Rect2(reserve), natural(square.get_center()) + .04])
-			for home: Dictionary in p.get("homes", []):
+			for home: Dictionary in p.get("buildings", p.get("homes", [])):
 				var rect: Rect2i = home["rect"]
 				list.append([Rect2(rect), natural(Vector2i(rect.get_center())) + .04])
+				var design: Dictionary = home.get("architecture", {})
+				if not design.is_empty() and (design["yard"] as Rect2i).size != Vector2i.ZERO:
+					var shed := SettlementArchitecture.local_rect(design, Rect2i(0, -5, 3, 3))
+					shed.position += rect.position
+					list.append([Rect2(shed), natural(Vector2i(shed.get_center())) + .04])
 		pads[chunk] = list
 	for pad: Array in pads[chunk] + extra_pads:
 		var r: Rect2 = pad[0]

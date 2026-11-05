@@ -1859,7 +1859,8 @@ func _dweller_spot(c: Creature, phase: String) -> Vector2i:
 		for y in range(r.position.y + 1, r.end.y - 1):
 			for x in range(r.position.x + 1, r.end.x - 1):
 				if String(world.content.get_def(world.part_at(Levels.SURFACE, x, y)).get("station", "")) == kind:
-					return Vector2i(x, y + 1)
+					var direction := SettlementArchitecture.facing(home.get("architecture", {}))
+					return Vector2i(x, y) + (ContentRegistry.FACINGS[direction] as Vector2i)
 	return (plan["fire"] as Vector2i) + Vector2i(0, 1)
 
 
@@ -2260,19 +2261,21 @@ func _go(c: Creature, state: String, target_cell: Vector2i, run: bool) -> void:
 			_cold[c.id] = true  # it starts or stops hunting: heard (its howl)
 		c.state = state
 		c.target = target
-		c.path_heading = Vector2i.ZERO
+		c.path_heading = Vector2.ZERO
 		if state == "detour":
-			var direction := target_cell - c.cell()
-			if direction == Vector2i.ZERO:
-				var saved := _heading_of(c.job.get("caravan_heading", [0, 1]))
-				direction = Vector2i(roundi(saved.x), roundi(saved.y))
-			c.path_heading = Vector2i(signi(direction.x), signi(direction.y))
-			var turn := _departure_heading(c, target, Vector2(c.path_heading), c.pos)
-			if turn != Vector2.ZERO:
-				c.path_heading = Vector2i(signi(roundi(turn.x)), signi(roundi(turn.y)))
+			c.path_heading = _waypoint_heading(c, target)
 		c.running = run
 		c.stuck = 0
 		c.changed()
+
+
+func _waypoint_heading(c: Creature, target: Vector2i) -> Vector2:
+	var direction := Movement.cell_of(target) - c.cell()
+	var preferred := Vector2(signi(direction.x), signi(direction.y))
+	if preferred == Vector2.ZERO:
+		preferred = _heading_of(c.job.get("caravan_heading", [0, 1]))
+	var selected := _departure_heading(c, target, preferred, c.pos)
+	return selected if selected != Vector2.ZERO else preferred.normalized()
 
 
 # --- moving --------------------------------------------------------------------
@@ -2286,8 +2289,8 @@ func _move(c: Creature) -> void:
 		return
 	var d := c.target - c.pos
 	var precise: bool = c.state in ["detour", "visit_walk"] or (c.state == "follow" and c.job.has("guard_driver"))
-	if c.state == "detour" and c.path_heading == Vector2i.ZERO:
-		c.path_heading = Vector2i(signi(d.x), signi(d.y))
+	if c.state == "detour" and c.path_heading == Vector2.ZERO:
+		c.path_heading = _waypoint_heading(c, c.target)
 	var arrived := d == Vector2i.ZERO if precise else (absi(d.x) < 48 and absi(d.y) < 48)
 	if arrived:
 		c.target = Creature.NO_TARGET
@@ -2306,32 +2309,39 @@ func _move(c: Creature) -> void:
 	var np := Movement.step_at(c.pos, dx, dy, _solid_in(c.location), speed, _movement_half(c, c.pos))
 	if precise:
 		np = _waypoint_step(c, c.pos, c.target, speed)
-	# The wheels take the step when the cart's body fits the line it rolls
-	# along; the horse leads on its own heading and steps aside for a trunk.
+	# The wheels take the step when the actual cart orientation fits; its
+	# displacement may be sideways. The horse steps aside for a trunk.
 	# Its heading turns smoothly and the cart's follows, so the drawn rig
 	# swings through the bend while the carts' bodies keep to their own line.
 	var cart := _heading_of(c.job.get("caravan_heading", [0, 1]))
 	if np != c.pos and String(c.job.get("horse", "")) != "":
 		var along := Vector2(np - c.pos)
 		var horse := _hauler_heading(c)
-		# A precise waypoint can have a tiny lateral correction. Steering
-		# toward that diagonal step pins the horse against a nearby rock;
-		# aim the harness at the waypoint while the wheels finish both axes.
-		var turned := _turn_caravan(c, Vector2(d) if precise else along)
+		# The planner may deliberately keep the existing harness direction
+		# while backing/sliding to a waypoint. Execute that validated heading;
+		# turning toward the target can put the horse into the same corner.
+		var desired := c.path_heading if c.state == "detour" else (Vector2(d) if precise else along)
+		var turned := _turn_caravan(c, desired)
 		var turn_cart: Vector2 = turned[0]
 		var turn_horse: Vector2 = turned[1]
-		if not _caravan_cart_fits(c, np, along):
-			np = c.pos
-		elif _caravan_horse_fits(c, np, turn_horse):
+		if _caravan_cart_fits(c, np, turn_cart) and _caravan_horse_fits(c, np, turn_horse):
 			cart = turn_cart
 			horse = turn_horse
-		elif not _caravan_horse_fits(c, np, horse):
-			# No room for the horse on either line: hold the cart a tick and
-			# let the harness come round.
+		elif not (_caravan_cart_fits(c, np, cart) and _caravan_horse_fits(c, np, horse)):
 			np = c.pos
 		if np != c.pos:
 			_save_headings(c, cart, horse)
 	if np == c.pos:
+		if String(c.job.get("horse", "")) != "":
+			var desired := c.path_heading if c.state == "detour" else Vector2(d)
+			var in_place := _turn_caravan(c, desired)
+			# A turn that serializes to the same headings is not progress.
+			if (_saved_heading(in_place[0]) != c.job.get("caravan_heading", []) or _saved_heading(in_place[1]) != c.job.get("horse_heading", [])) \
+					and _caravan_cart_fits(c, c.pos, in_place[0]) and _caravan_horse_fits(c, c.pos, in_place[1]):
+				_save_headings(c, in_place[0], in_place[1])
+				_move_caravan_horse(c)
+				c.stuck = 0
+				return
 		c.stuck += 1
 		if c.stuck > 4:  # something in the way: give up, think again
 			if not c.route.is_empty() and String(c.job.get("horse", "")) != "":

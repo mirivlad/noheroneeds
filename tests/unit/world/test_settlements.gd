@@ -42,11 +42,11 @@ func test_houses_have_a_door_onto_the_street_a_roof_and_a_bed() -> void:
 	for h: Dictionary in p["homes"]:
 		var r: Rect2i = h["rect"]
 		eq(cell.call(h["door"], "structure"), "base:wood_door", "%s: a door" % h["name"])
-		eq((h["door"] as Vector2i).y, r.end.y - 1, "in its south wall")
-		eq(cell.call(h["door"] + Vector2i(0, 1), "ground"), "base:dirt", "onto a street")
+		check(SettlementArchitecture._edge(h["architecture"]["occupied"], h["architecture"]["door"]), "the doorway belongs to the boundary")
+		eq(cell.call(h["door"] + (ContentRegistry.FACINGS[SettlementArchitecture.facing(h["architecture"])] as Vector2i), "ground"), "base:dirt", "onto a street")
 		var occupied: Dictionary = h["architecture"]["occupied"]
 		for local: Vector2i in occupied:
-			var at := r.position + local
+			var at := r.position + SettlementArchitecture.local_cell(h["architecture"], local)
 			if SettlementArchitecture._edge(occupied, local):
 				check(content.get_def(cell.call(at, "structure")).get("role", "") in ["wall", "window", "door"], "a real wall around the footprint at %s" % at)
 			else:
@@ -119,7 +119,7 @@ func test_square_and_parking_are_part_of_the_generated_plan() -> void:
 			reached[next] = true
 			queue.append(next)
 	for home: Dictionary in p["homes"]:
-		check(reached.has((home["door"] as Vector2i) + Vector2i.DOWN), "each doorstep joins the square")
+		check(reached.has((home["door"] as Vector2i) + (ContentRegistry.FACINGS[SettlementArchitecture.facing(home["architecture"])] as Vector2i)), "each doorstep joins the square")
 	for at: Vector2i in p["parking"]:
 		check(reached.has(at), "every parking place joins the square and streets")
 
@@ -303,8 +303,10 @@ func test_every_biome_is_met_and_cold_keeps_from_the_steppe() -> void:
 func test_settlement_scales_have_distinct_housing_and_public_buildings() -> void:
 	var settlements := Settlements.new(431, content, func(_x: int, _y: int) -> bool: return false, 8)
 	var seen := {}
-	var definition := content.get_def("base:village")
+	var definition := content.get_def("base:village").duplicate(true)
 	for index in 24:
+		var capacity: float = [.1, .6, 1.0][index % 3]
+		definition["environment"] = {"capacity": capacity, "access": capacity}
 		var layout := settlements._layout(0, 10, index, definition, "scale-%d" % index)
 		var plan := settlements._place(layout, Vector2i(300, 300), "scale-%d" % index, definition)
 		check(Rect2i(Vector2i(300, 300) - Vector2i.ONE * Settlements.REACH, Vector2i.ONE * Settlements.REACH * 2).encloses(plan["bounds"]), "chunk discovery covers the entire town footprint")
@@ -319,7 +321,7 @@ func test_settlement_scales_have_distinct_housing_and_public_buildings() -> void
 			check(count >= 4 and count <= 7, "a village is the intermediate scale")
 		for building: Dictionary in plan["buildings"]:
 			var door: Vector2i = building["door"]
-			check(not content.get_def(String(plan["cells"][door + Vector2i.DOWN].get("structure", ""))).get("solid", false), "each public building also opens onto a clear street")
+			check(not content.get_def(String(plan["cells"][door + (ContentRegistry.FACINGS[SettlementArchitecture.facing(building["architecture"])] as Vector2i)].get("structure", ""))).get("solid", false), "each public building also opens onto a clear street")
 		var ids := (plan["buildings"] as Array).map(func(b: Dictionary) -> String: return String(b["building_id"]).get_slice(":", 0))
 		check(ids.has("barn"), "even a hamlet has an actual barn")
 		if scale == "trading_town":
@@ -327,3 +329,18 @@ func test_settlement_scales_have_distinct_housing_and_public_buildings() -> void
 		elif scale == "village":
 			check(ids.has("stable") and ids.has("workshop") and ids.has("elder") and ids.has("shrine"), "a village has household and civic spaces")
 	eq(seen.size(), 3, "all three scales are generated")
+
+
+func test_starting_village_searches_beyond_the_old_ring_without_relaxing_dry_ground() -> void:
+	# Reproduced by the full network suite's randomly generated world.
+	var g := SurfaceGenerator.new(743947134, content)
+	var p := g.settlements.home_plan()
+	if not check(not p.is_empty(), "a safe starting village exists beyond the old 112-cell search"):
+		return
+	check(Vector2(p["centre"]).length() < 230, "the fallback stays within a bounded walk")
+	check(not (p["bounds"] as Rect2i).has_point(Vector2i.ZERO), "the spawn clearing stays free")
+	for r: Rect2i in p["plots"]:
+		for at: Vector2i in [r.position, r.end - Vector2i.ONE, r.get_center()]:
+			check(not g.is_unfit(at.x, at.y), "the fallback does not allow houses on unsuitable ground")
+	var repeated := SurfaceGenerator.new(743947134, content)
+	eq(repeated.settlements.home_plan(), p, "the extended search is deterministic")

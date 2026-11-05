@@ -101,3 +101,36 @@ func test_yard_gate_is_reachable_and_obeys_the_door_orientation_rule() -> void:
 				var role := String(registry.get_def(String(cells.get(at + step, {}).get("structure", ""))).get("role", ""))
 				check(role not in ["wall", "window", "fence", "column", "door"], "the gate can be rebuilt under the shared door rules")
 		eq(gates, 1, "one clear entrance into the fenced yard")
+
+func test_rotation_moves_every_cell_and_nested_roof_stair_and_storage_coordinate() -> void:
+	var design := SettlementArchitecture.plan(431, "rotation", "house", materials["buildings"][1], "forest")
+	design["storeys"] = 2
+	design["yard"] = Rect2i(0, -5, design["size"].x, 5)
+	var origin := Vector2i(29, -35)
+	var lower := SettlementArchitecture.cells(design, Vector2i.ZERO, "rotation", materials, registry)
+	var upper := SettlementArchitecture.upper_cells(design, Vector2i.ZERO, "rotation", materials, registry)
+	for turns in range(1, 4):
+		design["turns"] = turns
+		for pair: Array in [[lower, SettlementArchitecture.cells(design, origin, "rotation", materials, registry)],
+				[upper, SettlementArchitecture.upper_cells(design, origin, "rotation", materials, registry)]]:
+			var turned: Dictionary = pair[1]
+			eq(turned.size(), pair[0].size(), "rotation preserves the complete footprint, including yard and shed")
+			for at: Vector2i in pair[0]:
+				var expected := SettlementArchitecture.local_cell(design, at) + origin
+				check(turned.has(expected), "authoritative cell moved")
+				var before: Dictionary = pair[0][at]
+				var after: Dictionary = turned[expected]
+				for layer: String in ["ground", "structure", "ceiling", "roof"]:
+					eq(after.get(layer), before.get(layer), "the same real part moved")
+				if before["props"].has("arrive"):
+					var a: Array = before["props"]["arrive"]
+					var landing := SettlementArchitecture.local_cell(design, Vector2i(a[0], a[1])) + origin
+					eq(after["props"]["arrive"], [landing.x, landing.y], "stair landing turns with both floors")
+				if before["props"].has("roof"):
+					var a: Array = before["props"]["roof"]["sections"][0]
+					var rect := SettlementArchitecture.local_rect(design, Rect2i(a[0], a[1], a[2], a[3]))
+					var section: Array = after["props"]["roof"]["sections"][0]
+					eq(section, [rect.position.x + origin.x, rect.position.y + origin.y, rect.size.x, rect.size.y, (a[4] + turns) % 2], "roof axes and section bounds turn")
+		var door := SettlementArchitecture.local_cell(design, design["door"]) + origin
+		var made := SettlementArchitecture.cells(design, origin, "rotation", materials, registry)
+		eq(made[door]["props"]["facing"], SettlementArchitecture.facing(design), "actual door faces the rotated entrance")

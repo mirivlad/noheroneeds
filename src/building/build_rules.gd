@@ -13,7 +13,7 @@ class_name BuildRules
 ## only the server sees (the depth below a shaft) stays with the server.
 
 const NO_CELL := Vector2i(1 << 30, 1 << 30)
-## Parts a wall is made of: a door stands only between them left and right.
+## Wall-like parts must leave the approach along a door's facing clear.
 const WALL_LIKE := ["wall", "door", "window", "fence", "column"]
 
 
@@ -84,13 +84,21 @@ static func check(view: Object, content: ContentRegistry, part: String, location
 		_:
 			if Terrain.is_solid(c, lx, ly, content, on_level):
 				return "blocked"  # water, a tree...
-			# A door shows only in a wall that runs across the screen: in a
-			# side one (walls above and below it) it would not be seen at all.
-			if role == "door" and (_role_at(view, content, location, x, y - 1) in WALL_LIKE
-					or _role_at(view, content, location, x, y + 1) in WALL_LIKE):
-				return "side_wall"
-			if role in WALL_LIKE and "door" in [_role_at(view, content, location, x, y - 1), _role_at(view, content, location, x, y + 1)]:
-				return "door_beside"  # that would put the door into a side wall
+			# The approach follows the door's facing, independently of camera yaw.
+			var normal: Vector2i = ContentRegistry.FACINGS.get(facing, Vector2i.DOWN)
+			if role == "door":
+				for side: Vector2i in [normal, -normal]:
+					if _role_at(view, content, location, x + side.x, y + side.y) in WALL_LIKE:
+						return "side_wall"
+			if role in WALL_LIKE:
+				for side: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+					var at := Vector2i(x, y) + side
+					if _role_at(view, content, location, at.x, at.y) != "door": continue
+					var neighbor: Chunk = view.build_chunk(location, at.x >> 5, at.y >> 5)
+					var direction := String(neighbor.get_props(at.x & 31, at.y & 31).get("facing", "s"))
+					var approach: Vector2i = ContentRegistry.FACINGS.get(direction, Vector2i.DOWN)
+					if side == approach or side == -approach:
+						return "door_beside"
 			if view.build_someone_on(location, x, y):
 				return "someone_there"
 	return ""

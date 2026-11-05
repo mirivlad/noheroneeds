@@ -6,10 +6,14 @@ extends TestCase
 var w: ServerWorld
 var db := ""
 const B := "builder"
+var baseline_buildings := {}
+var baseline_ready := false
 
 
 func before_each() -> void:
 	db = tmp_dir().path_join("world.db")
+	baseline_buildings.clear()
+	baseline_ready = false
 	_open()
 
 
@@ -19,6 +23,15 @@ func after_each() -> void:
 
 func _open() -> void:
 	w = ServerWorld.open(db, ContentRegistry.load_packs(["res://content/base"]), {"seed": 4})
+	# A build can probe neighbouring chunks and load their native village
+	# floors. Identify those planned buildings independently of load order.
+	if not baseline_ready:
+		for cx: int in [-1, 0]:
+			for cy: int in [-1, 0]:
+				for plan: Dictionary in w.generator.settlements.plans_touching(cx, cy):
+					for id: String in plan["upper"]: baseline_buildings[id] = true
+		for id: String in w.levels.buildings: baseline_buildings[id] = true
+		baseline_ready = true
 	w.grant(B, "base:plank", 500)
 	w.grant(B, "base:log", 50)
 
@@ -49,7 +62,7 @@ func test_walls_alone_make_no_level() -> void:
 	for y in range(1, 4):
 		for x in [0, 4]:
 			_build("surface", x, y, "base:wood_wall")
-	eq(w.levels.info.size(), 0, "no level")
+	eq(_built_levels().size(), 0, "no level")
 	check(not Terrain.is_covered(w.chunk("surface", 0, 0), 2, 2), "the yard is outdoors")
 
 
@@ -58,8 +71,8 @@ func test_partial_ceiling_and_exact_contour() -> void:
 	for x in range(2, 5):
 		for y in range(2, 4):
 			eq(_build("surface", x, y, "base:wood_ceiling").get("ok"), true)
-	eq(w.levels.info.size(), 1, "one level")
-	var up: String = w.levels.info.keys()[0]
+	eq(_built_levels().size(), 1, "one level")
+	var up := w.levels.level(_building_at(2, 2), 1)
 	eq(w.levels.z(up), 1)
 	var floors := 0
 	for x in range(0, 8):
@@ -77,7 +90,7 @@ func test_partial_ceiling_and_exact_contour() -> void:
 func test_height_is_a_server_setting() -> void:
 	w.max_levels = 2
 	_build("surface", 1, 1, "base:wood_ceiling")
-	var l1: String = w.levels.level(w.levels.buildings.keys()[0], 1)
+	var l1: String = w.levels.level(_building_at(1, 1), 1)
 	eq(_build(l1, 1, 1, "base:wood_ceiling").get("ok"), true, "level 2")
 	var l2 := w.levels.level(w.levels.building(l1), 2)
 	eq(_build(l2, 1, 1, "base:wood_ceiling")["reason"], "too_high")
@@ -91,7 +104,7 @@ func test_height_is_a_server_setting() -> void:
 
 func test_occupied_ceiling_cannot_be_taken_down() -> void:
 	_build("surface", 1, 1, "base:wood_ceiling")
-	var l1: String = w.levels.info.keys()[0]
+	var l1 := w.levels.level(_building_at(1, 1), 1)
 	_build(l1, 1, 1, "base:wood_wall")
 	eq(_req({"type": "dismantle", "location": "surface", "x": 1, "y": 1})["reason"], "occupied_above")
 	eq(_req({"type": "dismantle", "location": l1, "x": 1, "y": 1}).get("ok"), true, "the wall above first")
@@ -102,15 +115,15 @@ func test_occupied_ceiling_cannot_be_taken_down() -> void:
 func test_joining_ceilings_merges_buildings() -> void:
 	for x in [0, 1, 4, 5]:
 		_build("surface", x, 0, "base:wood_ceiling")
-	eq(w.levels.buildings.size(), 2, "two buildings")
+	eq(_built_buildings().size(), 2, "two buildings")
 	var la := w.levels.level(_bld(0), 1)
 	var lb := w.levels.level(_bld(5), 1)
 	_build(la, 0, 0, "base:wood_wall")
 	_build(lb, 5, 0, "base:wood_wall")
 	_build("surface", 2, 0, "base:wood_ceiling")
 	_build("surface", 3, 0, "base:wood_ceiling")  # joins them
-	eq(w.levels.buildings.size(), 1, "one building")
-	var l1 := w.levels.level(w.levels.buildings.keys()[0], 1)
+	eq(_built_buildings().size(), 1, "one building")
+	var l1 := w.levels.level(_bld(0), 1)
 	for x in range(0, 6):
 		eq(_cell(l1, "ground", x, 0), "base:wood_floor", "floor at %d" % x)
 	eq(_cell(l1, "structure", 0, 0), "base:wood_wall")
@@ -118,12 +131,12 @@ func test_joining_ceilings_merges_buildings() -> void:
 	eq(_bld(0), _bld(5), "surface ceilings relabelled")
 	w.close()
 	_open()
-	eq(w.levels.info.size(), 1, "one level after restart")
-	eq(w.store.query_rows("SELECT count(DISTINCT location) AS n FROM chunks WHERE location != 'surface'")[0]["n"], 1, "absorbed level's chunks deleted")
+	eq(_built_levels().size(), 1, "one level after restart")
+	eq(w.store.query_rows("SELECT count(DISTINCT location) AS n FROM chunks WHERE location IN (?, ?)", [la, lb])[0]["n"], 1, "absorbed level's chunks deleted")
 
 
 func _bld(x: int) -> String:
-	return String(w.chunk("surface", 0, 0).get_props(x, 0).get("ceiling", {}).get("building", ""))
+	return _building_at(x, 0)
 
 
 ## Stairs come up through an opening over themselves and lead onto the floor
@@ -153,7 +166,7 @@ func test_stairs_go_up_and_down_and_survive_restart() -> void:
 	w.leave(a)
 	w.close()
 	_open()
-	eq(w.levels.level(w.levels.buildings.keys()[0], 1), up["location"], "the level keeps its id")
+	eq(w.levels.level(_building_at(5, 4), 1), up["location"], "the level keeps its id")
 	eq(_cell(up["location"], "ground", 5, 4), "base:wood_floor")
 	eq(_cell(up["location"], "ground", 5, 5), "", "the opening kept")
 
@@ -227,3 +240,15 @@ func test_facings_are_checked() -> void:
 
 func _props(loc: String, x: int, y: int) -> Dictionary:
 	return w.chunk(loc, floori(x / 32.0), floori(y / 32.0)).get_props(posmod(x, 32), posmod(y, 32))
+
+
+func _building_at(x: int, y: int) -> String:
+	return String(_props("surface", x, y).get("ceiling", {}).get("building", ""))
+
+
+func _built_buildings() -> Array:
+	return w.levels.buildings.keys().filter(func(id: String) -> bool: return not baseline_buildings.has(id))
+
+
+func _built_levels() -> Array:
+	return w.levels.info.keys().filter(func(id: String) -> bool: return not baseline_buildings.has(w.levels.building(id)))

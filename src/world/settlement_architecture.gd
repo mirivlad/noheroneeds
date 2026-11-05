@@ -97,6 +97,10 @@ static func plan(world_seed: int, village: String, building: String, template: D
 
 
 static func cells(design: Dictionary, origin: Vector2i, village: String, materials: Dictionary, registry: ContentRegistry) -> Dictionary:
+	if int(design.get("turns", 0)) != 0:
+		var canonical := design.duplicate(true)
+		canonical["turns"] = 0
+		return _turned_cells(cells(canonical, Vector2i.ZERO, village, materials, registry), design, origin, village)
 	var out := {}
 	var occupied: Dictionary = design["occupied"]
 	var door: Vector2i = design["door"]
@@ -212,6 +216,10 @@ static func _upper_design(design: Dictionary) -> Dictionary:
 
 
 static func upper_cells(design: Dictionary, origin: Vector2i, village: String, materials: Dictionary, registry: ContentRegistry) -> Dictionary:
+	if int(design.get("turns", 0)) != 0:
+		var canonical := design.duplicate(true)
+		canonical["turns"] = 0
+		return _turned_cells(upper_cells(canonical, Vector2i.ZERO, village, materials, registry), design, origin, village)
 	if int(design.get("storeys", 1)) < 2:
 		return {}
 	var upper := _upper_design(design)
@@ -239,3 +247,55 @@ static func _facing(occupied: Dictionary, at: Vector2i) -> String:
 		if not occupied.has(at + pair[0]):
 			return String(pair[1])
 	return "s"
+
+
+## Rotate authoritative cells, including coordinates held inside their properties.
+## The local body's bounding box stays anchored at zero; yards can lie outside it.
+static func local_cell(design: Dictionary, at: Vector2i) -> Vector2i:
+	var size: Vector2i = design["size"]
+	for i in int(design.get("turns", 0)) % 4:
+		at = Vector2i(size.y - 1 - at.y, at.x)
+		size = Vector2i(size.y, size.x)
+	return at
+
+
+static func local_rect(design: Dictionary, rect: Rect2i) -> Rect2i:
+	var a := local_cell(design, rect.position)
+	var b := local_cell(design, rect.end - Vector2i.ONE)
+	return Rect2i(a.min(b), (a - b).abs() + Vector2i.ONE)
+
+
+static func facing(design: Dictionary, direction := "s") -> String:
+	var directions := ["n", "e", "s", "w"]
+	return directions[(directions.find(direction) + int(design.get("turns", 0))) % 4]
+
+
+static func _turned_cells(source: Dictionary, design: Dictionary, origin: Vector2i, village: String) -> Dictionary:
+	var out := {}
+	var odd := int(design["turns"]) % 2
+	for local: Vector2i in source:
+		var at := local_cell(design, local) + origin
+		var spec: Dictionary = source[local].duplicate(true)
+		var props: Dictionary = spec.get("props", {})
+		# Furniture also turns, even when its canonical facing was implicit.
+		props["facing"] = facing(design, String(props.get("facing", "s")))
+		if props.has("arrive"):
+			var arrival := local_cell(design, Vector2i(int(props["arrive"][0]), int(props["arrive"][1]))) + origin
+			props["arrive"] = [arrival.x, arrival.y]
+		if String(props.get("store", "")).begins_with(village + "|") and String(props["store"]).get_slice("|", 1).is_valid_int():
+			props["store"] = "%s|%d|%d" % [village, at.x, at.y]
+		if props.has("roof"):
+			var roof: Dictionary = props["roof"]
+			if roof.has("axis"): roof["axis"] = (int(roof["axis"]) + odd) % 2
+			for key: String in ["section", "sections"]:
+				if not roof.has(key): continue
+				var sections: Array = [roof[key]] if key == "section" else roof[key]
+				for section: Array in sections:
+					var rect := local_rect(design, Rect2i(section[0], section[1], section[2], section[3]))
+					section[0] = rect.position.x + origin.x
+					section[1] = rect.position.y + origin.y
+					section[2] = rect.size.x
+					section[3] = rect.size.y
+					if section.size() > 4: section[4] = (int(section[4]) + odd) % 2
+		out[at] = spec
+	return out

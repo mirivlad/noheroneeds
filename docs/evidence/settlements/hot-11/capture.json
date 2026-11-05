@@ -1,0 +1,107 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "architecture_version": 4,
+  "caravan": {
+    "berth": "(127, -7)",
+    "captured": true,
+    "controlled_setup": true,
+    "driver": "614d8084-32c3-4aaa-87bf-999ffb38c46e",
+    "from": "base:village@0,0#1",
+    "route": "road:0,0,0",
+    "toward": "base:village@0,0#0"
+  },
+  "climate": "hot",
+  "houses": [
+    {
+      "building": "herder:0",
+      "rect": "[P: (82, -43), S: (6, 8)]",
+      "scale": "village",
+      "seed": "3298767440",
+      "shape": "crosswing",
+      "storeys": 2,
+      "tradition": "plains",
+      "village": "base:village@0,0#0",
+      "wealth": 1
+    },
+    {
+      "building": "fisher:1",
+      "rect": "[P: (63, -19), S: (8, 6)]",
+      "scale": "village",
+      "seed": "4111589146",
+      "shape": "wing",
+      "storeys": 2,
+      "tradition": "plains",
+      "village": "base:village@0,0#0",
+      "wealth": 1
+    }
+  ],
+  "requested_scale": "",
+  "requested_tradition": "",
+  "seed": 11,
+  "settlements": [
+    {
+      "environment": {
+        "access": 0.88,
+        "capacity": 0.560955901210991,
+        "fertile": 8,
+        "resources": 0,
+        "roughness": 0.0393627325260062,
+        "shore_normal": "(0.0, 0.0)",
+        "water": 0
+      },
+      "id": "base:village@0,0#0",
+      "layout": "square",
+      "scale": "village",
+      "tradition": "plains"
+    }
+  ],
+  "source_sha256": {
+    "content/base/structures.json": "735b3d62fa895c2bc474f126ecb70bb6beec50f3ccd01bb7083e338b702a196b",
+    "src/building/build_rules.gd": "643bf98e782ae8b24474a19740c544e97b23acfd389f204f492b28e8e9df52f0",
+    "src/experiment_3d/building_modules_3d.gd": "952b47f3ab17dce1599b7a6ca9b3d490a314a1493fede187c52627d86d8249c7",
+    "src/experiment_3d/terrain_shape_3d.gd": "465aa8b112d75d9f0f57b0d2f4a686a8d9152d842980e6ebc0de9e252ff16a60",
+    "src/experiment_3d/world_view_3d.gd": "c1485568c4f44002fe750207a4c0579f485a5892946cf84d046084a8c48c22ed",
+    "src/server/creature_sim.gd": "e1be83f51ac0e0b516ec9a4b7bbface6c65188db0b15bcb7395f26bf7d593179",
+    "src/server/game_server.gd": "5984fce2a9a7bd9267e449bbf73182137a353c27c74806085d665a43f51762d1",
+    "src/server/server_world.gd": "4ae5377679c0cbd485223805fd4f37e3a721666d924fbc79a128e16d3bb3a8a7",
+    "src/sim/creature.gd": "4be2d02dfb05688213bdbf37ff0bf1cb0c38909ccd434785c6e309bfa8dc55e4",
+    "src/world/settlement_architecture.gd": "fdbae80cd3c718b2582915ce88f9e53ace654891690a6991b0a66eb6a1aa91e9",
+    "src/world/settlement_layout.gd": "8eba9759c555d3e5239eb29f77c92c68ed7b5a387f7467ef2571825dbefeaed2",
+    "src/world/settlements.gd": "c339907e0731aadb3e6dc086b1334468f764c351200aebdcfc0e0dc97caa6515",
+    "src/world/surface_generator.gd": "03274e51dd2f35cdd70351a308288dd2586e2f4f3c12a88fcc57ecc53ad89650",
+    "tools/experiment_3d/check_settlements.gd": "bdd28cdce621b890261bdcec4b9956db5db9e0a5adbebb84aedd1bd3f9673f5d"
+  },
+  "surface_version": 18,
+  "evidence_files": [
+    {
+      "path": "settlement-0.webp",
+      "sha256": "aae10444d981de7cada7d29c132198a4184071d8d2b1d4fc13bdd86a9b3a5dd6",
+      "native_png_sha256": "7d38989784afc2362206c3cec750e2020290575c564f8eb92518962344898171"
+    },
+    {
+      "path": "public-ground-0.webp",
+      "sha256": "db318803444ebd2d35a1109fd04c1575e7c077d780a310ce6815b44a253ad609",
+      "native_png_sha256": "c58963d6f7616bf97b7932ea02f43d5e9b90ae692445ffc4aca659f154d9cc70"
+    },
+    {
+      "path": "house-00.webp",
+      "sha256": "361910115cf6f28ceeb228b4d737e603e9c5d6b21e78b3ca4c83d3b4e519f3f2",
+      "native_png_sha256": "7ced0531e19bc9eb991f6b461779ec279de47ae1671bf78a5b582f4793d3f051"
+    },
+    {
+      "path": "house-01.webp",
+      "sha256": "c83fc500c8d2f43ab22ebb8229f0236920a465629b9021c54919a2ba4c9f5803",
+      "native_png_sha256": "ca5a5a98ad9e51d873173305ada480afe8ca60dd2ccbd6d8334d35903ed96083"
+    },
+    {
+      "path": "upper-interior.webp",
+      "sha256": "49ce71b76db63caf4fedb58eaf5dbb5182cb3e025ff7f2d1936628733b9e2db7",
+      "native_png_sha256": "f12a127feed54629eab124aa78d68c270b892c968839aa5239fb86e423cc2a9c"
+    },
+    {
+      "path": "caravan.webp",
+      "sha256": "ee6a168dc0a4a2ccccf8ed36d4a5ff174597123d4c1daeea1f3836c903b0c828",
+      "native_png_sha256": "9d2943b35592b95f7e176d9ee65aeed7936209cc1ddc1271dfd750ee423b1345"
+    }
+  ]
+}

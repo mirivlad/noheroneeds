@@ -8,7 +8,9 @@ func test_dedicated_server_process() -> void:
 	var p := spawn_godot("res://src/server/server_main.gd", ["--world=" + dir.path_join("world.db"),
 		"--seed=431", "--preset=small", "--climate=cold",
 		"--port=%d" % port, "--identity=" + ProjectSettings.globalize_path("user://test_keys/server")])
-	var ready := read_until(p, "LISTENING")
+	# World/initial-view preparation precedes readiness; the protocol below
+	# still has its original eight-second join deadline.
+	var ready := read_until(p, "LISTENING", 60000)
 	if not check(ready != "", "server started: " + (p["stderr"] as FileAccess).get_as_text()):
 		OS.kill(p["pid"])
 		return

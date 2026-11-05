@@ -156,9 +156,10 @@ func test_loader_thread_brings_and_persists_chunks() -> void:
 	for cy in range(-3, 4):
 		for cx in range(-3, 4):
 			w.prefetch("surface", cx, cy)
-	var deadline := Time.get_ticks_msec() + 10000
+	var deadline := Time.get_ticks_msec() + 30000
 	while w.loader.waiting() > 0 and Time.get_ticks_msec() < deadline:
 		OS.delay_msec(5)
+	check(w.loader.waiting() == 0, "all queued generation finished before persistence")
 	OS.delay_msec(20)
 	w.poll_loaded()
 	var aux := w._chunks.keys().filter(func(key: String) -> bool: return not key.begins_with("surface|")).size()

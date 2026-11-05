@@ -135,7 +135,9 @@
         "src/client/game_client.gd",
         "src/presentation/actions.gd",
         "src/content/content_registry.gd",
-        "src/world/settlement_architecture.gd.uid"
+        "src/world/settlement_architecture.gd.uid",
+        "src/world/settlement_layout.gd",
+        "src/world/settlement_layout.gd.uid"
       ],
       "kinds": []
     },

@@ -706,6 +706,17 @@ func unload_idle(idle_ticks: int) -> int:
 	return gone
 
 
+## Finish the initial generation before a network listener advertises readiness.
+## Both dedicated and locally hosted worlds use the same preparation contract.
+func prepare_spawn_view(radius: int) -> void:
+	var cell := Movement.cell_of(spawn_position)
+	var middle := Vector2i(cell.x >> 5, cell.y >> 5)
+	for cy in range(middle.y - radius, middle.y + radius + 1):
+		for cx in range(middle.x - radius, middle.x + radius + 1):
+			chunk(spawn_location, cx, cy)
+	sync()
+
+
 func loaded_chunks() -> int:
 	return _chunks.size()
 

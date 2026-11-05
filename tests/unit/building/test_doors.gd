@@ -41,3 +41,20 @@ func test_doors_only_in_walls_across() -> void:
 	eq(_check(v, content, "base:wood_wall", 11, 4), "door_beside", "no wall above a door")
 	eq(_check(v, content, "base:wood_wall", 11, 6), "door_beside", "nor below")
 	eq(_check(v, content, "base:wood_wall", 13, 5), "", "beside it along the wall")
+
+func test_rotated_doors_and_gates_preserve_their_approach() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	for facing: String in ["n", "e", "s", "w"]:
+		var v := View.new()
+		var at := Vector2i(10, 10)
+		var normal: Vector2i = ContentRegistry.FACINGS[facing]
+		var along := Vector2i(-normal.y, normal.x)
+		for side: int in [-1, 1]:
+			var wall := at + along * side
+			v.chunk.set_cell("structure", wall.x, wall.y, "base:wood_wall")
+		for part: String in ["base:wood_door", "base:wood_gate"]:
+			eq(BuildRules.check(v, content, part, "surface", at.x, at.y, facing), "", "a door may be built in either wall orientation")
+		v.chunk.set_cell("structure", at.x, at.y, "base:wood_door")
+		v.chunk.set_props(at.x, at.y, {"facing": facing})
+		var blocked := at + normal
+		eq(_check(v, content, "base:wood_wall", blocked.x, blocked.y), "door_beside", "building may not block either rotated approach")

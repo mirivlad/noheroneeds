@@ -1,0 +1,39 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Естественные улицы и контекстный масштаб; полные повороты серверных клеток зданий, дворов, крыш и этажей; поворот дверей и подходов к рабочим местам.",
+      "sources": {
+        "content/base/structures.json": "735b3d62fa895c2bc474f126ecb70bb6beec50f3ccd01bb7083e338b702a196b",
+        "src/building/build_rules.gd": "643bf98e782ae8b24474a19740c544e97b23acfd389f204f492b28e8e9df52f0",
+        "src/server/creature_sim.gd": "e1be83f51ac0e0b516ec9a4b7bbface6c65188db0b15bcb7395f26bf7d593179",
+        "src/world/settlement_architecture.gd": "fdbae80cd3c718b2582915ce88f9e53ace654891690a6991b0a66eb6a1aa91e9",
+        "src/world/settlements.gd": "c339907e0731aadb3e6dc086b1334468f764c351200aebdcfc0e0dc97caa6515",
+        "src/world/surface_generator.gd": "03274e51dd2f35cdd70351a308288dd2586e2f4f3c12a88fcc57ecc53ad89650",
+        "src/world/settlement_layout.gd": "8eba9759c555d3e5239eb29f77c92c68ed7b5a387f7467ef2571825dbefeaed2",
+        "src/world/settlement_layout.gd.uid": "8751f32be649466fc7b5e5b68da671654d385726393c3d5eb4f21058952b0aed",
+        "src/server/dedicated_server.gd": "a7c2ccb63d6e8b15a225c9408d507c993caec70b19118f6d08a9afe8dedfb412",
+        "src/sim/creature.gd": "4be2d02dfb05688213bdbf37ff0bf1cb0c38909ccd434785c6e309bfa8dc55e4",
+        "src/server/server_world.gd": "4ae5377679c0cbd485223805fd4f37e3a721666d924fbc79a128e16d3bb3a8a7",
+        "src/client/hosted_game.gd": "d850841375f2eac9adbb23850ff78692fd1ccf87130bfd625c4eadf8888f94cd",
+        "src/experiment_3d/terrain_shape_3d.gd": "465aa8b112d75d9f0f57b0d2f4a686a8d9152d842980e6ebc0de9e252ff16a60"
+      },
+      "mechanics": [
+        "settlements",
+        "settlement-architecture",
+        "building",
+        "caravans",
+        "multiplayer",
+        "nature"
+      ],
+      "guides": {
+        "site/content/guides/building.html": "a11a9433f6b8a340d69836a991936719c24943dd0d66f9f88536e89856ba90f9",
+        "site/content/guides/trade.html": "c72e55ffda99f059d659deaafec7eee0a57130494bcc903ae388ef01a4629d7e",
+        "site/content/guides/caravans.html": "00d427e97d0f164bed9cab8770e01ebb4b5fe54cc4798c98ca17a4bc4d4c35c2",
+        "site/content/guides/multiplayer.html": "ad5a85a4fdd874e0399a6f6cddd347a9ebdbb1503bd4dc735ad2e459a6504fa0",
+        "site/content/guides/nature.html": "e297f17ec604030f416b396c7df81b73a96c60a64e2047014cec5a40702f0513"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

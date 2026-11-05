@@ -1,0 +1,97 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "architecture_version": 4,
+  "caravan": {
+    "berth": "(134, -7)",
+    "captured": true,
+    "controlled_setup": true,
+    "driver": "6d557865-9b60-494d-95e7-0470029e0f89",
+    "from": "base:village@0,0#1",
+    "route": "road:0,0,1",
+    "toward": "base:village@0,0#0"
+  },
+  "climate": "temperate",
+  "houses": [
+    {
+      "building": "herder:0",
+      "rect": "[P: (78, -19), S: (6, 8)]",
+      "scale": "village",
+      "seed": "3030267693",
+      "shape": "wing",
+      "storeys": 2,
+      "tradition": "plains",
+      "village": "base:village@0,0#0",
+      "wealth": 1
+    },
+    {
+      "building": "herder:1",
+      "rect": "[P: (52, -10), S: (7, 8)]",
+      "scale": "village",
+      "seed": "2152542636",
+      "shape": "hall",
+      "storeys": 2,
+      "tradition": "plains",
+      "village": "base:village@0,0#0",
+      "wealth": 2
+    }
+  ],
+  "requested_scale": "",
+  "requested_tradition": "",
+  "seed": 431,
+  "settlements": [
+    {
+      "environment": {
+        "access": 1.0,
+        "capacity": 0.565034452589941,
+        "fertile": 8,
+        "resources": 0,
+        "roughness": 0.0366436982733727,
+        "shore_normal": "(0.0, 0.0)",
+        "water": 0
+      },
+      "id": "base:village@0,0#0",
+      "layout": "bend",
+      "scale": "village",
+      "tradition": "plains"
+    }
+  ],
+  "source_sha256": {
+    "content/base/structures.json": "735b3d62fa895c2bc474f126ecb70bb6beec50f3ccd01bb7083e338b702a196b",
+    "src/building/build_rules.gd": "643bf98e782ae8b24474a19740c544e97b23acfd389f204f492b28e8e9df52f0",
+    "src/experiment_3d/building_modules_3d.gd": "952b47f3ab17dce1599b7a6ca9b3d490a314a1493fede187c52627d86d8249c7",
+    "src/experiment_3d/terrain_shape_3d.gd": "465aa8b112d75d9f0f57b0d2f4a686a8d9152d842980e6ebc0de9e252ff16a60",
+    "src/experiment_3d/world_view_3d.gd": "c1485568c4f44002fe750207a4c0579f485a5892946cf84d046084a8c48c22ed",
+    "src/server/creature_sim.gd": "e1be83f51ac0e0b516ec9a4b7bbface6c65188db0b15bcb7395f26bf7d593179",
+    "src/server/game_server.gd": "5984fce2a9a7bd9267e449bbf73182137a353c27c74806085d665a43f51762d1",
+    "src/server/server_world.gd": "4ae5377679c0cbd485223805fd4f37e3a721666d924fbc79a128e16d3bb3a8a7",
+    "src/sim/creature.gd": "4be2d02dfb05688213bdbf37ff0bf1cb0c38909ccd434785c6e309bfa8dc55e4",
+    "src/world/settlement_architecture.gd": "fdbae80cd3c718b2582915ce88f9e53ace654891690a6991b0a66eb6a1aa91e9",
+    "src/world/settlement_layout.gd": "8eba9759c555d3e5239eb29f77c92c68ed7b5a387f7467ef2571825dbefeaed2",
+    "src/world/settlements.gd": "c339907e0731aadb3e6dc086b1334468f764c351200aebdcfc0e0dc97caa6515",
+    "src/world/surface_generator.gd": "03274e51dd2f35cdd70351a308288dd2586e2f4f3c12a88fcc57ecc53ad89650",
+    "tools/experiment_3d/check_settlements.gd": "bdd28cdce621b890261bdcec4b9956db5db9e0a5adbebb84aedd1bd3f9673f5d"
+  },
+  "surface_version": 18,
+  "evidence_files": [
+    {
+      "path": "settlement-0.webp",
+      "sha256": "9e826c199b80253a1f2415acfbbc8876060111faf754be139838de4ded56b113",
+      "native_png_sha256": "3852c603eb0304b6e1211c14f24d0080f0c45bfd4d285aed885a99e5788e61b7"
+    },
+    {
+      "path": "public-ground-0.webp",
+      "sha256": "4759369db42333f12b1f4496e2d0cb24e5503ae6a17296b160f515ebb25cd666",
+      "native_png_sha256": "337f5ef5fc5c2b06de569470bb56b1c061d8e4ae94e02d0143a90d7b19f35ad2"
+    },
+    {
+      "path": "house-00.webp",
+      "sha256": "f74a8cbec5ee8bff49344782014b63015cf3ffb8af52d0352e374350e37d3b20",
+      "native_png_sha256": "4e91c6b305d2e2e6003923ba15088f290a5053946d8d5204d5efe9d3c8c9d92a"
+    },
+    {
+      "path": "house-01.webp",
+      "sha256": "983c8df9e40e60a6bb8665c361f243097caa76cd0d18233c0c18c2555663e398",
+      "native_png_sha256": "3d8ba5cc911c0ca731aae9526c900658787f9af147f0b76bb76eb9b71bcee2ed"
+    }
+  ]
+}

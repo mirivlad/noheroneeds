@@ -136,6 +136,7 @@ func test_creatures_are_kept_across_a_restart() -> void:
 func test_caravan_horse_and_goods_survive_restart_and_move_together() -> void:
 	_field()
 	var trader := _spawn("base:villager", Vector2i(170, 170))
+	trader.face = Vector2i.RIGHT  # this fixture travels east, independently of the generated road
 	trader.job = {"profession": "base:trader", "purse": 42}
 	trader.route = {"road": [0, 0, 0, 0], "i": 1, "step": 1}
 	w.creatures._make_caravan(trader, "cart")
@@ -684,3 +685,44 @@ func test_a_cart_turns_its_horse_toward_an_off_centre_waypoint() -> void:
 			break
 	eq(trader.cell(), goal, "small lateral correction must not lock the horse into the blocked diagonal")
 	eq(trader.target, Creature.NO_TARGET, "the precise waypoint is completed")
+
+func test_a_cart_keeps_the_clear_harness_heading_during_a_sideways_departure() -> void:
+	_field()
+	for y in range(173, 178):
+		for x in range(173, 178):
+			w.chunk("surface", x >> 5, y >> 5).set_cell("structure", x & 31, y & 31, "base:rock")
+	var trader := _spawn("base:villager", Vector2i(170, 170))
+	trader.face = Vector2i.RIGHT
+	trader.job = {"profession": "base:trader"}
+	w.creatures._make_caravan(trader, "cart")
+	var goal := Vector2i(171, 171)
+	w.creatures._go(trader, "detour", goal, false)
+	eq(Vector2(trader.path_heading), Vector2.RIGHT, "the planner chooses the clear existing orientation rather than turning into the corner")
+	var horse := w.creatures.get_creature(String(trader.job["horse"]))
+	for i in 120:
+		w.creatures._move(trader)
+		for at: Vector2i in BodySize.cells(horse.pos, BodySize.of(_content.get_def(horse.kind))["half"]):
+			check(not w.is_solid("surface", at.x, at.y), "the horse stays outside the corner")
+		if trader.target == Creature.NO_TARGET: break
+	eq(trader.pos, _at(goal), "the complete sideways departure is executed with its validated orientation")
+
+func test_a_sideways_cart_is_checked_in_its_actual_orientation() -> void:
+	_field()
+	for at: Vector2i in [Vector2i(169, 169), Vector2i(171, 172), Vector2i(174, 167)]:
+		w.chunk("surface", at.x >> 5, at.y >> 5).set_cell("structure", at.x & 31, at.y & 31, "base:rock")
+	var trader := _spawn("base:villager", Vector2i(170, 170))
+	trader.face = Vector2i(1, -1)
+	trader.job = {"profession": "base:trader"}
+	w.creatures._make_caravan(trader, "cart")
+	var goal := Vector2i(171, 170)
+	w.creatures._go(trader, "detour", goal, false)
+	check(trader.path_heading.is_equal_approx(Vector2(1,-1).normalized()), "the corner requires keeping the existing cart orientation")
+	trader.path_heading = Vector2.ZERO  # a transient path is rebuilt after reload
+	var horse := w.creatures.get_creature(String(trader.job["horse"]))
+	for i in 120:
+		w.creatures._move(trader)
+		check(w.creatures._caravan_cart_fits(trader, trader.pos, w.creatures._heading_of(trader.job["caravan_heading"])), "the actual rotated cart remains outside the corner")
+		for at: Vector2i in BodySize.cells(horse.pos, BodySize.of(_content.get_def(horse.kind))["half"]):
+			check(not w.is_solid("surface", at.x, at.y), "the horse remains outside the corner")
+		if trader.target == Creature.NO_TARGET: break
+	eq(trader.pos, _at(goal), "sideways motion does not pretend the cart instantly faces its displacement")

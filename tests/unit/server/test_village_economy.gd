@@ -373,6 +373,8 @@ func _check_caravan_route(road: Dictionary, path: Array, obstruction: Vector2i, 
 	var crossed_tree := false
 	var horse := w.creatures.get_creature(String(trader.job["horse"]))
 	while int(trader.route["step"]) == 1 and steps < path.size() * 90:
+		w.tick += 1
+		w.creatures._tick = w.tick  # retry deadlines advance with the simulated movement ticks
 		if trader.target == Creature.NO_TARGET:
 			w.creatures._traveller(trader, w.content.get_def(trader.kind))
 		w.creatures._move(trader)
@@ -392,6 +394,8 @@ func _check_caravan_route(road: Dictionary, path: Array, obstruction: Vector2i, 
 		return
 	steps = 0
 	while int(trader.route["step"]) == -1 and steps < path.size() * 90:
+		w.tick += 1
+		w.creatures._tick = w.tick
 		# A caravan rests and gets ready before the way back (ADR-0068):
 		# let the game clock run to the end of the stop.
 		if String(trader.job.get("caravan_state", "travel")) != "travel":

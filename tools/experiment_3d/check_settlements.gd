@@ -42,6 +42,7 @@ func run() -> void:
 	g.set_process(false)
 	view = g.view as WorldView3D
 	world = g.game.world
+	verify(world.generator.geography is PlannedGeography and (world.generator.geography as PlannedGeography).plan.climate == climate, "the saved world uses the requested climate")
 	world.time_rate = 0
 	g.game.server.wait_for_disk = true
 	await pump(50)
@@ -67,20 +68,31 @@ func run() -> void:
 	view.yaw = .6
 	view.tilt = 49
 	var report := {"seed": seed_value, "climate": climate, "surface_version": SurfaceGenerator.VERSION,
-		"requested_tradition": tradition, "requested_scale": scale, "architecture_version": Settlements.VERSION, "adapter": RenderingServer.get_video_adapter_name(), "houses": []}
+		"requested_tradition": tradition, "requested_scale": scale, "architecture_version": Settlements.VERSION, "adapter": RenderingServer.get_video_adapter_name(), "settlements": [], "houses": []}
+	report["source_sha256"] = {}
+	for path: String in ["src/world/settlements.gd", "src/world/settlement_layout.gd", "src/world/settlement_architecture.gd", "src/world/surface_generator.gd", "src/experiment_3d/world_view_3d.gd", "src/experiment_3d/terrain_shape_3d.gd", "src/experiment_3d/building_modules_3d.gd", "src/server/creature_sim.gd", "src/sim/creature.gd", "tools/experiment_3d/check_settlements.gd", "src/building/build_rules.gd", "src/server/game_server.gd", "src/server/server_world.gd", "content/base/structures.json"]:
+		report["source_sha256"][path] = FileAccess.get_sha256("res://" + path)
 	var made := 0
 	for plan: Dictionary in villages:
 		if made >= count: break
-		await move_to((plan["fire"] as Vector2i) + Vector2i(2, 2))
+		report["settlements"].append({"id": plan["id"], "layout": plan["layout"], "scale": plan["scale"], "tradition": plan["tradition"], "environment": plan["environment"]})
+		await move_to(Vector2i((plan["bounds"] as Rect2i).get_center().x, (plan["centre"] as Vector2i).y + 1))
 		view.zoom = 50
 		await settle()
 		Input.warp_mouse(Vector2(20, root.size.y / 2))
 		await pump(2)
+		frame_rect(plan["bounds"])
 		await capture("settlement-" + str(villages.find(plan)))
+		await move_to((plan["fire"] as Vector2i) + Vector2i(2, 2))
+		await settle()
+		frame_rect((plan["square"] as Rect2i).grow(9))
+		await capture("public-ground-" + str(villages.find(plan)))
+		if made == 0:
+			report["caravan"] = await capture_caravan(plan)
 		for house: Dictionary in plan["homes"]:
 			if made >= count: break
 			var rect: Rect2i = house["rect"]
-			await move_to((house["door"] as Vector2i) + Vector2i(0, 3))
+			await move_to((house["door"] as Vector2i) + (ContentRegistry.FACINGS[SettlementArchitecture.facing(house["architecture"])] as Vector2i) * 3)
 			view.zoom = maxf(16, maxf(rect.size.x, rect.size.y) * 2.0)
 			await settle()
 			Input.warp_mouse(Vector2(20, root.size.y / 2))
@@ -98,7 +110,7 @@ func run() -> void:
 			view.eye.look_at(focus, Vector3.UP)
 			await capture("house-%02d" % made)
 			if made == 0 and int(house["architecture"]["storeys"]) > 1:
-				var stair := SettlementArchitecture._stairs(house["architecture"]) + rect.position
+				var stair := SettlementArchitecture.local_cell(house["architecture"], SettlementArchitecture._stairs(house["architecture"])) + rect.position
 				await move_to(stair)
 				var result := await request({"type": "climb", "location": "surface", "x": stair.x, "y": stair.y})
 				verify(result.get("ok", false), "climb a generated house in the native client")
@@ -123,14 +135,78 @@ func settle() -> void:
 	# A real upper floor may occupy only one chunk. Waiting for nine chunks
 	# there can never succeed. Require a stable completed render instead.
 	var stable := 0
-	for i in 360:
+	var complete := false
+	for i in 1800:
 		await pump(1)
-		if i >= 30 and view.pending_chunks() == 0 and not view._geometry.is_empty():
+		# Captures can spend extra build time; gameplay keeps its normal frame budget.
+		for pass_index in 4:
+			view.update_view(1.0, 0.0)
+		var streamed := true
+		if g.client.location == "surface":
+			var at := Movement.cell_of(g.client.position)
+			for y in range((at.y >> 5) - 2, (at.y >> 5) + 3):
+				for x in range((at.x >> 5) - 2, (at.x >> 5) + 3):
+					streamed = streamed and g.client.chunks.has(ServerWorld.chunk_key("surface", x, y))
+		if i >= 30 and streamed and view.pending_chunks() == 0 and not view._geometry.is_empty():
 			stable += 1
 			if stable >= 3:
+				complete = true
 				break
 		else:
 			stable = 0
+	if not complete:
+		var session := g.game.server._session_of(g.client.character_id)
+		print("CAPTURE_UNSETTLED ", {"position": g.client.position, "received": g.client.chunks.keys(), "pending": view.pending_chunks(), "streamed_at": session.streamed_at, "unfinished": session.streaming_unfinished})
+	verify(complete, "all expected chunks received and native geometry settled")
 	await physics_frame
 	await physics_frame
 	await pump(3)
+
+
+func frame_rect(rect: Rect2i) -> void:
+	view.yaw = .6
+	view.tilt = 49
+	view.zoom = maxf(24, Vector2(rect.size).length() * .8)
+	view.eye.size = view.zoom
+	var middle := Vector2(rect.get_center())
+	var focus := Vector3(middle.x, view.elevation(middle) + 1.5, middle.y)
+	var offset := Vector3(0, sin(deg_to_rad(view.tilt)), cos(deg_to_rad(view.tilt))).rotated(Vector3.UP, -view.yaw) * 65
+	view.eye.position = focus + offset
+	view.eye.look_at(focus, Vector3.UP)
+
+
+## A controlled native scene uses real server entities, a real route and the
+## generated berth. Movement of two arrivals is covered by the integration test.
+func capture_caravan(plan: Dictionary) -> Dictionary:
+	var settlements := world.generator.settlements
+	var district := settlements._district_of(0, plan["centre"])
+	var route := {}
+	for candidate: Dictionary in settlements.roads_of(0, district.x, district.y):
+		if candidate["from"] == plan["id"] or candidate["to"] == plan["id"]:
+			route = candidate
+			break
+	if route.is_empty():
+		print("CAPTURE_NO_CARAVAN: this settlement has no connected route")
+		return {"captured": false, "reason": "no connected route"}
+	var berth: Vector2i = plan["parking"][0]
+	await move_to(berth + Vector2i(7, 2))
+	await settle()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([world.world_seed, plan["id"], "review-caravan"])
+	var trader := world.creatures._spawn("base:villager", "surface", berth, CreatureSim.villager_looks(rng), rng.randi())
+	var source := String(route["to"]) if route["from"] == plan["id"] else String(route["from"])
+	trader.route = {"road": route["key"], "i": 0, "step": 1 if route["to"] == plan["id"] else -1}
+	trader.job = {"profession": "base:trader", "purse": 600, "name": "Обоз", "from": source, "toward": plan["id"]}
+	trader.last_time = world.world_time
+	world.creatures._make_caravan(trader, "cart")
+	trader.job["caravan_heading"] = [0, -1]
+	trader.job["horse_heading"] = [0, -1]
+	world.creatures._move_caravan_horse(trader)
+	world.creatures._caravan_arrive(trader)
+	world.creatures._caravan_at_stop(trader, "arriving")
+	verify(trader.job.get("caravan_state", "") == "trading", "a real server caravan fits and trades at the generated berth")
+	await pump(35)
+	await settle()
+	frame_rect(Rect2i(berth - Vector2i(10, 10), Vector2i(25, 23)))
+	await capture("caravan")
+	return {"captured": true, "driver": trader.id, "route": route["id"], "from": source, "toward": plan["id"], "berth": str(berth), "controlled_setup": true}

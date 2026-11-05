@@ -281,3 +281,43 @@ func test_a_restart_in_the_middle_of_a_stop_does_not_send_the_caravan_off() -> v
 	eq(trader.cell(), stop, "and it stays at its stop")
 	w.world_time = until
 	check(_run_until("resting", 50), "only the saved end of trading moves it on")
+
+func test_two_caravans_move_into_separate_berths_of_a_generated_settlement() -> void:
+	var home: Dictionary = w.generator.settlements.home_plan()
+	var area: Rect2i = (home["bounds"] as Rect2i).grow(8)
+	for cy in range(area.position.y >> 5, (area.end.y >> 5) + 1):
+		for cx in range(area.position.x >> 5, (area.end.x >> 5) + 1):
+			w.chunk("surface", cx, cy)
+	for spawned: Creature in w.creatures.creatures.values():
+		if spawned != trader and String(spawned.job.get("horse", "")) != "":
+			w.creatures.remove(String(spawned.job["horse"]))
+			w.creatures.remove(spawned.id)
+	var source_id := String(road["to"]) if String(road["from"]) == String(home["id"]) else String(road["from"])
+	road["from"] = source_id
+	road["to"] = home["id"]
+	trader.job["from"] = source_id
+	trader.job["toward"] = home["id"]
+	var berths: Array = home["parking"]
+	var starts: Array[Vector2i] = [berths[0] + Vector2i(0, 5), berths[1] + Vector2i(0, 5)]
+	trader.pos = starts[0] * Movement.UNIT + Vector2i(128, 128)
+	var other := w.creatures._spawn("base:villager", "surface", starts[1], {}, 921)
+	other.route = {"road": road["key"], "i": 0, "step": 1}
+	other.job = {"profession": "base:trader", "purse": 600, "name": "Другой", "from": road["from"], "toward": home["id"]}
+	w.creatures._make_caravan(other, "cart")
+	w.inventory("trade|" + other.id).add("base:iron_sword", 1)
+	var initial_stock := w.economy.have(home["id"], "base:iron_sword")
+	for c: Creature in [trader, other]:
+		c.job["caravan_heading"] = [0, -1]
+		c.job["horse_heading"] = [0, -1]
+		w.creatures._move_caravan_horse(c)
+		w.creatures._caravan_arrive(c)
+	check(w.creatures._caravan_goal(trader) != w.creatures._caravan_goal(other), "the moving caravans reserve different places")
+	w.move_character(actor, (starts[0] + Vector2i(6, 0)) * Movement.UNIT + Vector2i(128, 128))
+	for tick in 2400:
+		_step()
+		if _phase() == "trading" and String(other.job.get("caravan_state", "")) == "trading": break
+	eq(_phase(), "trading", "the first caravan physically reaches its berth")
+	eq(String(other.job.get("caravan_state", "")), "trading", "the second caravan physically reaches its berth")
+	check(trader.cell() != starts[0] and other.cell() != starts[1], "both actually moved through the generated yard")
+	check(trader.cell().distance_to(other.cell()) >= 12, "the two harnesses remain separate")
+	eq(w.economy.have(home["id"], "base:iron_sword"), initial_stock + 3, "both real cargos reached the village store")

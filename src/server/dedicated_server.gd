@@ -103,6 +103,10 @@ func start(o: Dictionary) -> String:
 		DirAccess.remove_absolute(_stop_file)
 	if o.has("console"):
 		_stdin.start(_read_console)
+	# LISTENING promises a usable server, not a cold procedural-generation
+	# pause during the first client's handshake. Prepare its initial view.
+	print("PREPARING initial world view")
+	_world.prepare_spawn_view(_server.view_chunks)
 	print("LISTENING %d %s" % [port, identity.fingerprint])
 	if _server.password != "":
 		print("INVITE %s" % _server.invite)

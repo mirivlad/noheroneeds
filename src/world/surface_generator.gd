@@ -27,7 +27,8 @@ const ID := "base:surface"
 ## 15: a biome is judged cell by cell from the plan's climate, not taken whole
 ##     from a coarse point, and woods thin into glades with open trails.
 ## 16: settlement plans include public ground and caravan parking.
-const VERSION := 17
+## 18: terrain-aware streets, contextual settlement scales and full building turns.
+const VERSION := 18
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -140,7 +141,9 @@ func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null) ->
 	_track.seed = seed_value + 32452843
 	_track.frequency = 0.017
 	_track.fractal_octaves = 2
-	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at, land_at if geography else Callable())
+	var plan_key := JSON.stringify(plan.to_dict()).sha256_text() if plan != null else "legacy"
+	var shared_key := "%d|%d|%d|%s|%s" % [VERSION, Settlements.VERSION, seed_value, JSON.stringify(content.defs).sha256_text(), plan_key]
+	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at, land_at if geography else Callable(), shared_key)
 	for i in 8:
 		var n := FastNoiseLite.new()
 		n.seed = seed_value + 104729 * (i + 1)

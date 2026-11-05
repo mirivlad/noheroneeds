@@ -34,6 +34,7 @@ static func start(world_path: String, content: ContentRegistry, player: PlayerId
 	g.server = GameServer.new(g.world, g._server_transport, server_identity)
 	g.server.password = String(options.get("password", ""))
 	g.server.new_invite()
+	g.world.prepare_spawn_view(g.server.view_chunks)
 	var t := ENetTransport.new()
 	t.start_client("127.0.0.1", listen_port)
 	g.client = GameClient.new(t, player, character_file, content)

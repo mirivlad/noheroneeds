@@ -64,7 +64,7 @@ var path: Array[Vector2i] = []
 var path_to := NO_TARGET
 ## A caravan keeps its harness heading through one detour waypoint, even
 ## after its feet have crossed just one of the target cell's boundaries.
-var path_heading := Vector2i.ZERO
+var path_heading := Vector2.ZERO
 ## A sealed road is retried locally, without spending a full search every tick.
 var route_retry := 0
 ## Looks of an NPC (as a character's appearance); empty for animals.

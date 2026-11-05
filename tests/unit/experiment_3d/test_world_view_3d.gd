@@ -256,7 +256,11 @@ func test_real_mountain_route_is_levels_cliffs_and_ramps() -> void:
 					if distance < nearest and view._land.height_at(candidate.x, candidate.y) >= Geography.HILLS:
 						nearest = distance
 						road_at = candidate
-	if not check(road_at != Settlements.NONE and nearest < 128 * 128, "a real road crosses this mountain region"):
+	if not check(road_at != Settlements.NONE, "the surrounding districts contain a real mountain road"):
+		return
+	# Its nearest route moved from the historical terrain fixture when parcel
+	# placement changed. The terrain and the actual road remain separate contracts.
+	if not check(view._land.height_at(road_at.x, road_at.y) >= Geography.HILLS, "the selected road is really on high terrain"):
 		return
 	var chunk := view._land.generate(road_at.x >> 5, road_at.y >> 5)
 	eq(chunk.get_cell("ground", posmod(road_at.x,32), posmod(road_at.y,32)), "base:dirt", "actual generated mountain road")
@@ -667,3 +671,27 @@ func test_storey_slabs_end_inside_exterior_walls() -> void:
 			eq(view.slab_bounds(Vector2i.ONE, "ceiling"), Rect2(-.5, -.5, 1, 1), "interior tiles keep their full extent")
 			c.set_cell("structure", 0, 0, "")
 			eq(view.slab_bounds(Vector2i.ZERO, "ceiling"), Rect2(-.5, -.5, 1, 1), "open platforms keep their full extent")
+
+
+func test_generated_buildings_and_sheds_share_level_foundations() -> void:
+	var w := ServerWorld.open(tmp_dir().path_join("shed-foundations.db"), content,
+		{"seed": 11, "climate": "hot", "require_planned": true})
+	var shape := TerrainShape3D.new(w.generator)
+	var checked := 0
+	for home: Dictionary in w.generator.settlements.home_plan()["buildings"]:
+		var body: Rect2i = home["rect"]
+		var base := shape.natural(Vector2i(body.get_center())) + .04
+		for y in range(body.position.y, body.end.y + 1):
+			for x in range(body.position.x, body.end.x + 1):
+				check(is_equal_approx(shape.height(Vector2i(x, y)), base), "every civic and residential building has a level foundation")
+		var design: Dictionary = home["architecture"]
+		if (design["yard"] as Rect2i).size == Vector2i.ZERO: continue
+		var shed := SettlementArchitecture.local_rect(design, Rect2i(0, -5, 3, 3))
+		shed.position += (home["rect"] as Rect2i).position
+		var foot := shape.natural(Vector2i(shed.get_center())) + .04
+		for y in range(shed.position.y, shed.end.y + 1):
+			for x in range(shed.position.x, shed.end.x + 1):
+				check(is_equal_approx(shape.height(Vector2i(x, y)), foot), "all shed roof patches and walls share a level foot, including rotated yards")
+		checked += 1
+	check(checked >= 2, "several real generated sheds are checked")
+	w.close()

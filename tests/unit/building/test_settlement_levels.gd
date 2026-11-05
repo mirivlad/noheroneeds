@@ -17,12 +17,14 @@ func test_generated_floors_reach_two_clients_and_keep_player_edits() -> void:
 		if String(plan["id"]) + "|" + String(home["building_id"]) == building:
 			design = home["architecture"]
 			origin = (home["rect"] as Rect2i).position
-	var stair := SettlementArchitecture._stairs(design) + origin
+	var stair := SettlementArchitecture.local_cell(design, SettlementArchitecture._stairs(design)) + origin
 	world.chunk("surface", stair.x >> 5, stair.y >> 5)
 	var upper := world.levels.level(building, 1)
 	check(upper != "", "the generated floor is registered with Levels")
-	eq(world._upper_of("surface", stair + Vector2i.UP), upper, "stairs lead to the real level")
-	check(not world.is_solid(upper, stair.x, stair.y - 1), "a walkable landing")
+	var arrival: Array = plan["cells"][stair]["props"]["arrive"]
+	var landing := Vector2i(arrival[0], arrival[1])
+	eq(world._upper_of("surface", landing), upper, "stairs lead to the real level")
+	check(not world.is_solid(upper, landing.x, landing.y), "a walkable landing")
 	var network := MemoryTransport.MemoryNetwork.new()
 	var server := GameServer.new(world, network.server(), _key("settlement-server"))
 	server.wait_for_disk = true
@@ -61,7 +63,7 @@ func test_generated_floors_reach_two_clients_and_keep_player_edits() -> void:
 	_run(server, clients, 20)
 	check(a.results.get(rid, {}).get("ok", false), "the player comes back down")
 	eq(a.location, "surface")
-	var edited := stair + Vector2i.UP
+	var edited := landing
 	var chunk := world.chunk(upper, edited.x >> 5, edited.y >> 5)
 	chunk.set_cell("roof", edited.x & 31, edited.y & 31, "")
 	world._changed(ServerWorld.chunk_key(upper, edited.x >> 5, edited.y >> 5))

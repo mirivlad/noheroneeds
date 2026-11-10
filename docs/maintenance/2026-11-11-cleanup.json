@@ -1,0 +1,401 @@
+{
+  "date": "2026-11-11",
+  "base_commit": "21ea0863bda74f9778dd8f69131d0b1be824c974",
+  "removed_generated": [
+    {
+      "path": "build/bandits",
+      "bytes": 299982
+    },
+    {
+      "path": "build/caravan",
+      "bytes": 455609
+    },
+    {
+      "path": "build/caravan-ccc",
+      "bytes": 284802
+    },
+    {
+      "path": "build/chronicles-final.log",
+      "bytes": 154
+    },
+    {
+      "path": "build/ci-0881c72-failed.log",
+      "bytes": 70625
+    },
+    {
+      "path": "build/creatures-final.log",
+      "bytes": 142
+    },
+    {
+      "path": "build/dwellers-final.log",
+      "bytes": 454
+    },
+    {
+      "path": "build/hospitality-focused.log",
+      "bytes": 1567
+    },
+    {
+      "path": "build/hospitality-review",
+      "bytes": 13381114
+    },
+    {
+      "path": "build/hospitality-review.log",
+      "bytes": 3918
+    },
+    {
+      "path": "build/hospitality-rooms-plans.log",
+      "bytes": 270
+    },
+    {
+      "path": "build/hospitality-rooms.log",
+      "bytes": 3566
+    },
+    {
+      "path": "build/hospitality_plans_debug.gd",
+      "bytes": 2072
+    },
+    {
+      "path": "build/hospitality_plans_debug.gd.uid",
+      "bytes": 19
+    },
+    {
+      "path": "build/import.log",
+      "bytes": 1742
+    },
+    {
+      "path": "build/linux",
+      "bytes": 178913464
+    },
+    {
+      "path": "build/natural-final-source-hashes.json",
+      "bytes": 52364
+    },
+    {
+      "path": "build/natural-settlement-final-verification",
+      "bytes": 52489566
+    },
+    {
+      "path": "build/natural-settlement-verification",
+      "bytes": 19713694
+    },
+    {
+      "path": "build/natural-settlement-verification-610",
+      "bytes": 53328314
+    },
+    {
+      "path": "build/natural-settlement-verification-611",
+      "bytes": 14836725
+    },
+    {
+      "path": "build/natural-settlement-verification-611-r2",
+      "bytes": 53225138
+    },
+    {
+      "path": "build/natural-settlement-verification-612/profiles",
+      "bytes": 53278277
+    },
+    {
+      "path": "build/noheroneeds-0.1.0-3282bec-linux-x86_64.tar.gz",
+      "bytes": 55524576
+    },
+    {
+      "path": "build/noheroneeds-0.1.0-3282bec-windows-x86_64.zip",
+      "bytes": 65050416
+    },
+    {
+      "path": "build/noheroneeds-0.1.0-7941cf0-linux-x86_64.tar.gz",
+      "bytes": 56560926
+    },
+    {
+      "path": "build/noheroneeds-0.1.0-7941cf0-windows-x86_64.zip",
+      "bytes": 66065152
+    },
+    {
+      "path": "build/noheroneeds-0.11.1-8e644f5-linux-x86_64.tar.gz",
+      "bytes": 56674131
+    },
+    {
+      "path": "build/noheroneeds-0.11.1-8e644f5-windows-x86_64.zip",
+      "bytes": 66177119
+    },
+    {
+      "path": "build/noheroneeds-0.12.0-6425f01-linux-x86_64.tar.gz",
+      "bytes": 56682634
+    },
+    {
+      "path": "build/noheroneeds-0.12.0-6425f01-windows-x86_64.zip",
+      "bytes": 66185363
+    },
+    {
+      "path": "build/noheroneeds-0.12.1-25fe87b-linux-x86_64.tar.gz",
+      "bytes": 56687323
+    },
+    {
+      "path": "build/noheroneeds-0.12.1-25fe87b-windows-x86_64.zip",
+      "bytes": 66190292
+    },
+    {
+      "path": "build/noheroneeds-0.13.0-41a11b5-linux-x86_64.tar.gz",
+      "bytes": 127676158
+    },
+    {
+      "path": "build/noheroneeds-0.13.0-41a11b5-windows-x86_64.zip",
+      "bytes": 137178683
+    },
+    {
+      "path": "build/noheroneeds-0.14.0-9b580ef-linux-x86_64.tar.gz",
+      "bytes": 127688254
+    },
+    {
+      "path": "build/noheroneeds-0.14.0-9b580ef-windows-x86_64.zip",
+      "bytes": 137191063
+    },
+    {
+      "path": "build/noheroneeds-0.14.1-dfade8e-linux-x86_64.tar.gz",
+      "bytes": 127695432
+    },
+    {
+      "path": "build/noheroneeds-0.14.1-dfade8e-windows-x86_64.zip",
+      "bytes": 137198543
+    },
+    {
+      "path": "build/noheroneeds-0.14.2-bc1b773-linux-x86_64.tar.gz",
+      "bytes": 127851126
+    },
+    {
+      "path": "build/noheroneeds-0.17.0-c956cbd-linux-x86_64.tar.gz",
+      "bytes": 128130178
+    },
+    {
+      "path": "build/noheroneeds-0.17.0-c956cbd-windows-x86_64.zip",
+      "bytes": 137634656
+    },
+    {
+      "path": "build/probe_cart_stall.gd",
+      "bytes": 2092
+    },
+    {
+      "path": "build/probe_cart_stall.gd.uid",
+      "bytes": 20
+    },
+    {
+      "path": "build/probe_field.gd",
+      "bytes": 375
+    },
+    {
+      "path": "build/probe_field.gd.uid",
+      "bytes": 20
+    },
+    {
+      "path": "build/probe_home_search.gd",
+      "bytes": 758
+    },
+    {
+      "path": "build/probe_home_search.gd.uid",
+      "bytes": 20
+    },
+    {
+      "path": "build/probe_natural.gd",
+      "bytes": 980
+    },
+    {
+      "path": "build/probe_natural.gd.uid",
+      "bytes": 20
+    },
+    {
+      "path": "build/probe_network_original_seed.gd",
+      "bytes": 447
+    },
+    {
+      "path": "build/probe_network_original_seed.gd.uid",
+      "bytes": 20
+    },
+    {
+      "path": "build/probe_network_original_seed_case.gd",
+      "bytes": 291
+    },
+    {
+      "path": "build/probe_network_original_seed_case.gd.uid",
+      "bytes": 19
+    },
+    {
+      "path": "build/probe_roof_seams.gd",
+      "bytes": 952
+    },
+    {
+      "path": "build/probe_roof_seams.gd.uid",
+      "bytes": 20
+    },
+    {
+      "path": "build/probe_traveller.gd",
+      "bytes": 472
+    },
+    {
+      "path": "build/probe_traveller.gd.uid",
+      "bytes": 20
+    },
+    {
+      "path": "build/profile_natural.gd",
+      "bytes": 1470
+    },
+    {
+      "path": "build/profile_natural.gd.uid",
+      "bytes": 19
+    },
+    {
+      "path": "build/release",
+      "bytes": 384855905
+    },
+    {
+      "path": "build/release-remote-v0.17.0",
+      "bytes": 409
+    },
+    {
+      "path": "build/release-smoke",
+      "bytes": 49554
+    },
+    {
+      "path": "build/release-verification",
+      "bytes": 71440974
+    },
+    {
+      "path": "build/rest-review",
+      "bytes": 4120073
+    },
+    {
+      "path": "build/rest-review.log",
+      "bytes": 423
+    },
+    {
+      "path": "build/ro_sprites",
+      "bytes": 22086067813
+    },
+    {
+      "path": "build/settlement-review",
+      "bytes": 33142654
+    },
+    {
+      "path": "build/settlement-verification/profiles",
+      "bytes": 51507086
+    },
+    {
+      "path": "build/site",
+      "bytes": 6120924
+    },
+    {
+      "path": "build/stairs-final.log",
+      "bytes": 156
+    },
+    {
+      "path": "build/tests_mine.log",
+      "bytes": 31759
+    },
+    {
+      "path": "build/tests_scale.log",
+      "bytes": 32774
+    },
+    {
+      "path": "build/v0.17.0-main-ci.log",
+      "bytes": 85610
+    },
+    {
+      "path": "build/v0.17.0-package.log",
+      "bytes": 737
+    },
+    {
+      "path": "build/v0.17.0-published.json",
+      "bytes": 13593
+    },
+    {
+      "path": "build/v0.17.0-release-ci.log",
+      "bytes": 17246
+    },
+    {
+      "path": "build/v0.17.0-release-complete.log",
+      "bytes": 45078
+    },
+    {
+      "path": "build/v0.17.0-release-notes.md",
+      "bytes": 3300
+    },
+    {
+      "path": "build/v0.17.0-tests.log",
+      "bytes": 43285
+    },
+    {
+      "path": "build/view-final.log",
+      "bytes": 5006
+    },
+    {
+      "path": "build/village-development-verification/profiles",
+      "bytes": 53956582
+    },
+    {
+      "path": "build/windows",
+      "bytes": 213907944
+    },
+    {
+      "path": "gen_img",
+      "bytes": 1966692
+    },
+    {
+      "path": "site/test-results",
+      "bytes": 5559387
+    },
+    {
+      "path": "site/playwright-report",
+      "bytes": 529468
+    }
+  ],
+  "generated_bytes_removed": 25153898050,
+  "removed_clean_worktrees": [
+    "/home/mirivlad/git/noheroneeds-fixed-world",
+    "/home/mirivlad/git/noheroneeds-wiki"
+  ],
+  "worktree_bytes_removed": 643569221,
+  "removed_merged_refs": {
+    "codex/bandit-camps": "c6f907b0a21363b7b55451e225472cb8eb17c463",
+    "codex/caravans": "90946e8a9bcb1c48717bedbb3e2fb02fe4d1828e",
+    "codex/iron-sword-pipeline": "f3ed9b9b9875863d077fcde5c28383f490b1a567",
+    "codex/wiki-2.0": "15c2e75ca901b5e64068b95295eac7aff2ead85d",
+    "feat/fixed-world-generation": "c09a58080852f5bfc0eac623cd753b6f6a9dc508",
+    "feat/ui-2": "228785b9c30b850311de88ad14697cf9a93d0e5a",
+    "origin/ci/release-only-checks": "64b24652932e0f298749e4352d724d9ce9753693",
+    "origin/codex/bandit-camps": "c6f907b0a21363b7b55451e225472cb8eb17c463",
+    "origin/codex/caravans": "90946e8a9bcb1c48717bedbb3e2fb02fe4d1828e",
+    "origin/codex/iron-sword-pipeline": "f3ed9b9b9875863d077fcde5c28383f490b1a567",
+    "origin/codex/wiki-2.0": "b5d74b345b96584abfd9e5398cb39033a4ad3989",
+    "origin/docs/release-wiki-rule": "263c411848c01a765f6418fefb0dafb8a6471bf9",
+    "origin/feat/fixed-world-generation": "c09a58080852f5bfc0eac623cd753b6f6a9dc508",
+    "origin/feat/game-site-wiki": "9ec882e48bd2c0529a5f1b8ce79102031580f388",
+    "origin/feat/ui-2": "228785b9c30b850311de88ad14697cf9a93d0e5a",
+    "origin/fix/release-ci-workflow-tests": "87f325918497102cb14e3df0fa48460277171da0",
+    "origin/fix/release-preflight-tag-update": "a02573efa381d81fe11a44359c1330dab3f5b762",
+    "origin/fix/site-player-homepage": "7f353f654760a88ad1b5521fdf38303f1273247f",
+    "origin/fix/worldplan-race-and-release-version": "5a2b97fff28c6fd21a721c1e073a5fe74b00bf8c",
+    "origin/integration/fixed-world-v0.18": "86ce16b4492bcf752f6c11a7fa042b964475a77d"
+  },
+  "preserved": [
+    "art_src: canonical art sources",
+    "content and assets: runtime game files",
+    ".godot/imported: runtime/import cache",
+    "addons and site/node_modules: test/runtime dependencies",
+    "compact completed verification summaries and logs",
+    "all existing uncommitted source/documentation work"
+  ],
+  "verification": {
+    "source_content_test_hashes_preserved": 493,
+    "ro_sprite_tests": 13,
+    "failed_checks": 0,
+    "godot": "4.7.2",
+    "git_diff_check": "passed",
+    "remaining_worktrees": 1,
+    "remaining_local_branches": [
+      "main"
+    ],
+    "remaining_remote_branches": [
+      "main"
+    ],
+    "pages_build_type": "workflow"
+  }
+}

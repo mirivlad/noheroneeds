@@ -268,7 +268,11 @@
         "src/server/server_world.gd",
         "src/server/chronicles.gd",
         "src/experiment_3d/world_view_3d.gd",
-        "src/server/village_economy.gd"
+        "src/server/village_economy.gd",
+        "src/server/settlement_population.gd",
+        "src/server/settlement_population.gd.uid",
+        "src/server/creature_sim.gd",
+        "src/persistence/world_store.gd"
       ],
       "kinds": []
     }

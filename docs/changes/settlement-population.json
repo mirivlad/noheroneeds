@@ -1,0 +1,25 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Готовые дома получают настоящих жителей; длительная нехватка вызывает уход, пустующие дома теряют кровлю, а восстановление оплачивает ремонт и возвращает того же человека без воскрешения погибших. Производство и потребление зависят от населения, изменения игрока сохраняются.",
+      "sources": {
+        "src/server/settlement_population.gd": "9b67eaee01e4c8b0dade2675f95170282a65084702acf7904beb93237cb43bdd",
+        "src/server/settlement_population.gd.uid": "933e941c43448e78e2b66b5c15abf5417f3d3cd238404bf9aa0057ce70836b32",
+        "src/server/settlement_life.gd": "030580e16c4b90b1fb51e6fda4f2b4c8688fcaf9fac1549167d6591a3206c6da",
+        "src/server/village_economy.gd": "34d9d99ef21f2950b1bf330133fdf11d7597823ed767356a08b1cba387206b05",
+        "src/server/creature_sim.gd": "fe9a97ed1219a91de81fee852593fe7f38d45d0af67a81171be4451f58d9eb9a",
+        "src/server/server_world.gd": "b60b37bce4a9699cbd9391367526ab44d1ff3bc35dd2c8f2a38014f63c9f58ad",
+        "src/server/chronicles.gd": "f00b09430dee4a3c72d21f0fdc2ad155a8d7e498bc3f9acf48605d98fe45e372",
+        "src/persistence/world_store.gd": "a495676239ee9b3385a482e4bdfae035f459cc9bb02959b01e7c3f14546ba617"
+      },
+      "mechanics": [
+        "settlement-life"
+      ],
+      "guides": {
+        "site/content/guides/trade.html": "3b537ca5215d148db3658cb6e118c218657b3379a9c827b7a0d00fc7fdd05bf9"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

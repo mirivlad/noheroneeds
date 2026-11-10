@@ -105,7 +105,7 @@ func _save(id: String) -> void:
 
 
 func _plan(id: String) -> Dictionary:
-	return world.generator.settlements.plan_by_id(id) if world.generator and world.generator.settlements else {}
+	return world.settlement_life.plan(id) if world.generator else {}
 
 
 ## A village's past: its founding stories, from the seed and the world as it
@@ -300,7 +300,7 @@ func _asker(id: String, who: String, roll: int) -> int:
 	var free: Array = []
 	var asking: Array = []
 	for i in homes.size():
-		if not dead.has(i) and not dead.has(float(i)):
+		if not dead.has(i) and not dead.has(float(i)) and world.settlement_population.available(id, i):
 			(asking if busy.has(i) else free).append(i)
 	var alive: Array = free + asking  # the free first
 	if alive.is_empty():
@@ -332,6 +332,8 @@ func step() -> void:
 	for c: Creature in world.creatures.creatures.values():
 		if c.job.has("village"):
 			active[String(c.job["village"])] = true
+	for id: String in world.settlement_life.near_players():
+		active[id] = true
 	for id: String in active:
 		world.economy.store(id)
 		world.settlement_life.step(id)
@@ -390,6 +392,7 @@ func died(c: Creature, killer: String) -> void:
 					"hunter": String(world.content.get_def(hunter.kind).get("name", hunter.kind))}, world.world_time)
 	if c.job.has("village"):
 		var id := String(c.job["village"])
+		world.settlement_population.died(c)
 		var v := of(id)
 		var home := int(c.job.get("home", -1))
 		(v["dead"] as Array).append(home)

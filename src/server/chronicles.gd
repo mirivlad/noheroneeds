@@ -233,9 +233,9 @@ func _happen(id: String, story: String, vars: Dictionary, at: int) -> void:
 
 ## A line of the village's life written now, as it is (a delivery from a
 ## neighbour, ADR-0066).
-func note(id: String, text: String) -> void:
+func note(id: String, text: String, at := -1) -> void:
 	var v := of(id)
-	(v["entries"] as Array).append({"at": world.world_time, "text": text})
+	(v["entries"] as Array).append({"at": world.world_time if at < 0 else at, "text": text})
 	_save(id)
 
 
@@ -333,6 +333,7 @@ func step() -> void:
 		if c.job.has("village"):
 			active[String(c.job["village"])] = true
 	for id: String in active:
+		world.economy.store(id)
 		look_about(id)
 
 
@@ -554,6 +555,9 @@ func state_of(r: Dictionary, actor: String) -> String:
 ## village, its request and where one stands with it, the chronicle.
 func talk(actor: String, c: Creature) -> Dictionary:
 	var id := String(c.job["village"])
+	# Catch up before taking the history snapshot, so the first visitor
+	# hears the same economic news as the next one.
+	world.economy.store(id)
 	var v := of(id)
 	if not (_known.get(actor, {}) as Dictionary).has(id):
 		if not _known.has(actor):

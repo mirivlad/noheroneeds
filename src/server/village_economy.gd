@@ -6,7 +6,8 @@ extends RefCounted
 ## eats what it needs ("makes", "needs" of its way); what it lacks makes the
 ## price at its dwellers' dear, what it has plenty of cheap; what it lacks it
 ## fetches from the villages of its cluster that have it to spare. Days are
-## caught up when the village is asked about (trade, talk, a neighbour).
+## caught up when the village is asked about (trade, talk, a neighbour),
+## and by the hourly chronicle check when its dwellers are loaded.
 
 ## Most days caught up at once; days of work the store holds at most; days
 ## a store starts with; below this many days of need a thing is short, and
@@ -29,12 +30,16 @@ const TOLD := 5
 const START_COINS := 300
 const POOR := 60
 const RICH := 900
+## A lasting economic condition needs this many consecutive daily samples.
+const CONDITION_DAYS := 3
 ## A trader's load: so many goods, so many of each at most.
 const CARGO_GOODS := 3
 const CARGO_EACH := 8
 
 var world: ServerWorld
 var _stores := {}
+## Neighbour prices can ask about a store while its day is being settled.
+var _advancing := {}
 
 
 func _init(w: ServerWorld) -> void:
@@ -106,15 +111,26 @@ func _goods(id: String) -> Dictionary:
 
 ## The village's store as it is today (days caught up, neighbours asked).
 func store(id: String) -> Dictionary:
+	return _advance(id, true)
+
+
+func _advance(id: String, fetch: bool) -> Dictionary:
 	var s := _store(id)
 	var today := world.world_time / Daylight.DAY_MS
-	if int(s["day"]) < today:
-		var days := mini(int(today - int(s["day"])), CATCH_UP)
-		for d in days:
-			_live_a_day(id, s)
-		s["day"] = today
-		_fetch(id, s)
-		_save(id)
+	if int(s["day"]) >= today or _advancing.has(id):
+		return s
+	_advancing[id] = true
+	# Keep the existing ten-day catch-up limit. Unobserved days before that
+	# window cannot contribute to a consecutive run of economic conditions.
+	var first := maxi(int(s["day"]) + 1, today - CATCH_UP + 1)
+	for day in range(first, today + 1):
+		_live_a_day(id, s)
+		s["day"] = day
+		if fetch:
+			_fetch(id, s)
+		_observe_condition(id, s, day)
+	_advancing.erase(id)
+	_save(id)
 	return s
 
 
@@ -131,7 +147,49 @@ func _store(id: String) -> Dictionary:
 			stock[item] = int(stock.get(item, 0)) + int(needs(id)[item]) * START_DAYS
 		s = {"day": world.world_time / Daylight.DAY_MS, "stock": stock, "coins": START_COINS}
 	_stores[id] = s
+	if not s.has("development"):
+		s["development"] = {"state": "stable", "trend": "stable", "days": 0, "day": int(s["day"])}
+		_save(id)
+	else:
+		# JSON stores numbers as floats; callers get the same daily counters
+		# before and after reopening a world.
+		s["development"]["days"] = int(s["development"]["days"])
+		s["development"]["day"] = int(s["development"]["day"])
 	return s
+
+
+## A copy of the last confirmed economic state and its daily trend. A rich
+## treasury counts as prosperity only when all daily needs are supplied.
+func development(id: String) -> Dictionary:
+	return (store(id)["development"] as Dictionary).duplicate()
+
+
+func _observe_condition(id: String, s: Dictionary, day: int) -> void:
+	var d: Dictionary = s["development"]
+	var lacking := false
+	for item: String in needs(id):
+		if int((s["stock"] as Dictionary).get(item, 0)) < int(needs(id)[item]) * SHORT_DAYS:
+			lacking = true
+			break
+	var balance := int(s.get("coins", START_COINS))
+	var trend := "distressed" if lacking or balance < POOR else ("prosperous" if balance > RICH else "stable")
+	var consecutive := String(d["trend"]) == trend and int(d["day"]) == day - 1
+	d["days"] = mini(int(d["days"]) + 1, CONDITION_DAYS) if consecutive else 1
+	d["trend"] = trend
+	d["day"] = day
+	if int(d["days"]) < CONDITION_DAYS or String(d["state"]) == trend:
+		return
+	var previous := String(d["state"])
+	d["state"] = trend
+	if world.chronicles:
+		var text := "Хозяйство поселения %s устойчиво: казны и запасов хватает на повседневные нужды."
+		if trend == "distressed":
+			text = "Хозяйство поселения %s в упадке: несколько дней не хватает денег или необходимых товаров."
+		elif trend == "prosperous":
+			text = "Хозяйство поселения %s процветает: богатая казна подкреплена необходимыми запасами."
+		elif previous == "distressed":
+			text = "Хозяйство поселения %s восстановилось: казны и запасов хватает на повседневные нужды."
+		world.chronicles.note(id, text % world.chronicles.village_name(id), day * Daylight.DAY_MS)
 
 
 func _save(id: String) -> void:
@@ -308,11 +366,4 @@ func _fetch(id: String, s: Dictionary) -> void:
 
 ## A neighbour's store caught up without asking its own neighbours (no round trips).
 func store_quiet(id: String) -> Dictionary:
-	var s := _store(id)
-	var today := world.world_time / Daylight.DAY_MS
-	if int(s["day"]) < today:
-		for d in mini(int(today - int(s["day"])), CATCH_UP):
-			_live_a_day(id, s)
-		s["day"] = today
-		_save(id)
-	return s
+	return _advance(id, false)

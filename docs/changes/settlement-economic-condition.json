@@ -1,0 +1,20 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Хозяйство поселения сохраняет последовательные дни достатка или нехватки, подтверждает состояние после трёх дней и сообщает о переходах в летописи; активные склады рассчитываются без торговли, а поставки учитываются каждый день.",
+      "sources": {
+        "src/server/village_economy.gd": "a4698b59610b0fd57ff6ac9c2a6a6c3cf4de47a39f986720a7426ad862db169b",
+        "src/server/chronicles.gd": "3ee325a4c406ed413f0d118a47248fcb6b4abdbc91da36094f19fdce6f070932"
+      },
+      "mechanics": [
+        "trade",
+        "settlement-economy"
+      ],
+      "guides": {
+        "site/content/guides/trade.html": "00c38dd4a3d5141a1a36bb854d5125f333993fa6e6dca6988b10a3893b59231e"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

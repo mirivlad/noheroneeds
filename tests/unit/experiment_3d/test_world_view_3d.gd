@@ -20,6 +20,21 @@ func after_each() -> void:
 	view.free()
 	await (Engine.get_main_loop() as SceneTree).process_frame
 
+func test_new_village_foundation_is_level_across_received_chunks() -> void:
+	for y in range(28, 34):
+		for x in range(28, 36):
+			var key := ServerWorld.chunk_key("surface", x >> 5, y >> 5)
+			var c: Chunk = client.chunks.get_or_add(key, Chunk.new())
+			c.set_cell("ground", x & 31, y & 31, "base:wood_floor")
+			c.set_props(x & 31, y & 31, {"village": "test", "construction": "test|growth:0"})
+	view.corner_height(Vector2i(28, 28))  # initialize the live terrain shape
+	view._refresh_foundations(["*"])
+	eq(view.terrain.extra_pads.size(), 1, "live village floors form a shared foundation")
+	var expected := view.terrain.natural(Vector2i(32, 31)) + .04
+	for y in range(28, 35):
+		for x in range(28, 37):
+			check(is_equal_approx(view.corner_height(Vector2i(x, y)), expected), "every corner of the new house has the same height")
+
 func test_height_is_original_surface_sampler_and_has_shared_edges() -> void:
 	for cell: Vector2i in [Vector2i(0, 0), Vector2i(32, 31), Vector2i(-32, -1), Vector2i(100, 180)]:
 		var expected := view.corner_height(cell)

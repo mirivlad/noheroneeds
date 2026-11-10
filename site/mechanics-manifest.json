@@ -258,6 +258,19 @@
         "src/server/server_world.gd"
       ],
       "kinds": []
+    },
+    {
+      "id": "settlement-life",
+      "guide": "trade",
+      "sources": [
+        "src/server/settlement_life.gd",
+        "src/server/settlement_life.gd.uid",
+        "src/server/server_world.gd",
+        "src/server/chronicles.gd",
+        "src/experiment_3d/world_view_3d.gd",
+        "src/server/village_economy.gd"
+      ],
+      "kinds": []
     }
   ]
 }

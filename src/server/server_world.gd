@@ -222,6 +222,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.growth = Growth.new(world)
 	world.chronicles = Chronicles.new(world)
 	world.economy = VillageEconomy.new(world)
+	world.settlement_life = SettlementLife.new(world)
 	world.bandits = Bandits.new(world)
 	world.caravans = Caravans.new(world)
 	world.hospitality = Hospitality.new(world)
@@ -357,6 +358,7 @@ func close() -> void:
 	needs.world = null
 	chronicles.world = null
 	economy.world = null
+	settlement_life.world = null
 	bandits.world = null
 	caravans.world = null
 	hospitality.world = null
@@ -378,6 +380,7 @@ func abandon() -> void:
 	needs.world = null
 	chronicles.world = null
 	economy.world = null
+	settlement_life.world = null
 	bandits.world = null
 	caravans.world = null
 	hospitality.world = null
@@ -554,6 +557,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		creatures.take_rows(location, rows)
 		creatures.on_chunk_ready(location, cx, cy, c)
 		_settlement_levels(location, cx, cy)
+		settlement_life.arrived(location, cx, cy, c)
 		hospitality.arrived(location, c)
 		_settle_stairs(location, cx, cy, c)
 		growth.arrived(location, cx, cy, c)  # what grew while it was away (ADR-0056)
@@ -768,6 +772,7 @@ func poll_loaded() -> void:
 		creatures.take_rows(r[0], r[5])
 		creatures.on_chunk_ready(r[0], r[1], r[2], r[3])
 		_settlement_levels(r[0], r[1], r[2])
+		settlement_life.arrived(r[0], r[1], r[2], r[3])
 		hospitality.arrived(r[0], r[3])
 		if not (r[6] as PackedByteArray).is_empty():
 			_encoded[key] = [_chunk_rev.get(key, 0), r[6]]
@@ -1419,6 +1424,7 @@ var growth: Growth
 var chronicles: Chronicles
 ## Villages' stores: what they make, need and fetch from each other (ADR-0066).
 var economy: VillageEconomy
+var settlement_life: SettlementLife
 var hospitality: Hospitality
 var bandits: Bandits
 var caravans: Caravans

@@ -334,6 +334,7 @@ func step() -> void:
 			active[String(c.job["village"])] = true
 	for id: String in active:
 		world.economy.store(id)
+		world.settlement_life.step(id)
 		look_about(id)
 
 

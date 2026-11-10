@@ -289,7 +289,7 @@ func _refresh_foundations(changed: Array) -> void:
 		for y in Chunk.SIZE:
 			for x in Chunk.SIZE:
 				if c.get_cell("ground", x, y) in ["base:wood_floor", "base:stone_floor"] \
-						and (not c.get_props(x, y).has("village") or c.get_props(x, y).has("hospitality")):
+						and (not c.get_props(x, y).has("village") or c.get_props(x, y).has("hospitality") or c.get_props(x, y).has("construction")):
 					floors[origin + Vector2i(x, y)] = true
 		if floors != _floor_chunks.get(key, {}):
 			_floor_chunks[key] = floors

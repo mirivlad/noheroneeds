@@ -1,0 +1,23 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Поселения накапливают и закупают материалы настоящими деньгами, сохраняют обычные запасы, затем по игровым дням строят постоянные дома; расходы и клетки записываются атомарно, этажи доступны нескольким клиентам и сохраняют изменения игроков.",
+      "sources": {
+        "src/server/settlement_life.gd": "9b52301b4168d39522238f630e193d13cc251817ade635e2d0fc706c4a9656bb",
+        "src/server/settlement_life.gd.uid": "b85198d825fcb488ab6192ff411d8975d2b261c166982224679fbe9baa5d02ee",
+        "src/server/server_world.gd": "175b41afab9b01fad688574d6fbd6f28b447b53f590cf3a476fb4ea8b0c16c66",
+        "src/server/chronicles.gd": "d58cb54fe0a189ee37c8fbf1039133067eabac5b98235bb1b291d270005c7f2b",
+        "src/experiment_3d/world_view_3d.gd": "1eb5f26c6dc0629768936374da017c731d5fbc020ca53d11672a5e2526082d3d",
+        "src/server/village_economy.gd": "77ef3ca1ac760c793165b2139e1f329b611712180174996c20eca2aff6f3ae98"
+      },
+      "mechanics": [
+        "settlement-life"
+      ],
+      "guides": {
+        "site/content/guides/trade.html": "0cd2484e0bd1ce72e343b326072828699b26d831769c43905f8377875ade95d2"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

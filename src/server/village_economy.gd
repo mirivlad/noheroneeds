@@ -212,7 +212,8 @@ func have(id: String, item: String) -> int:
 
 ## What it likes to hold of a thing (0: not of its way).
 func want(id: String, item: String) -> int:
-	return int(needs(id).get(item, 0)) * WANT_NEED + int(makes(id).get(item, 0)) * WANT_MAKE
+	var construction := world.settlement_life.procurement(id) if world.settlement_life else {}
+	return int(needs(id).get(item, 0)) * WANT_NEED + int(makes(id).get(item, 0)) * WANT_MAKE + int(construction.get(item, 0))
 
 
 ## What a thing's price is at the village, of the trade's price: dearer as it
@@ -230,6 +231,11 @@ func short(id: String) -> Array[String]:
 	for item: String in needs(id):
 		if have(id, item) < int(needs(id)[item]) * SHORT_DAYS:
 			out.append(item)
+	if world.settlement_life:
+		var construction := world.settlement_life.procurement(id)
+		for item: String in construction:
+			if not out.has(item) and have(id, item) < int(construction[item]) + int(needs(id).get(item, 0)) * SHORT_DAYS:
+				out.append(item)
 	out.sort_custom(func(a: String, b: String) -> bool: return factor(id, a) > factor(id, b))
 	return out
 
@@ -340,18 +346,28 @@ func neighbours(id: String) -> Array[String]:
 ## FETCH_DAYS of need; a big delivery goes into the chronicle.
 func _fetch(id: String, s: Dictionary) -> void:
 	var stock: Dictionary = s["stock"]
-	for item: String in needs(id):
-		var need := int(needs(id)[item])
-		if int(stock.get(item, 0)) >= need * SHORT_DAYS:
+	var construction := world.settlement_life.procurement(id) if world.settlement_life else {}
+	var required := needs(id).duplicate()
+	for item: String in construction:
+		required.get_or_add(item, 0)
+	for item: String in required:
+		var need := int(required[item])
+		# A bounded delivery for a project, in addition to everyday supplies.
+		var building := mini(CARGO_EACH, int(construction.get(item, 0)))
+		if int(stock.get(item, 0)) >= need * SHORT_DAYS + building:
 			continue
 		for other: String in neighbours(id):
-			var lacking := need * FETCH_DAYS - int(stock.get(item, 0))
+			var lacking := need * FETCH_DAYS + building - int(stock.get(item, 0))
 			if lacking <= 0:
 				break
 			var _o := store_quiet(other)
 			var each := price(other, item)
+			var budget := int(s.get("coins", START_COINS))
+			if building > 0:
+				var everyday := maxi(0, need * FETCH_DAYS - int(stock.get(item, 0))) if int(stock.get(item, 0)) < need * SHORT_DAYS else 0
+				budget = mini(budget, maxi(everyday * each, budget - POOR))
 			# Paid for at the seller's price, as many as the buyer can pay for (ADR-0067).
-			var got := mini(mini(lacking, spare(other, item)), int(s.get("coins", START_COINS)) / maxi(1, each))
+			var got := mini(mini(lacking, spare(other, item)), budget / maxi(1, each))
 			if got <= 0:
 				continue
 			_o["stock"][item] = int(_o["stock"][item]) - got

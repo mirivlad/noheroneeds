@@ -63,11 +63,11 @@ func way_of(id: String) -> Dictionary:
 
 
 func makes(id: String) -> Dictionary:
-	return _goods(id)["makes"]
+	return world.settlement_population.scale(id, _goods(id)["makes"]) if world.settlement_population else _goods(id)["makes"]
 
 
 func needs(id: String) -> Dictionary:
-	return _goods(id)["needs"]
+	return world.settlement_population.scale(id, _goods(id)["needs"]) if world.settlement_population else _goods(id)["needs"]
 
 
 ## How far round a village its land is looked at, and how finely (cells).
@@ -353,11 +353,14 @@ func _fetch(id: String, s: Dictionary) -> void:
 	for item: String in required:
 		var need := int(required[item])
 		# A bounded delivery for a project, in addition to everyday supplies.
-		var building := mini(CARGO_EACH, int(construction.get(item, 0)))
+		var building := int(construction.get(item, 0))
 		if int(stock.get(item, 0)) >= need * SHORT_DAYS + building:
 			continue
+		var target := need * FETCH_DAYS
+		if building > 0:
+			target = maxi(target, mini(target + building, int(stock.get(item, 0)) + CARGO_EACH))
 		for other: String in neighbours(id):
-			var lacking := need * FETCH_DAYS + building - int(stock.get(item, 0))
+			var lacking := target - int(stock.get(item, 0))
 			if lacking <= 0:
 				break
 			var _o := store_quiet(other)

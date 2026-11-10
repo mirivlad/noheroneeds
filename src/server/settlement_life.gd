@@ -6,7 +6,6 @@ extends RefCounted
 const WORK_DAYS := 3
 const WAGES := 60
 const SITE_TRIES := 24
-const DIRECTIONS := [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
 
 var world: ServerWorld
 var _states := {}
@@ -42,6 +41,7 @@ func step(id: String) -> void:
 		return
 	var days := mini(today - int(s["day"]), WORK_DAYS)
 	s["day"] = today
+	world.settlement_population.step(id)
 	if not (s["project"] as Dictionary).is_empty():
 		for i in days:
 			if not _advance(id, s):
@@ -50,7 +50,47 @@ func step(id: String) -> void:
 		var condition := world.economy.development(id)
 		if String(condition["state"]) == "prosperous" and String(condition["trend"]) == "prosperous":
 			_start(id, s)
+	world.settlement_population.populate(id)
 	_save(id)
+
+
+## NPCs and chronicles see completed additions without mutating the
+## generator's cached starting plan or changing the geographical snapshot.
+func plan(id: String) -> Dictionary:
+	var base := world.generator.settlements.plan_by_id(id) if world.generator else {}
+	if base.is_empty():
+		return {}
+	var result := base.duplicate()
+	var homes := (base["homes"] as Array).duplicate()
+	for record: Dictionary in state(id)["homes"]:
+		var r: Array = record["rect"]
+		var bed: Array = record["bed"]
+		var door: Array = record["door"]
+		homes.append({"rect": Rect2i(int(r[0]), int(r[1]), int(r[2]), int(r[3])),
+			"bed": Vector2i(int(bed[0]), int(bed[1])), "door": Vector2i(int(door[0]), int(door[1])),
+			"dweller": record["dweller"], "name": record["name"], "building_id": String(record["building"]).trim_prefix(id + "|"),
+			"architecture": {"turns": record["turns"], "storeys": 1 if (record["upper"] as Array).is_empty() else 2}})
+	result["homes"] = homes
+	return result
+
+
+## A village stays active beside a player even when its last loaded
+## household has left. Do not explore new districts for this hourly check.
+func near_players() -> Array[String]:
+	var out: Array[String] = []
+	for id: String in _states.keys():
+		var p := world.generator.settlements.plan_by_id(id) if world.generator else {}
+		if p.is_empty():
+			continue
+		for actor: String in world.present:
+			var player: Dictionary = world.present[actor]
+			if world.levels.kind(String(player["location"])) not in [Levels.SURFACE, Levels.BUILDING_LEVEL]:
+				continue
+			var at: Vector2i = p["centre"] + world.cell_vector(p["centre"], Movement.cell_of(player["pos"]))
+			if (p["bounds"] as Rect2i).grow(Chunk.SIZE).has_point(at):
+				out.append(id)
+				break
+	return out
 
 
 func _materials(id: String) -> Dictionary:
@@ -60,6 +100,12 @@ func _materials(id: String) -> Dictionary:
 
 
 func _start(id: String, s: Dictionary) -> void:
+	var people := world.settlement_population.state(id)
+	if not (people["departed"] as Dictionary).is_empty() or not (people["leaving"] as Dictionary).is_empty():
+		return  # restore existing households before spending on more houses
+	for i in (s["homes"] as Array).size():
+		if String(s["homes"][i].get("resident", "")) == "" and not (people["dead"] as Dictionary).has(str(int(people["base_homes"]) + i)):
+			return
 	var project := propose(id, int(s["next"]))
 	if project.is_empty():
 		# A house that cannot fit must not prevent trying a different design
@@ -84,7 +130,12 @@ func _start(id: String, s: Dictionary) -> void:
 ## the ordinary economy tick. Procurement must fit in the village's treasury.
 func procurement(id: String) -> Dictionary:
 	var project: Dictionary = state(id)["project"]
-	return (project.get("remaining", {}) as Dictionary).duplicate() if int(project.get("stage", 0)) == -1 else {}
+	var out := (project.get("remaining", {}) as Dictionary).duplicate() if int(project.get("stage", 0)) == -1 else {}
+	if world.settlement_population:
+		var repair := world.settlement_population.repair_demand(id)
+		for item: String in repair:
+			out[item] = int(out.get(item, 0)) + int(repair[item])
+	return out
 
 
 func _collect(id: String, project: Dictionary) -> void:

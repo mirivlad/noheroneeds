@@ -145,6 +145,12 @@ func entities_in_chunk(location: String, cx: int, cy: int) -> Array:
 	return _db.query_result
 
 
+## Locate a registered household member even when its chunk is unloaded.
+func entity(id: String) -> Dictionary:
+	_db.query_with_bindings("SELECT id, location, cx, cy, kind, data FROM entities WHERE id=?", [id])
+	return _db.query_result[0] if not _db.query_result.is_empty() else {}
+
+
 # --- inventories ---------------------------------------------------------
 
 func put_inventory(owner: String, data: PackedByteArray) -> bool:

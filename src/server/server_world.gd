@@ -223,6 +223,7 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	world.chronicles = Chronicles.new(world)
 	world.economy = VillageEconomy.new(world)
 	world.settlement_life = SettlementLife.new(world)
+	world.settlement_population = SettlementPopulation.new(world)
 	world.bandits = Bandits.new(world)
 	world.caravans = Caravans.new(world)
 	world.hospitality = Hospitality.new(world)
@@ -359,6 +360,7 @@ func close() -> void:
 	chronicles.world = null
 	economy.world = null
 	settlement_life.world = null
+	settlement_population.world = null
 	bandits.world = null
 	caravans.world = null
 	hospitality.world = null
@@ -381,6 +383,7 @@ func abandon() -> void:
 	chronicles.world = null
 	economy.world = null
 	settlement_life.world = null
+	settlement_population.world = null
 	bandits.world = null
 	caravans.world = null
 	hospitality.world = null
@@ -1425,6 +1428,7 @@ var chronicles: Chronicles
 ## Villages' stores: what they make, need and fetch from each other (ADR-0066).
 var economy: VillageEconomy
 var settlement_life: SettlementLife
+var settlement_population: SettlementPopulation
 var hospitality: Hospitality
 var bandits: Bandits
 var caravans: Caravans

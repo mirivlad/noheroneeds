@@ -135,6 +135,8 @@ func add(c: Creature) -> void:
 	_left.erase(c.id)
 	_index(c)
 	_schedule(c, _tick + 1 + absi(hash(c.id)) % 10)
+	if world.settlement_population:
+		world.settlement_population.register(c)
 
 
 # --- loading, saving, unloading ------------------------------------------------
@@ -249,12 +251,15 @@ func _settle(cx: int, cy: int) -> void:
 			var bed: Vector2i = homes[i]["bed"]
 			if bed == Settlements.NONE or not chunk.has_point(bed):
 				continue
+			if not world.settlement_population.available(String(plan["id"]), i):
+				continue
 			var r := RandomNumberGenerator.new()
 			r.seed = hash([world.world_seed, plan["id"], i])
 			var c := _spawn("base:villager", Levels.SURFACE, bed, villager_looks(r), r.randi())
 			c.job = {"village": plan["id"], "home": i, "profession": String(homes[i]["dweller"]),
 				"name": String(world.chronicles.dweller_name(plan["id"], i)[0])}
 			c.changed()
+			world.settlement_population.register(c)
 		var pen: Dictionary = plan["pen"]
 		if pen.is_empty() or not chunk.has_point((pen["rect"] as Rect2i).get_center()):
 			continue
@@ -1279,7 +1284,7 @@ func _catch_up(c: Creature, def: Dictionary) -> void:
 	c.memory.clear()
 	c.target = Creature.NO_TARGET
 	c.running = false
-	if not c.route.is_empty() or c.job.has("camp") or c.kind == "base:caravan_guard":
+	if not c.route.is_empty() or c.job.has("leave_to") or c.job.has("camp") or c.kind == "base:caravan_guard":
 		# A caravan must resume from its real road position, not teleport home
 		# (possibly leaving its horse and cargo in another chunk).
 		c.path.clear()
@@ -1785,8 +1790,7 @@ func _profession(c: Creature) -> Dictionary:
 
 
 func _plan_of(c: Creature) -> Dictionary:
-	var s := world.generator.settlements if world.generator else null
-	return s.plan_by_id(String(c.job.get("village", ""))) if s else {}
+	return world.settlement_life.plan(String(c.job.get("village", "")))
 
 
 ## "work", "evening" or "night", by the world's hour and the trade's hours.
@@ -1912,7 +1916,17 @@ func _dweller(c: Creature, def: Dictionary) -> void:
 			_go(c, "flee", away, true)
 			return
 	var phase := _phase(c)
-	var spot := _dweller_spot(c, phase)
+	var spot := Creature.NO_TARGET
+	if c.job.has("leave_to"):
+		var to: Array = c.job["leave_to"]
+		var exit := Vector2i(int(to[0]), int(to[1]))
+		if world.cell_distance(c.cell(), exit) <= 1.0:
+			world.settlement_population.finish_departure(c)
+			return
+		phase = "leaving"
+		spot = exit
+	else:
+		spot = _dweller_spot(c, phase)
 	if spot == Creature.NO_TARGET:
 		_villager(c, def)
 		return

@@ -156,6 +156,15 @@
       ]
     },
     {
+      "id": "settlement-economy",
+      "guide": "trade",
+      "sources": [
+        "src/server/village_economy.gd",
+        "src/server/chronicles.gd"
+      ],
+      "kinds": []
+    },
+    {
       "id": "hospitality",
       "guide": "hospitality",
       "sources": [

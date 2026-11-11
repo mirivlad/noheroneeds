@@ -1,0 +1,47 @@
+{
+  "paired_poses_identical": true,
+  "native_checks": 37,
+  "native_failures": [],
+  "renderer_tests": 41,
+  "floor_network_tests": 3,
+  "site_python_tests": 32,
+  "site_browser_tests": 10,
+  "source_sha256": {
+    "src/experiment_3d/world_view_3d.gd": "ca90b69f0409975092606406f830267161efdd0d109a7b32c471d50ddc80f4cb",
+    "src/experiment_3d/interior_silhouette.gdshader": "2bbb66191f42d60c77a28eef1df738999594750402c5c99cf388b9fff3fc1b8f",
+    "src/server/game_server.gd": "c4f724f3e43af37bbea190168e019f12df7c5e3d14b7a985bb360fa239e1a977",
+    "src/server/hospitality.gd": "56339206b3fb958167dc3e6daaa726bb6c0fdad690aec9d79085f7142e31e909",
+    "tests/unit/experiment_3d/test_world_view_3d.gd": "52fca879a105cec0ec71ef5f15542deb79f070136c5bfde4fb2dff1e36ced2f9",
+    "tests/unit/building/test_settlement_levels.gd": "0b537fd7380e4e898b78ef85085b07ec37e1a62fd02192e08adf1475dd831ecc",
+    "tools/experiment_3d/check_interior_cutaway.gd": "d160588ab558caa4eccf30d6c2a693a4ff2345cebffee644e046ba38f030c6b8",
+    "tools/experiment_3d/check_floor_stack.gd": "aba73813a2314d233e78c6d2ec7195a136f4772a2b56236c73574eb88ad522cd"
+  },
+  "image_sha256": {
+    "ground-se-pair.webp": "7eb0dffb2deae29060d0262f5811b5d968f521d4d11b60f855c204f9eb5e248b",
+    "outside-restored.webp": "c89cdbce41115c655ab987b00e8a6db8db6036a260d5d3f717895b18c3d1ea5a",
+    "ground-nw-pair.webp": "b62483f4309602c43ddda43378f673e8d559796c30959525f060a4753dcf22e5",
+    "upper-se-before.webp": "962aa53b79194b065e1f51a72ea567ccb1ae0087789b84a4187842bda40e96cb",
+    "ground-sw-before.webp": "99221e70355369d9aa8030a1977920eaa8f807018da6e21edc71ddbc66d3199f",
+    "upper-occluded.webp": "5d4535773f1f74b7f8d730dc46b7a2c23c91086eeb210001328146f2b4b0d484",
+    "upper-se-pair.webp": "2c3d04021dfceb3cb483a0bfca6dc92d7f50ea7bac2aef695b33ef026c726d87",
+    "ground-nw-before.webp": "5deef2e64169e6bd14a3f581a0e6767102671c44e8e3d16e12bd7ab76cd517df",
+    "third-se.webp": "ffc3886ece1fa5fa34371e51632d2e8847e92c5d94db4a3915892d97384db07a",
+    "upper-sw-pair.webp": "46257852297599ee791f9a12320e6af43dd4fa296ec14af810719e3fa5462a6b",
+    "ground-se-before.webp": "f6658520de213ed3dccde93ccea35078e6de020d28b48aad62db8a6ffcec4f1e",
+    "third-nw.webp": "15695a0ef8fbc77c487f76f899babb70ab4e4f891e9095a195ef675311f5968a",
+    "upper-sw-after.webp": "37c2e2e852c462b6e79de292c5f96bb52e6d2969bb22253062ea3df0a3743b66",
+    "ground-nw-after.webp": "603536f864494b34eb740e76fe72f5dd4042cd736a571b737c5180ad26286d2b",
+    "ground-sw-pair.webp": "002fd1b0998f14883a8d56c94105e3ac5e14b5edc755fd943ca1bd96b41c0dae",
+    "upper-sw-before.webp": "c00903ed8f0046a4ddf4f80bf99e4bcd11ab61fa9235db3b337d9d5f3b1d1315",
+    "upper-se-after.webp": "3006a676c0f5d9df6a00bfd930489ca76d978acf174e7d5bfeab8abc5a866d3f",
+    "ground-sw-after.webp": "91c87360b140919df2ee4ae88b99f19ca0549dc45b36623497e1fb1f60281faa",
+    "ground-se-after.webp": "535a4c0642d8d2ef7bf3235dc278aeb59539076cb7e8dedcf024ac56912a7e15"
+  },
+  "committed": false,
+  "pushed": false,
+  "cross_level_visibility_tests": 1,
+  "native_resolution": [
+    1800,
+    1013
+  ]
+}

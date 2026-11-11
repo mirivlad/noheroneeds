@@ -1,0 +1,69 @@
+{
+	"adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+	"building": "inn@0,0,0",
+	"checks": 16,
+	"climate": "temperate",
+	"controlled_setup": "disposable saved world; NPCs removed for stable comparisons; normal client/server chunks and generated furnishings",
+	"failures": [],
+	"harness_sha256": "1b3d3e0e7ae4b0da09f13eac586242d762c9c2a430e06261c17f1a59361576cd",
+	"preset": "single_continent",
+	"seed": 431,
+	"shots": [
+		{
+			"level": 0,
+			"name": "ground-se",
+			"player_cell": "(-21, 11)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": -0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 0,
+			"name": "ground-sw",
+			"player_cell": "(-21, 11)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": 0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 0,
+			"name": "ground-nw",
+			"player_cell": "(-21, 11)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": 2.1707963267949,
+			"zoom": 24.3
+		},
+		{
+			"level": 1,
+			"name": "upper-se",
+			"player_cell": "(-28, 5)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": -0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 1,
+			"name": "upper-sw",
+			"player_cell": "(-28, 5)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": 0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 0,
+			"name": "outside-restored",
+			"player_cell": "(-21, 17)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": -0.6,
+			"zoom": 24.3
+		}
+	],
+	"template": "base:roadside_inn",
+	"view_sha256": "b62e8b1f317278e5686c91724d80f63d4e3d8cfb9bbdbebc6afd882deec08a17"
+}

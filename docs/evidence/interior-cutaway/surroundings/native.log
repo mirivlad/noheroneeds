@@ -1,0 +1,55 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+PASS real LocalGame client joins
+PASS fixture has a generated two-storey inn
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.594,"chunks":9,"fps":15.7434079202356,"location":"surface","objects":3301,"renderer":"gl_compatibility","worst_frame_ms":8701.45}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":16.696,"chunks":18,"fps":47.6364916486085,"location":"surface","objects":6175,"renderer":"gl_compatibility","worst_frame_ms":169.19}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":27,"fps":61.8292683680845,"location":"surface","objects":8574,"renderer":"gl_compatibility","worst_frame_ms":122.508}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":27,"fps":185.554231935368,"location":"surface","objects":8574,"renderer":"gl_compatibility","worst_frame_ms":458.71}
+PASS all expected chunks received and native geometry settled
+PASS all expected chunks received and native geometry settled
+PASS use the generated real stair
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.821,"chunks":7,"fps":50.4192020522632,"location":"9cb6d130-e48b-4c28-8cfa-1675ba31d0e8","objects":1569,"renderer":"gl_compatibility","worst_frame_ms":446.56}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.731,"chunks":23,"fps":50.7279631809679,"location":"9cb6d130-e48b-4c28-8cfa-1675ba31d0e8","objects":4128,"renderer":"gl_compatibility","worst_frame_ms":165.632}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.671,"chunks":38,"fps":53.4641946723999,"location":"9cb6d130-e48b-4c28-8cfa-1675ba31d0e8","objects":7310,"renderer":"gl_compatibility","worst_frame_ms":126.45}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.001,"chunks":51,"fps":90.2165829506898,"location":"9cb6d130-e48b-4c28-8cfa-1675ba31d0e8","objects":8579,"renderer":"gl_compatibility","worst_frame_ms":389.506}
+PASS all expected chunks received and native geometry settled
+PASS street geometry remains visible from inside an upper floor
+PASS street scenery is retained outside the building contour
+PASS lower exterior walls keep their full height
+PASS lower ceiling stays under the current floor
+PASS neighbouring buildings retain their actual roofs
+PASS the occluding internal partition keeps its full height
+PASS silhouette reuses only the own character's doll
+PASS own character remains visible behind a real internal partition
+PASS return through the same real stair
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.931,"chunks":15,"fps":33.8680763914784,"location":"surface","objects":2699,"renderer":"gl_compatibility","worst_frame_ms":615.542}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":20.395,"chunks":32,"fps":51.82193843761,"location":"surface","objects":5321,"renderer":"gl_compatibility","worst_frame_ms":152.718}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.173,"chunks":48,"fps":55.3149763823489,"location":"surface","objects":8263,"renderer":"gl_compatibility","worst_frame_ms":132.874}
+PASS all expected chunks received and native geometry settled
+PASS leaving the building disables interior cutaway
+PASS the actual saved upper roof reaches the street client
+PASS the actual saved upper walls reach the street client
+PASS all upper roof modules are rendered outdoors
+PASS all upper wall modules are rendered outdoors
+PASS all expected chunks received and native geometry settled
+PASS separate stack fixture starts without the extra floor
+PASS enter the stack through the original real stairs
+PASS climb the fixture's real stair to the third floor
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":17.111,"chunks":7,"fps":48.4133258647709,"location":"9b6e923a-de83-46dd-9040-8fcc70e3ead2","objects":1798,"renderer":"gl_compatibility","worst_frame_ms":543.754}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":21.228,"chunks":31,"fps":50.0158383488104,"location":"9b6e923a-de83-46dd-9040-8fcc70e3ead2","objects":4413,"renderer":"gl_compatibility","worst_frame_ms":167.864}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.321,"chunks":49,"fps":52.3095904751908,"location":"9b6e923a-de83-46dd-9040-8fcc70e3ead2","objects":7291,"renderer":"gl_compatibility","worst_frame_ms":145.535}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":76,"fps":73.7603467326379,"location":"9b6e923a-de83-46dd-9040-8fcc70e3ead2","objects":9124,"renderer":"gl_compatibility","worst_frame_ms":378.871}
+PASS all expected chunks received and native geometry settled
+PASS character is on the actual third floor
+PASS middle floor arrives as architecture only
+PASS middle floor bed remains private
+PASS the middle floor ceiling is kept beneath the current floor
+PASS the current roof is hidden
+PASS middle floor is actually drawn below the current floor
+PASS street terrain is actually drawn below both upper floors

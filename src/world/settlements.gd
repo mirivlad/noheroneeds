@@ -28,7 +28,7 @@ extends RefCounted
 const NONE := Vector2i(1 << 30, 1 << 30)
 ## The plan is reconstructed from the seed; changing its rules requires a new
 ## version and an explicit world-format decision.
-const VERSION := 4
+const VERSION := 5
 ## Cells round each building, field and pen kept free of any plant.
 const MARGIN := 1
 ## Cells round the whole settlement kept free of trees and bushes.

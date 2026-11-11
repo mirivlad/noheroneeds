@@ -136,6 +136,7 @@ func test_a_door_locks_with_a_code() -> void:
 	var b := _player("Боря")
 	var c := _player("Вера")
 	w.grant(a, "base:plank", 20)
+	for y in [2, 4]: w.chunk("surface", 0, 0).set_cell("structure", 4, y, "base:wood_wall")
 	_req(a, _at(4, {"type": "build", "part": "base:wood_door"}))
 	eq(_req(b, _at(4, {"type": "use"})).get("open"), true, "a door opens to anyone")
 	_req(b, _at(4, {"type": "use"}))

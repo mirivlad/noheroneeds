@@ -486,12 +486,18 @@ func _prefetch(s: Session) -> void:
 				world.prefetch(loc, cx, cy)
 
 
-## What a player standing in `location` gets chunks of: the location itself,
-## and on a building level also the surface below it (seen dimmed). Things
-## and people come only from the player's own location.
+## Full chunks come only from the current location and the surface.
 func _shown_locations(location: String) -> Array:
 	return [location, ServerWorld.SURFACE] if world.levels.kind(location) == Levels.BUILDING_LEVEL else [location]
 
+## Other floors of our building need only their architecture, never contents.
+func _lower_locations(location: String) -> Array[String]:
+	var out: Array[String] = []
+	var building := world.levels.building(location)
+	for z in range(1, world.levels.z(location)):
+		var below := world.levels.level(building, z)
+		if below != "": out.append(below)
+	return out
 
 ## Character and item states for this tick, shared by every client's snapshot.
 func _update_replica() -> void:
@@ -725,16 +731,16 @@ func _mark_needed(s: Session) -> void:
 	var cell := Movement.cell_of(p["pos"])
 	var mc := Vector2i(floori(float(cell.x) / Chunk.SIZE), floori(float(cell.y) / Chunk.SIZE))
 	var r := view_chunks + 1
-	for loc: String in _shown_locations(p["location"]):
+	for loc: String in _shown_locations(p["location"]) + _lower_locations(p["location"]):
 		for cy in range(mc.y - r, mc.y + r + 1):
 			for cx in range(mc.x - r, mc.x + r + 1):
 				world.mark_needed(loc, cx, cy)
 
-	if p["location"] == ServerWorld.SURFACE:
+	if _on_plan(p["location"]):
 		for key: String in world._chunks:
-			if int((world._chunks[key] as Chunk).meta.get("building_z", 0)) < 1:
-				continue
 			var parts := key.split("|")
+			if world.levels.z(parts[0]) < 1:
+				continue
 			if maxi(absi(int(parts[1]) - mc.x), absi(int(parts[2]) - mc.y)) <= r:
 				world.mark_needed(parts[0], int(parts[1]), int(parts[2]))
 
@@ -1004,53 +1010,65 @@ func _stream_chunks(s: Session) -> void:
 					budget -= 1
 					s.chunks[key] = rev
 					world.explore(s.character_id, shown, cx, cy)
-					_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": shown, "cx": cx, "cy": cy,
-						"data": world.encoded_chunk(shown, cx, cy)})
+					var data := world.encoded_chunk(shown, cx, cy)
+					if world.levels.kind(shown) == Levels.BUILDING_LEVEL:
+						var floor_chunk := ChunkCodec.decode(data)
+						floor_chunk.meta.merge({"building_z": world.levels.z(shown), "building": world.levels.building(shown)}, true)
+						data = ChunkCodec.encode(floor_chunk)
+					_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": shown, "cx": cx, "cy": cy, "data": data})
 
-	if loc == ServerWorld.SURFACE:
-		# Upper floors are streamed from their saved cells, including player
-		# edits. Do not reveal their inhabitants or explore their interior maps.
+	if _on_plan(loc):
+		var exterior_keys := {}
 		for key: String in world._chunks:
-			var c: Chunk = world._chunks[key]
-			if int(c.meta.get("building_z", 0)) < 1:
-				continue
+			if key.get_slice("|", 0) != loc and world.levels.z(key.get_slice("|", 0)) > 0:
+				exterior_keys[key] = true
+		# Load intermediate floors within the normal streaming budget, even
+		# when nobody has visited them in this session.
+		for below: String in _lower_locations(loc):
+			for cy in range(mc.y - view_chunks, mc.y + view_chunks + 1):
+				for cx in range(mc.x - view_chunks, mc.x + view_chunks + 1):
+					exterior_keys[ServerWorld.chunk_key(below, cx, cy)] = true
+		for key: String in exterior_keys:
 			var parts := key.split("|")
+			var level := world.levels.z(parts[0])
 			var cx := int(parts[1])
 			var cy := int(parts[2])
-			if maxi(absi(cx - mc.x), absi(cy - mc.y)) > view_chunks:
-				continue
+			if maxi(absi(cx - mc.x), absi(cy - mc.y)) > view_chunks: continue
 			var rev := world.chunk_revision(parts[0], cx, cy)
 			var exterior_revision := -rev - 2
-			if s.chunks.get(key, -1) == exterior_revision:
-				continue
+			if s.chunks.get(key, -1) == exterior_revision: continue
 			if budget == 0:
 				s.streaming_unfinished = true
 				return
 			budget -= 1
+			var c := world.chunk(parts[0], cx, cy)
 			s.chunks[key] = exterior_revision
 			_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": parts[0], "cx": cx, "cy": cy,
-				"data": ChunkCodec.encode(_exterior_chunk(c))})
-
+				"data": ChunkCodec.encode(_exterior_chunk(c, level, world.levels.building(parts[0])))})
 
 ## Street clients receive the actual exterior, not a closed floor's contents.
 ## Its revision namespace differs from the full chunk sent after climbing.
-func _exterior_chunk(source: Chunk) -> Chunk:
+func _exterior_chunk(source: Chunk, level: int, building: String) -> Chunk:
 	var out := Chunk.new()
-	out.meta = {"building_z": int(source.meta["building_z"]), "exterior": true}
+	# Levels is authoritative; inn and player chunks need not carry metadata.
+	out.meta = {"building_z": level, "building": building, "exterior": true}
 	for y in Chunk.SIZE:
 		for x in Chunk.SIZE:
 			var structure := source.get_cell("structure", x, y)
 			var roof := source.get_cell("roof", x, y)
+			var ceiling := source.get_cell("ceiling", x, y)
+			var ground := source.get_cell("ground", x, y)
 			var role := String(world.content.get_def(structure).get("role", ""))
-			if role not in ["wall", "window", "door"] and roof == "":
+			if role not in ["wall", "window", "door"] and roof == "" and ceiling == "" and ground == "":
 				continue
-			out.set_cell("ground", x, y, source.get_cell("ground", x, y))
+			out.set_cell("ground", x, y, ground)
+			out.set_cell("ceiling", x, y, ceiling)
 			out.set_cell("roof", x, y, roof)
 			if role in ["wall", "window", "door"]:
 				out.set_cell("structure", x, y, structure)
 			var props := {}
 			var original := source.get_props(x, y)
-			for key: String in ["roof", "wall_height", "facing", "open", "window_scale"]:
+			for key: String in ["roof", "ceiling", "wall_height", "facing", "open", "window_scale"]:
 				if original.has(key):
 					props[key] = original[key]
 			out.set_props(x, y, props)

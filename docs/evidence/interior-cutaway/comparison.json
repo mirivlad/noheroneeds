@@ -1,0 +1,109 @@
+{
+  "baseline_commit": "afe2825",
+  "baseline_view_sha256": "1eb5f26c6dc0629768936374da017c731d5fbc020ca53d11672a5e2526082d3d",
+  "candidate_view_sha256": "b62e8b1f317278e5686c91724d80f63d4e3d8cfb9bbdbebc6afd882deec08a17",
+  "paired_poses_identical": true,
+  "pairs": [
+    {
+      "name": "ground-se",
+      "label": "Первый этаж · юго-восток",
+      "pose": {
+        "level": 0,
+        "name": "ground-se",
+        "player_cell": "(-21, 11)",
+        "rect": "[P: (-30, 2), S: (18, 13)]",
+        "tilt": 49.0,
+        "yaw": -0.6,
+        "zoom": 24.3
+      }
+    },
+    {
+      "name": "ground-sw",
+      "label": "Первый этаж · юго-запад",
+      "pose": {
+        "level": 0,
+        "name": "ground-sw",
+        "player_cell": "(-21, 11)",
+        "rect": "[P: (-30, 2), S: (18, 13)]",
+        "tilt": 49.0,
+        "yaw": 0.6,
+        "zoom": 24.3
+      }
+    },
+    {
+      "name": "ground-nw",
+      "label": "Первый этаж · северо-запад",
+      "pose": {
+        "level": 0,
+        "name": "ground-nw",
+        "player_cell": "(-21, 11)",
+        "rect": "[P: (-30, 2), S: (18, 13)]",
+        "tilt": 49.0,
+        "yaw": 2.1707963267949,
+        "zoom": 24.3
+      }
+    },
+    {
+      "name": "upper-se",
+      "label": "Второй этаж · юго-восток",
+      "pose": {
+        "level": 1,
+        "name": "upper-se",
+        "player_cell": "(-28, 5)",
+        "rect": "[P: (-30, 2), S: (18, 13)]",
+        "tilt": 49.0,
+        "yaw": -0.6,
+        "zoom": 24.3
+      }
+    },
+    {
+      "name": "upper-sw",
+      "label": "Второй этаж · юго-запад",
+      "pose": {
+        "level": 1,
+        "name": "upper-sw",
+        "player_cell": "(-28, 5)",
+        "rect": "[P: (-30, 2), S: (18, 13)]",
+        "tilt": 49.0,
+        "yaw": 0.6,
+        "zoom": 24.3
+      }
+    }
+  ],
+  "sha256": {
+    "ground-se-pair.webp": "476cbfc685600cfcdbb918478cee7327a70545066acdae4d7e1ec2789ce8d700",
+    "outside-restored.webp": "1e423d3db1936c6f8f58ae2706d31bdab9b97034499a5c9bc0b19d3324aa33aa",
+    "ground-nw-pair.webp": "40835f2be9eb83df051aaf7a3b2e8b6b21f6316d04e0fa51e84d80970a69771c",
+    "upper-se-before.webp": "454854c0b9a6aeb80371af6e3106755fce91eaf23f602fb95b3282ec35e8aa11",
+    "ground-sw-before.webp": "202d4e0852457af318c72d0c02caf700878d87e2ca95de20490d5bc3bbc7a4a5",
+    "outside-roof-pair.webp": "04787cc80518e3a0295b97660b5d5f0224535db5dd9a1e9284f130e17e37d0d8",
+    "outside-before-roof-fix.webp": "9ccfa8bc49256153bca02f0fb4147b19d56f4f5396ca2c1202fc6c77c27ea6cc",
+    "upper-occluded.webp": "ef64849ddd41efc612f40913d0e70825d1b2a7d0f174ad7d61b03de3458b5503",
+    "upper-se-pair.webp": "d76353e2f1bd50ebdb28d9ba05a52dd26809285ab4e2a88b98fc961d41eaffaa",
+    "ground-nw-before.webp": "583793c05134a84d85374e326a0340106f068dd2039a239037f1cfd1515ef4b3",
+    "upper-sw-pair.webp": "eb4c64b87bd9308e5982b43de18a48311753772dccde6c80d02428da3fc7164f",
+    "ground-se-before.webp": "091581020a5a37437d12264401fcbc0ba51afcec61aa9007c8ddbc7a5626948b",
+    "upper-sw-after.webp": "c00903ed8f0046a4ddf4f80bf99e4bcd11ab61fa9235db3b337d9d5f3b1d1315",
+    "ground-nw-after.webp": "5deef2e64169e6bd14a3f581a0e6767102671c44e8e3d16e12bd7ab76cd517df",
+    "ground-sw-pair.webp": "95e5cd713381cd37c2908d66681410c9561fed76fa56c0febf21bdbf39850e11",
+    "upper-sw-before.webp": "956da19b51bea5bfc61bd5635ca4bb478960be24b7b039b25f05b2d376616254",
+    "upper-se-after.webp": "962aa53b79194b065e1f51a72ea567ccb1ae0087789b84a4187842bda40e96cb",
+    "ground-sw-after.webp": "99221e70355369d9aa8030a1977920eaa8f807018da6e21edc71ddbc66d3199f",
+    "ground-se-after.webp": "f6658520de213ed3dccde93ccea35078e6de020d28b48aad62db8a6ffcec4f1e"
+  },
+  "outside_correction": {
+    "before": "outside-before-roof-fix.webp",
+    "after": "outside-restored.webp",
+    "pair": "outside-roof-pair.webp",
+    "poses_identical": true,
+    "pose": {
+      "level": 0,
+      "name": "outside-restored",
+      "player_cell": "(-21, 17)",
+      "rect": "[P: (-30, 2), S: (18, 13)]",
+      "tilt": 49.0,
+      "yaw": -0.6,
+      "zoom": 24.3
+    }
+  }
+}

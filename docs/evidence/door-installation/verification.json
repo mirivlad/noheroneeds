@@ -1,0 +1,49 @@
+{
+  "native_checks": 46,
+  "native_failures": [],
+  "generator_version": 5,
+  "original_resolution": [
+    1800,
+    1013
+  ],
+  "candidate_resolution": [
+    1680,
+    945
+  ],
+  "comparison_normalized_to_original_resolution": true,
+  "source_sha256": {
+    "src/building/build_rules.gd": "a204a0aa9603f624ec38c4432121fdb7a9415daa39c50e5da56c9e33cde4a31e",
+    "src/server/server_world.gd": "df53c3354f1eeb4236c9ca035563dec38fde3155cbe0160ab6ab3d994827e90a",
+    "src/presentation/game_screen.gd": "83d6f86469a4f6bf577166f8fb9bfca3d3902f6c4f4dbd2bacb0bfe410a767e5",
+    "src/world/hospitality_plans.gd": "9faad230f043b2e53a5519473ef3e0c14c31157b88260f716c87be376f6be019",
+    "src/world/settlements.gd": "56c9047f08d9c277e46d06e221e4ee1afc208e2afce58909493b7f62631fb13f",
+    "src/experiment_3d/world_view_3d.gd": "fc86b6abdb08ad6d9b52895543b4190b437190a473ed5bec544e702083c2fab4",
+    "tools/experiment_3d/check_door_placement.gd": "4b10d9757949767390ceed1b7d73372e60e0295857a164c94623c9d26d6cb6a7",
+    "tools/experiment_3d/check_interior_cutaway.gd": "458815130dd53e67c307e8cbfe5cb53054003e399a295eecc71cb14006ede619",
+    "tests/unit/building/test_door_installation.gd": "823a66de3f0bc5351a258db4bcb0159afc4c3a24ea2366abbf3222346ae8d3e3",
+    "tests/unit/building/test_doors.gd": "2ed77423cf8bb87c3334045b18c6862086b9be546fb1b9e68cbd064184726efe",
+    "tests/unit/world/test_hospitality_plans.gd": "2e178421168aa06ec684fd7c86418cef2e614326ccc877d8805e10f9843f35c2",
+    "tests/unit/presentation/test_play.gd": "c73145507caecdeb97b3235972a763ff5160e5618edf4df9613d34fc4b3a04e2"
+  },
+  "image_sha256": {
+    "door-open.webp": "5ae35e2f8e2774353678f6bb58629f5e1266e584914998497dc286ae7d8ceb1a",
+    "installation-wall.webp": "6e46343e3087d2fe0499e471e5ef40256ca1988a37dbc6049ca65b0d73a93313",
+    "outside-restored.webp": "bf49e3a465cbcb7df05a258ea4a94f10f121689ff0943742a8ddf5c62b359cff",
+    "installation-sequence.webp": "ec0a02f4cb8465bcc2303cac86f5e6b6ac8ae93a4871ff8533c9b4600ab9ed2d",
+    "installation-door.webp": "fbad285e992d10d9f267289b231b03d940f12508f1fe10ff36a771db7375145e",
+    "door-closed.webp": "2df09e37e37b06cea99553d8a0f85f2bc285d92d5b9e740cbfca26d0c720ee59",
+    "upper-se.webp": "f478e55d9e8eb038fea89b9ba0b42c34022a60cae5bed6263f0e9fe50f8323ab",
+    "before-full.webp": "3006a676c0f5d9df6a00bfd930489ca76d978acf174e7d5bfeab8abc5a866d3f",
+    "installation-open.webp": "8430b24d6bed29a78ca66c2d122d17a6b3dafc1332eadea0db9189eaa644fc8b",
+    "door-comparison.webp": "b9a6cf13c63f8105394e8a998e8e9a44f8192fac25d3ac041aea330c695cc284"
+  },
+  "committed": false,
+  "pushed": false,
+  "full_tests_status": "passed",
+  "site_python_tests": 32,
+  "site_browser_tests": 10,
+  "full_tests": 661,
+  "full_test_suites": 99,
+  "full_tests_seconds": 817.2,
+  "full_tests_sources_unchanged": true
+}

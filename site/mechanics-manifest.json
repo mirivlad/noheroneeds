@@ -127,6 +127,8 @@
         "src/experiment_3d/building_modules_3d.gd",
         "src/experiment_3d/world_view_3d.gd",
         "src/experiment_3d/roof.gdshader",
+        "src/experiment_3d/interior_silhouette.gdshader",
+        "src/experiment_3d/interior_silhouette.gdshader.uid",
         "content/base/settlements.json",
         "content/base/building.json",
         "content/base/structures.json",

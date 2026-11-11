@@ -1,0 +1,3 @@
+PASS test_levels_network::test_up_the_stairs_and_back (23480 ms)
+expected engine errors: 0
+1 tests, 0 failed checks, 24.0s

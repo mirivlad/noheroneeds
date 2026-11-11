@@ -1,0 +1,28 @@
+{
+  "source_sha256": {
+    "src/experiment_3d/world_view_3d.gd": "b62e8b1f317278e5686c91724d80f63d4e3d8cfb9bbdbebc6afd882deec08a17",
+    "src/experiment_3d/ground.gdshader": "ae6a54433d0627d2bba18d21ca8fe0ea185d6554c9a9df34e44d0e034d9e316c",
+    "src/experiment_3d/rock.gdshader": "aef694a95f93170a7a7f52773820ec6ccd7ffc0dcc33a5a9934fd0bff4003c30",
+    "src/experiment_3d/interior_silhouette.gdshader": "2bbb66191f42d60c77a28eef1df738999594750402c5c99cf388b9fff3fc1b8f",
+    "src/experiment_3d/interior_silhouette.gdshader.uid": "0b47bbbf08d3b9bc7a33eb6e14bd0123ea5a1ccc2d3779e81336321620923361",
+    "tests/unit/experiment_3d/test_world_view_3d.gd": "355b3869ce6bf9f83f4c5a20020a6b086343739c3139444fd439e3047450998e",
+    "tools/experiment_3d/check_interior_cutaway.gd": "31ce245a46a131197ca9074c4938286078300cbfe753d26ac3211c3b96eaaa79",
+    "src/server/game_server.gd": "25501b5fffe36758a96e1bdd83d18124ecca8cf340ddf2b72678005faede1e10",
+    "src/server/hospitality.gd": "56339206b3fb958167dc3e6daaa726bb6c0fdad690aec9d79085f7142e31e909",
+    "tests/unit/building/test_settlement_levels.gd": "e3f5f977ff26ba2fe9330b580282df139a879730c9bbd126c84feafb0c246fa3",
+    "tests/unit/network/test_game_server.gd": "a45bef8d031dfb28815c848b0f10d70c32f2185f71527b488df0e45b520a50ae"
+  },
+  "game_tests": 39,
+  "game_failed_checks": 0,
+  "native_checks": 20,
+  "native_failures": [],
+  "site_python_tests": 32,
+  "site_browser_tests": 10,
+  "committed": false,
+  "pushed": false,
+  "roof_regression_tests": 2,
+  "roof_regression_failed_checks": 0,
+  "visibility_regression_tests": 1,
+  "visibility_regression_failed_checks": 0,
+  "note": "39 renderer tests were verified before the exterior streaming correction; unchanged renderer. Two floor persistence/network tests and one cross-level visibility test verified after the correction."
+}

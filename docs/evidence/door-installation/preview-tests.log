@@ -1,0 +1,3 @@
+PASS test_play::test_door_preview_follows_wall_axis_and_charges_only_the_conversion (13487 ms)
+expected engine errors: 0
+1 tests, 0 failed checks, 15.0s

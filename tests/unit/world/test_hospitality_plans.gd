@@ -77,3 +77,23 @@ func test_public_houses_are_deterministic_clear_of_roads_and_fit_one_chunk() -> 
 	keys.reverse()
 	for key: Vector2i in keys:
 		eq(ChunkCodec.encode(b.generate(key.x, key.y)), chunks[key], "generation order does not change chunk bytes")
+
+func test_every_generated_door_follows_its_actual_wall_after_mirroring() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var generator := SurfaceGenerator.new(431, content)
+	var inns := generator.settlements.inns
+	for template: Dictionary in inns.templates:
+		for variant in 8:
+			var plan := inns._layout("door-axis-%s-%d" % [template["id"], variant], template, Vector2i(3, 3), "village")
+			for cells: Dictionary in [plan["cells"], plan["upper"]]:
+				for cell: Vector2i in cells:
+					if content.get_def(String(cells[cell].get("structure", ""))).get("role") != "door": continue
+					var props: Dictionary = cells[cell]["props"]
+					var facing := String(props["facing"])
+					var normal: Vector2i = ContentRegistry.FACINGS[facing]
+					var along := Vector2i(-normal.y, normal.x)
+					for side in [-1, 1]:
+						var role := String(content.get_def(String(cells.get(cell + along * side, {}).get("structure", ""))).get("role", ""))
+						check(role in BuildRules.WALL_LIKE, "the jamb joins the actual wall in every template/mirror")
+						role = String(content.get_def(String(cells.get(cell + normal * side, {}).get("structure", ""))).get("role", ""))
+						check(role not in BuildRules.WALL_LIKE, "approach remains perpendicular and clear")

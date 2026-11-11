@@ -100,18 +100,101 @@ func test_a_blow_turns_the_doll_and_it_stays_turned() -> void:
 	eq((actor.doll as RoSprite)._row, 2, "the blow east turned it east, and frames after keep it")
 	actor.queue_free()
 
-func test_the_house_one_is_in_is_cut_away() -> void:
+func _cut_fixture(size := Vector2i(5, 5)) -> void:
+	for y in size.y:
+		for x in size.x:
+			var cell := Vector2i(x, y)
+			var key := ServerWorld.chunk_key("surface", x >> 5, y >> 5)
+			var c: Chunk = client.chunks.get_or_add(key, Chunk.new())
+			c.set_cell("ground", x & 31, y & 31, "base:wood_floor")
+			c.set_cell("roof", x & 31, y & 31, "base:thatch_roof")
+			c.set_props(x & 31, y & 31, {"building": "house"})
+	client.has_position = true
+	client.position = Vector2i(2, 2) * Movement.UNIT
+	view.yaw = -.6
+	view._update_cutaway()
+
+func test_interior_cut_preserves_far_walls_partitions_and_furniture() -> void:
+	_cut_fixture()
 	var at := Transform3D(Basis.IDENTITY, Vector3(2.5, 1, 2.5))
-	var roof := [Vector2i(2, 2), true]
-	var wall := [Vector2i(2, 2), false]
-	view._cut = Rect2i(1, 1, 3, 3)
-	check(view.cut_transform(at, roof).basis.get_scale().is_zero_approx(), "the roof over one is not drawn")
-	check(is_equal_approx(view.cut_transform(at, wall).basis.get_scale().y, 1.0 / 6.0), "the wall stands a sixth high")
-	eq(view.cut_transform(at, wall).origin, at.origin, "on its foot")
-	eq(view.cut_transform(at, [Vector2i(9, 9), false]), at, "another house stays whole")
-	eq(view.cut_transform(at, []), at, "not a house part: as laid")
-	view._cut = Rect2i()
-	eq(view.cut_transform(at, roof), at, "outdoors again: whole")
+	for cell: Vector2i in [Vector2i(4, 2), Vector2i(2, 4), Vector2i(4, 4)]:
+		check(view.cut_transform(at, [cell, "wall", "surface"]).basis.get_scale().is_zero_approx(), "near exterior side is removed")
+	for cell: Vector2i in [Vector2i(0, 2), Vector2i(2, 0), Vector2i(2, 2), Vector2i(0, 4)]:
+		eq(view.cut_transform(at, [cell, "wall", "surface"]), at, "far walls, internal partitions and supporting corners stay full height")
+	eq(view.cut_transform(at, [Vector2i(2, 2), "object", "surface"]), at, "all interior furnishings keep their transform")
+	var upper := Chunk.new()
+	upper.meta = {"building": "house", "building_z": 1}
+	client.chunks["upper|0|0"] = upper
+	for part: Array in [[Vector2i(2, 2), "cover", "surface"], [Vector2i(2, 2), "object", "upper"]]:
+		check(view.cut_transform(at, part).basis.get_scale().is_zero_approx(), "our covers and upper floors are hidden")
+	eq(view.cut_transform(at, [Vector2i(9, 9), "object", "surface"]), at, "the surrounding street remains visible")
+	client.position = Vector2i(9, 9) * Movement.UNIT
+	view._update_cutaway()
+	eq(view.cut_transform(at, [Vector2i(2, 2), "cover", "surface"]), at, "leaving restores the original transform")
+
+func test_interior_cut_changes_sides_when_only_camera_rotates() -> void:
+	_cut_fixture()
+	check(view._near_wall(Vector2i(4, 2)), "east facade initially faces the camera")
+	view.yaw = .6
+	view._update_cutaway()
+	check(not view._near_wall(Vector2i(4, 2)), "standing still and turning retains east facade")
+	check(view._near_wall(Vector2i(0, 2)), "west facade now opens")
+	eq(view._cut_from, Vector2i(2, 2), "the player did not move")
+
+func test_interior_cut_uses_large_live_contour_and_building_identity() -> void:
+	_cut_fixture(Vector2i(35, 12))
+	var c: Chunk = client.chunks["surface|0|0"]
+	# An open courtyard is inside the bounding rectangle but outside the house.
+	c.set_cell("ground", 10, 6, "base:grass")
+	c.set_cell("roof", 10, 6, "")
+	# An adjacent floor with a different building ID must not join this house.
+	c.set_props(0, 0, {"building": "neighbour"})
+	# A removed roof and a stair opening must not turn interior mode off.
+	c.set_cell("roof", 2, 2, "")
+	c.set_cell("ground", 3, 2, "")
+	c.set_props(3, 2, {"building": "house", "stairs_down": true})
+	view._cut_from = Vector2i.MAX
+	view._update_cutaway()
+	eq(view._cut_cells.size(), 418, "whole 420-cell house, minus courtyard and neighbour")
+	check(view._cut_cells.has(Vector2i(34, 11)), "includes the next received chunk, beyond the old 256-cell cap")
+	check(not view._cut_cells.has(Vector2i(10, 6)), "courtyard stays outside")
+	check(not view._cut_cells.has(Vector2i(0, 0)), "touching neighbouring building stays outside")
+	check(view._cut_cells.has(Vector2i(3, 2)), "stair opening stays inside")
+	check(view._cut.has_point(Vector2i(34, 11)), "cut bounds include the last row and column")
+	check(not view._part_hidden(Vector2i(10, 6), "object", "surface"), "an open courtyard is visible outside the cut contour")
+
+func test_unroofed_foundation_does_not_isolate_the_world() -> void:
+	_cut_fixture()
+	var c: Chunk = client.chunks["surface|0|0"]
+	for y in 5:
+		for x in 5: c.set_cell("roof", x, y, "")
+	view._cut_from = Vector2i.MAX
+	view._update_cutaway()
+	eq(view._cut, Rect2i(), "an unfinished foundation remains outdoors")
+
+func test_interior_picking_ray_passes_near_facade_and_selects_full_walls() -> void:
+	view._land = null
+	_cut_fixture()
+	var c: Chunk = client.chunks["surface|0|0"]
+	for y in 5:
+		for x in [0, 4]: c.set_cell("structure", x, y, "base:wood_wall")
+	c.set_cell("structure", 2, 2, "base:wood_wall")
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in Chunk.SIZE: view._build_row()
+	await (Engine.get_main_loop() as SceneTree).physics_frame
+	await (Engine.get_main_loop() as SceneTree).physics_frame
+	view.yaw = -PI / 2
+	view._update_cutaway()
+	view.eye.size = 12
+	view.eye.position = Vector3(12, 1.5, 2.5)
+	view.eye.look_at(Vector3(2.5, 1.5, 2.5), Vector3.UP)
+	for cell: Vector2i in [Vector2i(2, 2), Vector2i(0, 1)]:
+		var point := Vector3(cell.x + .5, 1.5, cell.y + .5)
+		var pixel := view.screen_point(view.eye.unproject_position(point))
+		var target := view.pick_target(pixel)
+		eq(target.get("cell"), cell, "ray passes the hidden near facade to select the visible partition or far wall")
+		eq(target.get("id"), "base:wood_wall", "the full-height wall remains selectable")
 
 func test_lpc_paper_doll_and_equipment_are_reused() -> void:
 	var actor := BillboardActor3D.new()
@@ -566,19 +649,23 @@ func test_a_things_pick_box_keeps_to_its_cell() -> void:
 	var pebble := WorldView3D.pick_box(AABB(Vector3(3.4, 0, 7.4), Vector3(.2, .05, .2)), Vector2i(3, 7))
 	check(pebble.size.y >= .25, "a flat thing high enough")
 
-func test_inside_a_house_one_points_past_what_is_cut_away() -> void:
-	view._cut = Rect2i(1, 1, 4, 4)
-	var roof := {"kind": "part", "layer": "roof", "id": "base:thatch_roof", "cell": Vector2i(2, 2)}
-	check(view._cut_off(roof, Vector3(2.5, 2.5, 2.5)), "its roof is passed through")
-	var wall := {"kind": "part", "layer": "structure", "id": "base:wood_wall", "cell": Vector2i(1, 2)}
-	var floor_y := view._floor_at(Vector2(1.5, 2.5))
-	check(view._cut_off(wall, Vector3(1.5, floor_y + 1.5, 2.5)), "a wall above its cut is passed through")
-	check(not view._cut_off(wall, Vector3(1.5, floor_y + .1, 2.5)), "its low sixth is still there")
+func test_inside_a_house_one_points_past_hidden_facades_but_keeps_interior() -> void:
+	_cut_fixture()
+	var wall := {"kind": "part", "layer": "structure", "id": "base:wood_wall", "cell": Vector2i(4, 2)}
+	for height: float in [.1, 1.5]:
+		check(view._cut_off(wall, Vector3(4.5, height, 2.5)), "hidden facade is passed through at every height")
+	for cell: Vector2i in [Vector2i(0, 2), Vector2i(2, 2)]:
+		wall["cell"] = cell
+		check(not view._cut_off(wall, Vector3.ZERO), "visible far wall or partition can be selected")
 	var chest := {"kind": "part", "layer": "structure", "id": "base:chest", "cell": Vector2i(2, 3)}
-	check(not view._cut_off(chest, Vector3(2.5, floor_y + .4, 3.5)), "a chest inside is pointed at")
-	var far_roof := {"kind": "part", "layer": "roof", "id": "base:thatch_roof", "cell": Vector2i(9, 9)}
-	check(not view._cut_off(far_roof, Vector3(9.5, 2.5, 9.5)), "another house's roof is still a roof")
-	view._cut = Rect2i()
+	check(not view._cut_off(chest, Vector3.ZERO), "interior chest is selectable")
+	var upper := Chunk.new()
+	upper.meta = {"building": "house", "building_z": 1}
+	client.chunks["upper|0|0"] = upper
+	chest["location"] = "upper"
+	check(view._cut_off(chest, Vector3.ZERO), "our hidden upper floor is passed through")
+	check(not view._cut_off({"kind": "ground", "cell": Vector2i(9, 9)}, Vector3.ZERO), "visible street ground is selectable")
+	check(view._cut_off({"kind": "part", "layer": "roof", "cell": Vector2i(2, 2)}, Vector3.ZERO), "roof is passed through")
 
 func test_a_beings_figure_is_its_picture() -> void:
 	var hare := view._figure(content.visual_of("base:hare"))
@@ -610,7 +697,7 @@ func test_generated_wall_and_roof_modules_keep_their_authored_feet() -> void:
 			var checked := false
 			for instance: String in view._job["parts"]:
 				var parts: Array = view._job["parts"][instance]
-				if not parts.any(func(part: Array) -> bool: return not part.is_empty()):
+				if not parts.any(func(part: Array) -> bool: return not part.is_empty() and part[1] == ("cover" if roof else "wall")):
 					continue
 				var transform: Transform3D = view._job["instances"][instance][0]
 				var foot := float(level) * WorldView3D.STOREY
@@ -667,7 +754,7 @@ func test_storey_slabs_end_inside_exterior_walls() -> void:
 			var inspected := false
 			for instance: String in view._job["parts"]:
 				var parts: Array = view._job["parts"][instance]
-				if parts.is_empty() or parts[0].is_empty() or not parts[0][1]:
+				if parts.is_empty() or parts[0].is_empty() or parts[0][1] != "cover":
 					continue
 				var t: Transform3D = view._job["instances"][instance][0]
 				var bounds: AABB = t * (view._job["meshes"][instance] as Mesh).get_aabb()
@@ -710,3 +797,143 @@ func test_generated_buildings_and_sheds_share_level_foundations() -> void:
 		checked += 1
 	check(checked >= 2, "several real generated sheds are checked")
 	w.close()
+
+func test_floor_cut_keeps_street_lower_floors_and_neighbour_roofs() -> void:
+	_cut_fixture()
+	var original: Chunk = client.chunks["surface|0|0"]
+	var upper := original.snapshot()
+	upper.meta = {"building": "house", "building_z": 2}
+	client.chunks["our-second|0|0"] = upper
+	client.location = "our-second"
+	client.z = 2
+	for data: Array in [["our-first", "house", 1], ["our-third", "house", 3], ["neighbour", "other-house", 3]]:
+		var c := original.snapshot()
+		c.meta = {"building": data[1], "building_z": data[2], "exterior": true}
+		client.chunks[String(data[0]) + "|0|0"] = c
+	view._cut_from = Vector2i.MAX
+	view._update_cutaway()
+	for location: String in ["surface", "our-first", "our-second", "our-third", "neighbour"]:
+		check(view._draws_chunk(location + "|0|0"), "loaded architecture is admitted: " + location)
+	check(view._part_hidden(Vector2i(2, 2), "cover", "our-second"), "current-floor overhead cover is removed")
+	check(view._part_hidden(Vector2i(2, 2), "wall", "our-third"), "all of our higher floor is hidden")
+	for part: Array in [[Vector2i(2, 2), "cover", "surface"], [Vector2i(2, 2), "cover", "our-first"], [Vector2i(2, 2), "wall", "our-first"], [Vector2i(9, 9), "object", "surface"], [Vector2i(2, 2), "cover", "neighbour"]]:
+		check(not view._part_hidden(part[0], part[1], part[2]), "lower architecture and neighbouring roofs stay whole: " + str(part))
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	view._build_row()
+	check(view._job["faces"].size() > 0, "surface substrate is built when viewed from above")
+	check(view._job["instances"].has("module:floor"), "surface floor modules are built too")
+	var t: Transform3D = view._job["instances"]["module:floor"][0]
+	check(is_equal_approx(t.origin.y, view.elevation(Vector2(.5, .5))), "surface stays at z=0 rather than being raised to our floor")
+	view._clear_geometry()
+	var middle: Chunk = client.chunks["our-first|0|0"]
+	for y in 5:
+		for x in 5: middle.set_cell("ceiling", x, y, "base:wood_ceiling")
+	view._queued["our-first|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	view._build_row()
+	var checked := false
+	for id: String in view._job["parts"]:
+		if id != "base:wood_ceiling": continue
+		var transform: Transform3D = view._job["instances"][id][0]
+		var bounds := transform * (view._job["meshes"][id] as Mesh).get_aabb()
+		var floor_y := view.elevation(Vector2(.5, .5)) + 2 * WorldView3D.STOREY
+		check(bounds.end.y < floor_y and bounds.end.y > floor_y - .02, "lower ceiling lies just below the current floor without a coplanar top")
+		checked = true
+	check(checked, "actual lower ceiling module inspected")
+	view._clear_geometry()
+	view._queued["our-second|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	view._build_row()
+	var floor_transform: Transform3D = view._job["instances"]["module:floor"][0]
+	var floor_bounds := floor_transform * (view._job["meshes"]["module:floor"] as Mesh).get_aabb()
+	var beam_top := view.elevation(Vector2(.5, .5)) + 2 * WorldView3D.STOREY
+	check(floor_bounds.end.y > beam_top and floor_bounds.end.y < beam_top + .02, "current floor avoids the lower wall's coplanar beam cap without a visible step")
+
+func test_street_actor_cannot_be_selected_through_current_floor() -> void:
+	view._land = null
+	var surface := Chunk.new()
+	for y in 8:
+		for x in 8: surface.set_cell("ground", x, y, "base:grass")
+	client.chunks["surface|0|0"] = surface
+	var upper := Chunk.new()
+	upper.meta = {"building": "house", "building_z": 1}
+	for y in range(1, 4):
+		for x in range(1, 4):
+			upper.set_cell("ground", x, y, "base:wood_floor")
+			upper.set_cell("roof", x, y, "base:thatch_roof")
+	client.chunks["upper|0|0"] = upper
+	client.location = "upper"
+	client.z = 1
+	client.has_position = true
+	client.position = Vector2i(2, 2) * Movement.UNIT
+	view._update_cutaway()
+	for location: String in ["surface", "upper"]:
+		view._queued[location + "|0|0"] = true
+		view._begin_chunk(Vector2i.ZERO)
+		for i in Chunk.SIZE: view._build_row()
+	var actor := BillboardActor3D.new()
+	actor.setup(content, content.visual_of("base:human_ro_m"), {"body_plan": "base:human_ro_m"}, {})
+	view.space.add_child(actor)
+	actor.position = Vector3(2.5, 0, 2.5)
+	view.eye.position = Vector3(2.5, 10, 8.5)
+	view.eye.look_at(Vector3(2.5, 1, 2.5))
+	await (Engine.get_main_loop() as SceneTree).physics_frame
+	await (Engine.get_main_loop() as SceneTree).physics_frame
+	check(not view._actor_visible_at(actor, view.eye.unproject_position(actor.position + Vector3.UP * .8)), "opaque upper floor blocks a street actor's picking rectangle")
+	actor.position.x = 5.5
+	await (Engine.get_main_loop() as SceneTree).physics_frame
+	check(view._actor_visible_at(actor, view.eye.unproject_position(actor.position + Vector3.UP * .8)), "a street actor beyond the building remains selectable")
+
+func test_player_cover_over_natural_ground_is_still_an_interior() -> void:
+	var c := Chunk.new()
+	for y in 5:
+		for x in 5:
+			c.set_cell("ground", x, y, "base:grass")
+			c.set_cell("ceiling", x, y, "base:wood_ceiling")
+			c.set_props(x, y, {"ceiling": {"owner": "builder", "building": "grass-hut"}})
+	client.chunks["surface|0|0"] = c
+	client.has_position = true
+	client.position = Vector2i(2, 2) * Movement.UNIT
+	view._update_cutaway()
+	check(view.hidden_room().has(Vector2i(2, 2)), "a player shelter does not require an extra laid floor")
+	eq(view._cut_cells.size(), 25, "the connected covered natural floor defines the room")
+	check(not view.covers_shown(Vector2i(2, 2)), "the actual overhead cover is hidden too")
+	check(not view._part_hidden(Vector2i(9, 9), "object", "surface"), "surrounding street remains visible")
+
+func test_open_door_leaf_keeps_its_jamb_and_matches_the_chosen_opening_side() -> void:
+	view._land = null
+	for facing: String in ["n", "e", "s", "w"]:
+		view._clear_geometry()
+		client.chunks.clear()
+		var c := Chunk.new()
+		c.set_cell("ground", 3, 3, "base:grass")
+		c.set_cell("structure", 3, 3, "base:wood_door")
+		c.set_props(3, 3, {"facing": facing, "open": true})
+		client.chunks["surface|0|0"] = c
+		view._queued["surface|0|0"] = true
+		view._begin_chunk(Vector2i.ZERO)
+		for row in 4: view._build_row()
+		var inspected := false
+		for id: String in view._job["parts"]:
+			var parts: Array = view._job["parts"][id]
+			if parts.is_empty() or parts[0][1] != "wall": continue
+			var mesh: Mesh = view._job["meshes"][id]
+			var t: Transform3D = view._job["instances"][id][0]
+			var normal: Vector2i = ContentRegistry.FACINGS[facing]
+			var direction := Vector3(normal.x, 0, normal.y)
+			var hinge := t * Vector3(-.39, 0, 0)
+			var farthest := 0.0
+			var leaf := AABB()
+			var first := true
+			for surface in range(3, 8):  # the five planks, after the frame's three members
+				for vertex: Vector3 in mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]:
+					var point := t * vertex
+					leaf = AABB(point, Vector3.ZERO) if first else leaf.expand(point)
+					first = false
+					farthest = maxf(farthest, (point - hinge).dot(direction))
+			check(farthest > .75, "actual leaf opens in the selected cardinal direction: " + facing)
+			var jamb := t * AABB(Vector3(-.5, 0, -.115), Vector3(.09, 2, .23))
+			check(leaf.intersects(jamb), "the open leaf remains attached to the same side jamb: " + facing)
+			inspected = true
+		check(inspected, "actual generated door mesh inspected")

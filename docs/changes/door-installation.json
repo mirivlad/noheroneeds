@@ -1,0 +1,28 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Дверь заменяет свою прямую стену или заполняет готовый проём с автоматической осью и выбором стороны открывания. Материалы старой стены засчитываются, права владельца и слои сохраняются, снятие двери оставляет проём. Генератор таверн использует тот же выбор оси после зеркального отражения; версия поселений 5 требует новый мир без миграции старых сохранений. Открытая створка остаётся на косяке и соответствует выбранному направлению по всем четырём сторонам света.",
+      "sources": {
+        "src/building/build_rules.gd": "a204a0aa9603f624ec38c4432121fdb7a9415daa39c50e5da56c9e33cde4a31e",
+        "src/server/server_world.gd": "df53c3354f1eeb4236c9ca035563dec38fde3155cbe0160ab6ab3d994827e90a",
+        "src/presentation/game_screen.gd": "83d6f86469a4f6bf577166f8fb9bfca3d3902f6c4f4dbd2bacb0bfe410a767e5",
+        "src/world/hospitality_plans.gd": "9faad230f043b2e53a5519473ef3e0c14c31157b88260f716c87be376f6be019",
+        "src/world/settlements.gd": "56c9047f08d9c277e46d06e221e4ee1afc208e2afce58909493b7f62631fb13f",
+        "src/experiment_3d/world_view_3d.gd": "fc86b6abdb08ad6d9b52895543b4190b437190a473ed5bec544e702083c2fab4"
+      },
+      "mechanics": [
+        "building",
+        "controls",
+        "hospitality",
+        "settlement-architecture"
+      ],
+      "guides": {
+        "site/content/guides/building.html": "2910be61b3aded155c5123835976ba2a19268e0a5fafb16d1290656fc973c17a",
+        "site/content/guides/controls.html": "36a5b13616cfda319ae01a301848ff243313ff7aa8392feced2ab2b978282285",
+        "site/content/guides/hospitality.html": "d94227dd34658156aa809bd53ab2416dc1063c7ac01bf552e9790f3beccb2aee"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

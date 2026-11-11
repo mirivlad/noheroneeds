@@ -1,0 +1,64 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+PASS old generator world is explicitly refused
+PASS refused original world database remains byte-for-byte unchanged
+PASS real LocalGame client joins
+PASS fixture has a generated two-storey inn
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":16.677,"chunks":9,"fps":11.431107319935,"location":"surface","objects":3301,"renderer":"gl_compatibility","worst_frame_ms":10434.777}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":16.456,"chunks":18,"fps":45.2609656758941,"location":"surface","objects":6145,"renderer":"gl_compatibility","worst_frame_ms":191.523}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":27,"fps":53.9209615761025,"location":"surface","objects":8574,"renderer":"gl_compatibility","worst_frame_ms":186.204}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":27,"fps":181.510603849477,"location":"surface","objects":8574,"renderer":"gl_compatibility","worst_frame_ms":486.082}
+PASS all expected chunks received and native geometry settled
+PASS all expected chunks received and native geometry settled
+PASS use the generated real stair
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":17.054,"chunks":7,"fps":50.4094761749693,"location":"34093064-f2b1-43a7-a235-5a3e8fe69990","objects":1537,"renderer":"gl_compatibility","worst_frame_ms":463.982}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":16.188,"chunks":23,"fps":53.9787366960407,"location":"34093064-f2b1-43a7-a235-5a3e8fe69990","objects":4173,"renderer":"gl_compatibility","worst_frame_ms":180.545}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.959,"chunks":38,"fps":55.3472857691059,"location":"34093064-f2b1-43a7-a235-5a3e8fe69990","objects":7137,"renderer":"gl_compatibility","worst_frame_ms":129.865}
+PASS all expected chunks received and native geometry settled
+PASS generated inn has a door in a longitudinal partition
+PASS generated door frame follows its actual partition
+PASS open the generated door through the ordinary request
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":51,"fps":63.8631455366579,"location":"34093064-f2b1-43a7-a235-5a3e8fe69990","objects":8579,"renderer":"gl_compatibility","worst_frame_ms":450.151}
+PASS all expected chunks received and native geometry settled
+PASS close the same generated door
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":51,"fps":94.0951527822996,"location":"34093064-f2b1-43a7-a235-5a3e8fe69990","objects":8579,"renderer":"gl_compatibility","worst_frame_ms":432.086}
+PASS all expected chunks received and native geometry settled
+PASS street geometry remains visible from inside an upper floor
+PASS street scenery is retained outside the building contour
+PASS lower exterior walls keep their full height
+PASS lower ceiling stays under the current floor
+PASS neighbouring buildings retain their actual roofs
+PASS the occluding internal partition keeps its full height
+PASS silhouette reuses only the own character's doll
+PASS own character remains visible behind a real internal partition
+PASS return through the same real stair
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.496,"chunks":9,"fps":38.679497429554,"location":"surface","objects":2112,"renderer":"gl_compatibility","worst_frame_ms":484.764}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.799,"chunks":30,"fps":51.4261940690856,"location":"surface","objects":4706,"renderer":"gl_compatibility","worst_frame_ms":182.147}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.301,"chunks":47,"fps":53.1615906798517,"location":"surface","objects":8008,"renderer":"gl_compatibility","worst_frame_ms":139.471}
+PASS all expected chunks received and native geometry settled
+PASS leaving the building disables interior cutaway
+PASS the actual saved upper roof reaches the street client
+PASS the actual saved upper walls reach the street client
+PASS all upper roof modules are rendered outdoors
+PASS all upper wall modules are rendered outdoors
+PASS all expected chunks received and native geometry settled
+PASS fixture has a clear indoor construction site
+PASS build an actual owned wall block
+PASS build an actual owned wall block
+PASS build an actual owned wall block
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":8.25,"chunks":51,"fps":81.5123696379465,"location":"surface","objects":8575,"renderer":"gl_compatibility","worst_frame_ms":464.959}
+PASS all expected chunks received and native geometry settled
+PASS convert the owned middle wall through the normal build request
+PASS the old wall is credited, only one extra plank is charged
+PASS perpendicular input cannot rotate the door across the wall
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":15.778,"chunks":51,"fps":52.0556787539953,"location":"surface","objects":8577,"renderer":"gl_compatibility","worst_frame_ms":260.863}
+PASS all expected chunks received and native geometry settled
+PASS open the installed leaf
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":16.079,"chunks":51,"fps":50.1464527151546,"location":"surface","objects":8577,"renderer":"gl_compatibility","worst_frame_ms":460.775}
+PASS all expected chunks received and native geometry settled
+PASS remove the door leaving an opening
+PASS install into that existing opening with the other opening side

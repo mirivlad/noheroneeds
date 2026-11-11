@@ -1,0 +1,26 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Срез текущего этажа сохраняет дальние стены, перегородки и мебель. Улица, соседние дома и нижние этажи видны; скрывается только верх своего здания. Нижние этажи передаются как архитектура без обстановки и исследования карты. Выбор мышью учитывает видимость и не проходит сквозь пол к уличным существам. Наружный вид после выхода и повторной загрузки содержит реальные стены и кровлю.",
+      "sources": {
+        "src/experiment_3d/world_view_3d.gd": "fc86b6abdb08ad6d9b52895543b4190b437190a473ed5bec544e702083c2fab4",
+        "src/experiment_3d/interior_silhouette.gdshader": "2bbb66191f42d60c77a28eef1df738999594750402c5c99cf388b9fff3fc1b8f",
+        "src/experiment_3d/interior_silhouette.gdshader.uid": "0b47bbbf08d3b9bc7a33eb6e14bd0123ea5a1ccc2d3779e81336321620923361",
+        "src/server/game_server.gd": "c4f724f3e43af37bbea190168e019f12df7c5e3d14b7a985bb360fa239e1a977",
+        "src/server/hospitality.gd": "56339206b3fb958167dc3e6daaa726bb6c0fdad690aec9d79085f7142e31e909"
+      },
+      "mechanics": [
+        "controls",
+        "settlement-architecture",
+        "hospitality"
+      ],
+      "guides": {
+        "site/content/guides/building.html": "2910be61b3aded155c5123835976ba2a19268e0a5fafb16d1290656fc973c17a",
+        "site/content/guides/controls.html": "36a5b13616cfda319ae01a301848ff243313ff7aa8392feced2ab2b978282285",
+        "site/content/guides/hospitality.html": "d94227dd34658156aa809bd53ab2416dc1063c7ac01bf552e9790f3beccb2aee"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

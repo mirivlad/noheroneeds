@@ -1,0 +1,9 @@
+{
+  "baseline_ms": 25.78118,
+  "candidate_ms": 3.64426,
+  "reduction_percent": 85.8646501052318,
+  "target_met": true,
+  "comparable_inputs": true,
+  "correct_cost": true,
+  "iterations": 1
+}

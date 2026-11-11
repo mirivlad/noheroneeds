@@ -1,0 +1,5 @@
+{
+  "platform": "Linux-6.5.0-1mx-ahs-amd64-x86_64-with-glibc2.41",
+  "fixture_sha256": "95a598614d92db2207ca629b7eef577d827fc632e2dfd18c06ab81e2ac57fcd7",
+  "governor": "ondemand"
+}

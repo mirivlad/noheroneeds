@@ -1,0 +1,5 @@
+PASS test_hospitality_plans::test_lodging_content_has_three_distinct_layouts_and_existing_food (414 ms)
+PASS test_hospitality_plans::test_public_houses_are_deterministic_clear_of_roads_and_fit_one_chunk (15716 ms)
+PASS test_hospitality_plans::test_every_generated_door_follows_its_actual_wall_after_mirroring (234 ms)
+expected engine errors: 0
+3 tests, 0 failed checks, 17.0s

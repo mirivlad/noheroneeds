@@ -1,0 +1,5 @@
+PASS test_settlement_levels::test_generated_floors_reach_two_clients_and_keep_player_edits (23247 ms)
+PASS test_settlement_levels::test_inn_exterior_reaches_street_after_climbing_and_reopening (22430 ms)
+PASS test_settlement_levels::test_third_floor_receives_saved_lower_architecture_without_private_contents (8897 ms)
+expected engine errors: 0
+3 tests, 0 failed checks, 56.0s

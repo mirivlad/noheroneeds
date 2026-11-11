@@ -238,7 +238,8 @@ func update_view(alpha: float, delta: float) -> void:
 		var night := client.has_time and Daylight.is_night(client.world_time)
 		if night != _night and is_inside_tree():
 			_night = night
-			get_tree().set_group("ambient_fireflies", "visible", night)
+			for root: Node in _geometry.values():
+				_apply_cut_root(root)
 	if client.z >= 0 or _cut != Rect2i():
 		_update_cutaway()
 	if client.has_position:
@@ -250,6 +251,8 @@ func update_view(alpha: float, delta: float) -> void:
 		var offset := Vector3(0, sin(deg_to_rad(tilt)), cos(deg_to_rad(tilt))).rotated(Vector3.UP, -yaw) * 65
 		eye.position = _follow + offset
 		eye.look_at(_follow, Vector3.UP)
+	_update_interior_actors()
+	_update_own_silhouette()
 	var daylight := Daylight.sun(client.world_time) if client.z >= 0 else 0.0
 	sun.light_energy = .15 + daylight * .95 if client.z >= 0 else 0.0
 	environment.environment.ambient_light_energy = .14 + daylight * .1 if client.z >= 0 else .28
@@ -264,6 +267,7 @@ func update_view(alpha: float, delta: float) -> void:
 		_max_delta = 0
 
 func _clear_geometry() -> void:
+	_cut_from = Vector2i(1 << 30, 0)
 	for node: Node in _geometry.values():
 		node.queue_free()
 	_geometry.clear()
@@ -396,7 +400,7 @@ var _drawing_z := 0
 func _draws_chunk(key: String) -> bool:
 	if not client.chunks.has(key):
 		return false
-	return key.get_slice("|", 0) == client.location or (client.location == Levels.SURFACE and int((client.chunks[key] as Chunk).meta.get("building_z", 0)) > 0)
+	return key.get_slice("|", 0) == client.location or (client.z >= 0 and (key.get_slice("|", 0) == Levels.SURFACE or int((client.chunks[key] as Chunk).meta.get("building_z", 0)) > 0))
 
 func _cell_layer(cell: Vector2i, layer: String) -> String:
 	return client.cell_at(_drawing_location if _drawing_location != "" else client.location, cell, layer)
@@ -450,7 +454,7 @@ func _begin_chunk(around: Vector2i) -> void:
 func _build_row() -> void:
 	var c: Chunk = _job["chunk"]
 	_drawing_location = String(_job["key"]).get_slice("|", 0)
-	_drawing_z = int(c.meta.get("building_z", client.z)) if _drawing_location != client.location else client.z
+	_drawing_z = 0 if _drawing_location == Levels.SURFACE else (client.z if _drawing_location == client.location else int(c.meta.get("building_z", 0)))
 	var y: int = _job["row"]
 	var origin: Vector2i = _job["origin"]
 	for x in Chunk.SIZE:
@@ -474,9 +478,9 @@ func _build_row() -> void:
 			_add_object(cell, ground, "chasm", {})
 			if _ground_is(cell, "hanging_bridge"):
 				_add_object(cell, ground, "ground", {})
-		elif _drawing_location == client.location and content.get_def(c.get_cell("structure", x, y)).get("leads") != "down" and not c.get_props(x, y).get("stairs_down", false):
+		elif content.get_def(c.get_cell("structure", x, y)).get("leads") != "down" and not c.get_props(x, y).get("stairs_down", false):
 			_quad(points, color, {"kind": "ground", "id": ground, "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location})
-		if _drawing_location == client.location and models.catalog.has(ground) and not content.get_def(c.get_cell("structure", x, y)).get("role") == "rock":
+		if models.catalog.has(ground) and not content.get_def(c.get_cell("structure", x, y)).get("role") == "rock":
 			_add_object(cell, ground, "ground", {})
 		for layer: String in ["cover", "structure", "ceiling", "roof"]:
 			var id := c.get_cell(layer, x, y)
@@ -555,6 +559,9 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		(_job["crops"] as Array).append([cell, d, float(planted), stage])
 	var instance_id := model_id
 	var role := String(d.get("role", ""))
+	if role == "door":
+		var normal: Vector2i = ContentRegistry.FACINGS.get(facing, Vector2i.DOWN)
+		basis = Basis(Vector3.UP, atan2(float(normal.x), float(normal.y)))
 	if role == "rock":
 		var floor_y := position3.y - lift
 		mesh = RockCells3D.mesh(cell, (terrain.cell(cell) if client.z >= 0 and terrain else 0.0) - floor_y,
@@ -637,6 +644,13 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		position3.x += centre.x
 		position3.z += centre.y
 		position3.y = elevation(at) + lift - mesh.get_aabb().end.y
+		if layer == "ceiling" and _drawing_location != client.location and _drawing_z < client.z:
+			# The current floor owns the shared top plane. Keep the underside
+			# without coplanar ceiling/floor fragments fighting for that plane.
+			position3.y -= .015
+		elif layer == "ground" and _drawing_location == client.location:
+			# The lower facade's top beam shares the nominal floor plane too.
+			position3.y += .005
 	if role in ["wall", "window", "door"] and props.has("wall_height"):
 		basis = basis.scaled(Vector3(1, float(props["wall_height"]) / STOREY, 1))
 	if d.get("openable", false) and role != "door" and props.get("open", false):
@@ -651,10 +665,10 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	else:
 		var entries: Array = _job["instances"].get_or_add(instance_id, [])
 		entries.append(t)
-		# A house's parts, cut away while one is inside it: [cell, a cover (ceiling, roof) or not].
+		# The same cell/kind/location policy drives rendering and mouse picking.
 		var parts: Array = _job["parts"].get_or_add(instance_id, [])
 		var cover := layer in ["ceiling", "roof"]
-		parts.append([cell, cover, _drawing_location != client.location] if cover or role in ["wall", "window", "door"] or _drawing_location != client.location else [])
+		parts.append([cell, "cover" if cover else ("wall" if role in ["wall", "window", "door"] else "object"), _drawing_location if _drawing_location != "" else client.location])
 	_job["count"] += 1
 	var target := {"kind": "part", "id": id, "layer": layer, "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location}
 	if props.has("inn_bed"):
@@ -676,12 +690,14 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		var nugget_id := "base:" + ore + "_outcrop"
 		var nuggets: Array = _job["instances"].get_or_add(nugget_id, [])
 		nuggets.append(Transform3D(Basis.from_scale(Vector3.ONE * .6), position3 + Vector3.UP * 1.65))
+		(_job["parts"].get_or_add(nugget_id, []) as Array).append([cell, "object", _drawing_location])
 	if d.has("light"):
 		var light := OmniLight3D.new()
 		light.position = position3 + Vector3.UP
 		light.light_color = Color(String(d["light"].get("color", "#ffbb72")))
 		light.light_energy = 1.55 * float(d["light"].get("intensity", .9))
 		light.omni_range = float(d["light"].get("radius", 5)) + 1.0
+		light.set_meta("cut_cell", cell)
 		(_job["root"] as Node).add_child(light)
 	# What it gives off (sparks, smoke, embers) from the top of its model; the
 	# content's offsets (pixels up from the cell's foot) only order them there.
@@ -691,6 +707,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		var p := Effects3D.of(kind)
 		if p:
 			p.position = Vector3(position3.x + float(fx[kind][0]) / CELL, top + maxf(0, -float(fx[kind][1])) / CELL * .15, position3.z)
+			p.set_meta("cut_cell", cell)
 			(_job["root"] as Node).add_child(p)
 
 func bridge_mesh(cell: Vector2i) -> Mesh:
@@ -924,7 +941,8 @@ func _add_box_faces(box: AABB, target: Dictionary) -> void:
 func _finish_chunk() -> void:
 	var root: Node3D = _job["root"]
 	var st: SurfaceTool = _job["ground"]
-	var material := ground_material.make(_job["origin"], func(at: Vector2i) -> String: return _cell_layer(at, "ground"))
+	var location := String(_job["key"]).get_slice("|", 0)
+	var material := ground_material.make(_job["origin"], func(at: Vector2i) -> String: return client.cell_at(location, at, "ground"))
 	st.set_material(material)
 	var mesh := MeshInstance3D.new()
 	mesh.mesh = st.commit()
@@ -964,9 +982,12 @@ func _finish_chunk() -> void:
 		var life := Effects3D.ambient(kind, PackedVector3Array(_job["ambient"][kind]))
 		if life:
 			life.add_to_group("ambient_" + kind)
+			life.set_meta("cut_ambient", kind)
 			life.visible = kind != "fireflies" or _night
 			root.add_child(life)
-	root.set_meta("exterior", _drawing_location != client.location)
+	root.set_meta("location", String(_job["key"]).get_slice("|", 0))
+	root.set_meta("origin", _job["origin"])
+	_apply_cut_root(root)
 	root.set_meta("count", _job["count"])
 	if not (_job["crops"] as Array).is_empty():
 		root.set_meta("crops", _job["crops"])
@@ -1039,7 +1060,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 				actor = null
 		if actor == null:
 			actor = BillboardActor3D.new()
-			actor.setup(content, visual_for(id, looks), looks, {"kind": "entity", "id": id, "entity": e, "location": client.location},
+			actor.setup(content, visual_for(id, looks), looks, {"kind": "entity", "id": id, "entity": e, "location": Levels.SURFACE if int(e.get("z", client.z)) == 0 else client.location},
 				doll_for(id, looks))
 			actor.doll.stepped.connect(func() -> void:
 				if on_step.is_valid():
@@ -1053,7 +1074,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 			var half: Vector2i = body["half"]
 			(actor.shape.shape as BoxShape3D).size = Vector3(maxf(.3, half.x * 2.0 / Movement.UNIT + .1), tall, maxf(.3, half.y * 2.0 / Movement.UNIT + .1))
 			actor.shape.position.y = tall / 2.0
-		actor.body.set_meta("target", {"kind": "entity", "id": id, "entity": e, "location": client.location})
+		actor.body.set_meta("target", {"kind": "entity", "id": id, "entity": e, "location": Levels.SURFACE if int(e.get("z", client.z)) == 0 else client.location})
 		actor.doll.submerged = (client.in_water(client.position) or client.aboard() != "") if id == client.character_id else (kind == "character" and (client.in_water(Vector2i(int(e.get("x", 0)), int(e.get("y", 0)))) or String(e.get("aboard", "")) != ""))
 		# A dweller standing at its spot looks where it is told (into the fire).
 		var face: Array = e.get("face", [])
@@ -1220,7 +1241,7 @@ func _update_item(id: String, e: Dictionary, at: Vector3) -> void:
 		box.size = Vector3(.6, .6, .6)
 		shape.shape = box
 		body.add_child(shape)
-		body.set_meta("target", {"kind": "entity", "id": id, "entity": e, "location": client.location})
+		body.set_meta("target", {"kind": "entity", "id": id, "entity": e, "location": Levels.SURFACE if int(e.get("z", client.z)) == 0 else client.location})
 		node.add_child(body)
 	node.position = at + Vector3.UP * .3  # its middle: the picture stands on the ground
 
@@ -1232,7 +1253,7 @@ func screen_point(screen: Vector2) -> Vector2:
 	# stands before or behind it (as in RO: the sprites are what one clicks).
 	var being := _actor_at(screen * _pixel)
 	if being != "":
-		_cursor = {"kind": "entity", "id": being, "entity": client.entities.get(being, {}), "location": client.location}
+		_cursor = {"kind": "entity", "id": being, "entity": client.entities.get(being, {}), "location": Levels.SURFACE if int(client.entities[being].get("z", client.z)) == 0 else client.location}
 		var a := _actors[being] as Node3D
 		return Vector2(a.position.x, a.position.z) * CELL
 	var origin := eye.project_ray_origin(screen * _pixel)
@@ -1243,21 +1264,11 @@ func screen_point(screen: Vector2) -> Vector2:
 	if own_actor:
 		query.exclude = [own_actor.body.get_rid()]
 	var hit := {}
-	# In the house one is in, what is cut away (its roof, its ceiling, its
-	# walls above their sixth) is passed through: one points at what is inside.
-	for tries in 6:
+	# Pass through hidden facades, covers and exterior scenery.
+	for tries in 32:
 		hit = eye.get_world_3d().direct_space_state.intersect_ray(query)
-		if hit.is_empty():
-			break
-		_cursor = {}
-		var body := hit["collider"] as Node
-		if body.has_meta("target"):
-			_cursor = body.get_meta("target")
-		elif body.has_meta("targets"):
-			var targets: Array = body.get_meta("targets")
-			var face := int(hit.get("face_index", -1))
-			if face >= 0 and face < targets.size():
-				_cursor = targets[face]
+		if hit.is_empty(): break
+		_cursor = _hit_target(hit)
 		if not _cut_off(_cursor, hit["position"]):
 			break
 		query.from = (hit["position"] as Vector3) + (to - origin).normalized() * .02
@@ -1283,7 +1294,7 @@ func _actor_at(at: Vector2) -> String:
 	var nearest := INF
 	for id: String in _actors:
 		var a := _actors[id] as BillboardActor3D
-		if a == null or id == client.character_id or not client.entities.has(id):
+		if a == null or not a.visible or id == client.character_id or not client.entities.has(id):
 			continue
 		# Its figure as drawn (a hare small, a cow big): the picture's own
 		# opaque part about its feet (the author: pointing at a hare took the grass).
@@ -1301,23 +1312,50 @@ func _actor_at(at: Vector2) -> String:
 		var h := eye.unproject_position(feet + Vector3.UP * tall)
 		var half := maxf(4.0 * _pixel, (eye.unproject_position(feet + eye.global_transform.basis.x * wide) - f).length())
 		if Rect2(Vector2(minf(f.x, h.x) - half, minf(f.y, h.y) - 2.0 * _pixel), Vector2(absf(f.x - h.x) + half * 2.0, absf(f.y - h.y) + 4.0 * _pixel)).has_point(at):
+			if not _actor_visible_at(a, at): continue
 			var d := eye.global_position.distance_squared_to(feet)
 			if d < nearest:
 				nearest = d
 				best = id
 	return best
 
-## Whether a part hit at a point is cut away round the player (not there to point at).
-func _cut_off(t: Dictionary, at: Vector3) -> bool:
-	if _cut == Rect2i() or t.get("kind") != "part" or not _cut.has_point(t.get("cell", Vector2i.MAX)):
+## Screen rectangles cannot select a street actor through an opaque upper
+## floor. Hidden facade colliders are skipped just as for the scenery ray.
+func _actor_visible_at(actor: BillboardActor3D, pixel: Vector2) -> bool:
+	var origin := eye.project_ray_origin(pixel)
+	var direction := eye.project_ray_normal(pixel)
+	var depth := (actor.global_position + Vector3.UP * .8 - origin).dot(direction)
+	var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * depth)
+	query.hit_back_faces = true
+	var own := _actors.get(client.character_id) as BillboardActor3D
+	if own: query.exclude = [own.body.get_rid()]
+	for tries in 32:
+		var hit := eye.get_world_3d().direct_space_state.intersect_ray(query)
+		if hit.is_empty() or hit["collider"] == actor.body: return true
+		if not _cut_off(_hit_target(hit), hit["position"]): return false
+		query.from = (hit["position"] as Vector3) + direction * .02
+	return false
+
+## Hidden terrain and parts are skipped by the picking ray too.
+func _cut_off(t: Dictionary, _at: Vector3) -> bool:
+	if _cut == Rect2i() or t.is_empty():
 		return false
-	if t.get("location", client.location) != client.location:
-		return true
-	if String(t.get("layer", "")) in ["roof", "ceiling"]:
-		return true
+	if t.get("kind") == "entity":
+		var e: Dictionary = t.get("entity", {})
+		var cell := Movement.cell_of(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
+		return int(e.get("z", client.z)) > client.z and _cut_cells.has(cell)
+	var layer := String(t.get("layer", ""))
 	var role := String(content.get_def(String(t.get("id", ""))).get("role", ""))
-	var cell: Vector2i = t["cell"]
-	return role in ["wall", "window", "door"] and at.y > _floor_at(Vector2(cell) + Vector2.ONE * .5) + STOREY / 6.0 + .05
+	var kind := "cover" if layer in ["roof", "ceiling"] else ("wall" if role in ["wall", "window", "door"] else "object")
+	return _part_hidden(t.get("cell", Vector2i.MAX), kind, String(t.get("location", client.location)))
+
+func _hit_target(hit: Dictionary) -> Dictionary:
+	var body := hit.get("collider") as Node
+	if body == null: return {}
+	if body.has_meta("target"): return body.get_meta("target")
+	var targets: Array = body.get_meta("targets", [])
+	var face := int(hit.get("face_index", -1))
+	return targets[face] if face >= 0 and face < targets.size() else {}
 
 ## A visual's figure in metres: [half its width, its height] of the opaque
 ## part of its first frame about its feet; at least a body's. Cached.
@@ -1344,7 +1382,7 @@ func _figure(v: Dictionary) -> Vector2:
 	return out
 
 func covers_shown(cell: Vector2i) -> bool:
-	return not _cut.has_point(cell)
+	return not _part_hidden(cell, "cover", client.location)
 
 ## Where the mouse is not over the 3D view (a point given outright): pick by the point.
 func point_at(_point: Vector2) -> void:
@@ -1354,7 +1392,7 @@ func pick_target(point: Vector2) -> Dictionary:
 	if not _cursor.is_empty():
 		var target := _cursor.duplicate()
 		if target.get("kind") == "part":
-			var props := props_at(target["cell"])
+			var props := client.props_of(String(target.get("location", client.location)), target["cell"])
 			var worn: Dictionary = props if target["layer"] == "structure" else props.get(target["layer"], {})
 			for key: String in ["damage", "work"]:
 				if int(worn.get(key, 0)) > 0:
@@ -1362,49 +1400,152 @@ func pick_target(point: Vector2) -> Dictionary:
 		return target
 	return super(point)
 
-## The house one is inside (a roof or a ceiling over one's cell): its rect grown
-## by its walls; its covers are not drawn and its walls stand a sixth of their
-## height (the author, 28.10.2026), so one sees in. Empty when outdoors.
+## The current-floor cut follows the live floor, including its partitions and stair
+## openings. Only the two exterior facades facing the camera are removed.
 var _cut := Rect2i()
+var _cut_cells := {}
 var _cut_from := Vector2i(1 << 30, 0)
+var _cut_camera := Vector2i.ZERO
+var _cut_building := ""
+var _own_silhouette: Sprite3D
+
+func _building_id(cell: Vector2i) -> String:
+	var props := props_at(cell)
+	for key: String in ["building", "hospitality", "construction"]:
+		if props.get(key, "") is String and props.get(key, "") != "":
+			return String(props[key])
+	return String((props.get("ceiling", {}) as Dictionary).get("building", ""))
+
+func _interior_cells(me: Vector2i) -> Dictionary:
+	var identity := _building_id(me)
+	var cells := {}
+	var pending: Array[Vector2i] = [me]
+	var visited := {}
+	var covered := false
+	while not pending.is_empty():
+		var at: Vector2i = pending.pop_back()
+		if visited.has(at): continue
+		visited[at] = true
+		if _building_id(at) != identity: continue
+		var floor := _cell_layer(at, "ground")
+		var cover := _cell_layer(at, "roof") != "" or _cell_layer(at, "ceiling") != ""
+		var laid: bool = floor in ["base:wood_floor", "base:stone_floor"] or content.get_def(floor).get("role") == "floor"
+		var hole: bool = floor == "" and (props_at(at).get("stairs_down", false) or cover)
+		var props := props_at(at)
+		var player_cover := (props.get("ceiling", {}) as Dictionary).has("owner") or (props.get("roof", {}) as Dictionary).has("owner")
+		var sheltered_ground := cover and floor != "" and player_cover
+		if not laid and not hole and not sheltered_ground: continue
+		# Without a building ID, a bare deck must not connect separate houses.
+		if identity == "" and not cover and not hole and at != me: continue
+		cells[at] = true
+		covered = covered or cover
+		for d: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+			if not visited.has(at + d): pending.append(at + d)
+	return cells if covered else {}
 
 func _update_cutaway() -> void:
 	var me := Movement.cell_of(client.position) if client.has_position else Vector2i(1 << 30, 0)
-	if me == _cut_from:
-		return
-	_cut_from = me
-	var inside := client.has_position and (_cell_layer(me, "roof") != "" or _cell_layer(me, "ceiling") != "")
-	var cut := building_footprint(me).grow(1) if inside else Rect2i()
-	if cut == _cut:
-		return
-	_cut = cut
-	for root: Node in _geometry.values():
-		for node: Node in root.get_children():
-			if node.has_meta("parts"):
-				_cut_away(node as MultiMeshInstance3D)
+	var camera := Vector2i(1 if -sin(yaw) >= 0 else -1, 1 if cos(yaw) >= 0 else -1)
+	var changed := me != _cut_from
+	var turned := camera != _cut_camera
+	if not changed and not turned: return
+	_cut_camera = camera
+	if changed:
+		_cut_from = me
+		var cells := _interior_cells(me) if client.has_position and client.z >= 0 else {}
+		var chunk := client.chunk_at(client.location, me.x, me.y)
+		var building := String(chunk.meta.get("building", "")) if chunk else ""
+		if building == "": building = String((props_at(me).get("ceiling", {}) as Dictionary).get("building", _building_id(me)))
+		var same := cells == _cut_cells and building == _cut_building
+		_cut_building = building
+		if same and not turned: return
+		_cut_cells = cells
+		_cut = Rect2i()
+		for cell: Vector2i in _cut_cells:
+			_cut = Rect2i(cell, Vector2i.ONE) if _cut == Rect2i() else _cut.merge(Rect2i(cell, Vector2i.ONE))
+	for root: Node in _geometry.values(): _apply_cut_root(root)
 
-## Lays a chunk's house parts as the cut says: whole, or cut away inside it.
+func _near_wall(cell: Vector2i) -> bool:
+	var near_side := false
+	var far_side := false
+	for d: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+		if _cut_cells.has(cell + d): continue
+		if d.x * _cut_camera.x + d.y * _cut_camera.y > 0: near_side = true
+		else: far_side = true
+	# A mixed corner supports a retained far wall; keep that corner post.
+	return near_side and not far_side
+
+func _part_hidden(cell: Vector2i, kind: String, location: String) -> bool:
+	if _cut == Rect2i(): return false
+	if location == client.location:
+		return _cut_cells.has(cell) and (kind == "cover" or (kind == "wall" and _near_wall(cell)))
+	var chunk := client.chunk_at(location, cell.x, cell.y)
+	return chunk != null and _cut_building != "" and chunk.meta.get("building", "") == _cut_building and int(chunk.meta.get("building_z", 0)) > client.z
+
+func _apply_cut_root(root: Node) -> void:
+	var location := String(root.get_meta("location", client.location))
+	(root as Node3D).visible = not _part_hidden(root.get_meta("origin", Vector2i.ZERO), "object", location)
+	for node: Node in root.get_children():
+		if node.has_meta("parts"): _cut_away(node as MultiMeshInstance3D)
+		elif node.has_meta("cut_cell"):
+			(node as Node3D).visible = not _part_hidden(node.get_meta("cut_cell"), "object", location)
+		elif node.has_meta("cut_ambient"):
+			(node as Node3D).visible = node.get_meta("cut_ambient") != "fireflies" or _night
+
 func _cut_away(node: MultiMeshInstance3D) -> void:
 	var parts: Array = node.get_meta("parts")
 	var transforms: Array = node.get_meta("transforms")
 	for i in parts.size():
 		node.multimesh.set_instance_transform(i, cut_transform(transforms[i], parts[i]))
 
-## Where a house part stands as the cut says: as laid; or, in the house one is in,
-## a cover gone and a wall a sixth of its height on its foot.
 func cut_transform(t: Transform3D, part: Array) -> Transform3D:
-	if part.is_empty() or not _cut.has_point(part[0]):
-		return t
-	if part[1] or (part.size() > 2 and part[2]):
+	if not part.is_empty() and _part_hidden(part[0], part[1], part[2]):
 		return Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
-	return t * Transform3D(Basis.from_scale(Vector3(1, 1.0 / 6.0, 1)), Vector3.ZERO)
+	return t
+
+func _update_interior_actors() -> void:
+	for id: String in _actors:
+		var actor := _actors[id] as Node3D
+		var cell := Vector2i(floori(actor.position.x), floori(actor.position.z))
+		actor.visible = id == client.character_id or _cut == Rect2i() or int(client.entities.get(id, {}).get("z", client.z)) <= client.z or not _cut_cells.has(cell)
+
+## Only our own figure is shown through a retained partition or furnishing.
+## Reuse the existing animated doll texture; never reveal remote beings.
+func _update_own_silhouette() -> void:
+	if is_instance_valid(_own_silhouette): _own_silhouette.visible = false
+	var actor := _actors.get(client.character_id) as BillboardActor3D
+	if _cut == Rect2i() or actor == null: return
+	var to := actor.global_position + Vector3.UP * .9
+	var from := eye.project_ray_origin(eye.unproject_position(to))
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.exclude = [actor.body.get_rid()]
+	query.hit_back_faces = true
+	var occluded := false
+	for tries in 32:
+		var hit := eye.get_world_3d().direct_space_state.intersect_ray(query)
+		if hit.is_empty(): break
+		var target := _hit_target(hit)
+		if not _cut_off(target, hit["position"]):
+			occluded = target.get("kind") == "part"
+			break
+		query.from = (hit["position"] as Vector3) + (to - from).normalized() * .02
+	if not occluded: return
+	if not is_instance_valid(_own_silhouette):
+		_own_silhouette = Sprite3D.new()
+		var material := ShaderMaterial.new()
+		material.shader = preload("res://src/experiment_3d/interior_silhouette.gdshader")
+		material.set_shader_parameter("paper", actor.viewport.get_texture())
+		_own_silhouette.material_override = material
+		_own_silhouette.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		actor.add_child(_own_silhouette)
+	_own_silhouette.texture = actor.picture.texture
+	_own_silhouette.pixel_size = actor.picture.pixel_size
+	_own_silhouette.offset = actor.picture.offset
+	_own_silhouette.transform = actor.picture.transform
+	_own_silhouette.visible = true
 
 func hidden_room() -> Dictionary:
-	if client.has_position:
-		var cell := Movement.cell_of(client.position)
-		if _cell_layer(cell, "roof") != "" or _cell_layer(cell, "ceiling") != "":
-			return {cell: true}
-	return {}
+	return {Movement.cell_of(client.position): true} if client.has_position and _cut != Rect2i() else {}
 
 func swing_own(dir: Vector2) -> void:
 	var actor := _actors.get(client.character_id) as BillboardActor3D

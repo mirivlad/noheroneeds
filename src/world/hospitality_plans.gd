@@ -252,6 +252,14 @@ func _layout(id: String, template: Dictionary, at: Vector2i, village: String) ->
 				if tile == "D":
 					out["door"] = p
 				cells[p] = spec
+	for cells: Dictionary in [out["cells"], out["upper"]]:
+		for cell: Vector2i in cells:
+			var spec: Dictionary = cells[cell]
+			if settlements.content.get_def(String(spec.get("structure", ""))).get("role") != "door": continue
+			var role_at := func(at: Vector2i) -> String: return String(settlements.content.get_def(String(cells.get(at, {}).get("structure", ""))).get("role", ""))
+			var facing := BuildRules.door_facing(role_at, cell, String(spec["props"].get("facing", "s")))
+			assert(facing != "", "door has no straight wall opening: %s %s" % [id, cell])
+			spec["props"]["facing"] = facing
 	var sign: Vector2i = out["door"] + Vector2i(2 if roll % 2 else -2, 1)
 	out["cells"][sign] = {"structure": "base:inn_sign", "cover": "", "props": {"hospitality": id, "village": village, "facing": "s", "decor": roll % 3}}
 	return out

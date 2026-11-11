@@ -52,8 +52,15 @@ static func check(view: Object, content: ContentRegistry, part: String, location
 				or bool(content.get_def(c.get_cell("cover", lx, ly)).get("solid", false)):
 			return "blocked"
 		return ""
-	if c.get_cell(Terrain.layer_for_role(role), lx, ly) != "":
+	var existing := c.get_cell(Terrain.layer_for_role(role), lx, ly)
+	var replacing: bool = role == "door" and content.get_def(existing).get("role") == ("fence" if float(def.get("height", 1.0)) < 1.0 else "wall")
+	if existing != "" and not replacing:
 		return "occupied"
+	if replacing and actor != "" and c.get_props(lx, ly).get("owner", "") != actor:
+		return "not_owner"
+	if role == "door":
+		facing = placement_facing(view, content, part, location, x, y, facing)
+		if facing == "": return "door_frame"
 	if def.get("open_fire", false) and float(view.build_rain(location, x, y)) > 0.05:
 		return "rain"
 	match role:
@@ -82,7 +89,7 @@ static func check(view: Object, content: ContentRegistry, part: String, location
 			if Terrain.is_solid(c, lx, ly, content, on_level):
 				return "blocked"
 		_:
-			if Terrain.is_solid(c, lx, ly, content, on_level):
+			if not replacing and Terrain.is_solid(c, lx, ly, content, on_level):
 				return "blocked"  # water, a tree...
 			# The approach follows the door's facing, independently of camera yaw.
 			var normal: Vector2i = ContentRegistry.FACINGS.get(facing, Vector2i.DOWN)
@@ -103,6 +110,39 @@ static func check(view: Object, content: ContentRegistry, part: String, location
 				return "someone_there"
 	return ""
 
+
+## A door follows one straight wall axis. Only its opening side is chosen.
+## A conversion may use an end of a two-cell wall; an empty opening needs
+## support on both sides. Corners and junctions have no valid opening axis.
+static func door_facing(role_at: Callable, cell: Vector2i, wanted: String, replacing := false) -> String:
+	var left: bool = role_at.call(cell + Vector2i.LEFT) in WALL_LIKE
+	var right: bool = role_at.call(cell + Vector2i.RIGHT) in WALL_LIKE
+	var up: bool = role_at.call(cell + Vector2i.UP) in WALL_LIKE
+	var down: bool = role_at.call(cell + Vector2i.DOWN) in WALL_LIKE
+	if (left and right or replacing and (left or right)) and not up and not down:
+		return "n" if wanted == "n" else "s"
+	if (up and down or replacing and (up or down)) and not left and not right:
+		return "w" if wanted == "w" else "e"
+	return ""
+
+static func placement_facing(view: Object, content: ContentRegistry, part: String, location: String, x: int, y: int, wanted: String) -> String:
+	var def := content.get_def(part)
+	if def.get("role") != "door": return facing_of(def, wanted)
+	var replacing: bool = _role_at(view, content, location, x, y) == ("fence" if float(def.get("height", 1.0)) < 1.0 else "wall")
+	return door_facing(func(at: Vector2i) -> String: return _role_at(view, content, location, at.x, at.y), Vector2i(x, y), wanted, replacing)
+
+## Signed material balance: charge positive entries, refund negative ones.
+## Converting one's wall follows the normal full dismantling refund policy.
+static func placement_cost(view: Object, content: ContentRegistry, part: String, location: String, x: int, y: int) -> Dictionary:
+	var cost := content.structure_cost(part).duplicate()
+	var c: Chunk = view.build_chunk(location, x >> 5, y >> 5)
+	if c == null or content.get_def(part).get("role") != "door": return cost
+	var existing := c.get_cell("structure", x & 31, y & 31)
+	var def := content.get_def(part)
+	if content.get_def(existing).get("role") != ("fence" if float(def.get("height", 1.0)) < 1.0 else "wall"): return cost
+	for id: String in content.structure_cost(existing):
+		cost[id] = int(cost.get(id, 0)) - int(content.structure_cost(existing)[id])
+	return cost
 
 ## Within building reach of `pos` (movement units).
 static func reaches(pos: Vector2i, x: int, y: int) -> bool:

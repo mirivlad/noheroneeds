@@ -2071,7 +2071,8 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	if not _reaches(actor, loc, x, y, BUILD_REACH):
 		return {"ok": false, "reason": "too_far"}
 	# The rules the client also shows its blueprints by (BuildRules).
-	var why := BuildRules.check(self, content, part, loc, x, y, _facing(def, r), actor)
+	var facing := BuildRules.placement_facing(self, content, part, loc, x, y, _facing(def, r))
+	var why := BuildRules.check(self, content, part, loc, x, y, facing, actor)
 	if why != "":
 		return {"ok": false, "reason": why}
 	var c := chunk(loc, at[1], at[2])
@@ -2081,7 +2082,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	var upper := ""
 	if role == "ceiling":
 		building = levels.building(loc) if on_level else ""
-	var costs := content.structure_cost(part)
+	var costs := BuildRules.placement_cost(self, content, part, loc, x, y)
 	var inv := inventory(actor)
 	if not inv.has_all(costs):
 		return {"ok": false, "reason": "materials"}
@@ -2107,6 +2108,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	# maker and wear kept with the part, to come back when it is taken apart.
 	var made := {}
 	for id: String in costs:
+		if int(costs[id]) <= 0: continue
 		var placing := content.get_def(id).has("places")
 		var copy := ri(r, "copy", -1) if placing else -1
 		var taken := inv.take(id, int(costs[id]), copy if copy < inv.count(id) else -1)
@@ -2131,7 +2133,7 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	if def.has("container"):
 		props["store"] = Uuid.v4()  # its contents are an inventory of their own
 	if not (def["rotations"] as Array).is_empty():
-		props["facing"] = _facing(def, r)
+		props["facing"] = facing
 	if role == "stairs":
 		# Where it leads is settled now, so the way down above, the climb and
 		# the landing it needs agree whatever is built around it later.
@@ -2169,6 +2171,8 @@ func _build(actor: String, r: Dictionary) -> Dictionary:
 	else:
 		_set_layer_props(c, layer, at[3], at[4], props)
 	_changed(chunk_key(loc, at[1], at[2]))
+	for id: String in costs:
+		if int(costs[id]) < 0: give(actor, id, -int(costs[id]))
 	if role == "stairs":
 		_mark_stairs_down(loc, x, y, true)
 	if role == "shaft":

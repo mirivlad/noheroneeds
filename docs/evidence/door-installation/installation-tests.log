@@ -1,0 +1,9 @@
+PASS test_door_installation::test_conversion_preserves_layers_and_dismantling_leaves_an_opening_without_duplication (17074 ms)
+PASS test_door_installation::test_denied_conversion_does_not_touch_wall_or_inventory (2156 ms)
+PASS test_door_installation::test_stone_wall_refund_is_exact_and_door_orientation_survives_reopen (2395 ms)
+PASS test_doors::test_doors_align_to_either_wall_axis (39 ms)
+PASS test_doors::test_rotated_doors_and_gates_preserve_their_approach (41 ms)
+PASS test_doors::test_free_doors_corners_and_junctions_are_refused (49 ms)
+PASS test_doors::test_wall_replacement_requires_ownership_and_keeps_material_balance (44 ms)
+expected engine errors: 0
+7 tests, 0 failed checks, 22.0s

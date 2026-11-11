@@ -49,6 +49,7 @@ func test_door_opens_and_closes() -> void:
 	var w := _world()
 	var a := _arrive(w, "a", Vector2i(0, 0))
 	w.grant(a, "base:plank", 4)
+	for y in [-1, 1]: w.chunk("surface", 0, y >> 5).set_cell("structure", 2, y & 31, "base:wood_wall")
 	eq(_req(w, a, {"type": "build", "location": "surface", "x": 2, "y": 0, "part": "base:wood_door"}), {"ok": true})
 	_walk(w, a, 1, 40)
 	check(w.present[a]["pos"].x < 2 * Movement.UNIT, "a closed door stops the way")

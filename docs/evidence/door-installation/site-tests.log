@@ -1,0 +1,166 @@
+Documentation ready: 294 records, 14 guides
+test_all_ingredients_results_and_both_directions_resolve (test_build.CatalogTests.test_all_ingredients_results_and_both_directions_resolve) ... ok
+test_build_bytes_are_deterministic_and_media_are_local (test_build.CatalogTests.test_build_bytes_are_deterministic_and_media_are_local) ... ok
+test_every_recipe_and_its_exact_data_come_from_content (test_build.CatalogTests.test_every_recipe_and_its_exact_data_come_from_content) ... ok
+test_guide_coverage_links_and_live_hospitality_facts (test_build.CatalogTests.test_guide_coverage_links_and_live_hospitality_facts) ... ok
+test_history_is_exactly_the_publications_not_the_tags (test_build.CatalogTests.test_history_is_exactly_the_publications_not_the_tags) ... ok
+test_no_missing_or_empty_candidate_changelog_is_accepted (test_build.CatalogTests.test_no_missing_or_empty_candidate_changelog_is_accepted) ... ok
+test_ore_chains_work_for_all_four_metals (test_build.CatalogTests.test_ore_chains_work_for_all_four_metals) ... ok
+test_rebuild_removes_stale_future_pages_but_does_not_overwrite_unrelated_files (test_build.CatalogTests.test_rebuild_removes_stale_future_pages_but_does_not_overwrite_unrelated_files) ... ok
+test_teachers_prices_skills_and_stock_are_not_independent_copies (test_build.CatalogTests.test_teachers_prices_skills_and_stock_are_not_independent_copies) ... ok
+test_cross_pack_missing_reference_and_dependency_cycle_are_rejected (test_build.DiscoveryTests.test_cross_pack_missing_reference_and_dependency_cycle_are_rejected) ... ok
+test_duplicate_ids_are_rejected (test_build.DiscoveryTests.test_duplicate_ids_are_rejected) ... ok
+test_new_ids_and_additional_packs_are_discovered (test_build.DiscoveryTests.test_new_ids_and_additional_packs_are_discovered) ... ok
+test_pack_format_matches_the_game_registry (test_build.DiscoveryTests.test_pack_format_matches_the_game_registry) ... ok
+test_teaching_wrong_type_or_invalid_terms_is_rejected (test_build.DiscoveryTests.test_teaching_wrong_type_or_invalid_terms_is_rejected) ... ok
+test_unknown_content_kind_requires_support_instead_of_silent_omission (test_build.DiscoveryTests.test_unknown_content_kind_requires_support_instead_of_silent_omission) ... ok
+test_unknown_ingredient_and_result_are_rejected (test_build.DiscoveryTests.test_unknown_ingredient_and_result_are_rejected) ... ok
+test_actual_guide_update_and_current_hashes_pass_but_later_code_change_fails (test_policy.ReceiptTests.test_actual_guide_update_and_current_hashes_pass_but_later_code_change_fails) ... ok
+test_internal_exemption_needs_a_specific_reason_and_exact_files (test_policy.ReceiptTests.test_internal_exemption_needs_a_specific_reason_and_exact_files) ... ok
+test_large_internal_exemption_is_rejected (test_policy.ReceiptTests.test_large_internal_exemption_is_rejected) ... ok
+test_large_internal_review_does_not_force_a_fictional_player_guide_change (test_policy.ReceiptTests.test_large_internal_review_does_not_force_a_fictional_player_guide_change) ... ok
+test_missing_receipt_blocks_gameplay_change (test_policy.ReceiptTests.test_missing_receipt_blocks_gameplay_change) ... ok
+test_semantic_content_cannot_use_internal_exemption (test_policy.ReceiptTests.test_semantic_content_cannot_use_internal_exemption) ... ok
+test_unchanged_or_cosmetically_changed_guide_does_not_cover_behavior (test_policy.ReceiptTests.test_unchanged_or_cosmetically_changed_guide_does_not_cover_behavior) ... ok
+test_unknown_mechanic_or_missing_guide_is_rejected (test_policy.ReceiptTests.test_unknown_mechanic_or_missing_guide_is_rejected) ... ok
+test_main_cannot_leak_future_content_or_guide_into_public_site (test_publication.PublicationTests.test_main_cannot_leak_future_content_or_guide_into_public_site) ... Built 1 records, 0 relations for v1.0.0 -> /tmp/tmpn0pgkbml/public
+ok
+test_missing_or_mutable_bootstrap_ref_fails_closed (test_publication.PublicationTests.test_missing_or_mutable_bootstrap_ref_fails_closed) ... ok
+test_new_publication_switches_both_content_and_docs_to_its_exact_tag (test_publication.PublicationTests.test_new_publication_switches_both_content_and_docs_to_its_exact_tag) ... Built 1 records, 0 relations for v2.0.0 -> /tmp/tmp4iuyxteo/new-public
+ok
+test_published_release_cannot_be_repackaged_by_release_workflow_mode (test_release_mode.ReleaseModeTests.test_published_release_cannot_be_repackaged_by_release_workflow_mode) ... ok
+test_game_tests_only_run_when_called_by_the_release_workflow (test_workflows.WorkflowTests.test_game_tests_only_run_when_called_by_the_release_workflow) ... ok
+test_published_site_uses_a_snapshot_and_release_workflow_calls_it_explicitly (test_workflows.WorkflowTests.test_published_site_uses_a_snapshot_and_release_workflow_calls_it_explicitly) ... ok
+test_tag_and_manual_release_share_the_same_mandatory_documentation_barrier (test_workflows.WorkflowTests.test_tag_and_manual_release_share_the_same_mandatory_documentation_barrier) ... ok
+test_website_checks_include_actual_generator_policy_and_browser_tests (test_workflows.WorkflowTests.test_website_checks_include_actual_generator_policy_and_browser_tests) ... ok
+
+----------------------------------------------------------------------
+Ran 32 tests in 1.502s
+
+OK
+{"tag": "v1.0.0", "game_commit": "08be3c75d1bbd519922a0f219ac011fe39f942a5", "documentation_commit": "72858561ee01a36d8737d0e9c454bb55e0be5061", "published_at": "2026-10-01T01:00:00Z"}
+{"tag": "v2.0.0", "game_commit": "0def344d657bb7c48b8aafd47820f9232792ac8d", "documentation_commit": "0def344d657bb7c48b8aafd47820f9232792ac8d", "published_at": "2026-10-02T01:00:00Z"}
+
+> check
+> node --check assets/site.js
+
+
+> test
+> playwright test
+
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:30] "GET /noheroneeds/ HTTP/1.1" 200 -
+
+Running 10 tests using 1 worker
+
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:32] "GET /noheroneeds/ HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:32] "GET /noheroneeds/assets/media/ef81f48838-inn-exterior.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:32] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:32] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:32] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:32] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:32] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:33] "GET /noheroneeds/assets/media/70d13ff7db-hanging_bridge.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:33] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:33] "GET /noheroneeds/wiki.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:33] "GET /noheroneeds/data/wiki.json HTTP/1.1" 304 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:33] "GET /noheroneeds/data/releases.json HTTP/1.1" 304 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:33] "GET /noheroneeds/data/search.json HTTP/1.1" 304 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:34] "GET /noheroneeds/guides.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:34] "GET /noheroneeds/data/wiki.json HTTP/1.1" 304 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:34] "GET /noheroneeds/data/releases.json HTTP/1.1" 304 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:34] "GET /noheroneeds/data/search.json HTTP/1.1" 304 -
+  ✓   1 tests/browser/site.spec.js:10:1 › home and section navigation work under the repository subpath (2.8s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:34] "GET /noheroneeds/wiki.html?item=base%3Airon_ore HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:34] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:34] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:35] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:35] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:35] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:35] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+  ✓   2 tests/browser/site.spec.js:22:1 › iron links connect ore, smelting, ingot, sword and smith (2.8s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:37] "GET /noheroneeds/ HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:37] "GET /noheroneeds/assets/media/ef81f48838-inn-exterior.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:37] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:37] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:38] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:38] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:38] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:38] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:38] "GET /noheroneeds/guides.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:38] "GET /noheroneeds/assets/media/71a7640cfd-village-tavern-evening.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:38] "GET /noheroneeds/assets/media/36e3776543-inn-bedroom.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:39] "GET /noheroneeds/wiki.html?item=base%3Airon_ore HTTP/1.1" 200 -
+  ✓   3 tests/browser/site.spec.js:34:1 › global search includes all guides and generated content on every page (2.0s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:39] "GET /noheroneeds/guides.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:39] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:39] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:40] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:40] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:40] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:40] "GET /noheroneeds/assets/media/36e3776543-inn-bedroom.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:40] "GET /noheroneeds/assets/media/71a7640cfd-village-tavern-evening.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:40] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:41] "GET /noheroneeds/wiki.html?item=base%3Ainnkeeper HTTP/1.1" 200 -
+  ✓   4 tests/browser/site.spec.js:46:1 › hospitality guide has live terms and crosslinks to the host and services (2.6s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:42] "GET /noheroneeds/wiki.html?item=base%3Ano_such_record HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:42] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:42] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:42] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:42] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:42] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:43] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:43] code 404, message File not found
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:43] "GET /noheroneeds/missing.html HTTP/1.1" 404 -
+  ✓   5 tests/browser/site.spec.js:64:1 › missing records and empty search results are explained (1.5s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:43] "GET /noheroneeds/updates.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:43] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:43] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:44] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:44] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:44] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:44] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+  ✓   6 tests/browser/site.spec.js:72:1 › release selection stays on 0.13 and then on the latest publication at the bottom (5.7s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:49] "GET /noheroneeds/ HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:49] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:49] "GET /noheroneeds/assets/media/ef81f48838-inn-exterior.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:49] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:50] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:50] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:50] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:50] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:50] "GET /noheroneeds/wiki.html HTTP/1.1" 200 -
+  ✓   7 tests/browser/site.spec.js:90:1 › mobile navigation and item detail fit a narrow screen (2.4s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/guides.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/assets/media/36e3776543-inn-bedroom.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/assets/media/71a7640cfd-village-tavern-evening.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:52] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+  ✓   8 tests/browser/site.spec.js:107:1 › primary and guide text retain readable contrast (1.2s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:53] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:53] "GET /noheroneeds/ HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:53] "GET /noheroneeds/assets/media/ef81f48838-inn-exterior.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:53] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:53] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:53] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:53] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:53] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:54] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:54] "GET /noheroneeds/wiki.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:54] "GET /noheroneeds/guides.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:54] "GET /noheroneeds/updates.html HTTP/1.1" 200 -
+  ✓   9 tests/browser/site.spec.js:118:1 › published pages retain the original NHN theme and load CSS from the root artifact (1.8s)
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:55] "GET /noheroneeds/ HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:55] "GET /noheroneeds/assets/style.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:55] "GET /noheroneeds/assets/site.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:55] "GET /noheroneeds/assets/media/ef81f48838-inn-exterior.png HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:55] "GET /noheroneeds/data/wiki.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:55] "GET /noheroneeds/data/releases.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:55] "GET /noheroneeds/data/search.json HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [11/Nov/2026 21:23:56] "GET /noheroneeds/assets/media/71ab845a11-icon-64.png HTTP/1.1" 200 -
+  ✓  10 tests/browser/site.spec.js:145:1 › homepage presents the game to players and offers a real download (1.3s)
+
+  10 passed (26.1s)

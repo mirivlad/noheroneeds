@@ -1,0 +1,92 @@
+{
+	"adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+	"building": "inn@0,0,0",
+	"checks": 46,
+	"climate": "temperate",
+	"controlled_setup": "disposable saved world; NPCs removed for stable comparisons; normal client/server chunks and generated furnishings",
+	"failures": [],
+	"harness_sha256": "458815130dd53e67c307e8cbfe5cb53054003e399a295eecc71cb14006ede619",
+	"preset": "single_continent",
+	"scenario": "res://tools/experiment_3d/check_door_placement.gd",
+	"scenario_sha256": "4b10d9757949767390ceed1b7d73372e60e0295857a164c94623c9d26d6cb6a7",
+	"seed": 431,
+	"server_sha256": "c4f724f3e43af37bbea190168e019f12df7c5e3d14b7a985bb360fa239e1a977",
+	"settlement_generator_version": 5,
+	"shots": [
+		{
+			"level": 0,
+			"name": "ground-se",
+			"player_cell": "(-21, 11)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": -0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 0,
+			"name": "ground-sw",
+			"player_cell": "(-21, 11)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": 0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 0,
+			"name": "ground-nw",
+			"player_cell": "(-21, 11)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": 2.1707963267949,
+			"zoom": 24.3
+		},
+		{
+			"level": 1,
+			"name": "upper-se",
+			"player_cell": "(-28, 5)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": -0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 1,
+			"name": "door-open",
+			"player_cell": "(-24, 11)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": -0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 1,
+			"name": "door-closed",
+			"player_cell": "(-28, 5)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": -0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 1,
+			"name": "upper-sw",
+			"player_cell": "(-28, 5)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": 0.6,
+			"zoom": 24.3
+		},
+		{
+			"level": 0,
+			"name": "outside-restored",
+			"player_cell": "(-21, 17)",
+			"rect": "[P: (-30, 2), S: (18, 13)]",
+			"tilt": 49.0,
+			"yaw": -0.6,
+			"zoom": 24.3
+		}
+	],
+	"surface_generator_version": 18,
+	"template": "base:roadside_inn",
+	"view_sha256": "fc86b6abdb08ad6d9b52895543b4190b437190a473ed5bec544e702083c2fab4"
+}

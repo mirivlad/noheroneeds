@@ -30,10 +30,20 @@ func arrived(location: String, chunk: Chunk) -> void:
 		return
 	var id := String(chunk.meta["hospitality"])
 	var saved := state(id)
-	if not saved.is_empty():
-		return
 	var p := plan(id)
 	if p.is_empty():
+		return
+	if not saved.is_empty():
+		# Reopen saved upper chunks for the street view without regenerating
+		# their cells: furniture and player roof edits must stay as saved.
+		var existing := String(saved.get("upper", ""))
+		if existing != "":
+			var loaded := {}
+			for at: Vector2i in p["upper"]:
+				var key := Vector2i(at.x >> 5, at.y >> 5)
+				if not loaded.has(key):
+					world.chunk(existing, key.x, key.y)
+					loaded[key] = true
 		return
 	var upper := ""
 	if not p["upper"].is_empty():

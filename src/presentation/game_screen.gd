@@ -193,7 +193,7 @@ const REASONS := {
 	"nothing_to_jump_from": "прыгать можно с этажа", "not_an_edge": "пол продолжается — идите",
 	"roof_below": "внизу крыша", "bad_request": "не получилось",
 	"swimming": "в воде этого не сделать: выберитесь на берег", "no_tool": "этим этого не сделать", "nothing_to_gather": "здесь нечего добыть", "natural": "это не разобрать — только выкопать", "not_buildable": "это не строится",
-	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят", "side_wall": "дверь в боковой стене не видна — ставьте в стену поперёк", "door_beside": "дверь окажется в боковой стене",
+	"underground": "под землёй вверх не строят: выше — другая глубина", "wrong_place": "здесь это не ставят", "side_wall": "перед дверью нужен свободный проход", "door_beside": "здесь будет перекрыт проход двери", "door_frame": "нужен прямой участок стены или проём между стенами",
 	"blocked_below": "внизу что-то построено", "box_full": "сундук полон", "full": "сумка полна", "not_empty": "сначала опустошите",
 	"not_a_container": "это не открыть", "unbreakable": "это не сломать", "not_damaged": "чинить нечего", "too_deep": "глубже нельзя (настройка сервера)",
 	"no_station": "нужен станок рядом", "not_hungry": "вы сыты", "not_food": "это не едят",
@@ -1202,7 +1202,13 @@ func _ways_at(cell: Vector2i) -> Array:
 
 ## The facings the chosen part may be built in ([] if it does not turn).
 func _turns() -> Array:
-	return content.get_def(_blueprint).get("rotations", []) if _blueprint != "" else []
+	if _blueprint == "": return []
+	var def := content.get_def(_blueprint)
+	if def.get("role") == "door":
+		var cell := _build_cell()
+		var facing := BuildRules.placement_facing(_build_view, content, _blueprint, client.location, cell.x, cell.y, "")
+		return ["e", "w"] if facing in ["e", "w"] else ["s", "n"]
+	return def.get("rotations", [])
 
 
 ## Where a click would build: the cell under the mouse, or for ceilings and
@@ -1224,9 +1230,9 @@ func _plan_cells() -> Array:
 	else:
 		cells.append(_build_cell())
 	var have := client.inventory().duplicate()
-	var cost := content.structure_cost(_blueprint)
 	var facing := String(_turns()[_facing % _turns().size()]) if not _turns().is_empty() else ""
 	for cell: Vector2i in cells:
+		var cost := BuildRules.placement_cost(_build_view, content, _blueprint, client.location, cell.x, cell.y)
 		var why := ""
 		if not BuildRules.reaches(client.position, cell.x, cell.y):
 			why = "too_far"
@@ -1500,10 +1506,18 @@ func _update_hud() -> void:
 		if not _turns().is_empty():
 			building += " " + String({"n": "↑", "e": "→", "s": "↓", "w": "←"}.get(_turns()[_facing % _turns().size()], "")) + " (R)"
 		var ok := _plan.filter(func(p: Array) -> bool: return p[1] == "").size()
-		var cost := content.structure_cost(_blueprint)
+		var cost := {}
+		for p: Array in _plan:
+			if p[1] != "": continue
+			var planned_cell: Vector2i = p[0]
+			var planned_cost := BuildRules.placement_cost(_build_view, content, _blueprint, client.location, planned_cell.x, planned_cell.y)
+			for m: String in planned_cost:
+				cost[m] = int(cost.get(m, 0)) + int(planned_cost[m])
 		var parts := PackedStringArray()
 		for m: String in cost:
-			parts.append("%s %d из %d" % [String(content.get_def(m).get("name", m)).to_lower(), int(cost[m]) * ok, int(inv.get(m, 0))])
+			if int(cost[m]) == 0: continue
+			var name := String(content.get_def(m).get("name", m)).to_lower()
+			parts.append("вернётся %s %d" % [name, -int(cost[m])] if int(cost[m]) < 0 else "%s %d из %d" % [name, int(cost[m]), int(inv.get(m, 0))])
 		building += "  ·  поставится %d из %d  ·  %s  ·  ЛКМ — поставить, ПКМ — отпустить" % [ok, _plan.size(), ", ".join(parts)]
 		for p: Array in _plan:  # at the cursor: why not, where it cannot go
 			if p[1] != "":

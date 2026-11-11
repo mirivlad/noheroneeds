@@ -53,5 +53,24 @@
     "local verification logs and compact summaries",
     "tracked lossless screenshots and telemetry",
     "site build and installed test dependencies"
-  ]
+  ],
+  "post_publication": {
+    "timestamp_utc": "2026-11-11T07:56:12.243748+00:00",
+    "removed_bytes": 180138378,
+    "removed": [
+      {
+        "path": "build/release-smoke-first-attempt",
+        "bytes": 179682299
+      },
+      {
+        "path": "build/release-smoke",
+        "bytes": 456079
+      }
+    ],
+    "kept": [
+      "build/release: current four release packages and SHA256SUMS",
+      "build/linux: runnable verified Linux release",
+      "compact logs, JSON evidence and lossless public screenshots"
+    ]
+  }
 }

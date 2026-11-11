@@ -29,7 +29,9 @@ func _run(n: int, creatures := 0) -> void:
 	var server := spawn_godot("res://src/server/server_main.gd", ["--world=" + dir.path_join("world.db"),
 		"--port=%d" % port, "--identity=" + ProjectSettings.globalize_path("user://test_keys/server"),
 		"--stats=5", "--starter-kit=base:plank:200,base:stone:100", "--populate=%d" % creatures])
-	if not check(read_until(server, "LISTENING") != "", "server started"):
+	# A cold finite world plus the load crowd takes longer than the generic
+	# 10-second message wait. Readiness stays outside the measured play window.
+	if not check(read_until(server, "LISTENING", 180000) != "", "server started"):
 		OS.kill(server["pid"])
 		return
 	var bots := spawn_godot("res://tests/support/load_bots.gd", ["--connect=127.0.0.1:%d" % port,

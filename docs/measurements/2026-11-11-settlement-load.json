@@ -1,0 +1,29 @@
+{
+  "scenario": "20 ENet players plus 500 creatures, 60 seconds",
+  "engine": "Godot 4.7.2",
+  "cpu": "Xeon E5-2680 v4",
+  "renderer": "headless/Dummy",
+  "measurements": {
+    "load20_c500_ack_max_ms": 1152.0,
+    "load20_c500_ack_p50_ms": 108.0,
+    "load20_c500_ack_p99_ms": 1115.0,
+    "load20_c500_acks": 289.0,
+    "load20_c500_bots": 20.0,
+    "load20_c500_corrections": 62.0,
+    "load20_c500_playing": 20.0,
+    "load20_c500_unanswered": 0.0,
+    "load20_c500_server_tick_p99_worst_window": 923639.0,
+    "load20_c500_server_tick_max": 923639.0,
+    "load20_c500_out_per_client": 14.1,
+    "load20_c500_ticks_per_second": 19.2
+  },
+  "sources": {
+    "tests/bench/bench_load.gd": "eee1fd2b7780f56cda067adf0b7fc81fe9e74d066890529ebc904f2bc65ddff7",
+    "tests/support/load_bots.gd": "1cb30b9b0fad75a3fb1ef3a386b362b9d6cc87be62ec96c2dfc86e31cc90b458",
+    "src/server/game_server.gd": "5984fce2a9a7bd9267e449bbf73182137a353c27c74806085d665a43f51762d1",
+    "src/server/dedicated_server.gd": "a7c2ccb63d6e8b15a225c9408d507c993caec70b19118f6d08a9afe8dedfb412",
+    "src/server/creature_sim.gd": "fe9a97ed1219a91de81fee852593fe7f38d45d0af67a81171be4451f58d9eb9a",
+    "src/server/settlement_life.gd": "32f493fd7580e38ee60978860aa3aafae811463f76f4fbd0b9c551e13dc32d98",
+    "src/server/settlement_population.gd": "9b67eaee01e4c8b0dade2675f95170282a65084702acf7904beb93237cb43bdd"
+  }
+}

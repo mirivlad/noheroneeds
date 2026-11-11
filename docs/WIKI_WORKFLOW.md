@@ -93,7 +93,7 @@ python3 tools/site/check.py --base origin/main --published build/published-relea
 python3 -m unittest discover -s tools/site/tests -v
 npm ci --prefix site
 (cd site && npx playwright install chromium && npm test)
-tools/run_tests.sh
+TEST_JOBS=6 TEST_TIMEOUT=2400 tools/run_tests.sh
 ```
 
 Для выпуска: `python3 tools/site/check.py --release vX.Y.Z --published

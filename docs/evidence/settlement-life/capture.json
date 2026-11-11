@@ -1,0 +1,363 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "building": "base:village@0,0#0|growth:0",
+  "checks": 30,
+  "cleared_plot_animals": 0,
+  "climate": "temperate",
+  "controlled_setup": true,
+  "failures": [],
+  "health": 15,
+  "history": [
+    {
+      "condition": {
+        "day": 1,
+        "days": 1,
+        "state": "stable",
+        "trend": "prosperous"
+      },
+      "day": 1,
+      "departed": 0,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 2,
+        "days": 2,
+        "state": "stable",
+        "trend": "prosperous"
+      },
+      "day": 2,
+      "departed": 0,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 3,
+        "days": 3,
+        "state": "prosperous",
+        "trend": "prosperous"
+      },
+      "day": 3,
+      "departed": 0,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 4,
+        "days": 3,
+        "state": "prosperous",
+        "trend": "prosperous"
+      },
+      "day": 4,
+      "departed": 0,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 5,
+        "days": 3,
+        "state": "prosperous",
+        "trend": "prosperous"
+      },
+      "day": 5,
+      "departed": 0,
+      "leaving": 0,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 6,
+        "days": 1,
+        "state": "prosperous",
+        "trend": "distressed"
+      },
+      "day": 6,
+      "departed": 0,
+      "leaving": 0,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 7,
+        "days": 2,
+        "state": "prosperous",
+        "trend": "distressed"
+      },
+      "day": 7,
+      "departed": 0,
+      "leaving": 0,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 8,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 8,
+      "departed": 0,
+      "leaving": 0,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 9,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 9,
+      "departed": 0,
+      "leaving": 0,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 10,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 10,
+      "departed": 0,
+      "leaving": 0,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 11,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 11,
+      "departed": 0,
+      "leaving": 0,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 12,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 12,
+      "departed": 0,
+      "leaving": 0,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 13,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 13,
+      "departed": 0,
+      "leaving": 1,
+      "population": 5
+    },
+    {
+      "condition": {
+        "day": 14,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 14,
+      "departed": 1,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 15,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 15,
+      "departed": 1,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 16,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 16,
+      "departed": 1,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 17,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 17,
+      "departed": 1,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 18,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 18,
+      "departed": 1,
+      "leaving": 0,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 19,
+        "days": 3,
+        "state": "distressed",
+        "trend": "distressed"
+      },
+      "day": 19,
+      "departed": 1,
+      "leaving": 1,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 20,
+        "days": 1,
+        "state": "distressed",
+        "trend": "stable"
+      },
+      "day": 20,
+      "departed": 1,
+      "leaving": 1,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 21,
+        "days": 2,
+        "state": "distressed",
+        "trend": "stable"
+      },
+      "day": 21,
+      "departed": 1,
+      "leaving": 1,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 22,
+        "days": 3,
+        "state": "stable",
+        "trend": "stable"
+      },
+      "day": 22,
+      "departed": 1,
+      "leaving": 1,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 23,
+        "days": 3,
+        "state": "stable",
+        "trend": "stable"
+      },
+      "day": 23,
+      "departed": 1,
+      "leaving": 1,
+      "population": 4
+    },
+    {
+      "condition": {
+        "day": 24,
+        "days": 3,
+        "state": "stable",
+        "trend": "stable"
+      },
+      "day": 24,
+      "departed": 0,
+      "leaving": 1,
+      "population": 5
+    }
+  ],
+  "journey_ticks": 528,
+  "preset": "small",
+  "rect": "[P: (14, -90), S: (8, 6)]",
+  "renderer": "gl_compatibility",
+  "resident_name": "Степанида",
+  "resident_uuid": "c7a02f95-f6a9-46b8-92e0-2cb47a1ac2f4",
+  "roof_damage": [
+    [
+      "3ab42cda-7c84-476d-9dea-aa078c9509f6",
+      20,
+      -86,
+      "base:thatch_roof",
+      "base:wood_floor"
+    ],
+    [
+      "3ab42cda-7c84-476d-9dea-aa078c9509f6",
+      19,
+      -86,
+      "base:thatch_roof",
+      "base:wood_floor"
+    ],
+    [
+      "3ab42cda-7c84-476d-9dea-aa078c9509f6",
+      18,
+      -86,
+      "base:thatch_roof",
+      "base:wood_floor"
+    ]
+  ],
+  "seed": 7,
+  "setup": "funded real stores, accelerated day boundaries, nearby predators and plot livestock removed; witness vitals replenished at day boundaries; original economic definitions and normal server AI",
+  "source_sha256": {
+    "src/experiment_3d/world_view_3d.gd": "1eb5f26c6dc0629768936374da017c731d5fbc020ca53d11672a5e2526082d3d",
+    "src/server/creature_sim.gd": "fe9a97ed1219a91de81fee852593fe7f38d45d0af67a81171be4451f58d9eb9a",
+    "src/server/server_world.gd": "b60b37bce4a9699cbd9391367526ab44d1ff3bc35dd2c8f2a38014f63c9f58ad",
+    "src/server/settlement_life.gd": "030580e16c4b90b1fb51e6fda4f2b4c8688fcaf9fac1549167d6591a3206c6da",
+    "src/server/settlement_population.gd": "9b67eaee01e4c8b0dade2675f95170282a65084702acf7904beb93237cb43bdd",
+    "src/server/village_economy.gd": "34d9d99ef21f2950b1bf330133fdf11d7597823ed767356a08b1cba387206b05",
+    "tools/experiment_3d/check_settlement_life.gd": "d9d47fa661be3518c18ac047bc2e45b01d058638fdfb319a1da07071acaaa6bb"
+  },
+  "village": "base:village@0,0#0",
+  "images": {
+    "01-foundation.webp": {
+      "sha256": "49c627330aa6a2c7b1165ed42ad8edfd780afd5f0eca4a07556349637e6eccfa",
+      "rgb_verified_lossless": true
+    },
+    "02-walls.webp": {
+      "sha256": "6595f3f53342a7668c79d0902cacdc2148d57ccda66ce6760c11bfdbff75ab27",
+      "rgb_verified_lossless": true
+    },
+    "03-inhabited.webp": {
+      "sha256": "861e3b3faa610ee7195d3840d2d692a904d3d2558b4ffb2c84c84e5af8a6fe68",
+      "rgb_verified_lossless": true
+    },
+    "04-abandoned.webp": {
+      "sha256": "5fcf40f47f15311d8a0a81724c56b0bd8aacb987eb34d4275c317f3ca31599ec",
+      "rgb_verified_lossless": true
+    },
+    "05-restored.webp": {
+      "sha256": "9af8bcb9c19b8748563c69c0856c7a5100d4a993507e1ea0426a26a37735f097",
+      "rgb_verified_lossless": true
+    }
+  }
+}

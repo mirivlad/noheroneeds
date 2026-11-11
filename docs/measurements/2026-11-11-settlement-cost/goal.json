@@ -1,0 +1,10 @@
+{
+  "metric": "settlement.house_material_cost",
+  "statistic": "median",
+  "unit": "ms",
+  "direction": "lower",
+  "target": 12.89,
+  "maximumIterations": 1,
+  "allowedPaths": ["src/server/settlement_life.gd"],
+  "contract": "Identical per-cell material and recipe costs, first matching floor definition, no persistent cache or gameplay timing/rule changes. Compare an identical SQLite fixture, engine, content and measurement script after focused correctness tests. This is construction CPU costing, not an FPS or full-server latency target."
+}

@@ -281,14 +281,20 @@ func _cost(cells: Dictionary, upper: Dictionary) -> Dictionary:
 			for layer: String in ["structure", "ceiling", "roof"]:
 				for item: String in world.content.structure_cost(String(spec.get(layer, ""))):
 					_add_cost(out, item, int(world.content.structure_cost(String(spec[layer]))[item]))
+	# Resolve each ground material once per house, keeping the first matching
+	# floor definition and charging every cell separately as before.
+	var floor_costs := {}
 	for at: Vector2i in cells:
 		var ground := String(cells[at].get("ground", ""))
-		for part: String in world.content.defs:
-			var def := world.content.get_def(part)
-			if def.get("role", "") == "floor" and def.get("ground", "") == ground:
-				for item: String in world.content.structure_cost(part):
-					_add_cost(out, item, int(world.content.structure_cost(part)[item]))
-				break
+		if not floor_costs.has(ground):
+			floor_costs[ground] = {}
+			for part: String in world.content.defs:
+				var def := world.content.get_def(part)
+				if def.get("role", "") == "floor" and def.get("ground", "") == ground:
+					floor_costs[ground] = world.content.structure_cost(part)
+					break
+		for item: String in floor_costs[ground]:
+			_add_cost(out, item, int(floor_costs[ground][item]))
 	return out
 
 

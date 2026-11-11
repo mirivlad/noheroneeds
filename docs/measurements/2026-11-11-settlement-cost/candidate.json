@@ -1,0 +1,38 @@
+{
+	"calls_per_sample": 50,
+	"cells": 92,
+	"correct": true,
+	"engine": "4.7.2-stable (official)",
+	"expected_cost": {
+		"base:cloth": 4,
+		"base:log": 35,
+		"base:plank": 388
+	},
+	"input_sha256": "b8aff2205824f45236e9c06dd8ddd1957d9384c2a872fe3a53d5cffe15c44450",
+	"median": 3.64426,
+	"metric": "settlement.house_material_cost",
+	"processor": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+	"renderer": "gl_compatibility",
+	"samples_ms_per_call": [
+		3.77904,
+		3.72552,
+		3.72352,
+		3.49812,
+		3.7428,
+		3.48542,
+		3.64426,
+		3.5842,
+		3.61786
+	],
+	"scope": "CPU material costing of one saved house; no FPS or full-server latency claim",
+	"sources": {
+		"content/base/recipes.json": "fffce37a3269bb93389d620780815bf231714f8b643d70b023516937169dcada",
+		"content/base/structures.json": "735b3d62fa895c2bc474f126ecb70bb6beec50f3ccd01bb7083e338b702a196b",
+		"src/server/settlement_life.gd": "32f493fd7580e38ee60978860aa3aafae811463f76f4fbd0b9c551e13dc32d98",
+		"tools/bench_settlement_cost.gd": "dd85460c702b2c3f91595d9ac8f85dd1e53f238a1c8c6dfabf27b0db999fb1b9"
+	},
+	"statistic": "median",
+	"unit": "ms",
+	"upper_cells": 48,
+	"warmup_calls": 20
+}

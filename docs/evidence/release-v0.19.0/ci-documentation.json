@@ -1,0 +1,13 @@
+{
+  "run_id": 42978769448,
+  "job_id": 130383967784,
+  "conclusion": "success",
+  "source_commit": "d45daeec550ab4c8ca393e5a89d0e34dfbdb9d68",
+  "url": "https://github.com/mirivlad/noheroneeds/actions/runs/42978769448/job/130383967784",
+  "proof_lines": [
+    "2026-11-11T07:20:33.4882909Z Documentation ready: 294 records, 14 guides",
+    "2026-11-11T07:20:35.2994497Z Ran 32 tests in 0.876s",
+    "2026-11-11T07:20:35.8749848Z Built 286 records, 885 relations for v0.18.0 -> /home/runner/work/noheroneeds/noheroneeds/build/published-site",
+    "2026-11-11T07:21:04.1971077Z   10 passed (14.4s)"
+  ]
+}

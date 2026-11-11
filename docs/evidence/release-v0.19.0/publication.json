@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "documentation_commit": "d45daeec550ab4c8ca393e5a89d0e34dfbdb9d68",
+    "game_commit": "d45daeec550ab4c8ca393e5a89d0e34dfbdb9d68",
+    "published_at": "2026-11-11T07:41:26Z",
+    "tag": "v0.19.0"
+  },
+  "catalogVersion": "v0.19.0",
+  "latestRelease": "0.19.0",
+  "checks": [
+    {
+      "path": "index.html",
+      "theme": {
+        "background": "rgb(11, 18, 20)",
+        "font": "Manrope, system-ui, sans-serif",
+        "titleFont": "\"Playfair Display\", Georgia, serif"
+      },
+      "cssStatus": 200
+    },
+    {
+      "path": "wiki.html",
+      "theme": {
+        "background": "rgb(11, 18, 20)",
+        "font": "Manrope, system-ui, sans-serif",
+        "titleFont": "\"Playfair Display\", Georgia, serif"
+      },
+      "cssStatus": 200
+    },
+    {
+      "path": "guides.html",
+      "theme": {
+        "background": "rgb(11, 18, 20)",
+        "font": "Manrope, system-ui, sans-serif",
+        "titleFont": "\"Playfair Display\", Georgia, serif"
+      },
+      "cssStatus": 200
+    },
+    {
+      "path": "updates.html",
+      "theme": {
+        "background": "rgb(11, 18, 20)",
+        "font": "Manrope, system-ui, sans-serif",
+        "titleFont": "\"Playfair Display\", Georgia, serif"
+      },
+      "cssStatus": 200
+    }
+  ],
+  "mobileFits": true,
+  "screenshots": {
+    "public-desktop.webp": {
+      "sha256": "9c632a2d623abf710410e2fe84ce3301c0114dc55433a25cf8388d9f1555701f",
+      "rgb_verified_lossless": true
+    },
+    "public-mobile.webp": {
+      "sha256": "003a5bd279dddc4fb799133382ddd19722f0f5fc2f91a831d52c546cc91cfd44",
+      "rgb_verified_lossless": true
+    }
+  },
+  "gold": {
+    "token": "#ddbd83",
+    "color": "rgb(221, 189, 131)"
+  },
+  "visually_reviewed": true
+}

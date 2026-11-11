@@ -1,0 +1,506 @@
+{
+  "run_id": 42978769448,
+  "job_id": 130383967434,
+  "conclusion": "success",
+  "source_commit": "d45daeec550ab4c8ca393e5a89d0e34dfbdb9d68",
+  "url": "https://github.com/mirivlad/noheroneeds/actions/runs/42978769448/job/130383967434",
+  "summary": {
+    "ok": true,
+    "tests": 644,
+    "suites": 98,
+    "sources_unchanged": true,
+    "wall_seconds": 862.47
+  },
+  "successful_suites": [
+    {
+      "suite": "tests/unit/building/test_doors.gd",
+      "tests": 2,
+      "wall_seconds": 1.61
+    },
+    {
+      "suite": "tests/unit/building/test_levels_network.gd",
+      "tests": 1,
+      "wall_seconds": 19.74
+    },
+    {
+      "suite": "tests/unit/app/test_libraries.gd",
+      "tests": 5,
+      "wall_seconds": 20.78
+    },
+    {
+      "suite": "tests/unit/characters/test_character_file.gd",
+      "tests": 9,
+      "wall_seconds": 4.61
+    },
+    {
+      "suite": "tests/unit/building/test_settlement_levels.gd",
+      "tests": 1,
+      "wall_seconds": 26.66
+    },
+    {
+      "suite": "tests/unit/content/test_progression.gd",
+      "tests": 3,
+      "wall_seconds": 1.5
+    },
+    {
+      "suite": "tests/unit/core/test_cbor.gd",
+      "tests": 6,
+      "wall_seconds": 1.5
+    },
+    {
+      "suite": "tests/unit/building/test_levels.gd",
+      "tests": 9,
+      "wall_seconds": 31.67
+    },
+    {
+      "suite": "tests/unit/core/test_hash.gd",
+      "tests": 1,
+      "wall_seconds": 1.5
+    },
+    {
+      "suite": "tests/unit/core/test_uuid.gd",
+      "tests": 2,
+      "wall_seconds": 1.5
+    },
+    {
+      "suite": "tests/unit/content/test_content_registry.gd",
+      "tests": 9,
+      "wall_seconds": 9.63
+    },
+    {
+      "suite": "tests/unit/building/test_stairs.gd",
+      "tests": 9,
+      "wall_seconds": 27.56
+    },
+    {
+      "suite": "tests/unit/network/test_dedicated_server.gd",
+      "tests": 2,
+      "wall_seconds": 33.78
+    },
+    {
+      "suite": "tests/unit/network/test_protocol.gd",
+      "tests": 4,
+      "wall_seconds": 1.9
+    },
+    {
+      "suite": "tests/unit/persistence/test_chunk_codec.gd",
+      "tests": 5,
+      "wall_seconds": 1.8
+    },
+    {
+      "suite": "tests/unit/persistence/test_world_store.gd",
+      "tests": 7,
+      "wall_seconds": 1.9
+    },
+    {
+      "suite": "tests/unit/presentation/test_actions.gd",
+      "tests": 11,
+      "wall_seconds": 3.01
+    },
+    {
+      "suite": "tests/unit/network/test_enet.gd",
+      "tests": 2,
+      "wall_seconds": 49.79
+    },
+    {
+      "suite": "tests/unit/presentation/test_beast_voices.gd",
+      "tests": 1,
+      "wall_seconds": 1.81
+    },
+    {
+      "suite": "tests/unit/presentation/test_additional_sprites.gd",
+      "tests": 4,
+      "wall_seconds": 21.85
+    },
+    {
+      "suite": "tests/unit/presentation/test_click_orders.gd",
+      "tests": 2,
+      "wall_seconds": 1.5
+    },
+    {
+      "suite": "tests/unit/presentation/test_character_editor.gd",
+      "tests": 4,
+      "wall_seconds": 12.74
+    },
+    {
+      "suite": "tests/unit/presentation/test_cursor_art.gd",
+      "tests": 2,
+      "wall_seconds": 1.51
+    },
+    {
+      "suite": "tests/unit/presentation/test_hospitality_panel.gd",
+      "tests": 1,
+      "wall_seconds": 1.61
+    },
+    {
+      "suite": "tests/unit/presentation/test_hotbar.gd",
+      "tests": 4,
+      "wall_seconds": 1.5
+    },
+    {
+      "suite": "tests/unit/presentation/test_key_map.gd",
+      "tests": 1,
+      "wall_seconds": 1.51
+    },
+    {
+      "suite": "tests/unit/presentation/test_lpc_sprite.gd",
+      "tests": 11,
+      "wall_seconds": 2.71
+    },
+    {
+      "suite": "tests/unit/presentation/test_music.gd",
+      "tests": 6,
+      "wall_seconds": 1.81
+    },
+    {
+      "suite": "tests/unit/presentation/test_pixel_display.gd",
+      "tests": 3,
+      "wall_seconds": 6.82
+    },
+    {
+      "suite": "tests/unit/experiment_3d/test_world_view_3d.gd",
+      "tests": 35,
+      "wall_seconds": 89.99
+    },
+    {
+      "suite": "tests/unit/presentation/test_ro_sprite.gd",
+      "tests": 13,
+      "wall_seconds": 15.64
+    },
+    {
+      "suite": "tests/unit/presentation/test_ui_windows.gd",
+      "tests": 3,
+      "wall_seconds": 1.81
+    },
+    {
+      "suite": "tests/unit/presentation/test_menu.gd",
+      "tests": 6,
+      "wall_seconds": 58.82
+    },
+    {
+      "suite": "tests/unit/server/test_bandits.gd",
+      "tests": 8,
+      "wall_seconds": 29.95
+    },
+    {
+      "suite": "tests/unit/server/test_boats.gd",
+      "tests": 4,
+      "wall_seconds": 15.74
+    },
+    {
+      "suite": "tests/unit/server/test_animal_life.gd",
+      "tests": 15,
+      "wall_seconds": 73.86
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_motion.gd",
+      "tests": 4,
+      "wall_seconds": 27.07
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_contracts.gd",
+      "tests": 10,
+      "wall_seconds": 45.1
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_navigation.gd",
+      "tests": 4,
+      "wall_seconds": 32.97
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_stops.gd",
+      "tests": 7,
+      "wall_seconds": 46.69
+    },
+    {
+      "suite": "tests/unit/server/test_chronicles.gd",
+      "tests": 6,
+      "wall_seconds": 79.06
+    },
+    {
+      "suite": "tests/unit/server/test_combat.gd",
+      "tests": 15,
+      "wall_seconds": 69.83
+    },
+    {
+      "suite": "tests/unit/server/test_containers.gd",
+      "tests": 6,
+      "wall_seconds": 16.03
+    },
+    {
+      "suite": "tests/unit/server/test_crash_recovery.gd",
+      "tests": 1,
+      "wall_seconds": 9.02
+    },
+    {
+      "suite": "tests/unit/server/test_crafts.gd",
+      "tests": 14,
+      "wall_seconds": 23.86
+    },
+    {
+      "suite": "tests/unit/server/test_dweller_pace.gd",
+      "tests": 3,
+      "wall_seconds": 47.89
+    },
+    {
+      "suite": "tests/unit/presentation/test_play.gd",
+      "tests": 16,
+      "wall_seconds": 353.22
+    },
+    {
+      "suite": "tests/unit/server/test_equipment.gd",
+      "tests": 4,
+      "wall_seconds": 3.71
+    },
+    {
+      "suite": "tests/unit/server/test_fields.gd",
+      "tests": 5,
+      "wall_seconds": 11.82
+    },
+    {
+      "suite": "tests/unit/network/test_game_server.gd",
+      "tests": 23,
+      "wall_seconds": 439.83
+    },
+    {
+      "suite": "tests/unit/server/test_fishing.gd",
+      "tests": 4,
+      "wall_seconds": 14.92
+    },
+    {
+      "suite": "tests/unit/server/test_creatures.gd",
+      "tests": 27,
+      "wall_seconds": 130.66
+    },
+    {
+      "suite": "tests/unit/server/test_growth.gd",
+      "tests": 5,
+      "wall_seconds": 13.62
+    },
+    {
+      "suite": "tests/unit/server/test_held.gd",
+      "tests": 4,
+      "wall_seconds": 8.62
+    },
+    {
+      "suite": "tests/unit/server/test_dwellers.gd",
+      "tests": 6,
+      "wall_seconds": 96.09
+    },
+    {
+      "suite": "tests/unit/server/test_hospitality.gd",
+      "tests": 12,
+      "wall_seconds": 35.77
+    },
+    {
+      "suite": "tests/unit/server/test_husbandry.gd",
+      "tests": 8,
+      "wall_seconds": 31.65
+    },
+    {
+      "suite": "tests/unit/server/test_from_scratch.gd",
+      "tests": 2,
+      "wall_seconds": 71.84
+    },
+    {
+      "suite": "tests/unit/server/test_mastery.gd",
+      "tests": 7,
+      "wall_seconds": 11.63
+    },
+    {
+      "suite": "tests/unit/server/test_interaction.gd",
+      "tests": 7,
+      "wall_seconds": 25.65
+    },
+    {
+      "suite": "tests/unit/server/test_looters.gd",
+      "tests": 3,
+      "wall_seconds": 22.64
+    },
+    {
+      "suite": "tests/unit/server/test_ownership.gd",
+      "tests": 5,
+      "wall_seconds": 12.63
+    },
+    {
+      "suite": "tests/unit/server/test_server_world.gd",
+      "tests": 6,
+      "wall_seconds": 2.61
+    },
+    {
+      "suite": "tests/unit/server/test_needs.gd",
+      "tests": 9,
+      "wall_seconds": 25.76
+    },
+    {
+      "suite": "tests/unit/server/test_npc_equipment.gd",
+      "tests": 6,
+      "wall_seconds": 27.66
+    },
+    {
+      "suite": "tests/unit/server/test_road_audit.gd",
+      "tests": 3,
+      "wall_seconds": 22.65
+    },
+    {
+      "suite": "tests/unit/server/test_swimming.gd",
+      "tests": 4,
+      "wall_seconds": 8.62
+    },
+    {
+      "suite": "tests/unit/server/test_things.gd",
+      "tests": 5,
+      "wall_seconds": 9.62
+    },
+    {
+      "suite": "tests/unit/server/test_teaching.gd",
+      "tests": 2,
+      "wall_seconds": 24.65
+    },
+    {
+      "suite": "tests/unit/server/test_settlement_life.gd",
+      "tests": 11,
+      "wall_seconds": 44.81
+    },
+    {
+      "suite": "tests/unit/server/test_unload.gd",
+      "tests": 3,
+      "wall_seconds": 12.63
+    },
+    {
+      "suite": "tests/unit/server/test_settlement_population.gd",
+      "tests": 10,
+      "wall_seconds": 44.79
+    },
+    {
+      "suite": "tests/unit/server/test_underground.gd",
+      "tests": 10,
+      "wall_seconds": 25.66
+    },
+    {
+      "suite": "tests/unit/server/test_village_development.gd",
+      "tests": 10,
+      "wall_seconds": 29.97
+    },
+    {
+      "suite": "tests/unit/sim/test_bag.gd",
+      "tests": 2,
+      "wall_seconds": 1.81
+    },
+    {
+      "suite": "tests/unit/sim/test_daylight.gd",
+      "tests": 2,
+      "wall_seconds": 1.71
+    },
+    {
+      "suite": "tests/unit/server/test_wear.gd",
+      "tests": 5,
+      "wall_seconds": 26.75
+    },
+    {
+      "suite": "tests/unit/sim/test_mastery.gd",
+      "tests": 7,
+      "wall_seconds": 1.71
+    },
+    {
+      "suite": "tests/unit/sim/test_reach.gd",
+      "tests": 1,
+      "wall_seconds": 1.7
+    },
+    {
+      "suite": "tests/unit/sim/test_wear.gd",
+      "tests": 4,
+      "wall_seconds": 1.91
+    },
+    {
+      "suite": "tests/unit/sim/test_weather.gd",
+      "tests": 6,
+      "wall_seconds": 1.81
+    },
+    {
+      "suite": "tests/unit/test_sqlite_extension.gd",
+      "tests": 2,
+      "wall_seconds": 1.91
+    },
+    {
+      "suite": "tests/unit/server/test_world_time.gd",
+      "tests": 3,
+      "wall_seconds": 35.68
+    },
+    {
+      "suite": "tests/unit/sim/test_sight.gd",
+      "tests": 5,
+      "wall_seconds": 23.74
+    },
+    {
+      "suite": "tests/unit/world/test_bandit_camp_plans.gd",
+      "tests": 3,
+      "wall_seconds": 17.83
+    },
+    {
+      "suite": "tests/unit/server/test_village_economy.gd",
+      "tests": 13,
+      "wall_seconds": 59.72
+    },
+    {
+      "suite": "tests/unit/world/test_local_weather.gd",
+      "tests": 6,
+      "wall_seconds": 10.72
+    },
+    {
+      "suite": "tests/unit/world/test_hospitality_plans.gd",
+      "tests": 2,
+      "wall_seconds": 13.63
+    },
+    {
+      "suite": "tests/unit/world/test_planet_topology.gd",
+      "tests": 4,
+      "wall_seconds": 4.61
+    },
+    {
+      "suite": "tests/unit/world/test_roads.gd",
+      "tests": 5,
+      "wall_seconds": 1.51
+    },
+    {
+      "suite": "tests/unit/world/test_geography.gd",
+      "tests": 9,
+      "wall_seconds": 31.75
+    },
+    {
+      "suite": "tests/unit/world/test_settlement_architecture.gd",
+      "tests": 6,
+      "wall_seconds": 1.51
+    },
+    {
+      "suite": "tests/unit/world/test_settlement_layout.gd",
+      "tests": 5,
+      "wall_seconds": 4.61
+    },
+    {
+      "suite": "tests/unit/world/test_minerals.gd",
+      "tests": 4,
+      "wall_seconds": 17.64
+    },
+    {
+      "suite": "tests/unit/world/test_planet_world.gd",
+      "tests": 8,
+      "wall_seconds": 31.56
+    },
+    {
+      "suite": "tests/unit/world/test_surface.gd",
+      "tests": 8,
+      "wall_seconds": 93.86
+    },
+    {
+      "suite": "tests/unit/world/test_world_plan.gd",
+      "tests": 23,
+      "wall_seconds": 113.58
+    },
+    {
+      "suite": "tests/unit/world/test_settlements.gd",
+      "tests": 13,
+      "wall_seconds": 162.64
+    }
+  ]
+}

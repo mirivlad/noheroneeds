@@ -14,7 +14,7 @@
       "guides": {
         "site/content/guides/trade.html": "459aab64fd53da8367e21c11f19cf79be09324c87850a8810e2557651dca898b"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     },
     {
       "impact": "player-facing-change",
@@ -28,7 +28,7 @@
       "guides": {
         "site/content/guides/caravans.html": "5d243cf7461bead9d4ad4e0e3aea8aee315ef7417f6ca50620e4e66247b379a9"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     },
     {
       "impact": "player-facing-change",
@@ -42,7 +42,7 @@
       "guides": {
         "site/content/guides/multiplayer.html": "3b226d41cc442df246a306c4abf635dca48b7d88375fd59aeabb87bfd29daa42"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     }
   ]
 }

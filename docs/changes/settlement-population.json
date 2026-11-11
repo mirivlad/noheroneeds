@@ -19,7 +19,7 @@
       "guides": {
         "site/content/guides/trade.html": "3b537ca5215d148db3658cb6e118c218657b3379a9c827b7a0d00fc7fdd05bf9"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     }
   ]
 }

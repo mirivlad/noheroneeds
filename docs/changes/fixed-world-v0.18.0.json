@@ -80,9 +80,9 @@
         "nature"
       ],
       "guides": {
-        "site/content/guides/nature.html": "15008424b3a08fda54b5f311bb33aaaab69021d0f4821f1f21f0f95784909282"
+        "site/content/guides/nature.html": "e297f17ec604030f416b396c7df81b73a96c60a64e2047014cec5a40702f0513"
       },
-      "changelog": "docs/changelog/v0.18.0.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     },
     {
       "impact": "player-facing-change",

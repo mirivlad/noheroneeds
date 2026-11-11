@@ -27,13 +27,13 @@
         "nature"
       ],
       "guides": {
-        "site/content/guides/building.html": "a11a9433f6b8a340d69836a991936719c24943dd0d66f9f88536e89856ba90f9",
-        "site/content/guides/trade.html": "c72e55ffda99f059d659deaafec7eee0a57130494bcc903ae388ef01a4629d7e",
+        "site/content/guides/building.html": "1d5c6d194151e7a0c8ce951c099db934659af9d340975419983ee643c2e9833e",
+        "site/content/guides/trade.html": "3b537ca5215d148db3658cb6e118c218657b3379a9c827b7a0d00fc7fdd05bf9",
         "site/content/guides/caravans.html": "00d427e97d0f164bed9cab8770e01ebb4b5fe54cc4798c98ca17a4bc4d4c35c2",
         "site/content/guides/multiplayer.html": "ad5a85a4fdd874e0399a6f6cddd347a9ebdbb1503bd4dc735ad2e459a6504fa0",
         "site/content/guides/nature.html": "e297f17ec604030f416b396c7df81b73a96c60a64e2047014cec5a40702f0513"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     }
   ]
 }

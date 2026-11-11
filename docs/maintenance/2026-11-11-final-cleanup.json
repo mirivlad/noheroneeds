@@ -1,0 +1,57 @@
+{
+  "timestamp_utc": "2026-11-11T07:22:43.250057+00:00",
+  "removed_bytes": 37802074,
+  "removed": [
+    {
+      "path": "build/settlement-life-review",
+      "bytes": 10741631
+    },
+    {
+      "path": "build/settlement-life-review-02",
+      "bytes": 10852086
+    },
+    {
+      "path": "build/settlement-life-checks/profiles",
+      "bytes": 4276960
+    },
+    {
+      "path": "build/settlement-population-checks/profiles",
+      "bytes": 7559337
+    },
+    {
+      "path": "build/test-runs/20261111-071412-299753/profiles",
+      "bytes": 0
+    },
+    {
+      "path": "build/settlement-soak-01/world.db",
+      "bytes": 2334720
+    },
+    {
+      "path": "build/settlement-soak-01/keys",
+      "bytes": 7365
+    },
+    {
+      "path": "build/load-startup-probe/server-key",
+      "bytes": 2455
+    },
+    {
+      "path": "build/load-startup-probe/world.db",
+      "bytes": 856064
+    },
+    {
+      "path": "build/settlement-cost-benchmark/candidate.db",
+      "bytes": 585728
+    },
+    {
+      "path": "build/settlement-cost-benchmark/baseline.db",
+      "bytes": 585728
+    }
+  ],
+  "preserved": [
+    "tracked game sources and canonical art",
+    "Godot imported resources needed for launch/tests",
+    "local verification logs and compact summaries",
+    "tracked lossless screenshots and telemetry",
+    "site build and installed test dependencies"
+  ]
+}

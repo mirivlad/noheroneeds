@@ -28,12 +28,12 @@
         "trade"
       ],
       "guides": {
-        "site/content/guides/building.html": "87470e9d83eabbd0b86de2434ae10a58933d3986a4a22f41fc4232c3ee8e0e9b",
-        "site/content/guides/trade.html": "ddf5d3f67b8ee58a8adaa3bbbb85feee0e520306275853b1a388afbd06c8531d",
-        "site/content/guides/multiplayer.html": "e95a043419566030374926f79acefee47d677dbf211ebe23abf867f2af640ef6",
+        "site/content/guides/building.html": "1d5c6d194151e7a0c8ce951c099db934659af9d340975419983ee643c2e9833e",
+        "site/content/guides/trade.html": "3b537ca5215d148db3658cb6e118c218657b3379a9c827b7a0d00fc7fdd05bf9",
+        "site/content/guides/multiplayer.html": "ad5a85a4fdd874e0399a6f6cddd347a9ebdbb1503bd4dc735ad2e459a6504fa0",
         "site/content/guides/craft.html": "9c8851d3f7e938ff6d9fe2685b80adfd253b200a9dc41f32b5d8a936435ac297"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     },
     {
       "impact": "player-facing-change",
@@ -49,7 +49,7 @@
         "site/content/guides/trade.html": "ddf5d3f67b8ee58a8adaa3bbbb85feee0e520306275853b1a388afbd06c8531d",
         "site/content/guides/caravans.html": "474c4fb2ab87f68797e79df383b8e4906ca4138d06f90398cdfe1a20442109ab"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     }
   ]
 }

@@ -15,9 +15,9 @@
         "settlement-life"
       ],
       "guides": {
-        "site/content/guides/trade.html": "0cd2484e0bd1ce72e343b326072828699b26d831769c43905f8377875ade95d2"
+        "site/content/guides/trade.html": "3b537ca5215d148db3658cb6e118c218657b3379a9c827b7a0d00fc7fdd05bf9"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     }
   ]
 }

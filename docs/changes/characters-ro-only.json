@@ -18,9 +18,9 @@
         "characters"
       ],
       "guides": {
-        "site/content/guides/start.html": "143835b43c09e80320d428db4fa96bb80f74530776c86fdde1d81ae98d59f458"
+        "site/content/guides/start.html": "d726c8c2113097f019f125f44070e153b0a1b22d1ae728e642f4505665996dfb"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.19.0.json"
     }
   ]
 }

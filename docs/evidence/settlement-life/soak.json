@@ -1,0 +1,2064 @@
+{
+	"checks": 2614,
+	"climate": "temperate",
+	"controlled_setup": true,
+	"days": 120,
+	"failures": [],
+	"history": [
+		{
+			"coins": 10000,
+			"condition": {
+				"day": 1,
+				"days": 1,
+				"state": "stable",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 1,
+			"dead": 0,
+			"departed": 0,
+			"homes": 0,
+			"leaving": 0,
+			"loaded_chunks": 62,
+			"population": 4
+		},
+		{
+			"coins": 10000,
+			"condition": {
+				"day": 2,
+				"days": 2,
+				"state": "stable",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 2,
+			"dead": 0,
+			"departed": 0,
+			"homes": 0,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 4
+		},
+		{
+			"coins": 9940,
+			"condition": {
+				"day": 3,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 3,
+			"dead": 0,
+			"departed": 0,
+			"homes": 0,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 4
+		},
+		{
+			"coins": 9940,
+			"condition": {
+				"day": 4,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 4,
+			"dead": 0,
+			"departed": 0,
+			"homes": 0,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 4
+		},
+		{
+			"coins": 9940,
+			"condition": {
+				"day": 5,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 5,
+			"dead": 0,
+			"departed": 0,
+			"homes": 1,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 5
+		},
+		{
+			"coins": 9880,
+			"condition": {
+				"day": 6,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 6,
+			"dead": 0,
+			"departed": 0,
+			"homes": 1,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 5
+		},
+		{
+			"coins": 9880,
+			"condition": {
+				"day": 7,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 7,
+			"dead": 0,
+			"departed": 0,
+			"homes": 1,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 5
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 8,
+				"days": 1,
+				"state": "prosperous",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 8,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 9,
+				"days": 2,
+				"state": "prosperous",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 9,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 55,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 10,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 10,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 55,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 11,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 11,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 12,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 12,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 13,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 13,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 14,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 14,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 15,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 15,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 55,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 16,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 16,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 55,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 17,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 17,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 52,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 18,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 18,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 6
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 19,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 19,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 20,
+				"days": 1,
+				"state": "stable",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 20,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 59,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 21,
+				"days": 2,
+				"state": "stable",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 21,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 22,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 22,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 55,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 23,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 23,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 24,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 24,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 55,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 25,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 25,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 26,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 26,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 27,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 27,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 51,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 28,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 28,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 29,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 29,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 30,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 30,
+			"dead": 0,
+			"departed": 1,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 5
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 31,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 31,
+			"dead": 0,
+			"departed": 1,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 5
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 32,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 32,
+			"dead": 0,
+			"departed": 1,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 5
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 33,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 33,
+			"dead": 0,
+			"departed": 1,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 54,
+			"population": 5
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 34,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 0,
+			"day": 34,
+			"dead": 0,
+			"departed": 1,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 54,
+			"population": 5
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 35,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 3,
+			"day": 35,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 88,
+			"population": 4
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 36,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 3,
+			"day": 36,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 83,
+			"population": 4
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 37,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 3,
+			"day": 37,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 81,
+			"population": 4
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 38,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 3,
+			"day": 38,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 83,
+			"population": 4
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 39,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 3,
+			"day": 39,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 81,
+			"population": 4
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 40,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 3,
+			"day": 40,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 93,
+			"population": 4
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 41,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 6,
+			"day": 41,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 59,
+			"population": 3
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 42,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 6,
+			"day": 42,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 62,
+			"population": 3
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 43,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 6,
+			"day": 43,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 62,
+			"population": 3
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 44,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 6,
+			"day": 44,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 62,
+			"population": 3
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 45,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 6,
+			"day": 45,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 62,
+			"population": 3
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 46,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 6,
+			"day": 46,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 54,
+			"population": 3
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 47,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 9,
+			"day": 47,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 1,
+			"loaded_chunks": 54,
+			"population": 3
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 48,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 9,
+			"day": 48,
+			"dead": 0,
+			"departed": 4,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 2
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 49,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 9,
+			"day": 49,
+			"dead": 0,
+			"departed": 4,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 2
+		},
+		{
+			"coins": 0,
+			"condition": {
+				"day": 50,
+				"days": 3,
+				"state": "distressed",
+				"trend": "distressed"
+			},
+			"damaged_roof_cells": 9,
+			"day": 50,
+			"dead": 0,
+			"departed": 4,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 2
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 51,
+				"days": 1,
+				"state": "distressed",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 9,
+			"day": 51,
+			"dead": 0,
+			"departed": 4,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 2
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 52,
+				"days": 2,
+				"state": "distressed",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 9,
+			"day": 52,
+			"dead": 0,
+			"departed": 4,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 2
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 53,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 12,
+			"day": 53,
+			"dead": 0,
+			"departed": 4,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 2
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 54,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 12,
+			"day": 54,
+			"dead": 0,
+			"departed": 4,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 52,
+			"population": 2
+		},
+		{
+			"coins": 470,
+			"condition": {
+				"day": 55,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 9,
+			"day": 55,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 52,
+			"population": 3
+		},
+		{
+			"coins": 470,
+			"condition": {
+				"day": 56,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 9,
+			"day": 56,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 3
+		},
+		{
+			"coins": 470,
+			"condition": {
+				"day": 57,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 9,
+			"day": 57,
+			"dead": 0,
+			"departed": 3,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 3
+		},
+		{
+			"coins": 440,
+			"condition": {
+				"day": 58,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 6,
+			"day": 58,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 4
+		},
+		{
+			"coins": 440,
+			"condition": {
+				"day": 59,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 6,
+			"day": 59,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 4
+		},
+		{
+			"coins": 440,
+			"condition": {
+				"day": 60,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 6,
+			"day": 60,
+			"dead": 0,
+			"departed": 2,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 4
+		},
+		{
+			"coins": 410,
+			"condition": {
+				"day": 61,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 3,
+			"day": 61,
+			"dead": 0,
+			"departed": 1,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 5
+		},
+		{
+			"coins": 410,
+			"condition": {
+				"day": 62,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 3,
+			"day": 62,
+			"dead": 0,
+			"departed": 1,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 5
+		},
+		{
+			"coins": 410,
+			"condition": {
+				"day": 63,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 3,
+			"day": 63,
+			"dead": 0,
+			"departed": 1,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 5
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 64,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 64,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 65,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 65,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 66,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 66,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 67,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 67,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 55,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 68,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 68,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 69,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 69,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 70,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 70,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 71,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 71,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 72,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 72,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 73,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 73,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 74,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 74,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 75,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 75,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 76,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 76,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 77,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 77,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 78,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 78,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 79,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 79,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 6
+		},
+		{
+			"coins": 380,
+			"condition": {
+				"day": 80,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 80,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 10000,
+			"condition": {
+				"day": 81,
+				"days": 1,
+				"state": "stable",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 81,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 6
+		},
+		{
+			"coins": 10000,
+			"condition": {
+				"day": 82,
+				"days": 2,
+				"state": "stable",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 82,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 6
+		},
+		{
+			"coins": 9940,
+			"condition": {
+				"day": 83,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 83,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 9940,
+			"condition": {
+				"day": 84,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 84,
+			"dead": 0,
+			"departed": 0,
+			"homes": 2,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 6
+		},
+		{
+			"coins": 9940,
+			"condition": {
+				"day": 85,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 85,
+			"dead": 0,
+			"departed": 0,
+			"homes": 3,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 7
+		},
+		{
+			"coins": 9880,
+			"condition": {
+				"day": 86,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 86,
+			"dead": 0,
+			"departed": 0,
+			"homes": 3,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 7
+		},
+		{
+			"coins": 9880,
+			"condition": {
+				"day": 87,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 87,
+			"dead": 0,
+			"departed": 0,
+			"homes": 3,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 7
+		},
+		{
+			"coins": 9880,
+			"condition": {
+				"day": 88,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 88,
+			"dead": 0,
+			"departed": 0,
+			"homes": 4,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 8
+		},
+		{
+			"coins": 9820,
+			"condition": {
+				"day": 89,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 89,
+			"dead": 0,
+			"departed": 0,
+			"homes": 4,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 8
+		},
+		{
+			"coins": 9820,
+			"condition": {
+				"day": 90,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 90,
+			"dead": 0,
+			"departed": 0,
+			"homes": 4,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 8
+		},
+		{
+			"coins": 9820,
+			"condition": {
+				"day": 91,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 91,
+			"dead": 0,
+			"departed": 0,
+			"homes": 5,
+			"leaving": 0,
+			"loaded_chunks": 53,
+			"population": 9
+		},
+		{
+			"coins": 9760,
+			"condition": {
+				"day": 92,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 92,
+			"dead": 0,
+			"departed": 0,
+			"homes": 5,
+			"leaving": 0,
+			"loaded_chunks": 51,
+			"population": 9
+		},
+		{
+			"coins": 9760,
+			"condition": {
+				"day": 93,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 93,
+			"dead": 0,
+			"departed": 0,
+			"homes": 5,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 9
+		},
+		{
+			"coins": 9760,
+			"condition": {
+				"day": 94,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 94,
+			"dead": 0,
+			"departed": 0,
+			"homes": 6,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 10
+		},
+		{
+			"coins": 9700,
+			"condition": {
+				"day": 95,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 95,
+			"dead": 0,
+			"departed": 0,
+			"homes": 6,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 10
+		},
+		{
+			"coins": 9700,
+			"condition": {
+				"day": 96,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 96,
+			"dead": 0,
+			"departed": 0,
+			"homes": 6,
+			"leaving": 0,
+			"loaded_chunks": 55,
+			"population": 10
+		},
+		{
+			"coins": 9700,
+			"condition": {
+				"day": 97,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 97,
+			"dead": 0,
+			"departed": 0,
+			"homes": 7,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 11
+		},
+		{
+			"coins": 9640,
+			"condition": {
+				"day": 98,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 98,
+			"dead": 0,
+			"departed": 0,
+			"homes": 7,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 11
+		},
+		{
+			"coins": 9640,
+			"condition": {
+				"day": 99,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 99,
+			"dead": 0,
+			"departed": 0,
+			"homes": 7,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 11
+		},
+		{
+			"coins": 9640,
+			"condition": {
+				"day": 100,
+				"days": 3,
+				"state": "prosperous",
+				"trend": "prosperous"
+			},
+			"damaged_roof_cells": 0,
+			"day": 100,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 101,
+				"days": 1,
+				"state": "prosperous",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 101,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 102,
+				"days": 2,
+				"state": "prosperous",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 102,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 103,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 103,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 104,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 104,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 56,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 105,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 105,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 106,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 106,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 107,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 107,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 108,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 108,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 109,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 109,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 110,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 110,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 111,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 111,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 112,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 112,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 113,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 113,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 114,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 114,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 115,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 115,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 116,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 116,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 54,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 117,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 117,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 118,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 118,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 119,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 119,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		},
+		{
+			"coins": 500,
+			"condition": {
+				"day": 120,
+				"days": 3,
+				"state": "stable",
+				"trend": "stable"
+			},
+			"damaged_roof_cells": 0,
+			"day": 120,
+			"dead": 0,
+			"departed": 0,
+			"homes": 8,
+			"leaving": 0,
+			"loaded_chunks": 57,
+			"population": 12
+		}
+	],
+	"preset": "small",
+	"seed": 7,
+	"server_ticks_in_days": 19200,
+	"setup": "two MemoryTransport clients; actual production/needs; day=160 server ticks; injected treasury and initial stocks at phase boundaries; witnesses replenished daily; predators excluded from this economic scenario",
+	"source_sha256": {
+		"src/server/creature_sim.gd": "fe9a97ed1219a91de81fee852593fe7f38d45d0af67a81171be4451f58d9eb9a",
+		"src/server/game_server.gd": "5984fce2a9a7bd9267e449bbf73182137a353c27c74806085d665a43f51762d1",
+		"src/server/server_world.gd": "b60b37bce4a9699cbd9391367526ab44d1ff3bc35dd2c8f2a38014f63c9f58ad",
+		"src/server/settlement_life.gd": "030580e16c4b90b1fb51e6fda4f2b4c8688fcaf9fac1549167d6591a3206c6da",
+		"src/server/settlement_population.gd": "9b67eaee01e4c8b0dade2675f95170282a65084702acf7904beb93237cb43bdd",
+		"src/server/village_economy.gd": "34d9d99ef21f2950b1bf330133fdf11d7597823ed767356a08b1cba387206b05",
+		"tools/check_settlement_soak.gd": "e785bacb46d6bac2eaac6e68518e6fe5f5edf560e809a985cdec9e1ef8a6a51f"
+	},
+	"village": "base:village@0,0#0",
+	"wall_seconds": 1372.198037
+}

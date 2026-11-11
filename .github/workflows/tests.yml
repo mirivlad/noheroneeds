@@ -8,6 +8,7 @@ jobs:
     env:
       GODOT_VERSION: 4.7.2-stable
       TEST_TIMEOUT: '2400'
+      TEST_JOBS: '4'
     steps:
       - uses: actions/checkout@v4
       - name: Cache Godot and addons
@@ -25,4 +26,6 @@ jobs:
             unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}_linux.x86_64" godot && rm godot.zip
           fi
       - name: Run tests
-        run: GODOT=~/godot/godot tools/run_tests.sh
+        run: |
+          python3 -m unittest discover -s tools/tests -v
+          GODOT=~/godot/godot tools/run_tests.sh

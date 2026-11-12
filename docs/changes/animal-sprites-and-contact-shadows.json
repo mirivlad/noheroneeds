@@ -91,7 +91,7 @@
         "site/content/guides/controls.html": "5cd63f78054df5ae1c3c004512deb9ca610c7c6d96a0b5da60e73b02efd1181c",
         "site/content/guides/caravans.html": "c7caf557c31d97324eab493e3bca8e6ddd7cadd6b73e5827d16e0fae93ac61fe"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.20.0.json"
     }
   ]
 }

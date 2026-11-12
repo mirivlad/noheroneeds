@@ -1,0 +1,927 @@
+{
+  "ok": true,
+  "tests": 670,
+  "suites": 102,
+  "sources_unchanged": true,
+  "wall_seconds": 837.23,
+  "results": [
+    {
+      "suite": "tests/unit/app/test_libraries.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 23.84,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__app__test_libraries.gd.log"
+    },
+    {
+      "suite": "tests/unit/building/test_door_installation.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 24.94,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__building__test_door_installation.gd.log"
+    },
+    {
+      "suite": "tests/unit/building/test_doors.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.71,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__building__test_doors.gd.log"
+    },
+    {
+      "suite": "tests/unit/building/test_levels.gd",
+      "ok": true,
+      "expected_tests": 9,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 40.86,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__building__test_levels.gd.log"
+    },
+    {
+      "suite": "tests/unit/building/test_levels_network.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 25.84,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__building__test_levels_network.gd.log"
+    },
+    {
+      "suite": "tests/unit/building/test_settlement_levels.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 61.89,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__building__test_settlement_levels.gd.log"
+    },
+    {
+      "suite": "tests/unit/building/test_stairs.gd",
+      "ok": true,
+      "expected_tests": 9,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 40.76,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__building__test_stairs.gd.log"
+    },
+    {
+      "suite": "tests/unit/characters/test_character_file.gd",
+      "ok": true,
+      "expected_tests": 9,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 8.91,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__characters__test_character_file.gd.log"
+    },
+    {
+      "suite": "tests/unit/content/test_content_registry.gd",
+      "ok": true,
+      "expected_tests": 9,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 13.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__content__test_content_registry.gd.log"
+    },
+    {
+      "suite": "tests/unit/content/test_progression.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__content__test_progression.gd.log"
+    },
+    {
+      "suite": "tests/unit/core/test_cbor.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__core__test_cbor.gd.log"
+    },
+    {
+      "suite": "tests/unit/core/test_hash.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__core__test_hash.gd.log"
+    },
+    {
+      "suite": "tests/unit/core/test_uuid.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__core__test_uuid.gd.log"
+    },
+    {
+      "suite": "tests/unit/experiment_3d/test_actor_shadow_3d.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.81,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__experiment_3d__test_actor_shadow_3d.gd.log"
+    },
+    {
+      "suite": "tests/unit/experiment_3d/test_caravan_harness_3d.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__experiment_3d__test_caravan_harness_3d.gd.log"
+    },
+    {
+      "suite": "tests/unit/experiment_3d/test_world_view_3d.gd",
+      "ok": true,
+      "expected_tests": 43,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 114.87,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__experiment_3d__test_world_view_3d.gd.log"
+    },
+    {
+      "suite": "tests/unit/network/test_dedicated_server.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 48.87,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__network__test_dedicated_server.gd.log"
+    },
+    {
+      "suite": "tests/unit/network/test_enet.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 56.88,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__network__test_enet.gd.log"
+    },
+    {
+      "suite": "tests/unit/network/test_game_server.gd",
+      "ok": true,
+      "expected_tests": 24,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 522.99,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__network__test_game_server.gd.log"
+    },
+    {
+      "suite": "tests/unit/network/test_protocol.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__network__test_protocol.gd.log"
+    },
+    {
+      "suite": "tests/unit/persistence/test_chunk_codec.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__persistence__test_chunk_codec.gd.log"
+    },
+    {
+      "suite": "tests/unit/persistence/test_world_store.gd",
+      "ok": true,
+      "expected_tests": 7,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__persistence__test_world_store.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_actions.gd",
+      "ok": true,
+      "expected_tests": 11,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_actions.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_additional_sprites.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 21.83,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_additional_sprites.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_animal_sprite.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 5.91,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_animal_sprite.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_beast_voices.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_beast_voices.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_character_editor.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 6.71,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_character_editor.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_click_orders.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.81,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_click_orders.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_cursor_art.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_cursor_art.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_hospitality_panel.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_hospitality_panel.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_hotbar.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_hotbar.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_key_map.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_key_map.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_lpc_sprite.gd",
+      "ok": true,
+      "expected_tests": 10,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 3.81,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_lpc_sprite.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_menu.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 62.69,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_menu.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_music.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_music.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_pixel_display.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 5.81,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_pixel_display.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_play.gd",
+      "ok": true,
+      "expected_tests": 17,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 339.01,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_play.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_ro_sprite.gd",
+      "ok": true,
+      "expected_tests": 13,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 10.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_ro_sprite.gd.log"
+    },
+    {
+      "suite": "tests/unit/presentation/test_ui_windows.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__presentation__test_ui_windows.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_animal_life.gd",
+      "ok": true,
+      "expected_tests": 15,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 77.92,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_animal_life.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_bandits.gd",
+      "ok": true,
+      "expected_tests": 8,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 29.84,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_bandits.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_boats.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 19.73,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_boats.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_contracts.gd",
+      "ok": true,
+      "expected_tests": 10,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 45.77,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_caravan_contracts.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_motion.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 31.85,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_caravan_motion.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_navigation.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 33.85,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_caravan_navigation.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_stops.gd",
+      "ok": true,
+      "expected_tests": 7,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 45.87,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_caravan_stops.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_chronicles.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 81.92,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_chronicles.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_combat.gd",
+      "ok": true,
+      "expected_tests": 15,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 70.81,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_combat.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_containers.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 14.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_containers.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_crafts.gd",
+      "ok": true,
+      "expected_tests": 14,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 22.83,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_crafts.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_crash_recovery.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 9.01,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_crash_recovery.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_creatures.gd",
+      "ok": true,
+      "expected_tests": 27,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 146.32,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_creatures.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_dweller_pace.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 52.08,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_dweller_pace.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_dwellers.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 122.89,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_dwellers.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_equipment.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 3.91,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_equipment.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_fields.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 13.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_fields.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_fishing.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 20.83,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_fishing.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_from_scratch.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 102.05,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_from_scratch.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_growth.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 19.83,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_growth.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_held.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 12.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_held.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_hospitality.gd",
+      "ok": true,
+      "expected_tests": 12,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 49.87,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_hospitality.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_husbandry.gd",
+      "ok": true,
+      "expected_tests": 8,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 44.87,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_husbandry.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_interaction.gd",
+      "ok": true,
+      "expected_tests": 7,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 32.85,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_interaction.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_looters.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 31.85,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_looters.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_mastery.gd",
+      "ok": true,
+      "expected_tests": 7,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 15.92,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_mastery.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_needs.gd",
+      "ok": true,
+      "expected_tests": 9,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 36.85,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_needs.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_npc_equipment.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 38.86,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_npc_equipment.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_ownership.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 18.83,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_ownership.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_road_audit.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 33.85,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_road_audit.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_server_world.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 3.81,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_server_world.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_settlement_life.gd",
+      "ok": true,
+      "expected_tests": 11,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 58.89,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_settlement_life.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_settlement_population.gd",
+      "ok": true,
+      "expected_tests": 10,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 57.98,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_settlement_population.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_swimming.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 12.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_swimming.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_teaching.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 32.95,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_teaching.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_things.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 14.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_things.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_underground.gd",
+      "ok": true,
+      "expected_tests": 10,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 35.85,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_underground.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_unload.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 16.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_unload.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_village_development.gd",
+      "ok": true,
+      "expected_tests": 10,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 39.86,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_village_development.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_village_economy.gd",
+      "ok": true,
+      "expected_tests": 13,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 76.92,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_village_economy.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_wear.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 35.85,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_wear.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_world_time.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 37.96,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__server__test_world_time.gd.log"
+    },
+    {
+      "suite": "tests/unit/sim/test_bag.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__sim__test_bag.gd.log"
+    },
+    {
+      "suite": "tests/unit/sim/test_daylight.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.9,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__sim__test_daylight.gd.log"
+    },
+    {
+      "suite": "tests/unit/sim/test_mastery.gd",
+      "ok": true,
+      "expected_tests": 7,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__sim__test_mastery.gd.log"
+    },
+    {
+      "suite": "tests/unit/sim/test_reach.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.9,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__sim__test_reach.gd.log"
+    },
+    {
+      "suite": "tests/unit/sim/test_sight.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 30.84,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__sim__test_sight.gd.log"
+    },
+    {
+      "suite": "tests/unit/sim/test_wear.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__sim__test_wear.gd.log"
+    },
+    {
+      "suite": "tests/unit/sim/test_weather.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.8,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__sim__test_weather.gd.log"
+    },
+    {
+      "suite": "tests/unit/test_sqlite_extension.gd",
+      "ok": true,
+      "expected_tests": 2,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.9,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__test_sqlite_extension.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_bandit_camp_plans.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 23.74,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_bandit_camp_plans.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_geography.gd",
+      "ok": true,
+      "expected_tests": 9,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 43.86,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_geography.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_hospitality_plans.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 18.83,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_hospitality_plans.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_local_weather.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 14.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_local_weather.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_minerals.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 25.84,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_minerals.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_planet_topology.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 6.71,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_planet_topology.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_planet_world.gd",
+      "ok": true,
+      "expected_tests": 8,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 40.76,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_planet_world.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_roads.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_roads.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_settlement_architecture.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_settlement_architecture.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_settlement_layout.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 6.91,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_settlement_layout.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_settlements.gd",
+      "ok": true,
+      "expected_tests": 13,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 273.93,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_settlements.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_surface.gd",
+      "ok": true,
+      "expected_tests": 8,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 130.0,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_surface.gd.log"
+    },
+    {
+      "suite": "tests/unit/world/test_world_plan.gd",
+      "ok": true,
+      "expected_tests": 23,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 200.82,
+      "log": "build/test-runs/20261112-021632-474567/tests__unit__world__test_world_plan.gd.log"
+    }
+  ]
+}

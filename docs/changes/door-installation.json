@@ -19,10 +19,10 @@
       ],
       "guides": {
         "site/content/guides/building.html": "2910be61b3aded155c5123835976ba2a19268e0a5fafb16d1290656fc973c17a",
-        "site/content/guides/controls.html": "36a5b13616cfda319ae01a301848ff243313ff7aa8392feced2ab2b978282285",
-        "site/content/guides/hospitality.html": "d94227dd34658156aa809bd53ab2416dc1063c7ac01bf552e9790f3beccb2aee"
+        "site/content/guides/controls.html": "5cd63f78054df5ae1c3c004512deb9ca610c7c6d96a0b5da60e73b02efd1181c",
+        "site/content/guides/hospitality.html": "a8f5ed6a4044e4d3b989da9674564b65add49c4ef637c4a92e91b568e48353f6"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.20.0.json"
     }
   ]
 }

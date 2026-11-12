@@ -1,0 +1,8 @@
+test_empty_partial_and_early_stops_cannot_pass (test_parallel_tests.ParallelTestGates.test_empty_partial_and_early_stops_cannot_pass) ... ok
+test_full_summary_and_expected_errors_are_required (test_parallel_tests.ParallelTestGates.test_full_summary_and_expected_errors_are_required) ... ok
+test_inventory_filters_match_the_godot_runner (test_parallel_tests.ParallelTestGates.test_inventory_filters_match_the_godot_runner) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.003s
+
+OK

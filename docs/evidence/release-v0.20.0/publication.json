@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "documentation_commit": "d79dc80f4954dd5871065c4cc412e992b2e20fbf",
+    "game_commit": "d79dc80f4954dd5871065c4cc412e992b2e20fbf",
+    "published_at": "2026-11-12T02:51:03Z",
+    "tag": "v0.20.0"
+  },
+  "catalogVersion": "v0.20.0",
+  "latestRelease": "0.20.0",
+  "checks": [
+    {
+      "path": "index.html",
+      "theme": {
+        "background": "rgb(11, 18, 20)",
+        "font": "Manrope, system-ui, sans-serif",
+        "titleFont": "\"Playfair Display\", Georgia, serif",
+        "gold": "rgb(221, 189, 131)"
+      },
+      "cssStatus": 200
+    },
+    {
+      "path": "wiki.html",
+      "theme": {
+        "background": "rgb(11, 18, 20)",
+        "font": "Manrope, system-ui, sans-serif",
+        "titleFont": "\"Playfair Display\", Georgia, serif",
+        "gold": "rgb(221, 189, 131)"
+      },
+      "cssStatus": 200
+    },
+    {
+      "path": "guides.html",
+      "theme": {
+        "background": "rgb(11, 18, 20)",
+        "font": "Manrope, system-ui, sans-serif",
+        "titleFont": "\"Playfair Display\", Georgia, serif",
+        "gold": "rgb(221, 189, 131)"
+      },
+      "cssStatus": 200
+    },
+    {
+      "path": "updates.html",
+      "theme": {
+        "background": "rgb(11, 18, 20)",
+        "font": "Manrope, system-ui, sans-serif",
+        "titleFont": "\"Playfair Display\", Georgia, serif",
+        "gold": "rgb(221, 189, 131)"
+      },
+      "cssStatus": 200
+    }
+  ],
+  "mobileFits": true
+}

@@ -1,0 +1,29 @@
+{
+  "version": "0.20.0",
+  "sha256_verified": {
+    "noheroneeds-0.20.0-linux-x86_64.tar.gz": "850bd43d439c3cc1517b33d61ac936dfdb9484a6a07d923c7f64e1e89e2b61b3",
+    "noheroneeds-0.20.0-windows-portable.zip": "448a24a899d7fb1f2563c30767e2b39ed9342a79df82f875f11da46232a00df2",
+    "noheroneeds-0.20.0-windows-setup.exe": "4a108934e02d0522235e26fc3300fe8847600ecbe38c943c598a0f4b906c7e99",
+    "noheroneeds_0.20.0_amd64.deb": "36ed1519a2996494b7794e97364d29352734ceb8bdcd9a54b0849f7655bfa94f"
+  },
+  "windows_zip_crc_ok": true,
+  "windows_pe_headers_ok": true,
+  "debian_version": "0.20.0",
+  "linux_server_exit_code": 0,
+  "linux_ready_seconds": 7.876,
+  "readiness": "saved spawn view followed by a live ENet client",
+  "enet_client": {
+    "ack_max_ms": 99,
+    "ack_p50_ms": 99,
+    "ack_p99_ms": 99,
+    "acks": 2,
+    "bots": 1,
+    "corrections": 7,
+    "playing": 1,
+    "unanswered": 0
+  },
+  "stdout_bytes": 191,
+  "created_with": "0.20.0",
+  "sqlite_integrity": "ok",
+  "saved_chunks": 60
+}

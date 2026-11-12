@@ -1,0 +1,12 @@
+{
+  "artifact": "noheroneeds-0.20.0-linux-x86_64.tar.gz",
+  "renderer": "OpenGL Compatibility / Mesa llvmpipe under Xvfb",
+  "exit_code": 0,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "rgba_lossless": true,
+  "scenario": "isolated XDG_DATA_HOME; SQLite backup of the new planned seed 7 smoke world; --world=release --caravan_debug=e --body=base:human_ro_m --time=12 --weather=clear --frames=150",
+  "notes": "This proves exported horse/cart rendering; it is not a performance benchmark. First --quality attempt created an unsupported legacy world and was refused; the dev helper was not modified."
+}

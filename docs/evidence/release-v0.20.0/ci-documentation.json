@@ -1,0 +1,10 @@
+{
+  "job_id": 130930904244,
+  "ok": true,
+  "game_commit": "d79dc80f4954dd5871065c4cc412e992b2e20fbf",
+  "documentation_gate": true,
+  "python_tests": 32,
+  "browser_tests": 10,
+  "browser_seconds": 15.7,
+  "source": "GitHub job log; no local results substituted"
+}

@@ -1,0 +1,40 @@
+{
+  "author": "br-n518",
+  "license": "CC0-1.0",
+  "license_pages": [
+    "https://opengameart.org/content/rat-0",
+    "https://opengameart.org/node/86785"
+  ],
+  "files": [
+    {
+      "file": "art_src/cave_animals/rat_source.7z",
+      "url": "https://opengameart.org/sites/default/files/rat_source.7z",
+      "bytes": 1167383,
+      "sha256": "3c8ec130b6a3ec3c93e0290107bcebdd5b34e23fd9205fab373feffea27cc883"
+    },
+    {
+      "file": "art_src/cave_animals/spider.blend",
+      "url": "https://opengameart.org/sites/default/files/spider_1.blend",
+      "bytes": 784128,
+      "sha256": "01e0d50597ba9d4a1d5ebaaa78da89ef6fd79df207f3fa9962b3e4e069b0112b"
+    },
+    {
+      "file": "art_src/cave_animals/spider.png",
+      "url": "https://opengameart.org/sites/default/files/spider_7.png",
+      "bytes": 170489,
+      "sha256": "d7845fd1ef1b2387767f62296b44d6dfd0de9770ec77de5f37245b57720ed003"
+    }
+  ],
+  "extracted": [
+    {
+      "file": "art_src/cave_animals/rat.blend",
+      "bytes": 990624,
+      "sha256": "fb6af70d6d9121e6f694c3e58fb8842b7bf3319e331d14332738af57af4046e0"
+    },
+    {
+      "file": "art_src/cave_animals/rat.png",
+      "bytes": 439120,
+      "sha256": "b5ef72933348583c79f789dc3f3316163c600911fc38d5398aaa7d04bf4450bf"
+    }
+  ]
+}

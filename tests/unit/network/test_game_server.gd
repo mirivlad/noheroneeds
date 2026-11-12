@@ -75,6 +75,29 @@ func test_two_players_join_and_see_each_other() -> void:
 	check(a.chunks.size() >= 9, "ground around arrived: %d chunks" % a.chunks.size())
 
 
+func test_creature_gait_changes_reach_both_clients_including_arrival() -> void:
+	var a := _client("owner", _character("Аня"))
+	var b := _client("other", _character("Боря"))
+	_run(30, [a, b])
+	var near := Movement.cell_of(_server_pos(a))
+	var animal := world.creatures._spawn("base:cow", "surface", near + Vector2i(1, 0), {}, 81)
+	world.creatures._schedule(animal, world.tick + 10000)
+	_run(20, [a, b])
+	for client: GameClient in [a, b]: eq(client.entities[animal.id].get("running"), false)
+	world.creatures._go(animal, "flee", near + Vector2i(5, 0), true)
+	_run(20, [a, b])
+	for client: GameClient in [a, b]: eq(client.entities[animal.id].get("running"), true, "a slow animal's run is explicit")
+	world.creatures._go(animal, "wander", near + Vector2i(5, 0), false)
+	_run(20, [a, b])
+	for client: GameClient in [a, b]: eq(client.entities[animal.id].get("running"), false, "walk replaces the previous run")
+	world.creatures._go(animal, "flee", near + Vector2i(5, 0), true)
+	_run(20, [a, b])
+	animal.target = animal.pos
+	world.creatures._movers[animal.id] = true
+	_run(20, [a, b])
+	for client: GameClient in [a, b]: eq(client.entities[animal.id].get("running"), false, "arrival clears the last run even without position change")
+
+
 func test_bandit_colours_equipment_and_escort_contract_reach_two_clients() -> void:
 	var a := _client("owner", _character("Аня"))
 	var b := _client("other", _character("Боря"))

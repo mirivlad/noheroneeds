@@ -1,0 +1,11 @@
+{
+	"adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+	"checks": 6794,
+	"content_sha256": "4f7a83f15c16aa828d215dd168e5b5ebae0570bb6360042a427d65c81fc44219",
+	"controlled_setup": true,
+	"default_content": true,
+	"failures": [],
+	"lpc_comparison": false,
+	"scenario_sha256": "6ab5d3dae117bb04e25b5546f91f6268550099c0b5c721f5bf12624b85e4f06a",
+	"seed": 431
+}

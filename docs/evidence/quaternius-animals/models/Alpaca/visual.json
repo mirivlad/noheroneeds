@@ -1,0 +1,57 @@
+{
+  "format": "ro",
+  "mode": "character",
+  "atlas_path": "res://build/animal_sprites/quaternius-checked/Alpaca/alpaca.png",
+  "pixel_scale": 0.25,
+  "key": "alpaca",
+  "frame": [
+    159,
+    150
+  ],
+  "rect": [
+    0,
+    0,
+    159,
+    150
+  ],
+  "origin": [
+    80,
+    131
+  ],
+  "columns": 25,
+  "anims": {
+    "idle": [
+      0,
+      5
+    ],
+    "walk": [
+      5,
+      18
+    ],
+    "run": [
+      23,
+      14
+    ]
+  },
+  "clips": {
+    "idle": {
+      "frames": 5,
+      "fps": 1.2,
+      "loop": true
+    },
+    "walk": {
+      "frames": 18,
+      "fps": 12.342857142857143,
+      "loop": true
+    },
+    "run": {
+      "frames": 14,
+      "fps": 21.0,
+      "loop": true
+    }
+  },
+  "swings": {},
+  "layers": [
+    "alpaca"
+  ]
+}

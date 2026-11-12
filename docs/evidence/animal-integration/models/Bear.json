@@ -1,0 +1,125 @@
+{
+  "species": "bear",
+  "source_kind": "licensed-authored",
+  "cell": 336,
+  "foot": 197,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 3,
+      "fps": 1.5,
+      "loop": true,
+      "source": "idle",
+      "duration": 2.0
+    },
+    "walk": {
+      "frames": 16,
+      "fps": 12.000002861023631,
+      "loop": true,
+      "source": "walk",
+      "duration": 1.3333330154418945
+    },
+    "run": {
+      "frames": 20,
+      "fps": 20.0,
+      "loop": true,
+      "source": "run",
+      "duration": 1.0
+    },
+    "attack": {
+      "frames": 12,
+      "fps": 12.0,
+      "loop": false,
+      "source": "attack",
+      "duration": 1.0
+    },
+    "dead": {
+      "frames": 20,
+      "fps": 11.999997711182077,
+      "loop": false,
+      "source": "dead",
+      "duration": 1.6666669845581055
+    }
+  },
+  "anatomy": {
+    "model": "Bear",
+    "bones": 43,
+    "vertices": 1666,
+    "mesh_objects": 1,
+    "materials": [
+      "RO Ursidae_Grizzly"
+    ],
+    "target_height": 1.4,
+    "normalization_scale": 0.4669567353687618,
+    "base_yaw": 3.1706559987918714,
+    "clips": {
+      "idle": {
+        "source": "idle",
+        "range": [
+          0.0,
+          48.0
+        ]
+      },
+      "walk": {
+        "source": "walk",
+        "range": [
+          0.0,
+          31.99999237060547
+        ]
+      },
+      "run": {
+        "source": "run",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "attack": {
+        "source": "attack",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "dead": {
+        "source": "dead",
+        "range": [
+          0.0,
+          40.00000762939453
+        ]
+      }
+    }
+  },
+  "strides": {
+    "walk": 1.9577860832214355,
+    "run": 2.2347331047058105
+  },
+  "volume": {
+    "span": 6,
+    "elevation": 22,
+    "px_per_m": 77
+  },
+  "sources": {
+    "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+    "tools/art/animal_sprites/0ad-source.json": "9b8c0f2654cc5464829ea9f10518c842969e5e3ae676768ede32ca651d723bf3",
+    "art_src/0ad_animals/art/textures/skins/skeletal/animal_bear_brown.png": "5b8b79eae61d8c708c9e34c82db58c47a540e3067cb993e02ff986d265ec636e",
+    "build/animal_sprites/0ad/Bear-idle.glb": "656d34a49275458fdf49c60e9a0fe6666f0ad1127995a55a2c9165ddb6292db8",
+    "build/animal_sprites/0ad/Bear-walk.glb": "cc2495ec1fa764985199b694344a6f343affc531d433c2f53bd22a1f3afe4219",
+    "build/animal_sprites/0ad/Bear-run.glb": "bb117e9c8557cc6d1b3594c9d15123bccd5e876a0901d953015357c430642861",
+    "build/animal_sprites/0ad/Bear-attack.glb": "0937ba4e93b53be31fcf367e7106c33744b601260bc7eff92b1b921ee8fd3133",
+    "build/animal_sprites/0ad/Bear-dead.glb": "bee1254209493434a7cbf1003d2702023939124d288176dc48280f73f9fe121a"
+  }
+}

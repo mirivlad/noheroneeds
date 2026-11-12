@@ -87,11 +87,12 @@ func test_new_bodies_can_be_chosen_saved_and_played() -> void:
 			await (Engine.get_main_loop() as SceneTree).process_frame
 
 
-func test_animals_are_lpc_sheets_and_keep_their_variant() -> void:
+func test_animals_keep_their_variant_in_their_selected_sprite_format() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
-	for animal: String in ["hare", "deer", "wolf", "cave_rat", "cave_spider", "poring", "poporing"]:
+	for animal: String in ["horse", "hare", "deer", "wolf", "cave_rat", "cave_spider", "poring", "poporing"]:
 		var visual := content.visual_of("base:" + animal)
-		eq(visual.get("format"), "lpc", animal + " is drawn from LPC frames")
+		var lpc := animal in ["poring", "poporing"]
+		eq(visual.get("format"), "lpc" if lpc else "ro", animal + " uses its selected art pipeline")
 		var seen := {}
 		for i in 16:
 			var view := WorldView.new()
@@ -99,7 +100,7 @@ func test_animals_are_lpc_sheets_and_keep_their_variant() -> void:
 			var id := "animal-%d" % i
 			var looks := {"body_plan": "base:" + animal}
 			var doll := view.doll_for(id, looks)
-			check(doll is LpcSprite, animal + " plays like the people")
+			check(doll is LpcSprite if lpc else doll is RoSprite, animal + " uses its sprite renderer")
 			var path := String((doll._layers[0][1] as Sprite2D).texture.resource_name)
 			seen[path] = true
 			check(view.doll_for(id, looks, doll) == doll, "unchanged appearance reuses its sprite")
@@ -110,7 +111,7 @@ func test_animals_are_lpc_sheets_and_keep_their_variant() -> void:
 			theirs.free()
 			doll.show_at(Vector2.ZERO, 0.0, true)
 			doll.show_at(Vector2(4, 0), 0.1, true)
-			eq(doll._anim_name, "walk", animal + " walks")
+			eq((doll as LpcSprite)._anim_name if lpc else (doll as RoSprite)._clip, "walk", animal + " walks")
 			doll.swing(Vector2.LEFT, "lunge")
 			check(doll.swinging(), animal + " strikes")
 			doll.free()

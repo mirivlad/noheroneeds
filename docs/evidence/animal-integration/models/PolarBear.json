@@ -1,0 +1,125 @@
+{
+  "species": "polarbear",
+  "source_kind": "licensed-authored",
+  "cell": 352,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 3,
+      "fps": 1.5,
+      "loop": true,
+      "source": "idle",
+      "duration": 2.0
+    },
+    "walk": {
+      "frames": 16,
+      "fps": 12.000002861023631,
+      "loop": true,
+      "source": "walk",
+      "duration": 1.3333330154418945
+    },
+    "run": {
+      "frames": 20,
+      "fps": 20.0,
+      "loop": true,
+      "source": "run",
+      "duration": 1.0
+    },
+    "attack": {
+      "frames": 12,
+      "fps": 12.0,
+      "loop": false,
+      "source": "attack",
+      "duration": 1.0
+    },
+    "dead": {
+      "frames": 20,
+      "fps": 11.999997711182077,
+      "loop": false,
+      "source": "dead",
+      "duration": 1.6666669845581055
+    }
+  },
+  "anatomy": {
+    "model": "PolarBear",
+    "bones": 43,
+    "vertices": 1667,
+    "mesh_objects": 1,
+    "materials": [
+      "RO Ursidae_Polar"
+    ],
+    "target_height": 1.5,
+    "normalization_scale": 0.500310787895102,
+    "base_yaw": 3.1706559987918714,
+    "clips": {
+      "idle": {
+        "source": "idle",
+        "range": [
+          0.0,
+          48.0
+        ]
+      },
+      "walk": {
+        "source": "walk",
+        "range": [
+          0.0,
+          31.99999237060547
+        ]
+      },
+      "run": {
+        "source": "run",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "attack": {
+        "source": "attack",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "dead": {
+        "source": "dead",
+        "range": [
+          0.0,
+          40.00000762939453
+        ]
+      }
+    }
+  },
+  "strides": {
+    "walk": 2.0976275205612183,
+    "run": 2.3943543434143066
+  },
+  "volume": {
+    "span": 6,
+    "elevation": 22,
+    "px_per_m": 77
+  },
+  "sources": {
+    "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+    "tools/art/animal_sprites/0ad-source.json": "9b8c0f2654cc5464829ea9f10518c842969e5e3ae676768ede32ca651d723bf3",
+    "art_src/0ad_animals/art/textures/skins/skeletal/animal_bear_white.png": "db205d09e7782b3aa6663c8a322ef35009b8730cb199d002f61c69e1c9707c2e",
+    "build/animal_sprites/0ad/PolarBear-idle.glb": "d5e130c5dd417b2fa9507ad7f20470fa3d600b227bd31267de178302c21462a7",
+    "build/animal_sprites/0ad/PolarBear-walk.glb": "9654ef04e93d2038e4fe08360e30748975c0741aead1232a3303fb0120823873",
+    "build/animal_sprites/0ad/PolarBear-run.glb": "1f126705157454ec307ad3a5d7b4dac0b029be31a88e39475786501ad73016c5",
+    "build/animal_sprites/0ad/PolarBear-attack.glb": "e1e8cd5cb78f8923ce6b52306b8d54d0f993d654267ebdcfbec678112ee96037",
+    "build/animal_sprites/0ad/PolarBear-dead.glb": "0e34b897e08567bf8f7a27e46d1685fddae535bf039f112160c6ebd977798e4f"
+  }
+}

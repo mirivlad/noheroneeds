@@ -1,0 +1,78 @@
+{
+  "species": "caverat",
+  "source_kind": "licensed-authored",
+  "cell": 256,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 2,
+      "fps": 3.0,
+      "loop": true,
+      "source": "idle-loop",
+      "duration": 0.6666666666666666
+    },
+    "walk": {
+      "frames": 8,
+      "fps": 12.8,
+      "loop": true,
+      "source": "walk-loop",
+      "duration": 0.625
+    },
+    "run": {
+      "frames": 13,
+      "fps": 20.8,
+      "loop": true,
+      "source": "run-loop",
+      "duration": 0.625
+    },
+    "attack": {
+      "frames": 8,
+      "fps": 12.0,
+      "loop": false,
+      "source": "attack",
+      "duration": 0.6666666666666666
+    },
+    "dead": {
+      "frames": 8,
+      "fps": 12.0,
+      "loop": false,
+      "source": "death",
+      "duration": 0.6666666666666666
+    }
+  },
+  "strides": {
+    "walk": 0.19443128257989883,
+    "run": 0.3930043429136276
+  },
+  "anatomy": {
+    "model": "CaveRat",
+    "bones": 21,
+    "vertices": 153,
+    "target_height": 0.32
+  },
+  "volume": {
+    "span": 6,
+    "elevation": 22,
+    "px_per_m": 77
+  },
+  "sources": {
+    "tools/art/animal_sprites/cave.py": "23cfd650c8eafb5a6e6eb6e66711e6ce6cbc6f603b4b68eb6f4e4fc45393284f",
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+    "tools/art/animal_sprites/cave-source.json": "4ffd56e2fa94817a8112a90257075717ea4f35108b8a55b5eef71543a72088e2",
+    "art_src/cave_animals/rat.blend": "fb6af70d6d9121e6f694c3e58fb8842b7bf3319e331d14332738af57af4046e0",
+    "art_src/cave_animals/rat.png": "b5ef72933348583c79f789dc3f3316163c600911fc38d5398aaa7d04bf4450bf"
+  }
+}

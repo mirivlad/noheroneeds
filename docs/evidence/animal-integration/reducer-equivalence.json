@@ -1,0 +1,26 @@
+[
+  {
+    "model": "Hare",
+    "reference_seconds": 0.3970999220000522,
+    "batched_seconds": 0.02739026500057662,
+    "identical": true
+  },
+  {
+    "model": "Bear",
+    "reference_seconds": 0.6879484090022743,
+    "batched_seconds": 0.04385349700169172,
+    "identical": true
+  },
+  {
+    "model": "Sheep",
+    "reference_seconds": 0.3970019330008654,
+    "batched_seconds": 0.02566994700100622,
+    "identical": true
+  },
+  {
+    "model": "Chicken",
+    "reference_seconds": 0.3982232979979017,
+    "batched_seconds": 0.025879714001348475,
+    "identical": true
+  }
+]

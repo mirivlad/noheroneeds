@@ -1,0 +1,162 @@
+{
+  "species": "donkey",
+  "source_kind": "quaternius-authored",
+  "cell": 256,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 1.2,
+      "loop": true,
+      "source": "Idle",
+      "duration": 3.3333333333333335
+    },
+    "walk": {
+      "frames": 14,
+      "fps": 12.0,
+      "loop": true,
+      "source": "Walk",
+      "duration": 1.1666666666666667
+    },
+    "run": {
+      "frames": 11,
+      "fps": 20.624998155981466,
+      "loop": true,
+      "source": "Gallop",
+      "duration": 0.5333333810170492
+    }
+  },
+  "anatomy": {
+    "model": "Donkey",
+    "source_sha256": "4cbb2eb7d057789c945b6445d99d0c73b76c0caf7ac9b37ce88a04ca718be2ff",
+    "bones": 50,
+    "vertices": 4044,
+    "mesh_objects": 1,
+    "materials": [
+      "Eye_Dark",
+      "Eye_White",
+      "Hair",
+      "Hooves",
+      "Main",
+      "Main_Dark",
+      "Main_Light",
+      "Muzzle"
+    ],
+    "clips": {
+      "attack": {
+        "source": "Attack_Headbutt",
+        "range": [
+          0.0,
+          38.400001525878906
+        ]
+      },
+      "kick": {
+        "source": "Attack_Kick",
+        "range": [
+          0.0,
+          19.200000762939453
+        ]
+      },
+      "dead": {
+        "source": "Death",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "graze": {
+        "source": "Eating",
+        "range": [
+          0.0,
+          144.0
+        ]
+      },
+      "run": {
+        "source": "Gallop",
+        "range": [
+          0.0,
+          12.80000114440918
+        ]
+      },
+      "run_jump": {
+        "source": "Gallop_Jump",
+        "range": [
+          0.0,
+          33.599998474121094
+        ]
+      },
+      "idle": {
+        "source": "Idle",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_2": {
+        "source": "Idle_2",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_low": {
+        "source": "Idle_Headlow",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "hurt": {
+        "source": "Idle_HitReact1",
+        "range": [
+          0.0,
+          11.199999809265137
+        ]
+      },
+      "hurt_2": {
+        "source": "Idle_HitReact2",
+        "range": [
+          0.0,
+          12.80000114440918
+        ]
+      },
+      "jump": {
+        "source": "Jump_toIdle",
+        "range": [
+          0.0,
+          36.79999923706055
+        ]
+      },
+      "walk": {
+        "source": "Walk",
+        "range": [
+          0.0,
+          28.0
+        ]
+      }
+    },
+    "target_height": 1.4,
+    "source_height": 3.953783590812236,
+    "normalization_scale": 0.35409120601676486,
+    "base_yaw": 3.141592657471545
+  },
+  "sources": {
+    "tools/art/animal_sprites/quaternius.py": "1b497bd99a08dae2f9ed7a82d131d884b5fb06a9bac3a6de2c56bfe59390fcb0",
+    "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+    "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+    "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+    "art_src/quaternius_animals/glTF/Donkey.gltf": "4cbb2eb7d057789c945b6445d99d0c73b76c0caf7ac9b37ce88a04ca718be2ff"
+  }
+}

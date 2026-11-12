@@ -31,6 +31,8 @@ var _mirror := false
 var _walk := 0.0
 var _idle := 0.0
 var _running := false
+## Authoritative creature gait; -1 keeps the player's speed-based choice.
+var running_hint := -1
 var _placed := false
 var _last_walk_frame := -1
 var _order_dir := -1
@@ -115,8 +117,17 @@ func show_at(target: Vector2, delta: float, exact: bool) -> void:
 			_face(step)  # a blow keeps one turned to it
 		# The walk plays as fast as the feet go: running steps come quicker.
 		var pace := clampf(step.length() / maxf(delta, 0.001) / WALK_PX_PER_SEC, 0.6, 1.8) if delta > 0.0 else 1.0
-		_running = pace > 1.25
-		_walk += delta * pace
+		_running = running_hint == 1 if running_hint >= 0 else pace > 1.25
+		var gait := "run" if _running else "walk"
+		var stride := float(_visual.get("stride_px", {}).get(gait, 0.0))
+		if stride > 0.0:
+			var motion := _anim(gait)
+			# Small animals have tiny physical strides at the game's movement
+			# scale. Bound cadence so their feet do not flicker through cycles.
+			var cycles := minf(step.length() / stride, delta * (4.0 if _running else 3.0))
+			_walk += cycles * int(motion["frames"]) / float(motion["fps"])
+		else:
+			_walk += delta * pace
 		_idle = 0.0
 	else:
 		_walk = 0.0

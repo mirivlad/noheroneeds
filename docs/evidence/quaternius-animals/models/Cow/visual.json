@@ -1,0 +1,57 @@
+{
+  "format": "ro",
+  "mode": "character",
+  "atlas_path": "res://build/animal_sprites/quaternius-checked/Cow/cow.png",
+  "pixel_scale": 0.25,
+  "key": "cow",
+  "frame": [
+    244,
+    163
+  ],
+  "rect": [
+    0,
+    0,
+    244,
+    163
+  ],
+  "origin": [
+    122,
+    137
+  ],
+  "columns": 16,
+  "anims": {
+    "idle": [
+      0,
+      4
+    ],
+    "walk": [
+      4,
+      14
+    ],
+    "run": [
+      18,
+      12
+    ]
+  },
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 1.2,
+      "loop": true
+    },
+    "walk": {
+      "frames": 14,
+      "fps": 12.0,
+      "loop": true
+    },
+    "run": {
+      "frames": 12,
+      "fps": 19.999999205271436,
+      "loop": true
+    }
+  },
+  "swings": {},
+  "layers": [
+    "cow"
+  ]
+}

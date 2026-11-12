@@ -1151,6 +1151,59 @@ http://lpc.opengameart.org/static/lpc-style-guide/assets.html
 - Лицензии: CC-BY-SA 3.0 / GPL 3.0
 - https://opengameart.org/content/lpc-monsters
 
+<!-- ro-animals -->
+## Игровые спрайты животных из 3D-моделей
+
+Преобразования проекта: масштаб, восемь ракурсов RO, toon-свет, палитра,
+пикселизация, контуры, атласы цвета/глубины и точки упряжи. Авторские скелеты
+и движения сохранены. Исходники и SHA-256 закреплены в
+`tools/art/animal_sprites/*source.json`; устройство фермы — `docs/art/ANIMALS.md`.
+
+### Quaternius Ultimate Animated Animals
+
+- Автор моделей, скелетов и исходных анимаций: **Quaternius**.
+- Лошадь (две масти), олень и рогатый олень, корова, волк, лиса;
+  песец — белый окрас модели лисы, выполненный проектом.
+- Исходный набор July 2021 и производные спрайты: **CC0 1.0 Universal**.
+- [Страница набора](https://quaternius.com/packs/ultimateanimatedanimals.html),
+  [авторская публикация CC0](https://www.patreon.com/quaternius/posts/ultimate-animals-53427821),
+  [лицензия CC0](https://creativecommons.org/publicdomain/zero/1.0/).
+- Закреплённая открытая копия: agentkaerf/FreeModels,
+  коммит `db3df04d1e4714298a09510b26fb6de6645138a2`.
+  Оригинальный текст — `tools/art/animal_sprites/QUATERNIUS_LICENSE.txt`.
+
+### Заяц / Rabbit
+
+- Автор: **Čestmír Dammer (CDmir), Kelgar**; идеи Rick Hoppmann и Keppu
+  отмечены в исходном файле.
+- [Rabbit на OpenGameArt](https://opengameart.org/content/rabbit-0).
+- Исходник и производные спрайты: **CC0 1.0 Universal**,
+  https://creativecommons.org/publicdomain/zero/1.0/.
+- Использованы авторские Sitting, Jump, Running и Dying, исходный мех и риг.
+
+### 0 A.D.: медведи, овца и курица
+
+- **Wildfire Games** и участники 0 A.D.: https://www.wildfiregames.com/.
+- Исходная графика и производные цветовые/глубинные спрайты `bear`,
+  `polarbear`, `sheep`, `chicken`: **CC-BY-SA 3.0**,
+  https://creativecommons.org/licenses/by-sa/3.0/.
+- Изменения: toon-палитра, масштаб, ракурсы, пикселизация, контур и упаковка
+  атласов. Авторские анимации перенесены из Collada через Assimp.
+- [Исходный проект](https://github.com/0ad/0ad), закреплённый коммит
+  `61a3b9507d974084e6badb88a0826bd89a6d5b8b`;
+  [авторская лицензия графики](https://github.com/0ad/0ad/blob/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/LICENSE.txt).
+  Её копия: `tools/art/animal_sprites/WILDFIRE_ART_LICENSE.txt`.
+
+### Пещерные крыса и паук
+
+- Автор моделей, текстур и анимаций: **br-n518**.
+- [Rat](https://opengameart.org/content/rat-0),
+  [Spider](https://opengameart.org/node/86785) на OpenGameArt.
+- Исходники и производные спрайты: **CC0 1.0 Universal**,
+  https://creativecommons.org/publicdomain/zero/1.0/.
+- У паука быстрый бег использует тот же авторский цикл ног, что и шаг;
+  частота следует перемещению. Отдельного падения в исходнике нет.
+
 <!-- ro -->
 Лесной шалаш разбойников — оригинальная модель проекта, построенная в Blender
 скриптом `tools/art/build_bandit_shelter.py`; распространяется на условиях

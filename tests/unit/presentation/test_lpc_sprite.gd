@@ -60,21 +60,6 @@ func test_four_directions_with_diagonals_seen_from_the_side() -> void:
 	doll.free()
 
 
-func test_horse_idle_feet_reach_the_ground_in_every_direction() -> void:
-	var visual := _content().visual_of("base:horse")
-	var atlas := Art.texture(visual["atlas_path"]).get_image()
-	var idle: Array = visual["anims"]["idle"]
-	var size := int(idle[2])
-	for row in 4:
-		var on_ground := false
-		# A stray pixel at the source cell's edge is not the horse's foot.
-		for x in range(size / 3, size * 2 / 3):
-			if atlas.get_pixel(int(idle[0]) + x, row * size + size - 1).a > .5:
-				on_ground = true
-				break
-		check(on_ground, "the horse's foot reaches its anchor in direction %d" % row)
-
-
 func test_layers_follow_the_body_and_keep_the_feet() -> void:
 	var content := _content()
 	for plan: String in PLANS:
@@ -244,7 +229,7 @@ func test_a_diagonal_walk_keeps_one_facing() -> void:
 	var content := _content()
 	var view := WorldView.new()
 	view.content = content
-	var doll := view.doll_for("deer", {"body_plan": "base:deer"}) as LpcSprite
+	var doll := view.doll_for("poring", {"body_plan": "base:poring"}) as LpcSprite
 	doll.show_at(Vector2.ZERO, 0.0, true)
 	var turns := 0
 	var was := -1

@@ -1283,6 +1283,7 @@ func _ms(seconds: float) -> int:
 func _catch_up(c: Creature, def: Dictionary) -> void:
 	c.memory.clear()
 	c.target = Creature.NO_TARGET
+	if c.running: _cold[c.id] = true
 	c.running = false
 	if not c.route.is_empty() or c.job.has("leave_to") or c.job.has("camp") or c.kind == "base:caravan_guard":
 		# A caravan must resume from its real road position, not teleport home
@@ -2271,8 +2272,8 @@ func _go(c: Creature, state: String, target_cell: Vector2i, run: bool) -> void:
 	var target := target_cell * Movement.UNIT + Vector2i(Movement.UNIT / 2, Movement.UNIT / 2) \
 		if target_cell != Creature.NO_TARGET else Creature.NO_TARGET
 	if c.state != state or c.target != target or c.running != run:
-		if (c.state == "hunt") != (state == "hunt") or (c.state == "visit") != (state == "visit"):
-			_cold[c.id] = true  # it starts or stops hunting: heard (its howl)
+		if c.running != run or (c.state == "hunt") != (state == "hunt") or (c.state == "visit") != (state == "visit"):
+			_cold[c.id] = true  # gait, hunting and visits are visible even without a position change
 		c.state = state
 		c.target = target
 		c.path_heading = Vector2.ZERO
@@ -2308,6 +2309,7 @@ func _move(c: Creature) -> void:
 	var arrived := d == Vector2i.ZERO if precise else (absi(d.x) < 48 and absi(d.y) < 48)
 	if arrived:
 		c.target = Creature.NO_TARGET
+		if c.running: _cold[c.id] = true
 		c.running = false
 		_movers.erase(c.id)
 		c.changed()
@@ -2386,6 +2388,7 @@ func _move(c: Creature) -> void:
 				c.path.clear()
 				c.path_to = Creature.NO_TARGET
 			c.target = Creature.NO_TARGET
+			if c.running: _cold[c.id] = true
 			c.running = false
 			_movers.erase(c.id)
 			c.changed()

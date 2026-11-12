@@ -1,0 +1,12 @@
+{
+	"adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+	"atlas_sha256": "50c7c5077aac285ad01671097f71bec5534a6757bc5ce0298ffa92c2436f46fb",
+	"berth": "(134, -7)",
+	"checks": 250,
+	"failures": [],
+	"scenario_sha256": "3c545c4d305a26fb033a7978daaf9162df22b296deec58b08488362e1b7fa39c",
+	"seed": 431,
+	"stage": "art candidate; default game content unchanged",
+	"visual": "res://build/animal_sprites/quaternius-checked/Horse/visual.json",
+	"visual_sha256": "3696472bf77eb43e364e91244607acc86bb078f1b626805626722aa48be13d6c"
+}

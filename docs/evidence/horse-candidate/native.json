@@ -1,0 +1,12 @@
+{
+	"adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+	"atlas_sha256": "96145c04e5319278196c2b7d24d0015dadcc90eabe5d2a1549d1f77e83f034cf",
+	"berth": "(134, -7)",
+	"checks": 233,
+	"failures": [],
+	"scenario_sha256": "efa678fa5fbc213d4921d7596bb15ee4c54c214b71a5e67739e4e44d3afe6f88",
+	"seed": 431,
+	"stage": "art candidate; default game content unchanged",
+	"visual": "res://build/animal_sprites/horse-v3/visual.json",
+	"visual_sha256": "03bc7a203e33d1e377b7a0aeeb28c02b3518f31ee444e28b36f4da46ebd32136"
+}

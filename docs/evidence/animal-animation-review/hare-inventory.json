@@ -1,0 +1,229 @@
+[
+  {
+    "file": "gobkit-hare.glb",
+    "armatures": [
+      {
+        "name": "RootNode",
+        "bones": 16
+      }
+    ],
+    "meshes": [
+      {
+        "name": "Boar",
+        "vertices": 458,
+        "materials": [
+          "lambert1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "vertices": 42,
+        "materials": []
+      }
+    ],
+    "actions": [
+      {
+        "name": "attack",
+        "range": [
+          0.0,
+          28.999998092651367
+        ],
+        "slots": [
+          "OBRootNode"
+        ]
+      },
+      {
+        "name": "dead",
+        "range": [
+          0.0,
+          28.999998092651367
+        ],
+        "slots": [
+          "OBRootNode"
+        ]
+      },
+      {
+        "name": "idle",
+        "range": [
+          0.0,
+          29.0
+        ],
+        "slots": [
+          "OBRootNode"
+        ]
+      },
+      {
+        "name": "walk",
+        "range": [
+          0.0,
+          29.000003814697266
+        ],
+        "slots": [
+          "OBRootNode"
+        ]
+      }
+    ],
+    "fps": 24,
+    "texts": [],
+    "images": [
+      {
+        "name": "Image_0",
+        "packed": true
+      }
+    ]
+  },
+  {
+    "file": "cdmir-rabbit.blend",
+    "armatures": [
+      {
+        "name": "Armature",
+        "bones": 37
+      }
+    ],
+    "meshes": [
+      {
+        "name": "Fur",
+        "vertices": 1303,
+        "materials": [
+          "Fur"
+        ]
+      },
+      {
+        "name": "Rabbit",
+        "vertices": 893,
+        "materials": [
+          "Fur.001"
+        ]
+      },
+      {
+        "name": "Plane",
+        "vertices": 4,
+        "materials": []
+      }
+    ],
+    "actions": [
+      {
+        "name": "Basic",
+        "range": [
+          0.0,
+          0.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Dead",
+        "range": [
+          0.0,
+          0.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Dying.000",
+        "range": [
+          0.0,
+          20.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Dying.001",
+        "range": [
+          0.0,
+          20.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Guard",
+        "range": [
+          0.0,
+          0.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Guarding",
+        "range": [
+          0.0,
+          400.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Jump",
+        "range": [
+          0.0,
+          24.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Running",
+        "range": [
+          0.0,
+          16.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Sitting.000",
+        "range": [
+          0.0,
+          550.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      },
+      {
+        "name": "Sitting.001",
+        "range": [
+          0.0,
+          550.0
+        ],
+        "slots": [
+          "OBLegacy Slot"
+        ]
+      }
+    ],
+    "fps": 24,
+    "texts": [
+      "License"
+    ],
+    "images": [
+      {
+        "name": "Fur-skin",
+        "packed": true
+      },
+      {
+        "name": "rabbit-NORM",
+        "packed": true
+      },
+      {
+        "name": "rabbot-skinn",
+        "packed": true
+      },
+      {
+        "name": "Render Result",
+        "packed": false
+      }
+    ]
+  }
+]

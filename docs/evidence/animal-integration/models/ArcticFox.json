@@ -1,0 +1,194 @@
+{
+  "species": "arcticfox",
+  "source_kind": "quaternius-authored",
+  "cell": 256,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 1.2,
+      "loop": true,
+      "source": "Idle",
+      "duration": 3.3333333333333335
+    },
+    "walk": {
+      "frames": 13,
+      "fps": 12.187498910352684,
+      "loop": true,
+      "source": "Walk",
+      "duration": 1.0666667620340984
+    },
+    "run": {
+      "frames": 12,
+      "fps": 21.176469994251306,
+      "loop": true,
+      "source": "Gallop",
+      "duration": 0.5666666825612386
+    },
+    "attack": {
+      "frames": 16,
+      "fps": 12.0,
+      "loop": false,
+      "source": "Attack",
+      "duration": 1.3333333333333333
+    },
+    "dead": {
+      "frames": 13,
+      "fps": 12.187498910352684,
+      "loop": false,
+      "source": "Death",
+      "duration": 1.0666667620340984
+    },
+    "hurt": {
+      "frames": 8,
+      "fps": 12.0,
+      "loop": false,
+      "source": "Idle_HitReact1",
+      "duration": 0.6666666666666666
+    }
+  },
+  "anatomy": {
+    "model": "ArcticFox",
+    "source_sha256": "2f36e3c9c75ecddda85c5f9944e98ee1e88e7c679a546534aff1cea8ecde64c7",
+    "bones": 51,
+    "vertices": 3752,
+    "mesh_objects": 1,
+    "materials": [
+      "Black",
+      "Eyes",
+      "Grey",
+      "Main",
+      "Main_Light"
+    ],
+    "clips": {
+      "attack": {
+        "source": "Attack",
+        "range": [
+          0.0,
+          32.0
+        ]
+      },
+      "dead": {
+        "source": "Death",
+        "range": [
+          0.0,
+          25.60000228881836
+        ]
+      },
+      "graze": {
+        "source": "Eating",
+        "range": [
+          0.0,
+          60.79999923706055
+        ]
+      },
+      "run": {
+        "source": "Gallop",
+        "range": [
+          0.0,
+          13.600000381469727
+        ]
+      },
+      "run_jump": {
+        "source": "Gallop_Jump",
+        "range": [
+          0.0,
+          22.399999618530273
+        ]
+      },
+      "idle": {
+        "source": "Idle",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_2": {
+        "source": "Idle_2",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_low": {
+        "source": "Idle_2_HeadLow",
+        "range": [
+          0.0,
+          96.0
+        ]
+      },
+      "hurt": {
+        "source": "Idle_HitReact1",
+        "range": [
+          0.0,
+          16.0
+        ]
+      },
+      "hurt_2": {
+        "source": "Idle_HitReact2",
+        "range": [
+          0.0,
+          16.0
+        ]
+      },
+      "jump": {
+        "source": "Jump_ToIdle",
+        "range": [
+          0.0,
+          32.0
+        ]
+      },
+      "walk": {
+        "source": "Walk",
+        "range": [
+          0.0,
+          25.60000228881836
+        ]
+      }
+    },
+    "target_height": 0.52,
+    "source_height": 2.6665833623846993,
+    "normalization_scale": 0.19500609181592174,
+    "base_yaw": 3.141592653101385
+  },
+  "strides": {
+    "walk": 0.44296979904174805,
+    "run": 0.6038300693035126
+  },
+  "sources": {
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+    "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+    "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+    "art_src/quaternius_animals/glTF/Fox.gltf": "2f36e3c9c75ecddda85c5f9944e98ee1e88e7c679a546534aff1cea8ecde64c7",
+    "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+  },
+  "volume": {
+    "span": 6,
+    "elevation": 22,
+    "px_per_m": 77
+  },
+  "calibration": {
+    "feet": [
+      "FrontLowerLeg.L.tail",
+      "FrontLowerLeg.R.tail",
+      "BackLowerLeg.L.tail",
+      "BackLowerLeg.R.tail"
+    ],
+    "samples": 101,
+    "method": "median backward speed during each foot's ground phase",
+    "source_sha256": "2f36e3c9c75ecddda85c5f9944e98ee1e88e7c679a546534aff1cea8ecde64c7"
+  }
+}

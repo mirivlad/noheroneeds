@@ -63,7 +63,6 @@ cube("front board", (0, .84, .90), (1.28, .10, .36), boards)
 cube("driver bench", (0, .59, 1.08), (1.13, .34, .12), boards)
 for x in (-.43, .43):
     cube("bench leg", (x, .59, .88), (.08, .08, .35), wood)
-    cube("shaft", (x, 2.15, .53), (.10, 3.8, .10), wood)
 
 # Four spoked wheels; their plane is YZ and their axle lies across X.
 wheel_parts = []
@@ -92,9 +91,8 @@ for x, y in ((.27, -.48), (.23, .02)):
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     obj.data.materials.append(cargo)
 
-# Reins reach forward from the driver's hands to the horse's bridle.
-for x in (-.2, .2):
-    rod("rein", (x, .69, 1.30), (x * 1.15, 3.9, 1.03), .018, rope, 6)
+# Shafts and reins follow the filmed horse's flank/bridle anchors at runtime.
+# They cannot be fixed to the wagon: the horse and wagon turn independently.
 
 # Keep a mesh for the body and one per wheel. Each wheel's origin stays at
 # its axle so the game can turn it in proportion to distance travelled.

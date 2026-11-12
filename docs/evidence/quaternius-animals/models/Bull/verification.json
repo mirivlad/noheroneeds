@@ -1,0 +1,138 @@
+{
+  "frames": 240,
+  "directions": 8,
+  "clipped_frames": 0,
+  "alpha_values": [
+    0,
+    255
+  ],
+  "frame": [
+    266,
+    177
+  ],
+  "atlas": [
+    3990,
+    2832
+  ],
+  "origin": [
+    133,
+    149
+  ],
+  "sha256": "1ea2b85bf7ace10ebbb1abf3583e7b40b8fe17da43d9194b5a5bd5dbc086bfb2",
+  "anatomy": {
+    "model": "Bull",
+    "source_sha256": "535da2992eb125d517725159a2eddeb520b72595bcb3021985fc43d2c84bff76",
+    "bones": 42,
+    "vertices": 4906,
+    "mesh_objects": 1,
+    "materials": [
+      "Eye_Black",
+      "Eye_White",
+      "Hooves",
+      "Horns",
+      "Main",
+      "Main_Light",
+      "Muzzle"
+    ],
+    "clips": {
+      "attack": {
+        "source": "Attack_Headbutt",
+        "range": [
+          0.0,
+          24.799999237060547
+        ]
+      },
+      "kick": {
+        "source": "Attack_Kick",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "dead": {
+        "source": "Death",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "graze": {
+        "source": "Eating",
+        "range": [
+          0.0,
+          144.0
+        ]
+      },
+      "run": {
+        "source": "Gallop",
+        "range": [
+          0.0,
+          14.40000057220459
+        ]
+      },
+      "run_jump": {
+        "source": "Gallop_Jump",
+        "range": [
+          0.0,
+          35.20000076293945
+        ]
+      },
+      "idle": {
+        "source": "Idle",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_2": {
+        "source": "Idle_2",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_low": {
+        "source": "Idle_Headlow",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "hurt": {
+        "source": "Idle_HitReact1",
+        "range": [
+          0.0,
+          16.0
+        ]
+      },
+      "hurt_2": {
+        "source": "Idle_HitReact2",
+        "range": [
+          0.0,
+          16.0
+        ]
+      },
+      "jump": {
+        "source": "Jump_toIdle",
+        "range": [
+          0.0,
+          41.599998474121094
+        ]
+      },
+      "walk": {
+        "source": "Walk",
+        "range": [
+          0.0,
+          28.0
+        ]
+      }
+    },
+    "target_height": 1.42,
+    "source_height": 4.586672022938728,
+    "normalization_scale": 0.30959266171601935,
+    "base_yaw": 3.141592662990413
+  },
+  "max_planted_hoof_slip": null,
+  "default_game_content_modified": false,
+  "stage": "candidate; human visual approval required"
+}

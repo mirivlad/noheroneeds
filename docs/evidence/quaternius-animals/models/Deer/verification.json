@@ -1,0 +1,138 @@
+{
+  "frames": 232,
+  "directions": 8,
+  "clipped_frames": 0,
+  "alpha_values": [
+    0,
+    255
+  ],
+  "frame": [
+    188,
+    158
+  ],
+  "atlas": [
+    3948,
+    2528
+  ],
+  "origin": [
+    94,
+    135
+  ],
+  "sha256": "b24f288208e36bb122670ebefa7096aa68c25686a33aa3f7b1df097003cff801",
+  "anatomy": {
+    "model": "Deer",
+    "source_sha256": "b8afd0647e7a74332ce802c8326dfefe1a2b76da67ab925a631aaddb5ae9bdd4",
+    "bones": 46,
+    "vertices": 4278,
+    "mesh_objects": 1,
+    "materials": [
+      "Eye_Black",
+      "Eye_Lighter",
+      "Eye_White",
+      "Hooves",
+      "Main",
+      "Main_Dark",
+      "Main_Light"
+    ],
+    "clips": {
+      "attack": {
+        "source": "Attack_Headbutt",
+        "range": [
+          0.0,
+          19.200000762939453
+        ]
+      },
+      "kick": {
+        "source": "Attack_Kick",
+        "range": [
+          0.0,
+          19.200000762939453
+        ]
+      },
+      "dead": {
+        "source": "Death",
+        "range": [
+          0.0,
+          20.0
+        ]
+      },
+      "graze": {
+        "source": "Eating",
+        "range": [
+          0.0,
+          144.0
+        ]
+      },
+      "run": {
+        "source": "Gallop",
+        "range": [
+          0.0,
+          12.80000114440918
+        ]
+      },
+      "run_jump": {
+        "source": "Gallop_Jump",
+        "range": [
+          0.0,
+          33.599998474121094
+        ]
+      },
+      "idle": {
+        "source": "Idle",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_2": {
+        "source": "Idle_2",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_low": {
+        "source": "Idle_Headlow",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "hurt": {
+        "source": "Idle_HitReact1",
+        "range": [
+          0.0,
+          11.199999809265137
+        ]
+      },
+      "hurt_2": {
+        "source": "Idle_HitReact2",
+        "range": [
+          0.0,
+          12.80000114440918
+        ]
+      },
+      "jump": {
+        "source": "Jump_toIdle",
+        "range": [
+          0.0,
+          36.79999923706055
+        ]
+      },
+      "walk": {
+        "source": "Walk",
+        "range": [
+          0.0,
+          28.0
+        ]
+      }
+    },
+    "target_height": 1.52,
+    "source_height": 4.27408607956022,
+    "normalization_scale": 0.3556315833855175,
+    "base_yaw": 3.141592658083186
+  },
+  "max_planted_hoof_slip": null,
+  "default_game_content_modified": false,
+  "stage": "candidate; human visual approval required"
+}

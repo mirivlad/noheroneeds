@@ -229,7 +229,9 @@ func test_caravan_renders_a_sitting_driver_horse_and_turning_wheels() -> void:
 	var wheels := driver.cart.find_children("Wheel*", "Node3D", true, false)
 	eq(wheels.size(), 4, "all four wheels are separate nodes")
 	eq((driver.doll as RoSprite)._once, "sit", "the driver sits on the bench")
-	check(horse.doll is LpcSprite, "the actual horse uses its LPC sprite")
+	check(horse.doll is RoSprite, "the actual horse uses its eight-direction RO sprite")
+	check(driver.harness != null, "the shafts follow the actual horse")
+	check(horse.ground_shadow.visible and not driver.ground_shadow.visible, "the horse rests on the ground; the seated driver casts no separate footprint")
 	client.entities["driver"]["x"] = Movement.UNIT
 	client.entities["horse"]["x"] = 3 * Movement.UNIT
 	view._update_actors(1, .1)

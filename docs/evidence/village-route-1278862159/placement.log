@@ -1,0 +1,11 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+REASONS (0, 0) chance=0.68451594645216 { "building_plot_water": 39, "ok": 1, "clearing": 6 }
+DISTRICT (0, 0) count=1 t=2764
+REASONS (1, 0) chance=0.58213225360324 { "building_plot_water": 29 }
+DISTRICT (1, 0) count=0 t=4633
+REASONS (0, -1) chance=0.49541551375346 { "building_plot_water": 38, "public_yard_water": 7 }
+DISTRICT (0, -1) count=0 t=5748
+REASONS (1, -1) chance=0.97022708931873 {  }
+DISTRICT (1, -1) count=0 t=5748
+[{"bounds":[-1,26,143,53],"centre":[60,60],"id":"base:village@0,0#0"}]

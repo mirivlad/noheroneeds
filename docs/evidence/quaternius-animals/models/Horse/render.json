@@ -1,0 +1,162 @@
+{
+  "species": "horse",
+  "source_kind": "quaternius-authored",
+  "cell": 256,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 1.2,
+      "loop": true,
+      "source": "Idle",
+      "duration": 3.3333333333333335
+    },
+    "walk": {
+      "frames": 14,
+      "fps": 12.0,
+      "loop": true,
+      "source": "Walk",
+      "duration": 1.1666666666666667
+    },
+    "run": {
+      "frames": 12,
+      "fps": 19.999999205271436,
+      "loop": true,
+      "source": "Gallop",
+      "duration": 0.6000000238418579
+    }
+  },
+  "anatomy": {
+    "model": "Horse",
+    "source_sha256": "3deb61550dff1d2786d04b6e8559d63ad3907d6ab606ba28ce0af074ed96341b",
+    "bones": 50,
+    "vertices": 4400,
+    "mesh_objects": 1,
+    "materials": [
+      "Eye_Black",
+      "Eye_White",
+      "Hair",
+      "Hooves",
+      "Main",
+      "Main_Dark",
+      "Main_Light",
+      "Muzzle"
+    ],
+    "clips": {
+      "attack": {
+        "source": "Attack_Headbutt",
+        "range": [
+          0.0,
+          24.799999237060547
+        ]
+      },
+      "kick": {
+        "source": "Attack_Kick",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "dead": {
+        "source": "Death",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "graze": {
+        "source": "Eating",
+        "range": [
+          0.0,
+          144.0
+        ]
+      },
+      "run": {
+        "source": "Gallop",
+        "range": [
+          0.0,
+          14.40000057220459
+        ]
+      },
+      "run_jump": {
+        "source": "Gallop_Jump",
+        "range": [
+          0.0,
+          35.20000076293945
+        ]
+      },
+      "idle": {
+        "source": "Idle",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_2": {
+        "source": "Idle_2",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "idle_low": {
+        "source": "Idle_Headlow",
+        "range": [
+          0.0,
+          80.0
+        ]
+      },
+      "hurt": {
+        "source": "Idle_HitReact1",
+        "range": [
+          0.0,
+          16.0
+        ]
+      },
+      "hurt_2": {
+        "source": "Idle_HitReact2",
+        "range": [
+          0.0,
+          16.0
+        ]
+      },
+      "jump": {
+        "source": "Jump_toIdle",
+        "range": [
+          0.0,
+          41.599998474121094
+        ]
+      },
+      "walk": {
+        "source": "Walk",
+        "range": [
+          0.0,
+          28.0
+        ]
+      }
+    },
+    "target_height": 1.62,
+    "source_height": 4.823947851546109,
+    "normalization_scale": 0.335824525856095,
+    "base_yaw": 3.1415926587397003
+  },
+  "sources": {
+    "tools/art/animal_sprites/quaternius.py": "1b497bd99a08dae2f9ed7a82d131d884b5fb06a9bac3a6de2c56bfe59390fcb0",
+    "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+    "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+    "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+    "art_src/quaternius_animals/glTF/Horse.gltf": "3deb61550dff1d2786d04b6e8559d63ad3907d6ab606ba28ce0af074ed96341b"
+  }
+}

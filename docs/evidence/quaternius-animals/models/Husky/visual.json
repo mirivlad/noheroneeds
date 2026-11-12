@@ -1,0 +1,57 @@
+{
+  "format": "ro",
+  "mode": "character",
+  "atlas_path": "res://build/animal_sprites/quaternius-checked/Husky/husky.png",
+  "pixel_scale": 0.25,
+  "key": "husky",
+  "frame": [
+    89,
+    72
+  ],
+  "rect": [
+    0,
+    0,
+    89,
+    72
+  ],
+  "origin": [
+    45,
+    59
+  ],
+  "columns": 29,
+  "anims": {
+    "idle": [
+      0,
+      4
+    ],
+    "walk": [
+      4,
+      13
+    ],
+    "run": [
+      17,
+      12
+    ]
+  },
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 1.2,
+      "loop": true
+    },
+    "walk": {
+      "frames": 13,
+      "fps": 12.187498910352684,
+      "loop": true
+    },
+    "run": {
+      "frames": 12,
+      "fps": 21.176469994251306,
+      "loop": true
+    }
+  },
+  "swings": {},
+  "layers": [
+    "husky"
+  ]
+}

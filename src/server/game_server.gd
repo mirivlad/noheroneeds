@@ -651,7 +651,7 @@ func _update_creature_replicas() -> void:
 ## What all may know of a creature that changes seldom: its kind, looks,
 ## owner (ADR-0030), what it holds, its last words and how many, sleep (ADR-0039).
 func _creature_cold(c: Creature) -> Dictionary:
-	var cold := {"kind": "creature", "creature": c.kind}
+	var cold := {"kind": "creature", "creature": c.kind, "running": c.running}
 	if world.content.get_def(c.kind).has("life"):
 		cold["young"] = world.creatures.life.young(c, world.content.get_def(c.kind))
 		cold["hungry"] = world.creatures.life.hungry(c)

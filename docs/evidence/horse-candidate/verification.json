@@ -1,0 +1,47 @@
+{
+  "frames": 224,
+  "directions": 8,
+  "clipped_frames": 0,
+  "alpha_values": [
+    0,
+    255
+  ],
+  "frame": [
+    168,
+    157
+  ],
+  "atlas": [
+    4032,
+    2512
+  ],
+  "origin": [
+    84,
+    139
+  ],
+  "sha256": "96145c04e5319278196c2b7d24d0015dadcc90eabe5d2a1549d1f77e83f034cf",
+  "default_game_content_modified": false,
+  "stage": "candidate; human visual approval required",
+  "native_checks": 233,
+  "native_failures": [],
+  "branch": "codex/animal-sprites",
+  "base_commit": "f33772cca06dbff754ca67eb259720a1f86ff16d",
+  "source_sha256": {
+    "tools/art/animal_sprites/build.sh": "fe833ea9d570257355d07b11fdc30fa29901ef46c38857c98237b35e680744bb",
+    "tools/art/animal_sprites/export.py": "c6a8972a10eb0245be0ddc3581127da4bb660e31e049f161b79506ad355d9b1a",
+    "tools/art/animal_sprites/horse.py": "691564cb0fd329da315014e6f16a7bd5de6036dae977dd6e7d56d7f367056d8a",
+    "tools/art/animal_sprites/render.py": "0d5fd1cc76d3862f41997e7a0db9450bdd3009c09dfc4485bc0e1945dfcad653",
+    "tools/experiment_3d/check_horse_candidate.gd": "efa678fa5fbc213d4921d7596bb15ee4c54c214b71a5e67739e4e44d3afe6f88"
+  },
+  "image_sha256": {
+    "harness-close.webp": "00f61420a5bd3b0617a15154f945886d2641069efeb13e0459a2bb240a562027",
+    "walk.gif": "1f629814c787b207c3392f231478ea8ba3c386cb4815dae86644bf39083b5551",
+    "idle.gif": "2a74bd93d24bb2cbebaac3a017b7c97eb8e6e34a23e0cb34e8024282508dee69",
+    "directions.webp": "47061ea99d7a04ad76e44a68fd83c41e6c452e4c39c5a41651cb1e6b1dde381d",
+    "horse.png": "96145c04e5319278196c2b7d24d0015dadcc90eabe5d2a1549d1f77e83f034cf",
+    "horses-se.webp": "992861d1e70f9b6ee33cb22924df0cf786102599b860773dbf93516f04411a01",
+    "graze.gif": "7aff530ca28eb6cd237689ee12168fea26e40d0644fc53d9b3dcca2fc2b07bbd",
+    "run.gif": "2f4323e22c2fc14c06a042b6375b87cf24fd19e23f92499c7ef5039e9163210d",
+    "comparison-close.webp": "8d77a9c6456cfe22a7213ce0c37a638668516df02c5376f21cb4c57c3a248a58",
+    "horses-sw.webp": "8bb565e41071ff3d499c688060e293e5817dc3e8a9b93cfe87fe64b7be6f2b86"
+  }
+}

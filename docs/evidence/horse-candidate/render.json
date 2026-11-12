@@ -1,0 +1,661 @@
+{
+  "species": "horse",
+  "stage": "candidate",
+  "cell": 256,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "art_scale": 0.78,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 3
+    },
+    "walk": {
+      "frames": 8,
+      "fps": 10
+    },
+    "run": {
+      "frames": 8,
+      "fps": 13
+    },
+    "graze": {
+      "frames": 8,
+      "fps": 5
+    }
+  },
+  "contacts": {
+    "idle_00": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "idle_01": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "idle_02": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "idle_03": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "walk_00": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.6550000309944153
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.42423075437545776
+      },
+      "HL": {
+        "planted": false,
+        "lift": 0.06645567600978253,
+        "y": -0.5592857003211975
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4603846073150635
+      }
+    },
+    "walk_01": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5973077416419983
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.36653846502304077
+      },
+      "HL": {
+        "planted": false,
+        "lift": 0.07658235377170564,
+        "y": -0.4521428644657135
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.5180768966674805
+      }
+    },
+    "walk_02": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5396153926849365
+      },
+      "FR": {
+        "planted": false,
+        "lift": 0.06645567600978253,
+        "y": 0.4407142698764801
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.3449999988079071
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.5757691860198975
+      }
+    },
+    "walk_03": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.48192307353019714
+      },
+      "FR": {
+        "planted": false,
+        "lift": 0.07658235377170564,
+        "y": 0.5478571653366089
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4026923179626465
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.6334615349769592
+      }
+    },
+    "walk_04": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.42423075437545776
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.6550000309944153
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4603846073150635
+      },
+      "HR": {
+        "planted": false,
+        "lift": 0.06645567600978253,
+        "y": -0.5592857003211975
+      }
+    },
+    "walk_05": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.36653846502304077
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5973077416419983
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.5180768966674805
+      },
+      "HR": {
+        "planted": false,
+        "lift": 0.07658235377170564,
+        "y": -0.4521428644657135
+      }
+    },
+    "walk_06": {
+      "FL": {
+        "planted": false,
+        "lift": 0.06645567600978253,
+        "y": 0.4407142698764801
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5396153926849365
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.5757691860198975
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.3449999988079071
+      }
+    },
+    "walk_07": {
+      "FL": {
+        "planted": false,
+        "lift": 0.07658235377170564,
+        "y": 0.5478571653366089
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.48192307353019714
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.6334615349769592
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4026923179626465
+      }
+    },
+    "run_00": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.7250000238418579
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0.0,
+        "y": 0.2849999964237213
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0.0,
+        "y": -0.7149999737739563
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.2750000059604645
+      }
+    },
+    "run_01": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.6150000095367432
+      },
+      "FR": {
+        "planted": false,
+        "lift": 0.09192388155425117,
+        "y": 0.39500001072883606
+      },
+      "HL": {
+        "planted": false,
+        "lift": 0.09192388155425117,
+        "y": -0.6049999594688416
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.38499999046325684
+      }
+    },
+    "run_02": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": false,
+        "lift": 0.13,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": false,
+        "lift": 0.13,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "run_03": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.39500001072883606
+      },
+      "FR": {
+        "planted": false,
+        "lift": 0.09192388155425119,
+        "y": 0.6150000095367432
+      },
+      "HL": {
+        "planted": false,
+        "lift": 0.09192388155425119,
+        "y": -0.38499999046325684
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.6049999594688416
+      }
+    },
+    "run_04": {
+      "FL": {
+        "planted": true,
+        "lift": 0.0,
+        "y": 0.2849999964237213
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.7250000238418579
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.2750000059604645
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0.0,
+        "y": -0.7149999737739563
+      }
+    },
+    "run_05": {
+      "FL": {
+        "planted": false,
+        "lift": 0.09192388155425117,
+        "y": 0.39500001072883606
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.6150000095367432
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.38499999046325684
+      },
+      "HR": {
+        "planted": false,
+        "lift": 0.09192388155425117,
+        "y": -0.6049999594688416
+      }
+    },
+    "run_06": {
+      "FL": {
+        "planted": false,
+        "lift": 0.13,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": false,
+        "lift": 0.13,
+        "y": -0.4949999749660492
+      }
+    },
+    "run_07": {
+      "FL": {
+        "planted": false,
+        "lift": 0.09192388155425119,
+        "y": 0.6150000095367432
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.39500001072883606
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.6049999594688416
+      },
+      "HR": {
+        "planted": false,
+        "lift": 0.09192388155425119,
+        "y": -0.38499999046325684
+      }
+    },
+    "graze_00": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "graze_01": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "graze_02": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "graze_03": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "graze_04": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "graze_05": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "graze_06": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    },
+    "graze_07": {
+      "FL": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "FR": {
+        "planted": true,
+        "lift": 0,
+        "y": 0.5049999952316284
+      },
+      "HL": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      },
+      "HR": {
+        "planted": true,
+        "lift": 0,
+        "y": -0.4949999749660492
+      }
+    }
+  },
+  "sources": {
+    "tools/art/animal_sprites/horse.py": "691564cb0fd329da315014e6f16a7bd5de6036dae977dd6e7d56d7f367056d8a",
+    "tools/art/animal_sprites/render.py": "0d5fd1cc76d3862f41997e7a0db9450bdd3009c09dfc4485bc0e1945dfcad653",
+    "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+    "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5"
+  }
+}

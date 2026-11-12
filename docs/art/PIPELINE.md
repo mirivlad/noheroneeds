@@ -28,13 +28,20 @@
 | RO-тело, волосы, одежда, оружие и их движения | `tools/art/ro_sprites/`, VRoid из `art_src/ro_sprites/` | `content/base/art/ro/`, `content/base/ro_visuals.json` |
 | LPC-персонажи и оружие | `tools/art/fetch_lpc.sh`, `import_lpc.py` | `content/base/art/lpc/`, `lpc_visuals.json` |
 | Иконки вещей и LPC-окружение | `fetch_lpc_env.sh`, `import_lpc_env.py` | `content/base/art/lpc_env/`, `lpc_env_visuals.json` |
-| Звери | `tools/art/import_lpc_animals.py` | `content/base/art/lpc_animals/`, `lpc_animal_visuals.json` |
+| Животные | `tools/art/animal_sprites/build_production.py` | `content/base/art/ro_animals/`, `animal_visuals.json` |
+| LPC-монстры | `tools/art/import_lpc_animals.py` | `content/base/art/lpc_animals/`, `lpc_animal_visuals.json` |
 | Модели деревьев, зданий, ресурсов | `tools/experiment_3d/import_assets.py` | `assets/experiment_3d/`, `catalog.json`, `manifest.json` |
 | Правила вещи, рецепта, получения | JSON в `content/base/` | Загружает и проверяет `ContentRegistry` |
 
 Названия файлов визуалов в таблице относятся к `content/base/`; имена атласов
 всегда проверять в текущих JSON. Модель, иконка и игровой предмет — разные части.
 Наличие PNG само по себе не делает вещь доступной в игре.
+
+Животные через ту же Blender/RO-ферму: после отклонённой процедурной пробы
+автор выбрал **Quaternius Ultimate Animated Animals**. Источники, лицензии,
+Actions и команды — [животные](ANIMALS.md), `tools/art/animal_sprites/`.
+Съёмка использует общие камеру, toon-свет и пикселизацию. LPC сохраняется
+для слизней и грибного ходока; реальные животные переходят на восемь ракурсов RO.
 
 ## RO: путь от исходной модели до куклы
 
@@ -280,9 +287,9 @@ python3 tools/experiment_3d/verify_assets.py
 ```
 
 Скрипт сохраняет и `packs.blend`/`packs.glb`; телега содержит четыре отдельные
-вращающиеся детали `Wheel0`…`Wheel3`. Лошадь — LPC-атлас из
-`import_lpc_animals.py`. У исходного коричневого листа есть одиночный мусорный
-пиксель на краю первого южного кадра: импортёр удаляет его до выравнивания ног.
-Иначе лошадь кажется сдвинутой вверх и перекрывает телегу. Проверять положение
-в игре с направлениями `--caravan_debug=s`, `--caravan_debug=e` и вариантами
-`--caravan_debug=pack`, `--caravan_debug=pack_s` с отдельным `--profile`.
+вращающиеся детали `Wheel0`…`Wheel3`. Неподвижных оглобель и поводьев
+в GLB нет: `CaravanHarness3D` соединяет телегу с покадровыми точками боков
+и уздечки RO-лошади. Цвет и глубина позы снимаются общей фермой животных;
+контактные тени лежат на реальной поверхности. Подробности и источники —
+[ANIMALS.md](ANIMALS.md), решение — ADR-0079. Вьючные сумки сохраняют прежний GLB.
+Проверять положение в настоящем LocalGame с отдельным `--profile`.

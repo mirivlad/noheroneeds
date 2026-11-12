@@ -1,0 +1,3 @@
+PASS test_game_server::test_creature_gait_changes_reach_both_clients_including_arrival (21043 ms)
+expected engine errors: 0
+1 tests, 0 failed checks, 22.0s

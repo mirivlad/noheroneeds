@@ -1,0 +1,5 @@
+FAIL test_game_server::test_creature_gait_changes_reach_both_clients_including_arrival (26139 ms)
+    - test_game_server::test_creature_gait_changes_reach_both_clients_including_arrival: a slow animal's run is explicit: expected true, got false
+    - test_game_server::test_creature_gait_changes_reach_both_clients_including_arrival: a slow animal's run is explicit: expected true, got false
+expected engine errors: 0
+1 tests, 2 failed checks, 27.0s

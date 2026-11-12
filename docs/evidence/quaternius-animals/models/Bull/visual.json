@@ -1,0 +1,57 @@
+{
+  "format": "ro",
+  "mode": "character",
+  "atlas_path": "res://build/animal_sprites/quaternius-checked/Bull/bull.png",
+  "pixel_scale": 0.25,
+  "key": "bull",
+  "frame": [
+    266,
+    177
+  ],
+  "rect": [
+    0,
+    0,
+    266,
+    177
+  ],
+  "origin": [
+    133,
+    149
+  ],
+  "columns": 15,
+  "anims": {
+    "idle": [
+      0,
+      4
+    ],
+    "walk": [
+      4,
+      14
+    ],
+    "run": [
+      18,
+      12
+    ]
+  },
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 1.2,
+      "loop": true
+    },
+    "walk": {
+      "frames": 14,
+      "fps": 12.0,
+      "loop": true
+    },
+    "run": {
+      "frames": 12,
+      "fps": 19.999999205271436,
+      "loop": true
+    }
+  },
+  "swings": {},
+  "layers": [
+    "bull"
+  ]
+}

@@ -277,6 +277,27 @@
         "src/persistence/world_store.gd"
       ],
       "kinds": []
+    },
+    {
+      "id": "animal-presentation",
+      "guide": "nature",
+      "sources": [
+        "content/base/animal_visuals.json",
+        "src/experiment_3d/actor_shadow_3d.gd",
+        "src/experiment_3d/actor_shadow.gdshader",
+        "src/experiment_3d/caravan_harness_3d.gd",
+        "src/experiment_3d/paper_doll.gdshader",
+        "src/presentation/character_sprite.gd",
+        "src/presentation/ro_sprite.gd",
+        "src/experiment_3d/actor_shadow_3d.gd.uid",
+        "src/experiment_3d/actor_shadow.gdshader.uid",
+        "src/experiment_3d/caravan_harness_3d.gd.uid",
+        "src/server/game_server.gd",
+        "src/server/creature_sim.gd",
+        "src/content/content_registry.gd",
+        "content/base/art/ro_animals/**"
+      ],
+      "kinds": []
     }
   ]
 }

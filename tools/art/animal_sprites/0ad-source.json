@@ -1,0 +1,197 @@
+{
+  "commit": "61a3b9507d974084e6badb88a0826bd89a6d5b8b",
+  "author": "Wildfire Games and 0 A.D. contributors",
+  "license": "CC-BY-SA-3.0",
+  "license_page": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/LICENSE.txt",
+  "files": [
+    {
+      "file": "art/meshes/skeletal/bear.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/meshes/skeletal/bear.dae",
+      "bytes": 708178,
+      "sha256": "29a08060bf59a6f2e8ef9f0a86806c03169b8e2fccf863448217316b0b78565c"
+    },
+    {
+      "file": "art/meshes/skeletal/bear_polar.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/meshes/skeletal/bear_polar.dae",
+      "bytes": 710990,
+      "sha256": "d54b859eee33701fea5be5ac1a3b060a7bb034fade3fe72355f126f611996589"
+    },
+    {
+      "file": "art/textures/skins/skeletal/animal_bear_brown.png",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/textures/skins/skeletal/animal_bear_brown.png",
+      "bytes": 601899,
+      "sha256": "5b8b79eae61d8c708c9e34c82db58c47a540e3067cb993e02ff986d265ec636e"
+    },
+    {
+      "file": "art/textures/skins/skeletal/animal_bear_white.png",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/textures/skins/skeletal/animal_bear_white.png",
+      "bytes": 376876,
+      "sha256": "db205d09e7782b3aa6663c8a322ef35009b8730cb199d002f61c69e1c9707c2e"
+    },
+    {
+      "file": "art/animation/quadraped/bear_idle_01.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/bear_idle_01.dae",
+      "bytes": 1156358,
+      "sha256": "06df336d76cdd0609dffe68c5a47169870e8b26271341455abcc98718abb9841"
+    },
+    {
+      "file": "art/animation/quadraped/bear_walk.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/bear_walk.dae",
+      "bytes": 965514,
+      "sha256": "01145ed56b01f910c27e1b3227eee9108d73d8756aa0c4fceb6d6795ac7e5077"
+    },
+    {
+      "file": "art/animation/quadraped/bear_run.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/bear_run.dae",
+      "bytes": 863072,
+      "sha256": "ca895b4708033924958d802244b74b8517049e3bed1f75502691dbd0742c11ab"
+    },
+    {
+      "file": "art/animation/quadraped/bear_attack_01.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/bear_attack_01.dae",
+      "bytes": 876263,
+      "sha256": "217344abd3c7273876f292b6d5509b0d90c1e1d6efc768231a89a98217c2886c"
+    },
+    {
+      "file": "art/animation/quadraped/bear_death_01.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/bear_death_01.dae",
+      "bytes": 1180088,
+      "sha256": "5c27d535b59f9630214f0f744e6c41281e625313fc8b49b640053b4f4b0e6be8"
+    },
+    {
+      "file": "LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/LICENSE.txt",
+      "bytes": 3049,
+      "sha256": "cb9eb5e8768328e8086b0d17bd1b95f07b51bc9ab74fa1b509ee09c7894b2f53"
+    },
+    {
+      "file": "ART-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/LICENSE.txt",
+      "bytes": 1426,
+      "sha256": "ef98babd771c206032e005f3d440a1e610df409d9a9191f03e64deaa4abefbd9"
+    },
+    {
+      "file": "art/meshes/skeletal/sheep.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/meshes/skeletal/sheep.dae",
+      "bytes": 110759,
+      "sha256": "4345a4999e6f08fb9958fcf908b5df3a5b2c8dc8da4a2b14e4a58d601fc0f4ae"
+    },
+    {
+      "file": "art/textures/skins/skeletal/animal_sheep_a.dds",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/textures/skins/skeletal/animal_sheep_a.dds",
+      "bytes": 22000,
+      "sha256": "381dbc3009c788c2b364a4993a504ab978a770ff010faf54ea82a6ba5c9a2b73"
+    },
+    {
+      "file": "art/animation/quadraped/sheep_idle_01.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/sheep_idle_01.dae",
+      "bytes": 110930,
+      "sha256": "fb7ab16212bea9b2c94285db653dac680d46df1431865a9fe164934d59899565"
+    },
+    {
+      "file": "art/animation/quadraped/sheep_walk.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/sheep_walk.dae",
+      "bytes": 108452,
+      "sha256": "9c76441334dd300f31f46a13921c3ea0551ba6a9fed9a4184b79e51dd943d7fc"
+    },
+    {
+      "file": "art/animation/quadraped/sheep_run.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/sheep_run.dae",
+      "bytes": 114416,
+      "sha256": "cca966ddd7927441fe35405d84f19147f678150bbb3a4432cea2fc4f14aacc9e"
+    },
+    {
+      "file": "art/animation/quadraped/sheep_death.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/sheep_death.dae",
+      "bytes": 113294,
+      "sha256": "46c927453f0cab5a3c715c16f9c0b71119022e719c4b313eb2d5ca1cf0387853"
+    },
+    {
+      "file": "art/meshes/skeletal/chicken.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/meshes/skeletal/chicken.dae",
+      "bytes": 83032,
+      "sha256": "3cc652a3b58ff4f5af168f436b37fc6bf6452012eac66fca604cb9c5d1bb3585"
+    },
+    {
+      "file": "art/textures/skins/skeletal/animal_chicken_b.dds",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/textures/skins/skeletal/animal_chicken_b.dds",
+      "bytes": 5616,
+      "sha256": "ee1d145f4ee851e01d90dff9e884e5b389275977e91fa0c061ce825bcde4eb63"
+    },
+    {
+      "file": "art/animation/quadraped/chicken_idle_01.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/chicken_idle_01.dae",
+      "bytes": 83032,
+      "sha256": "f1d396a49574c242b42740bfcd7ee01e3fefc724aca5b4fe10ec2e3362c418b1"
+    },
+    {
+      "file": "art/animation/quadraped/chicken_walk.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/chicken_walk.dae",
+      "bytes": 91127,
+      "sha256": "2aced12e40aab45a7be035964b29389d8e4e022bdd3485dd5c1cace73c65af4f"
+    },
+    {
+      "file": "art/animation/quadraped/chicken_run_01.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/chicken_run_01.dae",
+      "bytes": 87217,
+      "sha256": "a4475787bef30608f2c4c206b05588553d3e0b378d64865dc6247b9d2411375c"
+    },
+    {
+      "file": "art/animation/quadraped/chicken_attack.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/chicken_attack.dae",
+      "bytes": 107642,
+      "sha256": "c952161affc873e3ab9ae99f04b2e79b009eb4dcd20d86833adf33a632f50050"
+    },
+    {
+      "file": "art/animation/quadraped/chicken_death.dae",
+      "url": "https://raw.githubusercontent.com/0ad/0ad/61a3b9507d974084e6badb88a0826bd89a6d5b8b/binaries/data/mods/public/art/animation/quadraped/chicken_death.dae",
+      "bytes": 109541,
+      "sha256": "a5d00b5c04fafbd206f133b272812d8db06252db521d7fbc9fd26ead6ffbc985"
+    }
+  ],
+  "models": {
+    "Bear": {
+      "mesh": "art/meshes/skeletal/bear.dae",
+      "texture": "art/textures/skins/skeletal/animal_bear_brown.png",
+      "clips": {
+        "idle": "art/animation/quadraped/bear_idle_01.dae",
+        "walk": "art/animation/quadraped/bear_walk.dae",
+        "run": "art/animation/quadraped/bear_run.dae",
+        "attack": "art/animation/quadraped/bear_attack_01.dae",
+        "dead": "art/animation/quadraped/bear_death_01.dae"
+      }
+    },
+    "PolarBear": {
+      "mesh": "art/meshes/skeletal/bear_polar.dae",
+      "texture": "art/textures/skins/skeletal/animal_bear_white.png",
+      "clips": {
+        "idle": "art/animation/quadraped/bear_idle_01.dae",
+        "walk": "art/animation/quadraped/bear_walk.dae",
+        "run": "art/animation/quadraped/bear_run.dae",
+        "attack": "art/animation/quadraped/bear_attack_01.dae",
+        "dead": "art/animation/quadraped/bear_death_01.dae"
+      }
+    },
+    "Sheep": {
+      "mesh": "art/meshes/skeletal/sheep.dae",
+      "texture": "art/textures/skins/skeletal/animal_sheep_a.dds",
+      "clips": {
+        "idle": "art/animation/quadraped/sheep_idle_01.dae",
+        "walk": "art/animation/quadraped/sheep_walk.dae",
+        "run": "art/animation/quadraped/sheep_run.dae",
+        "dead": "art/animation/quadraped/sheep_death.dae"
+      }
+    },
+    "Chicken": {
+      "mesh": "art/meshes/skeletal/chicken.dae",
+      "texture": "art/textures/skins/skeletal/animal_chicken_b.dds",
+      "clips": {
+        "idle": "art/animation/quadraped/chicken_idle_01.dae",
+        "walk": "art/animation/quadraped/chicken_walk.dae",
+        "run": "art/animation/quadraped/chicken_run_01.dae",
+        "attack": "art/animation/quadraped/chicken_attack.dae",
+        "dead": "art/animation/quadraped/chicken_death.dae"
+      }
+    }
+  }
+}

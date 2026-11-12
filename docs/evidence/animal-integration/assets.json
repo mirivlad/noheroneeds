@@ -1,0 +1,1704 @@
+{
+  "models": {
+    "Horse": {
+      "render_sources": {
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+        "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+        "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+        "art_src/quaternius_animals/glTF/Horse.gltf": "3deb61550dff1d2786d04b6e8559d63ad3907d6ab606ba28ce0af074ed96341b",
+        "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+      },
+      "verification": {
+        "frames": 504,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          248,
+          188
+        ],
+        "atlas": [
+          3968,
+          6016
+        ],
+        "origin": [
+          124,
+          143
+        ],
+        "sha256": "5f3bd976b25dbe7548b392ca0b2ef8c949b358fcfd451ae4dd6f1c967718fb50",
+        "anatomy": {
+          "model": "Horse",
+          "source_sha256": "3deb61550dff1d2786d04b6e8559d63ad3907d6ab606ba28ce0af074ed96341b",
+          "bones": 50,
+          "vertices": 4400,
+          "mesh_objects": 1,
+          "materials": [
+            "Eye_Black",
+            "Eye_White",
+            "Hair",
+            "Hooves",
+            "Main",
+            "Main_Dark",
+            "Main_Light",
+            "Muzzle"
+          ],
+          "clips": {
+            "attack": {
+              "source": "Attack_Headbutt",
+              "range": [
+                0.0,
+                24.799999237060547
+              ]
+            },
+            "kick": {
+              "source": "Attack_Kick",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "dead": {
+              "source": "Death",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "graze": {
+              "source": "Eating",
+              "range": [
+                0.0,
+                144.0
+              ]
+            },
+            "run": {
+              "source": "Gallop",
+              "range": [
+                0.0,
+                14.40000057220459
+              ]
+            },
+            "run_jump": {
+              "source": "Gallop_Jump",
+              "range": [
+                0.0,
+                35.20000076293945
+              ]
+            },
+            "idle": {
+              "source": "Idle",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_2": {
+              "source": "Idle_2",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_low": {
+              "source": "Idle_Headlow",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "hurt": {
+              "source": "Idle_HitReact1",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "hurt_2": {
+              "source": "Idle_HitReact2",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "jump": {
+              "source": "Jump_toIdle",
+              "range": [
+                0.0,
+                41.599998474121094
+              ]
+            },
+            "walk": {
+              "source": "Walk",
+              "range": [
+                0.0,
+                28.0
+              ]
+            }
+          },
+          "target_height": 1.62,
+          "source_height": 4.823947851546109,
+          "normalization_scale": 0.335824525856095,
+          "base_yaw": 3.1415926587397003
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Horse_White": {
+      "render_sources": {
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+        "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+        "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+        "art_src/quaternius_animals/glTF/Horse_White.gltf": "f137ee67bd565244f7441f35b5594a597588cda8b60ab109e2041cf13c58e1dd",
+        "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+      },
+      "verification": {
+        "frames": 504,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          248,
+          188
+        ],
+        "atlas": [
+          3968,
+          6016
+        ],
+        "origin": [
+          124,
+          143
+        ],
+        "sha256": "bf28de1dfd401dcfff496d0ab278248c18a28ecb53654616fe425061b4793342",
+        "anatomy": {
+          "model": "Horse_White",
+          "source_sha256": "f137ee67bd565244f7441f35b5594a597588cda8b60ab109e2041cf13c58e1dd",
+          "bones": 50,
+          "vertices": 4400,
+          "mesh_objects": 1,
+          "materials": [
+            "Eye_Black",
+            "Eye_White",
+            "Hair",
+            "Hooves",
+            "Main",
+            "Main_Light",
+            "Muzzle"
+          ],
+          "clips": {
+            "attack": {
+              "source": "Attack_Headbutt",
+              "range": [
+                0.0,
+                24.799999237060547
+              ]
+            },
+            "kick": {
+              "source": "Attack_Kick",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "dead": {
+              "source": "Death",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "graze": {
+              "source": "Eating",
+              "range": [
+                0.0,
+                144.0
+              ]
+            },
+            "run": {
+              "source": "Gallop",
+              "range": [
+                0.0,
+                14.40000057220459
+              ]
+            },
+            "run_jump": {
+              "source": "Gallop_Jump",
+              "range": [
+                0.0,
+                35.20000076293945
+              ]
+            },
+            "idle": {
+              "source": "Idle",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_2": {
+              "source": "Idle_2",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_low": {
+              "source": "Idle_Headlow",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "hurt": {
+              "source": "Idle_HitReact1",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "hurt_2": {
+              "source": "Idle_HitReact2",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "jump": {
+              "source": "Jump_toIdle",
+              "range": [
+                0.0,
+                41.599998474121094
+              ]
+            },
+            "walk": {
+              "source": "Walk",
+              "range": [
+                0.0,
+                28.0
+              ]
+            }
+          },
+          "target_height": 1.62,
+          "source_height": 4.823947851546109,
+          "normalization_scale": 0.335824525856095,
+          "base_yaw": 3.1415926587397003
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Deer": {
+      "render_sources": {
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+        "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+        "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+        "art_src/quaternius_animals/glTF/Deer.gltf": "b8afd0647e7a74332ce802c8326dfefe1a2b76da67ab925a631aaddb5ae9bdd4",
+        "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+      },
+      "verification": {
+        "frames": 440,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          238,
+          180
+        ],
+        "atlas": [
+          4046,
+          5760
+        ],
+        "origin": [
+          119,
+          135
+        ],
+        "sha256": "068fcf747760b07405d07544c3f151124d1d5546ace6fe93027843a6ce3dc87b",
+        "anatomy": {
+          "model": "Deer",
+          "source_sha256": "b8afd0647e7a74332ce802c8326dfefe1a2b76da67ab925a631aaddb5ae9bdd4",
+          "bones": 46,
+          "vertices": 4278,
+          "mesh_objects": 1,
+          "materials": [
+            "Eye_Black",
+            "Eye_Lighter",
+            "Eye_White",
+            "Hooves",
+            "Main",
+            "Main_Dark",
+            "Main_Light"
+          ],
+          "clips": {
+            "attack": {
+              "source": "Attack_Headbutt",
+              "range": [
+                0.0,
+                19.200000762939453
+              ]
+            },
+            "kick": {
+              "source": "Attack_Kick",
+              "range": [
+                0.0,
+                19.200000762939453
+              ]
+            },
+            "dead": {
+              "source": "Death",
+              "range": [
+                0.0,
+                20.0
+              ]
+            },
+            "graze": {
+              "source": "Eating",
+              "range": [
+                0.0,
+                144.0
+              ]
+            },
+            "run": {
+              "source": "Gallop",
+              "range": [
+                0.0,
+                12.80000114440918
+              ]
+            },
+            "run_jump": {
+              "source": "Gallop_Jump",
+              "range": [
+                0.0,
+                33.599998474121094
+              ]
+            },
+            "idle": {
+              "source": "Idle",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_2": {
+              "source": "Idle_2",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_low": {
+              "source": "Idle_Headlow",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "hurt": {
+              "source": "Idle_HitReact1",
+              "range": [
+                0.0,
+                11.199999809265137
+              ]
+            },
+            "hurt_2": {
+              "source": "Idle_HitReact2",
+              "range": [
+                0.0,
+                12.80000114440918
+              ]
+            },
+            "jump": {
+              "source": "Jump_toIdle",
+              "range": [
+                0.0,
+                36.79999923706055
+              ]
+            },
+            "walk": {
+              "source": "Walk",
+              "range": [
+                0.0,
+                28.0
+              ]
+            }
+          },
+          "target_height": 1.52,
+          "source_height": 4.27408607956022,
+          "normalization_scale": 0.3556315833855175,
+          "base_yaw": 3.141592658083186
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Stag": {
+      "render_sources": {
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+        "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+        "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+        "art_src/quaternius_animals/glTF/Stag.gltf": "170b964909d16d1ab4d428b1d714f25016913d32481acd9c3d62923192583be6",
+        "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+      },
+      "verification": {
+        "frames": 472,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          286,
+          223
+        ],
+        "atlas": [
+          4004,
+          8920
+        ],
+        "origin": [
+          143,
+          174
+        ],
+        "sha256": "70fc6cefdd10f87cfe730983d0dd416503dba40907b9122c441480f93d7431d8",
+        "anatomy": {
+          "model": "Stag",
+          "source_sha256": "170b964909d16d1ab4d428b1d714f25016913d32481acd9c3d62923192583be6",
+          "bones": 38,
+          "vertices": 7438,
+          "mesh_objects": 2,
+          "materials": [
+            "Material",
+            "Material.001",
+            "Material.003",
+            "Material.010",
+            "Material.011"
+          ],
+          "clips": {
+            "attack": {
+              "source": "Attack_Headbutt",
+              "range": [
+                0.0,
+                19.200000762939453
+              ]
+            },
+            "kick": {
+              "source": "Attack_Kick",
+              "range": [
+                0.0,
+                19.200000762939453
+              ]
+            },
+            "dead": {
+              "source": "Death",
+              "range": [
+                0.0,
+                26.400001525878906
+              ]
+            },
+            "graze": {
+              "source": "Eating",
+              "range": [
+                0.0,
+                290.4000244140625
+              ]
+            },
+            "run": {
+              "source": "Gallop",
+              "range": [
+                0.0,
+                12.80000114440918
+              ]
+            },
+            "run_jump": {
+              "source": "Gallop_Jump",
+              "range": [
+                0.0,
+                33.599998474121094
+              ]
+            },
+            "idle": {
+              "source": "Idle",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_2": {
+              "source": "Idle_2",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_low": {
+              "source": "Idle_Headlow",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "hurt": {
+              "source": "Idle_HitReact1",
+              "range": [
+                0.0,
+                11.199999809265137
+              ]
+            },
+            "hurt_2": {
+              "source": "Idle_HitReact2",
+              "range": [
+                0.0,
+                12.80000114440918
+              ]
+            },
+            "jump": {
+              "source": "Jump_toIdle",
+              "range": [
+                0.0,
+                36.79999923706055
+              ]
+            },
+            "walk": {
+              "source": "Walk",
+              "range": [
+                0.0,
+                28.0
+              ]
+            }
+          },
+          "target_height": 2.05,
+          "source_height": 5.37824659049511,
+          "normalization_scale": 0.3811651186881116,
+          "base_yaw": 3.1415926528861107
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Cow": {
+      "render_sources": {
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+        "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+        "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+        "art_src/quaternius_animals/glTF/Cow.gltf": "b04af067688d9fadf1395b4456dbf3117c2f760fb49e704ee5c8b6391fc8adb5",
+        "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+      },
+      "verification": {
+        "frames": 504,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          265,
+          188
+        ],
+        "atlas": [
+          3975,
+          7520
+        ],
+        "origin": [
+          133,
+          142
+        ],
+        "sha256": "c99b4702c16f4a2eb9ff357e2e09bc6eb303d1ee5c252ff80eb6191a1ad414ef",
+        "anatomy": {
+          "model": "Cow",
+          "source_sha256": "b04af067688d9fadf1395b4456dbf3117c2f760fb49e704ee5c8b6391fc8adb5",
+          "bones": 42,
+          "vertices": 4970,
+          "mesh_objects": 1,
+          "materials": [
+            "Eye_Black",
+            "Eye_White",
+            "Hooves",
+            "Horns",
+            "Main",
+            "Main_Light",
+            "Muzzle"
+          ],
+          "clips": {
+            "attack": {
+              "source": "Attack_Headbutt",
+              "range": [
+                0.0,
+                24.799999237060547
+              ]
+            },
+            "kick": {
+              "source": "Attack_Kick",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "dead": {
+              "source": "Death",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "graze": {
+              "source": "Eating",
+              "range": [
+                0.0,
+                144.0
+              ]
+            },
+            "run": {
+              "source": "Gallop",
+              "range": [
+                0.0,
+                14.40000057220459
+              ]
+            },
+            "run_jump": {
+              "source": "Gallop_Jump",
+              "range": [
+                0.0,
+                35.20000076293945
+              ]
+            },
+            "idle": {
+              "source": "Idle",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_2": {
+              "source": "Idle_2",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_low": {
+              "source": "Idle_Headlow",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "hurt": {
+              "source": "Idle_HitReact1",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "hurt_2": {
+              "source": "Idle_HitReact2",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "jump": {
+              "source": "Jump_toIdle",
+              "range": [
+                0.0,
+                41.599998474121094
+              ]
+            },
+            "walk": {
+              "source": "Walk",
+              "range": [
+                0.0,
+                28.0
+              ]
+            }
+          },
+          "target_height": 1.3,
+          "source_height": 4.58667154610157,
+          "normalization_scale": 0.2834299310367955,
+          "base_yaw": 3.141592662990413
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Wolf": {
+      "render_sources": {
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+        "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+        "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+        "art_src/quaternius_animals/glTF/Wolf.gltf": "cc02e9d128b5715f352ee8bea086f97a35f1d875d240de99b0f9f2775c37d415",
+        "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+      },
+      "verification": {
+        "frames": 528,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          156,
+          110
+        ],
+        "atlas": [
+          4056,
+          2640
+        ],
+        "origin": [
+          78,
+          82
+        ],
+        "sha256": "c8c5bd69ba9cfb1b0eec0c9fe17197fa6c5e2ec49ae24bac9651be6aa62ad21a",
+        "anatomy": {
+          "model": "Wolf",
+          "source_sha256": "cc02e9d128b5715f352ee8bea086f97a35f1d875d240de99b0f9f2775c37d415",
+          "bones": 51,
+          "vertices": 3994,
+          "mesh_objects": 1,
+          "materials": [
+            "Eyes_Black",
+            "Main",
+            "Main_Light",
+            "Nose"
+          ],
+          "clips": {
+            "attack": {
+              "source": "Attack",
+              "range": [
+                0.0,
+                32.0
+              ]
+            },
+            "dead": {
+              "source": "Death",
+              "range": [
+                0.0,
+                25.60000228881836
+              ]
+            },
+            "graze": {
+              "source": "Eating",
+              "range": [
+                0.0,
+                60.79999923706055
+              ]
+            },
+            "run": {
+              "source": "Gallop",
+              "range": [
+                0.0,
+                13.600000381469727
+              ]
+            },
+            "run_jump": {
+              "source": "Gallop_Jump",
+              "range": [
+                0.0,
+                22.399999618530273
+              ]
+            },
+            "idle": {
+              "source": "Idle",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_2": {
+              "source": "Idle_2",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_low": {
+              "source": "Idle_2_HeadLow",
+              "range": [
+                0.0,
+                96.0
+              ]
+            },
+            "hurt": {
+              "source": "Idle_HitReact1",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "hurt_2": {
+              "source": "Idle_HitReact2",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "jump": {
+              "source": "Jump_ToIdle",
+              "range": [
+                0.0,
+                32.0
+              ]
+            },
+            "walk": {
+              "source": "Walk",
+              "range": [
+                0.0,
+                25.60000228881836
+              ]
+            }
+          },
+          "target_height": 0.78,
+          "source_height": 2.673935373313725,
+          "normalization_scale": 0.2917048810470577,
+          "base_yaw": 3.1415926524418474
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Fox": {
+      "render_sources": {
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+        "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+        "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+        "art_src/quaternius_animals/glTF/Fox.gltf": "2f36e3c9c75ecddda85c5f9944e98ee1e88e7c679a546534aff1cea8ecde64c7",
+        "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+      },
+      "verification": {
+        "frames": 528,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          110,
+          77
+        ],
+        "atlas": [
+          4070,
+          1232
+        ],
+        "origin": [
+          55,
+          57
+        ],
+        "sha256": "fb73bac6a3dd8dd527ff711bcaa17c33305631e8b27cc537e43590b5b54925b6",
+        "anatomy": {
+          "model": "Fox",
+          "source_sha256": "2f36e3c9c75ecddda85c5f9944e98ee1e88e7c679a546534aff1cea8ecde64c7",
+          "bones": 51,
+          "vertices": 3752,
+          "mesh_objects": 1,
+          "materials": [
+            "Black",
+            "Eyes",
+            "Grey",
+            "Main",
+            "Main_Light"
+          ],
+          "clips": {
+            "attack": {
+              "source": "Attack",
+              "range": [
+                0.0,
+                32.0
+              ]
+            },
+            "dead": {
+              "source": "Death",
+              "range": [
+                0.0,
+                25.60000228881836
+              ]
+            },
+            "graze": {
+              "source": "Eating",
+              "range": [
+                0.0,
+                60.79999923706055
+              ]
+            },
+            "run": {
+              "source": "Gallop",
+              "range": [
+                0.0,
+                13.600000381469727
+              ]
+            },
+            "run_jump": {
+              "source": "Gallop_Jump",
+              "range": [
+                0.0,
+                22.399999618530273
+              ]
+            },
+            "idle": {
+              "source": "Idle",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_2": {
+              "source": "Idle_2",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_low": {
+              "source": "Idle_2_HeadLow",
+              "range": [
+                0.0,
+                96.0
+              ]
+            },
+            "hurt": {
+              "source": "Idle_HitReact1",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "hurt_2": {
+              "source": "Idle_HitReact2",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "jump": {
+              "source": "Jump_ToIdle",
+              "range": [
+                0.0,
+                32.0
+              ]
+            },
+            "walk": {
+              "source": "Walk",
+              "range": [
+                0.0,
+                25.60000228881836
+              ]
+            }
+          },
+          "target_height": 0.52,
+          "source_height": 2.6665833623846993,
+          "normalization_scale": 0.19500609181592174,
+          "base_yaw": 3.141592653101385
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "ArcticFox": {
+      "render_sources": {
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/quaternius-source.json": "236ebb89577db75fa962e51d1cf415628ba661b2f0150615a4a55fad7ae59973",
+        "tools/art/ro_sprites/toon.py": "8324dedfc3e358dd1d4f79a184ab1adbf629637104e65269b24ca8c4e2857656",
+        "tools/art/ro_sprites/pixelate.py": "6ff1c9ef6c7a30f29cd38eb496a938c06dd528b0940b06a6100d1a95ed71c1a5",
+        "art_src/quaternius_animals/glTF/Fox.gltf": "2f36e3c9c75ecddda85c5f9944e98ee1e88e7c679a546534aff1cea8ecde64c7",
+        "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+      },
+      "verification": {
+        "frames": 528,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          110,
+          77
+        ],
+        "atlas": [
+          4070,
+          1232
+        ],
+        "origin": [
+          55,
+          57
+        ],
+        "sha256": "452eb843a127709e7074b0752e5ef76c86d97de54982c34d8603175798bfcd03",
+        "anatomy": {
+          "model": "ArcticFox",
+          "source_sha256": "2f36e3c9c75ecddda85c5f9944e98ee1e88e7c679a546534aff1cea8ecde64c7",
+          "bones": 51,
+          "vertices": 3752,
+          "mesh_objects": 1,
+          "materials": [
+            "Black",
+            "Eyes",
+            "Grey",
+            "Main",
+            "Main_Light"
+          ],
+          "clips": {
+            "attack": {
+              "source": "Attack",
+              "range": [
+                0.0,
+                32.0
+              ]
+            },
+            "dead": {
+              "source": "Death",
+              "range": [
+                0.0,
+                25.60000228881836
+              ]
+            },
+            "graze": {
+              "source": "Eating",
+              "range": [
+                0.0,
+                60.79999923706055
+              ]
+            },
+            "run": {
+              "source": "Gallop",
+              "range": [
+                0.0,
+                13.600000381469727
+              ]
+            },
+            "run_jump": {
+              "source": "Gallop_Jump",
+              "range": [
+                0.0,
+                22.399999618530273
+              ]
+            },
+            "idle": {
+              "source": "Idle",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_2": {
+              "source": "Idle_2",
+              "range": [
+                0.0,
+                80.0
+              ]
+            },
+            "idle_low": {
+              "source": "Idle_2_HeadLow",
+              "range": [
+                0.0,
+                96.0
+              ]
+            },
+            "hurt": {
+              "source": "Idle_HitReact1",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "hurt_2": {
+              "source": "Idle_HitReact2",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "jump": {
+              "source": "Jump_ToIdle",
+              "range": [
+                0.0,
+                32.0
+              ]
+            },
+            "walk": {
+              "source": "Walk",
+              "range": [
+                0.0,
+                25.60000228881836
+              ]
+            }
+          },
+          "target_height": 0.52,
+          "source_height": 2.6665833623846993,
+          "normalization_scale": 0.19500609181592174,
+          "base_yaw": 3.141592653101385
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Hare": {
+      "render_sources": {
+        "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+        "tools/art/animal_sprites/support-source.json": "ef778e7da7d704cef43262818424102f2f411e9f96636bb8f64eb22be79e34ec",
+        "art_src/hare_candidates/cdmir-rabbit.blend": "bb6deef1ee91b21380355138374cae87946451ce864502b1af68eb60f4750843"
+      },
+      "verification": {
+        "frames": 512,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          68,
+          55
+        ],
+        "atlas": [
+          4080,
+          880
+        ],
+        "origin": [
+          34,
+          44
+        ],
+        "sha256": "907c00638a8320451ba02e880f463c5dddbd1ccfc44805c160fabf0ec3542614",
+        "anatomy": {
+          "model": "Hare",
+          "bones": 37,
+          "vertices": 2196,
+          "mesh_objects": 2,
+          "materials": [
+            "RO Fur",
+            "RO Fur.001"
+          ],
+          "target_height": 0.5,
+          "normalization_scale": 0.03295407046032465,
+          "base_yaw": 3.141242480509783,
+          "clips": {
+            "idle": {
+              "source": "Sitting.000",
+              "range": [
+                0.0,
+                550.0
+              ]
+            },
+            "walk": {
+              "source": "Jump",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "run": {
+              "source": "Running",
+              "range": [
+                0.0,
+                16.0
+              ]
+            },
+            "dead": {
+              "source": "Dying.000",
+              "range": [
+                0.0,
+                20.0
+              ]
+            }
+          }
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Bear": {
+      "render_sources": {
+        "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+        "tools/art/animal_sprites/0ad-source.json": "9b8c0f2654cc5464829ea9f10518c842969e5e3ae676768ede32ca651d723bf3",
+        "art_src/0ad_animals/art/textures/skins/skeletal/animal_bear_brown.png": "5b8b79eae61d8c708c9e34c82db58c47a540e3067cb993e02ff986d265ec636e",
+        "build/animal_sprites/0ad/Bear-idle.glb": "656d34a49275458fdf49c60e9a0fe6666f0ad1127995a55a2c9165ddb6292db8",
+        "build/animal_sprites/0ad/Bear-walk.glb": "cc2495ec1fa764985199b694344a6f343affc531d433c2f53bd22a1f3afe4219",
+        "build/animal_sprites/0ad/Bear-run.glb": "bb117e9c8557cc6d1b3594c9d15123bccd5e876a0901d953015357c430642861",
+        "build/animal_sprites/0ad/Bear-attack.glb": "0937ba4e93b53be31fcf367e7106c33744b601260bc7eff92b1b921ee8fd3133",
+        "build/animal_sprites/0ad/Bear-dead.glb": "bee1254209493434a7cbf1003d2702023939124d288176dc48280f73f9fe121a"
+      },
+      "verification": {
+        "frames": 568,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          288,
+          184
+        ],
+        "atlas": [
+          4032,
+          8832
+        ],
+        "origin": [
+          144,
+          142
+        ],
+        "sha256": "a165fccf3b4d5291a8debb7993559766523cc2f2580bcc5200158fac6e1db12c",
+        "anatomy": {
+          "model": "Bear",
+          "bones": 43,
+          "vertices": 1666,
+          "mesh_objects": 1,
+          "materials": [
+            "RO Ursidae_Grizzly"
+          ],
+          "target_height": 1.4,
+          "normalization_scale": 0.4669567353687618,
+          "base_yaw": 3.1706559987918714,
+          "clips": {
+            "idle": {
+              "source": "idle",
+              "range": [
+                0.0,
+                48.0
+              ]
+            },
+            "walk": {
+              "source": "walk",
+              "range": [
+                0.0,
+                31.99999237060547
+              ]
+            },
+            "run": {
+              "source": "run",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "attack": {
+              "source": "attack",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "dead": {
+              "source": "dead",
+              "range": [
+                0.0,
+                40.00000762939453
+              ]
+            }
+          }
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "PolarBear": {
+      "render_sources": {
+        "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+        "tools/art/animal_sprites/0ad-source.json": "9b8c0f2654cc5464829ea9f10518c842969e5e3ae676768ede32ca651d723bf3",
+        "art_src/0ad_animals/art/textures/skins/skeletal/animal_bear_white.png": "db205d09e7782b3aa6663c8a322ef35009b8730cb199d002f61c69e1c9707c2e",
+        "build/animal_sprites/0ad/PolarBear-idle.glb": "d5e130c5dd417b2fa9507ad7f20470fa3d600b227bd31267de178302c21462a7",
+        "build/animal_sprites/0ad/PolarBear-walk.glb": "9654ef04e93d2038e4fe08360e30748975c0741aead1232a3303fb0120823873",
+        "build/animal_sprites/0ad/PolarBear-run.glb": "1f126705157454ec307ad3a5d7b4dac0b029be31a88e39475786501ad73016c5",
+        "build/animal_sprites/0ad/PolarBear-attack.glb": "e1e8cd5cb78f8923ce6b52306b8d54d0f993d654267ebdcfbec678112ee96037",
+        "build/animal_sprites/0ad/PolarBear-dead.glb": "0e34b897e08567bf8f7a27e46d1685fddae535bf039f112160c6ebd977798e4f"
+      },
+      "verification": {
+        "frames": 568,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          304,
+          195
+        ],
+        "atlas": [
+          3952,
+          9360
+        ],
+        "origin": [
+          152,
+          150
+        ],
+        "sha256": "3a6d834102dc0e10f0e26b906a5b8b94905513d31352b614d030caf880cee7cf",
+        "anatomy": {
+          "model": "PolarBear",
+          "bones": 43,
+          "vertices": 1667,
+          "mesh_objects": 1,
+          "materials": [
+            "RO Ursidae_Polar"
+          ],
+          "target_height": 1.5,
+          "normalization_scale": 0.500310787895102,
+          "base_yaw": 3.1706559987918714,
+          "clips": {
+            "idle": {
+              "source": "idle",
+              "range": [
+                0.0,
+                48.0
+              ]
+            },
+            "walk": {
+              "source": "walk",
+              "range": [
+                0.0,
+                31.99999237060547
+              ]
+            },
+            "run": {
+              "source": "run",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "attack": {
+              "source": "attack",
+              "range": [
+                0.0,
+                24.0
+              ]
+            },
+            "dead": {
+              "source": "dead",
+              "range": [
+                0.0,
+                40.00000762939453
+              ]
+            }
+          }
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Sheep": {
+      "render_sources": {
+        "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+        "tools/art/animal_sprites/0ad-source.json": "9b8c0f2654cc5464829ea9f10518c842969e5e3ae676768ede32ca651d723bf3",
+        "art_src/0ad_animals/art/textures/skins/skeletal/animal_sheep_a.dds": "381dbc3009c788c2b364a4993a504ab978a770ff010faf54ea82a6ba5c9a2b73",
+        "build/animal_sprites/0ad/Sheep-idle.glb": "bbc19faa5836dd2548eabef4f65cfd76e74494abce2d8d396e692e6900cb89fb",
+        "build/animal_sprites/0ad/Sheep-walk.glb": "0a55ed9b0fba6da7c610c196bd129954319af4d76baff25e258e8ad6ae7d0d34",
+        "build/animal_sprites/0ad/Sheep-run.glb": "4d3a3d55e9809892a2e625c3877df7eb09c19d0ac53ec76d705583f9d4c4bbe6",
+        "build/animal_sprites/0ad/Sheep-dead.glb": "7e6c1238e9f86ecadda61fee67c945c1e63bf0a36915f771d1778564ccb7c10b"
+      },
+      "verification": {
+        "frames": 248,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          210,
+          118
+        ],
+        "atlas": [
+          3990,
+          1888
+        ],
+        "origin": [
+          105,
+          82
+        ],
+        "sha256": "71365aadc99773c37f8a808fa0a6400ccac3321f9ff5a1ce51fdf1d10cba5a83",
+        "anatomy": {
+          "model": "Sheep",
+          "bones": 22,
+          "vertices": 200,
+          "mesh_objects": 1,
+          "materials": [
+            "RO Material"
+          ],
+          "target_height": 0.9,
+          "normalization_scale": 44.5634556259777,
+          "base_yaw": -1.0846284093091185e-08,
+          "clips": {
+            "idle": {
+              "source": "idle",
+              "range": [
+                0.0,
+                24.024002075195312
+              ]
+            },
+            "walk": {
+              "source": "walk",
+              "range": [
+                0.0,
+                18.400001525878906
+              ]
+            },
+            "run": {
+              "source": "run",
+              "range": [
+                0.0,
+                9.008999824523926
+              ]
+            },
+            "dead": {
+              "source": "dead",
+              "range": [
+                0.0,
+                21.02100372314453
+              ]
+            }
+          }
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "Chicken": {
+      "render_sources": {
+        "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+        "tools/art/animal_sprites/0ad-source.json": "9b8c0f2654cc5464829ea9f10518c842969e5e3ae676768ede32ca651d723bf3",
+        "art_src/0ad_animals/art/textures/skins/skeletal/animal_chicken_b.dds": "ee1d145f4ee851e01d90dff9e884e5b389275977e91fa0c061ce825bcde4eb63",
+        "build/animal_sprites/0ad/Chicken-idle.glb": "40f21c175a0ebbab19eaac0deef9412a9bc1c5e55e6520873216bd95db5d6ab3",
+        "build/animal_sprites/0ad/Chicken-walk.glb": "1b476c3063c2037cab4314906ede3e277c1fc88c0b838ff8e4e80c6ffad1201e",
+        "build/animal_sprites/0ad/Chicken-run.glb": "13b60153fa86c0a9156e7b0d8d1b4e00b2a8f7459fdde3128feedf02f8b731be",
+        "build/animal_sprites/0ad/Chicken-attack.glb": "e1e91ebe0bc49f1a73c8344dbd8a19189832cc1c58ec435868c4c676c6e838b6",
+        "build/animal_sprites/0ad/Chicken-dead.glb": "db2ecaffe799331607e3ecba56058f39876f6d136cb7df4d9b4afadf63e2de24"
+      },
+      "verification": {
+        "frames": 280,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          59,
+          52
+        ],
+        "atlas": [
+          2065,
+          416
+        ],
+        "origin": [
+          31,
+          40
+        ],
+        "sha256": "3c0324ee3d568d5687a282dc8fa4b23cec2a9dc1ff8818592e14479c63c6354f",
+        "anatomy": {
+          "model": "Chicken",
+          "bones": 16,
+          "vertices": 99,
+          "mesh_objects": 1,
+          "materials": [
+            "RO Material.TF.009"
+          ],
+          "target_height": 0.42,
+          "normalization_scale": 19.916768370336673,
+          "base_yaw": 3.1415927290697088,
+          "clips": {
+            "idle": {
+              "source": "idle",
+              "range": [
+                0.9999988675117493,
+                15.0
+              ]
+            },
+            "walk": {
+              "source": "walk",
+              "range": [
+                0.9999988675117493,
+                15.0
+              ]
+            },
+            "run": {
+              "source": "run",
+              "range": [
+                0.9999988675117493,
+                15.0
+              ]
+            },
+            "attack": {
+              "source": "attack",
+              "range": [
+                0.9999988675117493,
+                15.0
+              ]
+            },
+            "dead": {
+              "source": "dead",
+              "range": [
+                0.9999988675117493,
+                15.0
+              ]
+            }
+          }
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "CaveRat": {
+      "render_sources": {
+        "tools/art/animal_sprites/cave.py": "23cfd650c8eafb5a6e6eb6e66711e6ce6cbc6f603b4b68eb6f4e4fc45393284f",
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+        "tools/art/animal_sprites/cave-source.json": "4ffd56e2fa94817a8112a90257075717ea4f35108b8a55b5eef71543a72088e2",
+        "art_src/cave_animals/rat.blend": "fb6af70d6d9121e6f694c3e58fb8842b7bf3319e331d14332738af57af4046e0",
+        "art_src/cave_animals/rat.png": "b5ef72933348583c79f789dc3f3316163c600911fc38d5398aaa7d04bf4450bf"
+      },
+      "verification": {
+        "frames": 312,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          104,
+          60
+        ],
+        "atlas": [
+          4056,
+          480
+        ],
+        "origin": [
+          52,
+          43
+        ],
+        "sha256": "0b7c3d872ed049f1c9c1d9c7cf8199da233f8fb224606fd16b1d602a4a319654",
+        "anatomy": {
+          "model": "CaveRat",
+          "bones": 21,
+          "vertices": 153,
+          "target_height": 0.32
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    },
+    "CaveSpider": {
+      "render_sources": {
+        "tools/art/animal_sprites/cave.py": "23cfd650c8eafb5a6e6eb6e66711e6ce6cbc6f603b4b68eb6f4e4fc45393284f",
+        "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+        "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+        "tools/art/animal_sprites/cave-source.json": "4ffd56e2fa94817a8112a90257075717ea4f35108b8a55b5eef71543a72088e2",
+        "art_src/cave_animals/spider.blend": "01e0d50597ba9d4a1d5ebaaa78da89ef6fd79df207f3fa9962b3e4e069b0112b",
+        "art_src/cave_animals/spider.png": "d7845fd1ef1b2387767f62296b44d6dfd0de9770ec77de5f37245b57720ed003"
+      },
+      "verification": {
+        "frames": 256,
+        "directions": 8,
+        "clipped_frames": 0,
+        "alpha_values": [
+          0,
+          255
+        ],
+        "frame": [
+          84,
+          49
+        ],
+        "atlas": [
+          2688,
+          392
+        ],
+        "origin": [
+          42,
+          34
+        ],
+        "sha256": "72c81f1277d5ffaae6907ab9d86bf712603d2c2b93efbead4c8084039ba93fe8",
+        "anatomy": {
+          "model": "CaveSpider",
+          "bones": 45,
+          "vertices": 138,
+          "target_height": 0.28
+        },
+        "max_planted_hoof_slip": null,
+        "default_game_content_modified": false,
+        "stage": "candidate; human visual approval required"
+      }
+    }
+  },
+  "files": {
+    "content/base/art/ro_animals/horse.png": "5f3bd976b25dbe7548b392ca0b2ef8c949b358fcfd451ae4dd6f1c967718fb50",
+    "content/base/art/ro_animals/horse_volume.png": "cec7e9f54b7e18de24c155e2a7f232e2f3615bfe3def31b50fa7bf602b4e6617",
+    "content/base/art/ro_animals/horse_white.png": "bf28de1dfd401dcfff496d0ab278248c18a28ecb53654616fe425061b4793342",
+    "content/base/art/ro_animals/horse_white_volume.png": "cec7e9f54b7e18de24c155e2a7f232e2f3615bfe3def31b50fa7bf602b4e6617",
+    "content/base/art/ro_animals/deer.png": "068fcf747760b07405d07544c3f151124d1d5546ace6fe93027843a6ce3dc87b",
+    "content/base/art/ro_animals/deer_volume.png": "552e271721c952c6e33d082e7494b8a36b307ef2c5e452f00191fc65feb8846f",
+    "content/base/art/ro_animals/stag.png": "70fc6cefdd10f87cfe730983d0dd416503dba40907b9122c441480f93d7431d8",
+    "content/base/art/ro_animals/stag_volume.png": "fd04c3f5801e5f49f6abf479e4c43fc28ca74625dde64168bc5749d42ed90698",
+    "content/base/art/ro_animals/cow.png": "c99b4702c16f4a2eb9ff357e2e09bc6eb303d1ee5c252ff80eb6191a1ad414ef",
+    "content/base/art/ro_animals/cow_volume.png": "fb26f8d4ca9a9fdd77067157c664c3646dd355d1ceed7f1db69c7f9467f7be05",
+    "content/base/art/ro_animals/wolf.png": "c8c5bd69ba9cfb1b0eec0c9fe17197fa6c5e2ec49ae24bac9651be6aa62ad21a",
+    "content/base/art/ro_animals/wolf_volume.png": "21ff820544ef6cc6d028e4b357f0763a2adddd60f154d8a5d0ec7c5a81236236",
+    "content/base/art/ro_animals/fox.png": "fb73bac6a3dd8dd527ff711bcaa17c33305631e8b27cc537e43590b5b54925b6",
+    "content/base/art/ro_animals/fox_volume.png": "14d1dbed5decb8138c87687c7f431a144d60c93bffa0a7d42fe95dc842879931",
+    "content/base/art/ro_animals/arcticfox.png": "452eb843a127709e7074b0752e5ef76c86d97de54982c34d8603175798bfcd03",
+    "content/base/art/ro_animals/arcticfox_volume.png": "14d1dbed5decb8138c87687c7f431a144d60c93bffa0a7d42fe95dc842879931",
+    "content/base/art/ro_animals/hare.png": "907c00638a8320451ba02e880f463c5dddbd1ccfc44805c160fabf0ec3542614",
+    "content/base/art/ro_animals/hare_volume.png": "35ac043a97045276880db23c445fac4fed8d2097b5b0b36b90b8b8b19a92d662",
+    "content/base/art/ro_animals/bear.png": "a165fccf3b4d5291a8debb7993559766523cc2f2580bcc5200158fac6e1db12c",
+    "content/base/art/ro_animals/bear_volume.png": "7dcc2896d9d11835755956d17a88dbc95491f5a63c72cbb3cc2841a7dd6b50af",
+    "content/base/art/ro_animals/polarbear.png": "3a6d834102dc0e10f0e26b906a5b8b94905513d31352b614d030caf880cee7cf",
+    "content/base/art/ro_animals/polarbear_volume.png": "527c104f87d6bca3368ebb741c7513719caf013bd6fc3a25c30d63aef6b30a3e",
+    "content/base/art/ro_animals/sheep.png": "71365aadc99773c37f8a808fa0a6400ccac3321f9ff5a1ce51fdf1d10cba5a83",
+    "content/base/art/ro_animals/sheep_volume.png": "136ff4d4fc61a6e9384ee4baea3e8acc53ea46460756c7216a09e910b8b7ad19",
+    "content/base/art/ro_animals/chicken.png": "3c0324ee3d568d5687a282dc8fa4b23cec2a9dc1ff8818592e14479c63c6354f",
+    "content/base/art/ro_animals/chicken_volume.png": "1e1f8424d6c8ae98e6f1bbd712bac37885f6ccc6639676e01f1e12d5f7e558a0",
+    "content/base/art/ro_animals/caverat.png": "0b7c3d872ed049f1c9c1d9c7cf8199da233f8fb224606fd16b1d602a4a319654",
+    "content/base/art/ro_animals/caverat_volume.png": "573a8e405cb25c5390f5b134c1f4913745052473f251662230463e9da45decc7",
+    "content/base/art/ro_animals/cavespider.png": "72c81f1277d5ffaae6907ab9d86bf712603d2c2b93efbead4c8084039ba93fe8",
+    "content/base/art/ro_animals/cavespider_volume.png": "fccba7153bd9e4e79cb8408e6dc61a60b282b6c693fa2b6c5f9859b553c65a74",
+    "content/base/animal_visuals.json": "4f7a83f15c16aa828d215dd168e5b5ebae0570bb6360042a427d65c81fc44219"
+  },
+  "tools": {
+    "tools/art/animal_sprites/export.py": "c3958b91583f8c13c65cc2e6ff69aefa13e80cf12ef7d0f330e451f4dc627829",
+    "tools/art/animal_sprites/install.py": "f78684f4d0268eb0a1df5e2e90d7fdff95858c72821b60e15f6eab1d244dfe93",
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+    "tools/art/animal_sprites/cave.py": "23cfd650c8eafb5a6e6eb6e66711e6ce6cbc6f603b4b68eb6f4e4fc45393284f",
+    "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+    "tools/art/animal_sprites/calibrate.py": "24016456b20f81583b04f1c90722365299e663d8fc710fb8a4a3bd6ebd7ab97e"
+  }
+}

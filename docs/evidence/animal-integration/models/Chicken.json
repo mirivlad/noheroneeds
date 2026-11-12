@@ -1,0 +1,125 @@
+{
+  "species": "chicken",
+  "source_kind": "licensed-authored",
+  "cell": 256,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 2,
+      "fps": 3.4285711512273895,
+      "loop": true,
+      "source": "idle",
+      "duration": 0.5833333805203438
+    },
+    "walk": {
+      "frames": 7,
+      "fps": 11.999999029295864,
+      "loop": true,
+      "source": "walk",
+      "duration": 0.5833333805203438
+    },
+    "run": {
+      "frames": 12,
+      "fps": 20.571426907364337,
+      "loop": true,
+      "source": "run",
+      "duration": 0.5833333805203438
+    },
+    "attack": {
+      "frames": 7,
+      "fps": 11.999999029295864,
+      "loop": false,
+      "source": "attack",
+      "duration": 0.5833333805203438
+    },
+    "dead": {
+      "frames": 7,
+      "fps": 11.999999029295864,
+      "loop": false,
+      "source": "dead",
+      "duration": 0.5833333805203438
+    }
+  },
+  "anatomy": {
+    "model": "Chicken",
+    "bones": 16,
+    "vertices": 99,
+    "mesh_objects": 1,
+    "materials": [
+      "RO Material.TF.009"
+    ],
+    "target_height": 0.42,
+    "normalization_scale": 19.916768370336673,
+    "base_yaw": 3.1415927290697088,
+    "clips": {
+      "idle": {
+        "source": "idle",
+        "range": [
+          0.9999988675117493,
+          15.0
+        ]
+      },
+      "walk": {
+        "source": "walk",
+        "range": [
+          0.9999988675117493,
+          15.0
+        ]
+      },
+      "run": {
+        "source": "run",
+        "range": [
+          0.9999988675117493,
+          15.0
+        ]
+      },
+      "attack": {
+        "source": "attack",
+        "range": [
+          0.9999988675117493,
+          15.0
+        ]
+      },
+      "dead": {
+        "source": "dead",
+        "range": [
+          0.9999988675117493,
+          15.0
+        ]
+      }
+    }
+  },
+  "strides": {
+    "walk": 0.17044581472873688,
+    "run": 0.39597116410732264
+  },
+  "volume": {
+    "span": 6,
+    "elevation": 22,
+    "px_per_m": 77
+  },
+  "sources": {
+    "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+    "tools/art/animal_sprites/0ad-source.json": "9b8c0f2654cc5464829ea9f10518c842969e5e3ae676768ede32ca651d723bf3",
+    "art_src/0ad_animals/art/textures/skins/skeletal/animal_chicken_b.dds": "ee1d145f4ee851e01d90dff9e884e5b389275977e91fa0c061ce825bcde4eb63",
+    "build/animal_sprites/0ad/Chicken-idle.glb": "40f21c175a0ebbab19eaac0deef9412a9bc1c5e55e6520873216bd95db5d6ab3",
+    "build/animal_sprites/0ad/Chicken-walk.glb": "1b476c3063c2037cab4314906ede3e277c1fc88c0b838ff8e4e80c6ffad1201e",
+    "build/animal_sprites/0ad/Chicken-run.glb": "13b60153fa86c0a9156e7b0d8d1b4e00b2a8f7459fdde3128feedf02f8b731be",
+    "build/animal_sprites/0ad/Chicken-attack.glb": "e1e91ebe0bc49f1a73c8344dbd8a19189832cc1c58ec435868c4c676c6e838b6",
+    "build/animal_sprites/0ad/Chicken-dead.glb": "db2ecaffe799331607e3ecba56058f39876f6d136cb7df4d9b4afadf63e2de24"
+  }
+}

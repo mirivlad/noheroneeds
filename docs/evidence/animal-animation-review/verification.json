@@ -1,0 +1,30 @@
+{
+  "status": "review and diagnosis; shaft fix not implemented; hare not baked or integrated",
+  "cart_preview": {
+    "height_before": 0.53,
+    "height_probe": 0.95,
+    "native_checks": 250,
+    "failures": [],
+    "intersection_free_assertion": false,
+    "default_cart_modified": false
+  },
+  "hare_sources_verified": 2,
+  "hare_production_ready": false,
+  "previous_art_bundle_hashes_unchanged": 139,
+  "files": {
+    "docs/evidence/animal-animation-review/check_cart_preview.gd": "3c545c4d305a26fb033a7978daaf9162df22b296deec58b08488362e1b7fa39c",
+    "docs/evidence/animal-animation-review/raised-shafts.webp": "3930a8e780cca757be0a28493928f28b0839fb931fbb01144a18e224226df918",
+    "docs/evidence/animal-animation-review/horse-bounds.json": "76570ad0a3235ec20d24d04e1a4d8c648045f47971f1d5c089bd9e91856c94d1",
+    "docs/evidence/animal-animation-review/hare-sources.json": "18379854d1ce82e8953d533e75d8a8a08d49e0e79cb2bfa014bc34e1855b1e3f",
+    "docs/evidence/animal-animation-review/CDmir-LICENSE.txt": "da4009a6089410bf9caccf3ebebb5789d7d483f0ab262251744ed42ed35477b1",
+    "docs/evidence/animal-animation-review/cart-preview.json": "a8882465b7378e486f8364a5f88afb6d9340be0ba407b2d2d36f1a58c2ef0b2a",
+    "docs/evidence/animal-animation-review/cart-preview.log": "0ea17be7434e35abe2e826c289b281ce0ef75dc2cc6444438c96642f598535bc",
+    "docs/evidence/animal-animation-review/cart_preview_builder.py": "8882360ec655c89ea17e3b8974666909a32a7f727adcf889a8ba7350a573f29a",
+    "docs/evidence/animal-animation-review/README.md": "ba7539eb0755763ed99ccc26325ed5a9ae5082f83f3726d48a9a82e207b0c0a1",
+    "docs/evidence/animal-animation-review/hare-inventory.json": "995ed03fe4979b170d57cf07c23dfa4a6fd1313b52077d09b6c764cab69a6226",
+    "tools/art/build_caravan_cart.py": "3103ffab4d7590420a278eefe46b834bb6e018b92ef6046db47b952cc9204b93",
+    "assets/experiment_3d/caravan/cart.glb": "c061dd58d154af9f35d5d6bf3cf18a5da91a63d3d6a18b795189697af9888564",
+    "build/animal_sprites/motion-review/cart.glb": "08ed831c92df4de648dba358a2d285dc93fcaf0a0b64030e9dc3490aeec3ebf5",
+    "tools/experiment_3d/check_horse_candidate.gd": "aeeea8abc5b706f4f67c39dc77620f0f0c4fbb50c227d63b206e6c7d39d01e0a"
+  }
+}

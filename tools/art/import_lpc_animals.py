@@ -255,7 +255,11 @@ def main():
     for old in OUT.glob("*.png"):
         old.unlink()
     defs = []
+    ro_file = ROOT / "content/base/animal_visuals.json"
+    ro_targets = {d["for"] for d in json.loads(ro_file.read_text())["defs"]} if ro_file.exists() else set()
     for kind, spec in ANIMALS.items():
+        if kind in ro_targets:
+            continue
         name = kind.split(":")[1]
         atlas, anims, size, feet = build(kind, spec, spec["sheet"])
         atlas.save(OUT / (name + ".png"), optimize=True)
@@ -279,6 +283,7 @@ def main():
     VISUALS.write_text(json.dumps({"format": 1, "defs": defs}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     text = CREDITS.read_text(encoding="utf-8") if CREDITS.exists() else ""
     ro = "\n<!-- ro -->" + text.split("<!-- ro -->", 1)[1] if "<!-- ro -->" in text else ""
+    ro_animals = "\n<!-- ro-animals -->" + text.split("<!-- ro-animals -->", 1)[1].split("<!-- ro -->", 1)[0] if "<!-- ro-animals -->" in text else ""
     text = text.split(ANIMAL_CREDITS_START)[0].rstrip() + "\n\n"
     lines = [ANIMAL_CREDITS_START, "# Авторы графики зверей", "",
              "Звери и чудища — из наборов LPC на OpenGameArt, собраны в листы игры",
@@ -286,7 +291,7 @@ def main():
              "у лошади удалён одиночный посторонний пиксель).", ""]
     for name, who, lic, url in CREDITS_ANIMALS:
         lines += ["## " + name, "", "- Авторы: " + who, "- Лицензии: " + lic, "- " + url, ""]
-    CREDITS.write_text(text + "\n".join(lines) + ro, encoding="utf-8")
+    CREDITS.write_text(text + "\n".join(lines) + ro_animals + ro, encoding="utf-8")
     print("%d animal visuals" % len(defs))
 
 

@@ -1,0 +1,18 @@
+[
+  {
+    "file": "art_src/hare_candidates/gobkit-hare.glb",
+    "url": "https://gobkit.com/freebies/animal006/Hare.glb",
+    "license_page": "https://gobkit.com/api/free",
+    "declared_license": "CC0-1.0",
+    "bytes": 99840,
+    "sha256": "3342949e3b124441d4ac8a7bdffd93835c90752bfe0f3b7785a6cdd8f5b99cfb"
+  },
+  {
+    "file": "art_src/hare_candidates/cdmir-rabbit.blend",
+    "url": "https://opengameart.org/sites/default/files/rabbit.blend",
+    "license_page": "https://opengameart.org/content/rabbit-0",
+    "declared_license": "CC0-1.0",
+    "bytes": 5996916,
+    "sha256": "bb6deef1ee91b21380355138374cae87946451ce864502b1af68eb60f4750843"
+  }
+]

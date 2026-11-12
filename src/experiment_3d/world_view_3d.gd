@@ -1055,6 +1055,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 			# Dressed anew where it can be (its walk and blow go on), else made again.
 			if doll_for(id, looks, actor.doll) == actor.doll:
 				actor.looks = looks.duplicate(true)
+				actor.configure_volume(visual_for(id,looks))
 			else:
 				actor.queue_free()
 				actor = null
@@ -1072,6 +1073,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 			var body := BodySize.of(content.get_def(String(e.get("creature", "")) if kind == "creature" else String(looks.get("body_plan", ""))))
 			var tall := maxf(.3, float(body["height"]) * STOREY)
 			var half: Vector2i = body["half"]
+			actor.ground_shadow.fit(body)
 			(actor.shape.shape as BoxShape3D).size = Vector3(maxf(.3, half.x * 2.0 / Movement.UNIT + .1), tall, maxf(.3, half.y * 2.0 / Movement.UNIT + .1))
 			actor.shape.position.y = tall / 2.0
 		actor.body.set_meta("target", {"kind": "entity", "id": id, "entity": e, "location": Levels.SURFACE if int(e.get("z", client.z)) == 0 else client.location})
@@ -1096,12 +1098,20 @@ func _update_actors(alpha: float, delta: float) -> void:
 		if in_bed:
 			var directions := {"s": Vector2.DOWN, "w": Vector2.LEFT, "n": Vector2.UP, "e": Vector2.RIGHT}
 			actor.facing = directions.get(String(props_at(bed).get("facing", "s")), Vector2.DOWN)
+		actor.doll.running_hint = int(bool(e["running"])) if e.has("running") else -1
 		actor.show_actor(at, yaw, delta, id == client.character_id)
 		actor.lie(in_bed, BED_TOP)
 		# Interpolate XZ first, then sample the rendered triangle under the
 		# interpolated feet. Interpolating target Y cuts through convex hills.
 		actor.position.y = elevation(Vector2(actor.position.x, actor.position.z)) + (0 if client.z < 0 else int(e.get("z", client.z)) * STOREY)
 		actor.scale = Vector3.ONE * (.6 if e.get("young", false) else 1.0)
+		actor.ground_shadow.visible = not actor.doll.submerged and not in_bed \
+			and not client.in_water(Vector2i(roundi(actor.position.x*Movement.UNIT),roundi(actor.position.z*Movement.UNIT))) \
+			and not (String(e.get("horse", "")) != "" and String(e.get("caravan_type", "cart")) == "cart")
+		if actor.ground_shadow.visible:
+			var level := 0.0 if client.z < 0 else int(e.get("z", client.z)) * STOREY
+			actor.ground_shadow.follow(actor.position, actor.facing, actor.scale.x,
+				func(point: Vector2) -> float: return elevation(point) + level)
 		var held := own_held if id == client.character_id else String(e.get("held", ""))
 		if actor.doll.submerged or bool(e.get("asleep", false)):
 			held = ""  # (nothing in the hands in the water, nor asleep)
@@ -1155,6 +1165,9 @@ func _update_actors(alpha: float, delta: float) -> void:
 		if e.get("profession", "") == "base:trader":
 			var in_cart: bool = horse_id != "" and String(e.get("caravan_type", "cart")) == "cart"
 			actor.show_cart(in_cart)
+			var horse := _actors.get(horse_id) as BillboardActor3D
+			if in_cart and horse and actor.harness:
+				actor.harness.follow(actor.cart,horse,eye)
 			if in_cart and not bool(e.get("asleep", false)):
 				actor.picture.position = Vector3(actor.facing.x * .59, .8, actor.facing.y * .59)
 		var driver_id := String(e.get("caravan_driver", ""))

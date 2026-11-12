@@ -1,0 +1,21 @@
+{
+  "game_tests": {
+    "ok": true,
+    "tests": 670,
+    "suites": 102,
+    "sources_unchanged": true,
+    "wall_seconds": 1393.21
+  },
+  "game_command": "TEST_TIMEOUT=2400 TEST_JOBS=4 tools/run_tests.sh",
+  "site_python_tests": 32,
+  "site_browser_tests": 10,
+  "native_checks": 6794,
+  "contact_checks": 10,
+  "species": 13,
+  "visual_variants": 15,
+  "frames": 6752,
+  "tested_inputs_unchanged": true,
+  "rules_fingerprint": "e3156e98c9db2ccb004e4097b7ebcbba8da725ef480f1bc742faa46dc308391b",
+  "rules_fingerprint_unchanged": true,
+  "notes": "Native adapter uses a fixed 20 Hz presentation step; its FPS telemetry is not a performance benchmark."
+}

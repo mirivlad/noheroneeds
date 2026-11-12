@@ -1182,6 +1182,8 @@ func _check_visual(id: String, d: Dictionary) -> void:
 		alt["atlas_path"] = dir.path_join(String(alt.get("atlas", d.get("atlas", "")))) if dir != "" else ""
 		if dir != "" and not FileAccess.file_exists(alt["atlas_path"]) and not ResourceLoader.exists(alt["atlas_path"]):
 			errors.append("%s: atlas %s not found" % [id, alt["atlas_path"]])
+		if d.get("format") == "ro":
+			_check_ro(id + " alternate", d.merged(alt, true), dir)
 	d["alternates"] = alts
 	var old: Dictionary = visuals.get(target, {})
 	if old.is_empty() or _pack_order(d["pack"]) >= _pack_order(old["pack"]):
@@ -1218,6 +1220,17 @@ func _check_lpc(id: String, d: Dictionary, dir: String) -> void:
 ## order its layers are drawn in, frame by frame (RoSprite).
 func _check_ro(id: String, d: Dictionary, dir: String) -> void:
 	_check_ro_sheet(id, d, dir)
+	if d.has("volume"):
+		var volume: Variant = d["volume"]
+		if typeof(volume) != TYPE_DICTIONARY or String(volume.get("atlas", "")) == "" \
+				or not ["span", "px_per_m", "elevation"].all(func(key: String) -> bool:
+					return typeof(volume.get(key)) in [TYPE_INT, TYPE_FLOAT] and is_finite(float(volume[key])) and float(volume[key]) > 0.0) \
+				or float(volume.get("elevation", 90)) >= 90:
+			errors.append("%s: animal volume needs atlas, positive span/px_per_m and elevation below 90" % id)
+		elif dir != "":
+			var path := dir.path_join(String(d["atlas"])).get_base_dir().path_join(String(volume["atlas"]))
+			if not FileAccess.file_exists(path) and not ResourceLoader.exists(path):
+				errors.append("%s: animal volume atlas %s not found" % [id, path])
 	var clips: Variant = d.get("clips")
 	if typeof(clips) != TYPE_DICTIONARY or not ["idle", "walk"].all(func(c: String) -> bool: return clips.has(c)):
 		errors.append("%s: clips need idle and walk" % id)
@@ -1230,8 +1243,45 @@ func _check_ro(id: String, d: Dictionary, dir: String) -> void:
 	for kind: Variant in d.get("swings", {}):
 		if not clips.has(d["swings"][kind]):
 			errors.append("%s: swing '%s' plays an unknown clip" % [id, kind])
+	if d.has("stride_px"):
+		var strides: Variant = d["stride_px"]
+		if typeof(strides) != TYPE_DICTIONARY:
+			errors.append("%s: stride_px must map gait clips to positive distances" % id)
+		else:
+			for gait: String in strides:
+				if gait not in ["walk", "run"] or not clips.has(gait) or typeof(strides[gait]) not in [TYPE_INT, TYPE_FLOAT] \
+						or not is_finite(float(strides[gait])) or float(strides[gait]) <= 0.0:
+					errors.append("%s: stride_px '%s' needs a gait clip and a positive distance" % [id, gait])
+	if d.has("harness"):
+		_check_harness(id, d)
 	if typeof(d.get("layers")) != TYPE_ARRAY or typeof(d.get("order")) != TYPE_DICTIONARY:
 		errors.append("%s: an RO body needs its layers and their order" % id)
+
+
+## Four attachment points for every frame and every view, in source pixels/metres.
+func _check_harness(id: String, d: Dictionary) -> void:
+	var poses: Variant = d["harness"]
+	var count := 0
+	if typeof(d.get("anims")) != TYPE_DICTIONARY: return
+	for span: Variant in d["anims"].values():
+		if typeof(span) != TYPE_ARRAY or span.size() != 2: return
+		count = maxi(count, int(span[0]) + int(span[1]))
+	var valid: bool = typeof(poses) == TYPE_ARRAY and poses.size() == count
+	if valid:
+		for pose: Variant in poses:
+			if typeof(pose) != TYPE_ARRAY or pose.size() != 8:
+				valid = false
+				break
+			for view: Variant in pose:
+				if typeof(view) != TYPE_ARRAY or view.size() != 4:
+					valid = false
+					break
+				for point: Variant in view:
+					if typeof(point) != TYPE_ARRAY or point.size() != 3 or not point.all(func(n: Variant) -> bool:
+							return typeof(n) in [TYPE_INT, TYPE_FLOAT] and is_finite(float(n))):
+						valid = false
+	if not valid:
+		errors.append("%s: harness needs four finite xyz points in eight views for every frame" % id)
 
 
 ## One RO layer: an atlas of frames of one size, eight rows of directions,

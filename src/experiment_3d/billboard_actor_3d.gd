@@ -11,6 +11,7 @@ var picture := Sprite3D.new()
 var doll: CharacterSprite
 var body := StaticBody3D.new()
 var shape := CollisionShape3D.new()
+var ground_shadow := ActorShadow3D.new()
 var previous := Vector2.ZERO
 var facing := Vector2.DOWN
 ## A heading the server tells (a cart, a horse in harness). The delta of the
@@ -25,6 +26,10 @@ var animation_at := Vector2.ZERO
 var looks := {}
 var target := {}
 var cart: Node3D
+var harness: CaravanHarness3D
+var _paper: ShaderMaterial
+var _volume_sprite: Sprite2D
+var _volume_rect := Rect2()
 var cart_tried := false
 var packs: Node3D
 var packs_tried := false
@@ -38,6 +43,9 @@ func show_cart(on: bool) -> void:
 		if scene:
 			cart = scene.instantiate() as Node3D
 			add_child(cart)
+			harness = CaravanHarness3D.new()
+			cart.add_child(harness)
+			harness.setup(cart)
 	if cart:
 		cart.visible = on
 		if on:
@@ -68,6 +76,7 @@ func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	add_child(viewport)
+	add_child(ground_shadow)
 	doll = made if made else Art.character_sprite(registry, visual, appearance)
 	viewport.add_child(doll)
 	doll.scale = Vector2.ONE * DOLL_SCALE
@@ -80,10 +89,12 @@ func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary
 	picture.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	picture.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var paper := ShaderMaterial.new()
+	_paper = paper
 	paper.shader = preload("res://src/experiment_3d/paper_doll.gdshader")
 	paper.set_shader_parameter("paper", viewport.get_texture())
 	picture.material_override = paper
 	add_child(picture)
+	configure_volume(visual)
 	var box := BoxShape3D.new()
 	box.size = Vector3(.7, 1.6, .7)
 	shape.shape = box
@@ -91,6 +102,58 @@ func setup(registry: ContentRegistry, visual: Dictionary, appearance: Dictionary
 	body.add_child(shape)
 	body.set_meta("target", target)
 	add_child(body)
+
+## Animal frames retain their real near/far body surface for the 3D harness.
+## Humans and older sheets keep the existing upright-card depth.
+func configure_volume(visual: Dictionary) -> void:
+	var data: Dictionary = visual.get("volume", {})
+	_volume_sprite = null
+	_paper.set_shader_parameter("has_volume",not data.is_empty())
+	if data.is_empty():
+		return
+	var path := String(visual["atlas_path"]).get_base_dir().path_join(String(data["atlas"]))
+	var texture := Art.texture(path)
+	_volume_sprite = doll.get_child(0) as Sprite2D
+	_volume_rect = Rect2()
+	_paper.set_shader_parameter("volume_atlas",texture)
+	_paper.set_shader_parameter("volume_size",Vector2(texture.get_size()))
+	_paper.set_shader_parameter("volume_origin",Vector2(visual["origin"][0],visual["origin"][1]))
+	_paper.set_shader_parameter("volume_pixel_scale",DOLL_SCALE*float(visual.get("pixel_scale",.25)))
+	_paper.set_shader_parameter("volume_span",float(data["span"]))
+	_paper.set_shader_parameter("volume_elevation",deg_to_rad(float(data["elevation"])))
+	_paper.set_shader_parameter("volume_world_scale",float(data["px_per_m"])*float(visual.get("pixel_scale",.25))/WorldView.CELL)
+	_process(0)
+
+func _process(_delta: float) -> void:
+	if _volume_sprite == null or _volume_sprite.region_rect == _volume_rect:
+		return
+	_volume_rect = _volume_sprite.region_rect
+	_paper.set_shader_parameter("volume_frame",Vector4(_volume_rect.position.x,_volume_rect.position.y,_volume_rect.size.x,_volume_rect.size.y))
+
+func harness_anchor(index: int, camera: Camera3D) -> Vector3:
+	var anchors: Array = doll._visual.get("harness", [])
+	if anchors.is_empty() or _volume_sprite == null:
+		return Vector3.INF
+	var frame: Array = doll._visual["frame"]
+	var rect := _volume_sprite.region_rect
+	var band := int(rect.position.y/frame[1]) / 8
+	var column := band*int(doll._visual["columns"])+int(rect.position.x/frame[0])
+	var row := int(rect.position.y/frame[1]) % 8
+	if column>=anchors.size():
+		return Vector3.INF
+	var point: Array = anchors[column][row][index]
+	var unit := float(doll._visual.get("pixel_scale",.25))/WorldView.CELL * global_basis.x.length()
+	var right := camera.global_basis.x
+	var up := camera.global_basis.y
+	var toward := camera.global_basis.z
+	var above := float(point[1])*unit
+	var volume: Dictionary = doll._visual["volume"]
+	var body_y := float(point[2])*float(volume["px_per_m"])*unit
+	# Match the shader's guard while a new camera still has its default basis.
+	var up_height := maxf(up.y,.05)
+	var toward_height := maxf(toward.y,.05)
+	var shift := .025 + above*toward_height/up_height + body_y*sin(deg_to_rad(float(volume["elevation"])))/(toward_height*up_height)
+	return picture.global_position + right*float(point[0])*unit + up*above + toward*shift
 
 ## Strikes toward `dir` (on the ground, world axes) and keeps facing it: the
 ## facing is turned to the screen every frame, so it must be the world's.

@@ -1,0 +1,66 @@
+{
+  "format": "ro",
+  "mode": "character",
+  "atlas_path": "res://build/animal_sprites/horse-v3/horse.png",
+  "pixel_scale": 0.25,
+  "key": "horse",
+  "frame": [
+    168,
+    157
+  ],
+  "rect": [
+    0,
+    0,
+    168,
+    157
+  ],
+  "origin": [
+    84,
+    139
+  ],
+  "columns": 24,
+  "anims": {
+    "idle": [
+      0,
+      4
+    ],
+    "walk": [
+      4,
+      8
+    ],
+    "run": [
+      12,
+      8
+    ],
+    "graze": [
+      20,
+      8
+    ]
+  },
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 3,
+      "loop": true
+    },
+    "walk": {
+      "frames": 8,
+      "fps": 10,
+      "loop": true
+    },
+    "run": {
+      "frames": 8,
+      "fps": 13,
+      "loop": true
+    },
+    "graze": {
+      "frames": 8,
+      "fps": 5,
+      "loop": true
+    }
+  },
+  "swings": {},
+  "layers": [
+    "horse"
+  ]
+}

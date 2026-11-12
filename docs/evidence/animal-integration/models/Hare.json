@@ -1,0 +1,107 @@
+{
+  "species": "hare",
+  "source_kind": "licensed-authored",
+  "cell": 256,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 28,
+      "fps": 1.2218181818181817,
+      "loop": true,
+      "source": "Sitting.000",
+      "duration": 22.916666666666668
+    },
+    "walk": {
+      "frames": 12,
+      "fps": 12.0,
+      "loop": true,
+      "source": "Jump",
+      "duration": 1.0
+    },
+    "run": {
+      "frames": 14,
+      "fps": 21.0,
+      "loop": true,
+      "source": "Running",
+      "duration": 0.6666666666666666
+    },
+    "dead": {
+      "frames": 10,
+      "fps": 12.0,
+      "loop": false,
+      "source": "Dying.000",
+      "duration": 0.8333333333333334
+    }
+  },
+  "anatomy": {
+    "model": "Hare",
+    "bones": 37,
+    "vertices": 2196,
+    "mesh_objects": 2,
+    "materials": [
+      "RO Fur",
+      "RO Fur.001"
+    ],
+    "target_height": 0.5,
+    "normalization_scale": 0.03295407046032465,
+    "base_yaw": 3.141242480509783,
+    "clips": {
+      "idle": {
+        "source": "Sitting.000",
+        "range": [
+          0.0,
+          550.0
+        ]
+      },
+      "walk": {
+        "source": "Jump",
+        "range": [
+          0.0,
+          24.0
+        ]
+      },
+      "run": {
+        "source": "Running",
+        "range": [
+          0.0,
+          16.0
+        ]
+      },
+      "dead": {
+        "source": "Dying.000",
+        "range": [
+          0.0,
+          20.0
+        ]
+      }
+    }
+  },
+  "strides": {
+    "walk": 2.3215357214212418,
+    "run": 0.9153217077255249
+  },
+  "volume": {
+    "span": 6,
+    "elevation": 22,
+    "px_per_m": 77
+  },
+  "sources": {
+    "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+    "tools/art/animal_sprites/support-source.json": "ef778e7da7d704cef43262818424102f2f411e9f96636bb8f64eb22be79e34ec",
+    "art_src/hare_candidates/cdmir-rabbit.blend": "bb6deef1ee91b21380355138374cae87946451ce864502b1af68eb60f4750843"
+  }
+}

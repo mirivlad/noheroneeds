@@ -1,0 +1,57 @@
+{
+  "format": "ro",
+  "mode": "character",
+  "atlas_path": "res://build/animal_sprites/quaternius-checked/Horse_White/horse_white.png",
+  "pixel_scale": 0.25,
+  "key": "horse_white",
+  "frame": [
+    219,
+    168
+  ],
+  "rect": [
+    0,
+    0,
+    219,
+    168
+  ],
+  "origin": [
+    109,
+    143
+  ],
+  "columns": 18,
+  "anims": {
+    "idle": [
+      0,
+      4
+    ],
+    "walk": [
+      4,
+      14
+    ],
+    "run": [
+      18,
+      12
+    ]
+  },
+  "clips": {
+    "idle": {
+      "frames": 4,
+      "fps": 1.2,
+      "loop": true
+    },
+    "walk": {
+      "frames": 14,
+      "fps": 12.0,
+      "loop": true
+    },
+    "run": {
+      "frames": 12,
+      "fps": 19.999999205271436,
+      "loop": true
+    }
+  },
+  "swings": {},
+  "layers": [
+    "horse_white"
+  ]
+}

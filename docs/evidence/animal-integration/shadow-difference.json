@@ -1,0 +1,6 @@
+{
+  "day_shadow_pixels": 7937,
+  "night_brighter_pixels_inside_day_shadow_mask": 0,
+  "maximum_night_luminance_increase_inside_mask": 0.0,
+  "scope": "Night is evaluated inside the daytime decal mask; animated vegetation outside that footprint is excluded."
+}

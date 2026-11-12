@@ -58,7 +58,7 @@ func _add_layer(slot: String, tex: Texture2D, sheet := {}) -> void:
 	super(slot, tex, sheet)
 	if slot == "torso" and look.get("colors", {}).has("shirt"):
 		(_layers[-1][1] as Sprite2D).modulate = Color(String(look["colors"]["shirt"]))
-	if slot == "body":
+	if slot == "body" and not _visual.get("animal",false):
 		var skin := ShaderMaterial.new()
 		skin.shader = SKIN_SHADER
 		skin.set_shader_parameter("skin_colour", _colour("skin", SKIN_COLOUR))

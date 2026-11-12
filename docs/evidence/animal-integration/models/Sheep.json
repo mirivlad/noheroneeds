@@ -1,0 +1,110 @@
+{
+  "species": "sheep",
+  "source_kind": "licensed-authored",
+  "cell": 256,
+  "foot": 201,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 2,
+      "fps": 1.9980018254144178,
+      "loop": true,
+      "source": "idle",
+      "duration": 1.0010000864664714
+    },
+    "walk": {
+      "frames": 10,
+      "fps": 13.043477179197462,
+      "loop": true,
+      "source": "walk",
+      "duration": 0.7666667302449545
+    },
+    "run": {
+      "frames": 8,
+      "fps": 21.312021727133967,
+      "loop": true,
+      "source": "run",
+      "duration": 0.3753749926884969
+    },
+    "dead": {
+      "frames": 11,
+      "fps": 12.558867477356989,
+      "loop": false,
+      "source": "dead",
+      "duration": 0.8758751551310221
+    }
+  },
+  "anatomy": {
+    "model": "Sheep",
+    "bones": 22,
+    "vertices": 200,
+    "mesh_objects": 1,
+    "materials": [
+      "RO Material"
+    ],
+    "target_height": 0.9,
+    "normalization_scale": 44.5634556259777,
+    "base_yaw": -1.0846284093091185e-08,
+    "clips": {
+      "idle": {
+        "source": "idle",
+        "range": [
+          0.0,
+          24.024002075195312
+        ]
+      },
+      "walk": {
+        "source": "walk",
+        "range": [
+          0.0,
+          18.400001525878906
+        ]
+      },
+      "run": {
+        "source": "run",
+        "range": [
+          0.0,
+          9.008999824523926
+        ]
+      },
+      "dead": {
+        "source": "dead",
+        "range": [
+          0.0,
+          21.02100372314453
+        ]
+      }
+    }
+  },
+  "strides": {
+    "walk": 0.5556061863899231,
+    "run": 1.6755245625972748
+  },
+  "volume": {
+    "span": 6,
+    "elevation": 22,
+    "px_per_m": 77
+  },
+  "sources": {
+    "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/convert_0ad.py": "5e0eead4dafb7fe4f54e043f32103a5d4e96a66a820d1446c14f52e0986f1e90",
+    "tools/art/animal_sprites/0ad-source.json": "9b8c0f2654cc5464829ea9f10518c842969e5e3ae676768ede32ca651d723bf3",
+    "art_src/0ad_animals/art/textures/skins/skeletal/animal_sheep_a.dds": "381dbc3009c788c2b364a4993a504ab978a770ff010faf54ea82a6ba5c9a2b73",
+    "build/animal_sprites/0ad/Sheep-idle.glb": "bbc19faa5836dd2548eabef4f65cfd76e74494abce2d8d396e692e6900cb89fb",
+    "build/animal_sprites/0ad/Sheep-walk.glb": "0a55ed9b0fba6da7c610c196bd129954319af4d76baff25e258e8ad6ae7d0d34",
+    "build/animal_sprites/0ad/Sheep-run.glb": "4d3a3d55e9809892a2e625c3877df7eb09c19d0ac53ec76d705583f9d4c4bbe6",
+    "build/animal_sprites/0ad/Sheep-dead.glb": "7e6c1238e9f86ecadda61fee67c945c1e63bf0a36915f771d1778564ccb7c10b"
+  }
+}

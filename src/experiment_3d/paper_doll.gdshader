@@ -3,6 +3,15 @@ render_mode unshaded, cull_disabled, shadows_disabled;
 // ViewportTexture already contains the composed sRGB paper doll. Explicit
 // conversion avoids Compatibility's approximate conversion crushing dark ink.
 uniform sampler2D paper : filter_nearest, repeat_disable;
+uniform bool has_volume = false;
+uniform sampler2D volume_atlas : filter_nearest, repeat_disable;
+uniform vec2 volume_size;
+uniform vec2 volume_origin;
+uniform vec4 volume_frame;
+uniform float volume_pixel_scale = 1.0;
+uniform float volume_span = 6.0;
+uniform float volume_elevation = 0.383972;
+uniform float volume_world_scale = 1.0;
 // Metres the whole picture is lifted toward the eye, for ground that is not
 // quite flat under the feet.
 const float LIFT = 0.2;
@@ -24,7 +33,18 @@ void fragment() {
 	float toward = max(INV_VIEW_MATRIX[2].y, 0.05);  // how much of it comes toward the eye
 	float above = VERTEX.y - (VIEW_MATRIX * vec4(NODE_POSITION_WORLD, 1.0)).y;
 	vec3 at = VERTEX;
-	at.z += LIFT + (above > 0.0 ? above * toward / up : -above * up / toward);
+	if (has_volume) {
+		vec2 point = (UV * vec2(384.0) - vec2(192.0, 304.0)) / volume_pixel_scale + volume_origin;
+		vec2 packed = texture(volume_atlas, (volume_frame.xy + point) / volume_size).rg;
+		float code = round(packed.r * 255.0) * 256.0 + round(packed.g * 255.0);
+		float body_y = (code / 65535.0 - 0.5) * volume_span * volume_world_scale * length(MODEL_MATRIX[0].xyz);
+		// Keep the filmed ground footprint on the actual ground at any tilt.
+		// The body supplies depth across its length, instead of one flat plane.
+		float ground_y = body_y * sin(volume_elevation) / toward;
+		at.z += 0.025 + above * toward / up + ground_y / up;
+	} else {
+		at.z += LIFT + (above > 0.0 ? above * toward / up : -above * up / toward);
+	}
 	vec4 clip = PROJECTION_MATRIX * vec4(at, 1.0);
 #if CURRENT_RENDERER == RENDERER_COMPATIBILITY
 	DEPTH = clip.z / clip.w * 0.5 + 0.5;

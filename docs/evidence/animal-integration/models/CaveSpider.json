@@ -1,0 +1,71 @@
+{
+  "species": "cavespider",
+  "source_kind": "licensed-authored",
+  "cell": 256,
+  "foot": 204,
+  "px_per_m": 77,
+  "scale": 4,
+  "directions": [
+    "s",
+    "se",
+    "e",
+    "ne",
+    "n",
+    "nw",
+    "w",
+    "sw"
+  ],
+  "clips": {
+    "idle": {
+      "frames": 2,
+      "fps": 3.0,
+      "loop": true,
+      "source": "IDLE",
+      "duration": 0.6666666666666666
+    },
+    "walk": {
+      "frames": 8,
+      "fps": 12.0,
+      "loop": true,
+      "source": "WALK",
+      "duration": 0.6666666666666666
+    },
+    "run": {
+      "frames": 14,
+      "fps": 21.0,
+      "loop": true,
+      "source": "WALK",
+      "duration": 0.6666666666666666
+    },
+    "attack": {
+      "frames": 8,
+      "fps": 12.0,
+      "loop": false,
+      "source": "ATTACK",
+      "duration": 0.6666666666666666
+    }
+  },
+  "strides": {
+    "walk": 0.18053483217954636,
+    "run": 0.18053483217954636
+  },
+  "anatomy": {
+    "model": "CaveSpider",
+    "bones": 45,
+    "vertices": 138,
+    "target_height": 0.28
+  },
+  "volume": {
+    "span": 6,
+    "elevation": 22,
+    "px_per_m": 77
+  },
+  "sources": {
+    "tools/art/animal_sprites/cave.py": "23cfd650c8eafb5a6e6eb6e66711e6ce6cbc6f603b4b68eb6f4e4fc45393284f",
+    "tools/art/animal_sprites/quaternius.py": "73669ad89ca6d2e1c1b1e7cde43516c6b295f7d113944a85f70b84eb58dd61a4",
+    "tools/art/animal_sprites/support.py": "5340985f72e4cde8d74216d99506a5b84b9038f99c0e37d5b989101544b425c3",
+    "tools/art/animal_sprites/cave-source.json": "4ffd56e2fa94817a8112a90257075717ea4f35108b8a55b5eef71543a72088e2",
+    "art_src/cave_animals/spider.blend": "01e0d50597ba9d4a1d5ebaaa78da89ef6fd79df207f3fa9962b3e4e069b0112b",
+    "art_src/cave_animals/spider.png": "d7845fd1ef1b2387767f62296b44d6dfd0de9770ec77de5f37245b57720ed003"
+  }
+}

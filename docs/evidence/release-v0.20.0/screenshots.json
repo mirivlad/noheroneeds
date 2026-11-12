@@ -1,0 +1,32 @@
+{
+  "public-desktop.webp": {
+    "width": 1440,
+    "height": 4496,
+    "rgba_lossless": true
+  },
+  "public-mobile.webp": {
+    "width": 390,
+    "height": 7525,
+    "rgba_lossless": true
+  },
+  "public-guides.webp": {
+    "width": 1440,
+    "height": 2563,
+    "rgba_lossless": true
+  },
+  "public-updates.webp": {
+    "width": 1440,
+    "height": 7963,
+    "rgba_lossless": true
+  },
+  "before-desktop.webp": {
+    "width": 1440,
+    "height": 4496,
+    "rgba_lossless": true
+  },
+  "before-mobile.webp": {
+    "width": 390,
+    "height": 7580,
+    "rgba_lossless": true
+  }
+}

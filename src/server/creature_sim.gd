@@ -62,6 +62,9 @@ var _tick := 0
 ## Deaths can be observed while the other member's chunk is unloaded. Facts
 ## persist them; this cache also covers a fact in a writer batch in flight.
 var _caravan_deaths := {}
+## Failed detours are unchanged until the body, heading or terrain changes.
+## Keep only the few rejoin goals tried for each loaded caravan.
+var _failed_caravan_routes := {}
 
 
 func _init(w: ServerWorld) -> void:
@@ -1050,6 +1053,7 @@ func remove(id: String) -> void:
 	life.drop(id)
 	(_by_chunk.get(_chunk_of(c), {}) as Dictionary).erase(id)
 	(_by_kind.get(_chunk_of(c), {}).get(c.kind, {}) as Dictionary).erase(id)
+	_failed_caravan_routes.erase(id)
 	creatures.erase(id)
 	_movers.erase(id)
 	_last_saved.erase(id)
@@ -1091,6 +1095,7 @@ func kin_struck(c: Creature, who: String, at: Vector2i) -> void:
 func drop_chunk(key: String) -> void:
 	for id: String in (_by_chunk.get(key, {}) as Dictionary):
 		life.drop(id)
+		_failed_caravan_routes.erase(id)
 		creatures.erase(id)
 		_movers.erase(id)
 		_last_saved.erase(id)
@@ -1863,6 +1868,7 @@ func _dweller_spot(c: Creature, phase: String) -> Vector2i:
 		var r: Rect2i = home["rect"]
 		for y in range(r.position.y + 1, r.end.y - 1):
 			for x in range(r.position.x + 1, r.end.x - 1):
+				if not world.has_chunk(Levels.SURFACE, x >> 5, y >> 5): continue
 				if String(world.content.get_def(world.part_at(Levels.SURFACE, x, y)).get("station", "")) == kind:
 					var direction := SettlementArchitecture.facing(home.get("architecture", {}))
 					return Vector2i(x, y) + (ContentRegistry.FACINGS[direction] as Vector2i)
@@ -1874,13 +1880,14 @@ func _dweller_spot(c: Creature, phase: String) -> Vector2i:
 ## each fisher its own; NO_TARGET when there is no water near.
 func _water_spot(from: Vector2i, nth := 0) -> Vector2i:
 	var found: Array[Vector2i] = []
+	var water := {}
 	for r in range(1, 70):
 		for dy in range(-r, r + 1):
-			for dx in range(-r, r + 1):
-				if maxi(absi(dx), absi(dy)) != r:
-					continue
+			# Visit only the perimeter, in the original row/column order.
+			var stride := 1 if absi(dy) == r else r * 2
+			for dx in range(-r, r + 1, stride):
 				var at := from + Vector2i(dx, dy)
-				if _by_water(at):
+				if _bank(at, water):
 					found.append(at)
 		if found.size() > nth * 3:  # far enough apart: every third of the nearest
 			return found[(nth * 3) % found.size()]
@@ -1889,12 +1896,21 @@ func _water_spot(from: Vector2i, nth := 0) -> Vector2i:
 
 ## Whether one can stand on a cell with water one fishes in beside it.
 func _by_water(at: Vector2i) -> bool:
-	if at == Creature.NO_TARGET or _water_at(at) or world.is_solid(Levels.SURFACE, at.x, at.y):
+	return _bank(at, {})
+
+
+func _bank(at: Vector2i, samples: Dictionary) -> bool:
+	if at == Creature.NO_TARGET or not _free(Levels.SURFACE, at) or _sample_water(at, samples):
 		return false
 	for d: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		if _water_at(at + d):
+		if _sample_water(at + d, samples):
 			return true
 	return false
+
+
+func _sample_water(at: Vector2i, samples: Dictionary) -> bool:
+	if not samples.has(at): samples[at] = _water_at(at)
+	return bool(samples[at])
 
 
 func _water_at(at: Vector2i) -> bool:
@@ -2054,6 +2070,7 @@ func _speak(c: Creature, prof: Dictionary, phase: String) -> void:
 ## A way from a dweller's cell to `goal`: the cells where it turns, found
 ## over the cells round both (doors count as open: it opens them).
 func _route(c: Creature, goal: Vector2i) -> Array[Vector2i]:
+	if not world.has_chunk(c.location, goal.x >> 5, goal.y >> 5): return []
 	var start := c.cell()
 	var box := Rect2i(start, Vector2i.ONE).merge(Rect2i(goal, Vector2i.ONE)).grow(ROUTE_MARGIN)
 	if box.size.x > ROUTE_MOST or box.size.y > ROUTE_MOST:
@@ -2094,6 +2111,38 @@ func _route(c: Creature, goal: Vector2i) -> Array[Vector2i]:
 ## A short detour for a caravan: each step must leave room for both trader
 ## and horse. It uses only loaded cells and is bounded locally.
 func _caravan_route(c: Creature, goal: Vector2i, margin := 8) -> Array[Vector2i]:
+	var box := Rect2i(c.cell(), Vector2i.ONE).merge(Rect2i(goal, Vector2i.ONE)).grow(margin)
+	if box.size.x > 64 or box.size.y > 64: return []
+	var horse := get_creature(String(c.job.get("horse", "")))
+	var stamp := [c.location, c.pos, c.kind, c.job.get("caravan_type", "cart"),
+		_heading_of(c.job.get("caravan_heading", [0, 1])), horse.kind if horse else ""]
+	# Include the bodies beside the route, including the horse's shaft offset
+	# and its half-cell sidestep. Distant loading must not discard a failure.
+	var half := _half(c.kind)
+	var padding := ceili(float(maxi(half.x, half.y)) / Movement.UNIT) + 2
+	if horse:
+		half = _half(horse.kind)
+		padding = maxi(padding, ceili(CARAVAN_HORSE_DISTANCE + float(maxi(half.x, half.y)) / Movement.UNIT + 1.0))
+	box = box.grow(padding)
+	for cy in range(box.position.y >> 5, (box.end.y >> 5) + 1):
+		for cx in range(box.position.x >> 5, (box.end.x >> 5) + 1):
+			var chunk_key := world.storage_key(c.location, cx, cy)
+			var loaded: Chunk = world._chunks.get(chunk_key)
+			stamp.append([chunk_key, loaded.get_instance_id() if loaded else 0,
+				loaded._serial if loaded else -1, world.chunk_revision(c.location, cx, cy)])
+	var saved: Dictionary = _failed_caravan_routes.get_or_add(c.id, {})
+	var key := Vector3i(goal.x, goal.y, margin)
+	if saved.get(key, []) == stamp: return []
+	var path := _find_caravan_route(c, goal, margin)
+	if path.is_empty():
+		if not saved.has(key) and saved.size() >= 8: saved.erase(saved.keys()[0])
+		saved[key] = stamp
+	else:
+		saved.erase(key)
+	return path
+
+
+func _find_caravan_route(c: Creature, goal: Vector2i, margin: int) -> Array[Vector2i]:
 	var start := c.cell()
 	var centre := start * Movement.UNIT + Vector2i(128, 128)
 	var heading := _heading_of(c.job.get("caravan_heading", [0, 1]))
@@ -2185,6 +2234,7 @@ func _movement_half(c: Creature, at: Vector2i) -> Vector2i:
 
 
 func _door(location: String, cell: Vector2i) -> bool:
+	if not world.has_chunk(location, cell.x >> 5, cell.y >> 5): return false
 	var part := world.part_at(location, cell.x, cell.y)
 	return part != "" and bool(world.content.get_def(part).get("openable", false))
 
@@ -2422,6 +2472,7 @@ func detach() -> void:
 	world = null
 	life.world = null
 	_solid_fns.clear()
+	_failed_caravan_routes.clear()
 
 
 ## For placing creatures as chunks are made (the same seed, the same

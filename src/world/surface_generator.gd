@@ -81,6 +81,12 @@ var settlements: Settlements
 ## The river courses near the chunk last asked about (its key and segments).
 var _rivers_key := Vector2i(1 << 30, 0)
 var _rivers: Array = []
+## Only the loader supplies this; ordinary generation is never cancelled.
+var cancel_requested: Callable
+## Each generator belongs to one thread. Bound repeated immutable terrain
+## samples to 128 chunks; return copies so callers cannot alter the cache.
+const LAND_CACHE_CHUNKS := 128
+var _land_samples := {}
 
 
 func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null) -> void:
@@ -161,6 +167,7 @@ func generate(cx: int, cy: int) -> Chunk:
 	var c := Chunk.new()
 	c.meta = {"gen": ID, "gen_version": VERSION}
 	for ly in Chunk.SIZE:
+		if _cancelled(): return null
 		for lx in Chunk.SIZE:
 			var x := cx * Chunk.SIZE + lx
 			var y := cy * Chunk.SIZE + ly
@@ -215,17 +222,23 @@ func generate(cx: int, cy: int) -> Chunk:
 				c.set_cell("structure", lx, ly, "")  # a road is cut through rock
 	# Settlements: the cells of each whose plan falls in this chunk (the same
 	# in any order the chunks are made).
+	var foundations := []
 	for plan: Dictionary in settlements.plans_touching(cx, cy):
+		foundations.append_array(Settlements.foundation_rows(plan))
 		# No trees in or round it (their crowns over roofs and streets); grass
 		# and flowers stay.
-		var free := (plan["bounds"] as Rect2i).grow(Settlements.TREE_FREE)
-		for y in range(maxi(free.position.y, cy * Chunk.SIZE), mini(free.end.y, (cy + 1) * Chunk.SIZE)):
-			for x in range(maxi(free.position.x, cx * Chunk.SIZE), mini(free.end.x, (cx + 1) * Chunk.SIZE)):
-				if _solid.has(c.get_cell("cover", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)):
-					c.set_cell("cover", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, "")
-				var ground := c.get_cell("ground", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
-				if ground != "" and ground in [_chasm, _hanging]:  # no chasm through a village
-					c.set_cell("ground", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, _ground_at(_biomes[int(land_at(x, y)["biome"])]["ground"], x, y))
+		var areas: Array = [plan["bounds"]]
+		if plan.get("adaptive", false):
+			areas = plan["plots"] + plan["ground_areas"] + [plan["square"], plan["parking_yard"], plan["parking_reserve"]]
+		for area: Rect2i in areas:
+			var free := area.grow(Settlements.TREE_FREE)
+			for y in range(maxi(free.position.y, cy * Chunk.SIZE), mini(free.end.y, (cy + 1) * Chunk.SIZE)):
+				for x in range(maxi(free.position.x, cx * Chunk.SIZE), mini(free.end.x, (cx + 1) * Chunk.SIZE)):
+					if _solid.has(c.get_cell("cover", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)):
+						c.set_cell("cover", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, "")
+					var ground := c.get_cell("ground", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE)
+					if not plan.get("adaptive", false) and ground != "" and ground in [_chasm, _hanging]:
+						c.set_cell("ground", x - cx * Chunk.SIZE, y - cy * Chunk.SIZE, _ground_at(_biomes[int(land_at(x, y)["biome"])]["ground"], x, y))
 		var cells: Dictionary = plan["cells"]
 		for at: Vector2i in cells:
 			var lx := at.x - cx * Chunk.SIZE
@@ -242,6 +255,7 @@ func generate(cx: int, cy: int) -> Chunk:
 				c.set_cell("ground", lx, ly, _shore)  # a little water at its edge is made land
 			if spec.has("props"):
 				c.set_props(lx, ly, (spec["props"] as Dictionary).duplicate(true))
+	c.meta["terrain_pads"] = foundations
 	for camp: Dictionary in settlements.camps.plans_touching(cx, cy):
 		for at: Vector2i in camp["cells"]:
 			var local := at - Vector2i(cx, cy) * Chunk.SIZE
@@ -273,7 +287,11 @@ func generate(cx: int, cy: int) -> Chunk:
 		var mouth := underground.entrance_at(-1, cx, cy)
 		if mouth != UndergroundGenerator.NONE:
 			place_mouth(c, mouth.x - cx * Chunk.SIZE, mouth.y - cy * Chunk.SIZE, underground.way_down_surface)
-	return c
+	return null if _cancelled() else c
+
+
+func _cancelled() -> bool:
+	return cancel_requested.is_valid() and cancel_requested.call()
 
 
 ## Whether the surface at a world cell is water or its shore.
@@ -297,11 +315,11 @@ func _wet(ground: String) -> bool:
 	return ground != "" and (ground == _water or ground == _deep or ground == _shallows)
 
 
-## Whether a settlement may not stand on a cell: water, shore, rock, the
-## heights.
+## Whether a settlement parcel may not stand on a cell: water, shore, rock
+## or a chasm. Absolute altitude does not make a dry plateau unsuitable.
 func is_unfit(x: int, y: int) -> bool:
 	var land := land_at(x, y)
-	return String(land["what"]) != "land" or float(land["height"]) > Geography.MOUNTAINS
+	return String(land["what"]) != "land"
 
 
 ## What a world cell is (ADR-0049), from the land as a whole and a little
@@ -313,6 +331,21 @@ func is_unfit(x: int, y: int) -> bool:
 ## chasm there, and no bridge is judged (so judging one cannot start judging
 ## another, and the answer is the same whichever cell one asks first).
 func land_at(x: int, y: int, bridges := true) -> Dictionary:
+	if _cancelled(): return {"what": "deep", "height": -1.0, "biome": 0}
+	var key := Vector3i(x >> 5, y >> 5, 1 if bridges else 0)
+	if not _land_samples.has(key):
+		if _land_samples.size() >= LAND_CACHE_CHUNKS: _land_samples.erase(_land_samples.keys()[0])
+		_land_samples[key] = {}
+	var samples: Dictionary = _land_samples[key]
+	var cell := (y & 31) * Chunk.SIZE + (x & 31)
+	if not samples.has(cell):
+		var sample := _land_at_uncached(x, y, bridges)
+		if _cancelled(): return {"what": "deep", "height": -1.0, "biome": 0}
+		samples[cell] = sample
+	return (samples[cell] as Dictionary).duplicate()
+
+
+func _land_at_uncached(x: int, y: int, bridges: bool) -> Dictionary:
 	var geo := geography
 	if geo == null:
 		return {"what": "land", "height": 0.1, "biome": _biome_at(x, y, 0.1, false)} if _flat else {"what": "water", "height": -1.0, "biome": 0}
@@ -339,8 +372,10 @@ func land_at(x: int, y: int, bridges := true) -> Dictionary:
 		return {"what": "chasm", "height": h, "biome": biome}
 	if chasm == CHASM or chasm == BRIDGE:
 		return {"what": "chasm" if chasm == CHASM else "bridge", "height": h, "biome": biome}
-	if chasm != APPROACH and _rock != "" and (h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or is_cliff(x, y, h)):
-		return {"what": "rock", "height": h, "biome": biome}
+	if chasm != APPROACH and _rock != "":
+		var cliff := is_cliff(x, y, h)
+		if h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or cliff:
+			return {"what": "rock", "height": h, "biome": biome, "cliff": cliff}
 	return {"what": "land", "height": h, "biome": biome}
 
 

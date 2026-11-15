@@ -257,7 +257,7 @@ func _step() -> void:
 	_lap("network_in")
 	world.tick = tick
 	world.advance_time()
-	world.poll_loaded()
+	world.poll_loaded(CHUNKS_PER_TICK)
 	for s: Session in _sessions.values():
 		if s.state == "playing":
 			_prefetch(s)
@@ -451,6 +451,9 @@ func _apply_input(s: Session) -> void:
 		var loc: String = p["location"]
 		if e[1] == 0 and e[2] == 0:
 			continue
+		var max_speed := Movement.RUN
+		if world.boats and world.boats.aboard(s.character_id) != "": max_speed = world.boats.speed_of(s.character_id)
+		if not _movement_ready(loc, p["pos"], e[1], e[2], max_speed): continue
 		world.wake(s.character_id)  # moving gets one up (ADR-0035)
 		# In a boat (ADR-0052) the one at the helm rows it over water; the
 		# others sit.
@@ -470,6 +473,21 @@ func _apply_input(s: Session) -> void:
 			func(x: int, y: int) -> bool: return world.blocks_walker(loc, x, y), run and not swim and not wade,
 			Vector2i(Movement.HALF_X, Movement.HALF_Y), swim))
 
+## Missing ground blocks movement while the loader works, as on the client.
+## Check the swept body, not an unrelated ring around a small upper floor.
+func _movement_ready(location: String, position: Vector2i, dx := 0, dy := 0, speed := Movement.RUN) -> bool:
+	var next := Movement.step_at(position, dx, dy, func(_x: int, _y: int) -> bool: return false, speed)
+	var half := Vector2i(Movement.HALF_X, Movement.HALF_Y)
+	var low := Movement.cell_of(position.min(next) - half)
+	var high := Movement.cell_of(position.max(next) + half - Vector2i.ONE)
+	var ready := true
+	for cy in range(low.y >> 5, (high.y >> 5) + 1):
+		for cx in range(low.x >> 5, (high.x >> 5) + 1):
+			if not world.has_chunk(location, cx, cy):
+				world.prefetch(location, cx, cy)
+				ready = false
+	return ready
+
 
 ## Keeps one ring of chunks beyond what the client sees loading in advance.
 func _prefetch(s: Session) -> void:
@@ -481,9 +499,11 @@ func _prefetch(s: Session) -> void:
 	s.prefetched_at = mc
 	var r := view_chunks + 1
 	for loc: String in _shown_locations(p["location"]):
-		for cy in range(mc.y - r, mc.y + r + 1):
-			for cx in range(mc.x - r, mc.x + r + 1):
-				world.prefetch(loc, cx, cy)
+		for ring in r + 1:
+			for cy in range(mc.y - ring, mc.y + ring + 1):
+				for cx in range(mc.x - ring, mc.x + ring + 1):
+					if maxi(absi(cx - mc.x), absi(cy - mc.y)) == ring:
+						world.prefetch(loc, cx, cy)
 
 
 ## Full chunks come only from the current location and the surface.
@@ -1004,6 +1024,10 @@ func _stream_chunks(s: Session) -> void:
 					var rev := world.chunk_revision(shown, cx, cy)
 					if s.chunks.get(key, -1) == rev:
 						continue
+					if not world.has_chunk(shown, cx, cy):
+						world.prefetch(shown, cx, cy)
+						s.streaming_unfinished = true
+						continue
 					if budget == 0:
 						s.streaming_unfinished = true
 						return
@@ -1037,6 +1061,10 @@ func _stream_chunks(s: Session) -> void:
 			var rev := world.chunk_revision(parts[0], cx, cy)
 			var exterior_revision := -rev - 2
 			if s.chunks.get(key, -1) == exterior_revision: continue
+			if not world.has_chunk(parts[0], cx, cy):
+				world.prefetch(parts[0], cx, cy)
+				s.streaming_unfinished = true
+				continue
 			if budget == 0:
 				s.streaming_unfinished = true
 				return

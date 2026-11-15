@@ -1,0 +1,16 @@
+[
+  {
+    "file": "map-v020-after.webp",
+    "width": 1800,
+    "height": 1012,
+    "sha256": "07d5034713e7012beb73ddaedc983b8daf4c469f50cb95addf85afb4ed46ed02",
+    "rgba_equals_original_png": true
+  },
+  {
+    "file": "map-v020-before.webp",
+    "width": 1800,
+    "height": 1012,
+    "sha256": "1bfbc64bff0b48dae3f931cb125651430e1137a43220e3508177adb588b10b46",
+    "rgba_equals_original_png": true
+  }
+]

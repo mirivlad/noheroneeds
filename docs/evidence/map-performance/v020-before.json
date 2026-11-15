@@ -1,0 +1,326 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "debug": false,
+  "engine": "4.7.2-stable (official)",
+  "failures": [],
+  "map_has_seen_label": true,
+  "map_phase_ms": 16895.866,
+  "pending_chunks_on_close": 1,
+  "phases": [
+    {
+      "elapsed_ms": 32161.711,
+      "frames": 813,
+      "max_geometry_build_ms": 449.713,
+      "max_ms": 12613.366,
+      "p50_ms": 21.827,
+      "p95_ms": 31.618,
+      "p99_ms": 75.754,
+      "phase": "initial_view",
+      "ready": true,
+      "server": {
+        "bytes": [
+          2797672,
+          39369,
+          20787
+        ],
+        "chunks": 49,
+        "max": 10822282,
+        "p50": 2626,
+        "p99": 9224,
+        "players": 1,
+        "result_ms": [
+          11,
+          11,
+          11
+        ],
+        "sections_ms": {
+          "chunks": 10828.6,
+          "combat": 9.5,
+          "creatures": 727.2,
+          "movement": 3.4,
+          "network_in": 96.3,
+          "prefetch": 185.3,
+          "snapshots": 127.3,
+          "storage": 17.1
+        },
+        "slowest_ms": {
+          "chunks": 10796.0,
+          "combat": 0.0,
+          "creatures": 0.0,
+          "movement": 0.0,
+          "network_in": 24.7,
+          "prefetch": 0.2,
+          "snapshots": 1.2,
+          "storage": 0.1
+        },
+        "sync_loads": 25,
+        "ticks": 389
+      }
+    },
+    {
+      "elapsed_ms": 36933.241,
+      "frames": 1147,
+      "max_geometry_build_ms": 1218.953,
+      "max_ms": 3163.564,
+      "p50_ms": 24.366,
+      "p95_ms": 39.974,
+      "p99_ms": 79.947,
+      "phase": "village_view",
+      "ready": true,
+      "server": {
+        "bytes": [
+          2797672,
+          98578,
+          64449
+        ],
+        "chunks": 96,
+        "max": 3142317,
+        "p50": 3361,
+        "p99": 65434,
+        "players": 1,
+        "result_ms": [
+          0,
+          0,
+          0
+        ],
+        "sections_ms": {
+          "chunks": 1590.7,
+          "combat": 13.4,
+          "creatures": 5340.6,
+          "movement": 5.9,
+          "network_in": 58.8,
+          "prefetch": 39.9,
+          "snapshots": 220.9,
+          "storage": 33.0
+        },
+        "slowest_ms": {
+          "chunks": 0.0,
+          "combat": 0.0,
+          "creatures": 3141.7,
+          "movement": 0.0,
+          "network_in": 0.1,
+          "prefetch": 0.0,
+          "snapshots": 0.4,
+          "storage": 0.1
+        },
+        "sync_loads": 39,
+        "ticks": 608
+      }
+    },
+    {
+      "elapsed_ms": 6008.92,
+      "frames": 361,
+      "max_geometry_build_ms": 0.014,
+      "max_ms": 17.054,
+      "p50_ms": 16.666,
+      "p95_ms": 16.857,
+      "p99_ms": 16.939,
+      "phase": "village_steady",
+      "ready": true,
+      "server": {
+        "bytes": [
+          2797672,
+          109366,
+          64449
+        ],
+        "chunks": 94,
+        "max": 5821,
+        "p50": 4116,
+        "p99": 5747,
+        "players": 1,
+        "result_ms": [
+          0,
+          0,
+          0
+        ],
+        "sections_ms": {
+          "chunks": 1.2,
+          "combat": 3.5,
+          "creatures": 424.9,
+          "movement": 1.5,
+          "network_in": 15.3,
+          "prefetch": 6.2,
+          "snapshots": 51.1,
+          "storage": 6.5
+        },
+        "slowest_ms": {
+          "chunks": 0.0,
+          "combat": 0.0,
+          "creatures": 5.2,
+          "movement": 0.0,
+          "network_in": 0.1,
+          "prefetch": 0.0,
+          "snapshots": 0.4,
+          "storage": 0.1
+        },
+        "sync_loads": 0,
+        "ticks": 124
+      }
+    },
+    {
+      "elapsed_ms": 16895.55,
+      "first_label_ms": 16895.54,
+      "frames": 3,
+      "max_geometry_build_ms": 0.002,
+      "max_ms": 16846.971,
+      "p50_ms": 16.514,
+      "p95_ms": 16846.971,
+      "p99_ms": 16846.971,
+      "phase": "map_first",
+      "ready": true,
+      "server": {
+        "bytes": [
+          2797845,
+          109627,
+          64449
+        ],
+        "chunks": 94,
+        "max": 16837863,
+        "p50": 3486,
+        "p99": 16837863,
+        "players": 1,
+        "result_ms": [
+          16849,
+          16849,
+          16849
+        ],
+        "sections_ms": {
+          "chunks": 0.0,
+          "combat": 0.0,
+          "creatures": 6.9,
+          "movement": 0.0,
+          "network_in": 16835.5,
+          "prefetch": 0.0,
+          "snapshots": 1.1,
+          "storage": 0.3
+        },
+        "slowest_ms": {
+          "chunks": 0.0,
+          "combat": 0.0,
+          "creatures": 2.0,
+          "movement": 0.0,
+          "network_in": 16835.4,
+          "prefetch": 0.0,
+          "snapshots": 0.3,
+          "storage": 0.1
+        },
+        "sync_loads": 0,
+        "ticks": 3
+      }
+    },
+    {
+      "elapsed_ms": 4015.203,
+      "frames": 240,
+      "max_geometry_build_ms": 0.004,
+      "max_ms": 35.02,
+      "p50_ms": 16.671,
+      "p95_ms": 18.97,
+      "p99_ms": 20.15,
+      "phase": "map_zoom_out",
+      "ready": true,
+      "server": {
+        "bytes": [
+          2797845,
+          117317,
+          64449
+        ],
+        "chunks": 94,
+        "max": 20766,
+        "p50": 4013,
+        "p99": 20766,
+        "players": 1,
+        "result_ms": [
+          0,
+          0,
+          0
+        ],
+        "sections_ms": {
+          "chunks": 0.8,
+          "combat": 18.1,
+          "creatures": 290.5,
+          "movement": 1.0,
+          "network_in": 10.1,
+          "prefetch": 3.7,
+          "snapshots": 32.8,
+          "storage": 3.4
+        },
+        "slowest_ms": {
+          "chunks": 0.0,
+          "combat": 16.5,
+          "creatures": 3.1,
+          "movement": 0.0,
+          "network_in": 0.1,
+          "prefetch": 0.6,
+          "snapshots": 0.3,
+          "storage": 0.0
+        },
+        "sync_loads": 0,
+        "ticks": 84
+      }
+    },
+    {
+      "elapsed_ms": 4009.432,
+      "frames": 241,
+      "max_geometry_build_ms": 0.021,
+      "max_ms": 20.39,
+      "p50_ms": 16.666,
+      "p95_ms": 16.882,
+      "p99_ms": 17.059,
+      "phase": "return_to_game",
+      "ready": true,
+      "server": {
+        "bytes": [
+          2797845,
+          124666,
+          64449
+        ],
+        "chunks": 94,
+        "max": 7866,
+        "p50": 4015,
+        "p99": 7866,
+        "players": 1,
+        "result_ms": [
+          0,
+          0,
+          0
+        ],
+        "sections_ms": {
+          "chunks": 0.8,
+          "combat": 2.0,
+          "creatures": 295.0,
+          "movement": 1.0,
+          "network_in": 9.8,
+          "prefetch": 3.6,
+          "snapshots": 35.2,
+          "storage": 5.2
+        },
+        "slowest_ms": {
+          "chunks": 0.0,
+          "combat": 0.0,
+          "creatures": 6.9,
+          "movement": 0.0,
+          "network_in": 0.2,
+          "prefetch": 0.0,
+          "snapshots": 0.7,
+          "storage": 0.1
+        },
+        "sync_loads": 0,
+        "ticks": 83
+      }
+    }
+  ],
+  "plan_sha256": "6982cf53ad36e30118d63489fda8cd35f58a9d7b1fc4fd936c076748169b609e",
+  "quit_ms": 111.748,
+  "renderer": "gl_compatibility",
+  "scope": "normal engine frames; local diagnostic timings; one run; no statistical or hardware-admission claim",
+  "seed": 237895547,
+  "settlement_generator": 5,
+  "viewport": [
+    1800,
+    1013
+  ],
+  "window": [
+    1800,
+    1013
+  ]
+}

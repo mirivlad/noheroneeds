@@ -45,7 +45,8 @@
         "src/app/game_settings.gd",
         "src/sim/movement.gd",
         "content/base/*visuals.json",
-        "content/base/art/**"
+        "content/base/art/**",
+        "src/server/game_server.gd"
       ],
       "kinds": []
     },
@@ -114,7 +115,9 @@
         "src/world/surface_generator.gd",
         "src/experiment_3d/terrain_shape_3d.gd",
         "content/base/settlements.json",
-        "src/server/creature_sim.gd"
+        "src/server/creature_sim.gd",
+        "src/world/settlement_terrain_layout.gd",
+        "src/world/settlement_terrain_layout.gd.uid"
       ],
       "kinds": []
     },
@@ -139,7 +142,9 @@
         "src/content/content_registry.gd",
         "src/world/settlement_architecture.gd.uid",
         "src/world/settlement_layout.gd",
-        "src/world/settlement_layout.gd.uid"
+        "src/world/settlement_layout.gd.uid",
+        "src/world/settlement_terrain_layout.gd",
+        "src/world/settlement_terrain_layout.gd.uid"
       ],
       "kinds": []
     },

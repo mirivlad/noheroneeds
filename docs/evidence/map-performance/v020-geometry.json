@@ -1,0 +1,5 @@
+{
+  "checked_surface_chunks": 26,
+  "differences": [],
+  "scope": "same v0.20 generator; all layers, properties and metadata except derived terrain_pads; isolated CPU request probes"
+}

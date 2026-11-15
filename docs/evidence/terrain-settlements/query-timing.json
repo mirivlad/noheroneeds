@@ -1,0 +1,32 @@
+{
+  "evidence_kind": "local unsealed CPU test timings; not game-dev hardware benchmark",
+  "metric": "test_settlements::test_villages_are_met_often",
+  "guard_seconds": 180,
+  "guard_unchanged": true,
+  "baseline": {
+    "status": "timeout",
+    "seconds_at_least": 180
+  },
+  "candidate": {
+    "status": "pass",
+    "milliseconds": 78990,
+    "failed_checks": 0,
+    "full_parallel_run_milliseconds": 46259
+  },
+  "correctness": {
+    "query_exhaustive_comparison": "pass; same result and order across radii and coordinates",
+    "native_overview_comparison": "identical districts, plots counts and full road paths before/after query optimization"
+  },
+  "rejected_prototype": {
+    "change": "64-chunk river cache",
+    "same_layout": true,
+    "baseline_milliseconds": 24936.632,
+    "candidate_milliseconds": 22472.15,
+    "accepted": false
+  },
+  "production_change": "skip districts whose bounds cannot enter the nearby-query circle; always preserve the special home district",
+  "source_sha256": {
+    "src/world/settlements.gd": "9140e9fef211a020b678d16afc96b3bcabf5ae74bcbd4b4155fe88e56ec7aa0f",
+    "tests/unit/world/test_settlements.gd": "eadefd8c9bb683b15d5f72dbf1f8c3a0385ea9d8efcb28eadbcb45c4d0feee99"
+  }
+}

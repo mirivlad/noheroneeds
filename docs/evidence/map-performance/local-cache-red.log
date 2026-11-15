@@ -1,0 +1,8 @@
+PASS test_creature_chunk_safety::test_fishers_and_door_searches_never_load_missing_chunks (409 ms)
+PASS test_creature_chunk_safety::test_fishing_spot_order_is_preserved_and_geometry_is_sampled_once (177 ms)
+FAIL test_creature_chunk_safety::test_failed_caravan_detours_retry_only_after_their_inputs_change (70 ms)
+    - test_creature_chunk_safety::test_failed_caravan_detours_retry_only_after_their_inputs_change: loading or changing distant terrain does not repeat the local search: expected 4, got 5
+    - test_creature_chunk_safety::test_failed_caravan_detours_retry_only_after_their_inputs_change: unloading distant terrain does not repeat the local search: expected 4, got 6
+    - test_creature_chunk_safety::test_failed_caravan_detours_retry_only_after_their_inputs_change: building and demolition retry immediately: expected 5, got 7
+expected engine errors: 0
+3 tests, 3 failed checks, 1.0s

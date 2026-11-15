@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_settlement_layout::test_all_six_street_patterns_have_real_rotated_accessible_houses (384 ms)
+PASS test_settlement_layout::test_local_capacity_and_connections_change_scale_without_erasing_variation (217 ms)
+PASS test_settlement_layout::test_cached_street_patterns_still_check_each_real_parcel (81 ms)
+PASS test_settlement_layout::test_shared_initial_plans_are_private_copies_and_content_sensitive (6429 ms)
+PASS test_settlement_layout::test_an_incomplete_layout_cannot_be_accepted_as_a_settlement (90 ms)
+expected engine errors: 0
+
+5 tests, 0 failed checks, 8.0s

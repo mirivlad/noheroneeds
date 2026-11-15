@@ -1,0 +1,19 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_settlements::test_a_village_stands_near_the_spawn_point_in_every_world (20357 ms)
+PASS test_settlements::test_houses_have_a_door_onto_the_street_a_roof_and_a_bed (30080 ms)
+PASS test_settlements::test_any_order_of_chunks_makes_the_same_village (4126 ms)
+PASS test_settlements::test_square_and_parking_are_part_of_the_generated_plan (1097 ms)
+PASS test_settlements::test_settlement_plan_and_player_changes_survive_reopening (1925 ms)
+PASS test_settlements::test_malformed_settlements_are_content_errors (228 ms)
+PASS test_settlements::test_villages_are_met_often (46259 ms)
+PASS test_settlements::test_clusters_are_joined_and_some_clusters_with_each_other (8495 ms)
+PASS test_settlements::test_some_clusters_stand_alone_some_lead_on (52362 ms)
+PASS test_settlements::test_a_village_lives_by_its_place (127646 ms)
+PASS test_settlements::test_every_biome_is_met_and_cold_keeps_from_the_steppe (860 ms)
+PASS test_settlements::test_settlement_scales_have_distinct_housing_and_public_buildings (1107 ms)
+PASS test_settlements::test_starting_village_searches_beyond_the_old_ring_without_relaxing_dry_ground (8181 ms)
+PASS test_settlements::test_nearby_query_matches_exhaustive_search_without_distant_clusters (73 ms)
+expected engine errors: 0
+
+14 tests, 0 failed checks, 303.0s

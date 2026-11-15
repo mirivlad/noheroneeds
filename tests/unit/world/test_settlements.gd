@@ -344,3 +344,33 @@ func test_starting_village_searches_beyond_the_old_ring_without_relaxing_dry_gro
 			check(not g.is_unfit(at.x, at.y), "the fallback does not allow houses on unsuitable ground")
 	var repeated := SurfaceGenerator.new(743947134, content)
 	eq(repeated.settlements.home_plan(), p, "the extended search is deterministic")
+
+
+## Compare the circular query to exhaustive district enumeration, including
+## negative coordinates, exact radius boundaries and the special home search.
+class QueryPlans extends Settlements:
+	var visited := {}
+
+	func villages(k: int, dx: int, dy: int) -> Array:
+		visited[Vector2i(dx, dy)] = true
+		var area := _district_rect(k, dx, dy)
+		return [{"centre": area.position}, {"centre": area.end - Vector2i.ONE}, {"centre": area.get_center()}]
+
+
+func test_nearby_query_matches_exhaustive_search_without_distant_clusters() -> void:
+	var sampled := QueryPlans.new(1, content, func(_x: int, _y: int) -> bool: return false, 8)
+	var exhaustive := QueryPlans.new(1, content, func(_x: int, _y: int) -> bool: return false, 8)
+	for at: Vector2i in [Vector2i.ZERO, Vector2i(-383, -384), Vector2i(800, -900)]:
+		for radius: int in [0, 1, 384, 1000]:
+			var expected := []
+			for k in sampled._kinds.size():
+				var r := sampled._district_of(k, at)
+				var reach := ceili(float(radius) / sampled._district_size(k)) + 1
+				for dy in range(r.y - reach, r.y + reach + 1):
+					for dx in range(r.x - reach, r.x + reach + 1):
+						for p: Dictionary in exhaustive.villages(k, dx, dy):
+							if Vector2(p.centre).distance_to(Vector2(at)) <= radius: expected.append(p)
+			sampled.visited.clear()
+			eq(sampled.plans_near(at, radius), expected, "same plans and order at %s, radius %d" % [at, radius])
+			if at == Vector2i.ZERO and radius == 1000:
+				check(sampled.visited.size() < 49, "distant districts are not generated")

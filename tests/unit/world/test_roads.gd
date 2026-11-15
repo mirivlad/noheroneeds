@@ -135,3 +135,35 @@ func _what(at: Vector2i, water: Array, deep: Array) -> String:
 		if r.has_point(at):
 			return "water"
 	return "land"
+
+
+func test_a_terrain_step_is_a_pass_while_a_crag_remains_blocked() -> void:
+	for cliff: bool in [true, false]:
+		var land := func(x: int, _y: int) -> Dictionary:
+			return {"what": "rock" if x >= 88 and x <= 104 else "land", "height": .3, "cliff": cliff}
+		var plans := Settlements.new(1, content, func(_x: int, _y: int) -> bool: return false, 0, Callable(), land)
+		var road := plans._road(_village("a", Vector2i.ZERO), _village("b", Vector2i(200, 0)), [0, 0, 0, 0])
+		check(not road.is_empty() if cliff else road.is_empty(), "cut a pass through a terrain step, never a solid crag barrier")
+
+
+func test_full_road_width_avoids_walls_at_diagonals_and_turns() -> void:
+	var plans := _world([], [])
+	var diagonal: Array[Vector2i] = []
+	plans._line(diagonal, Vector2i.ZERO, Vector2i(16, 16))
+	check(not plans._bad_cells(diagonal, [Rect2i(6, 5, 1, 1)]).is_empty(), "the wall beside the diagonal is in its full width")
+	var corner: Array[Vector2i] = []
+	plans._line(corner, Vector2i.ZERO, Vector2i(8, 0))
+	corner.pop_back()  # adjacent segments share one vertex, as in _way_path
+	plans._line(corner, Vector2i(8, 0), Vector2i(8, 8))
+	check(not plans._bad_cells(corner, [Rect2i(7, -1, 1, 1)]).is_empty(), "the outside of the turn must also be clear")
+	var a := _village("a", Vector2i.ZERO)
+	var b := _village("b", Vector2i(80, 80))
+	var wall := Rect2i(6, 5, 1, 1)
+	for village: Dictionary in [a, b]:
+		village["adaptive"] = true
+		village["ends"] = [village["centre"], village["centre"]]
+		village["road_obstacles"] = [wall]
+	var road := plans._road(a, b, [0, 0, 0, 0])
+	if not check(not road.is_empty(), "a road can go around the obstructed diagonal"): return
+	for at: Vector2i in road.cells:
+		check(not wall.has_point(at), "no materialized part of the road clips the wall")

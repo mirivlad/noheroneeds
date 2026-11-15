@@ -31,7 +31,10 @@ func test_same_seed_same_world() -> void:
 	var other := SurfaceGenerator.new(43, c)
 	check(_same(a.generate(3, -2), b.generate(3, -2)), "deterministic")
 	check(not _same(a.generate(3, -2), other.generate(3, -2)), "another seed, another world")
-	eq(a.generate(0, 0).meta, {"gen": SurfaceGenerator.ID, "gen_version": SurfaceGenerator.VERSION})
+	var meta := a.generate(0, 0).meta.duplicate()
+	check(meta.get("terrain_pads") is Array, "render foundations accompany generated chunks")
+	meta.erase("terrain_pads")
+	eq(meta, {"gen": SurfaceGenerator.ID, "gen_version": SurfaceGenerator.VERSION})
 
 
 func test_spawn_clearing_and_solid_terrain() -> void:
@@ -301,3 +304,19 @@ func test_chasms_have_hanging_bridges() -> void:
 	chunk.set_cell("ground", 0, 0, "base:chasm")
 	chunk.set_cell("ground", 1, 0, "base:hanging_bridge")
 	check(Terrain.is_solid(chunk, 0, 0, c) and not Terrain.is_solid(chunk, 1, 0, c), "a chasm stops one, its bridge does not")
+
+func test_terrain_sample_cache_preserves_values_flags_and_bounded_memory() -> void:
+	var g := SurfaceGenerator.new(431, _base())
+	for y in range(-128, 129, 4):
+		for x in range(-128, 129, 4):
+			for bridges in [true, false]:
+				var expected := g._land_at_uncached(x, y, bridges)
+				eq(g.land_at(x, y, bridges), expected, "cached terrain is identical, including the bridge flag")
+				eq(g.land_at(x, y, bridges), expected, "repeated reads preserve the same terrain")
+	var original := g._land_at_uncached(0, 0, true)
+	var changed := g.land_at(0, 0)
+	changed["what"] = "caller edit"
+	eq(g.land_at(0, 0), original, "a caller cannot mutate cached geography")
+	for i in 200: g.land_at(i * Chunk.SIZE, -1000)
+	check(g._land_samples.size() <= SurfaceGenerator.LAND_CACHE_CHUNKS, "the cache stays bounded while exploring")
+	eq(g.land_at(0, 0), original, "eviction does not change a revisited cell")

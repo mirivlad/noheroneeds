@@ -224,10 +224,13 @@ func test_autumn_asks_for_wood_and_a_struck_dweller_bears_a_grudge() -> void:
 	check(_texts().contains("Убийца — Аня"), _texts())
 
 
-## The map names the settlements near: the same names the chronicles use,
-## asked without beginning a chronicle.
-func test_places_near_are_named_for_the_map() -> void:
+## Seen map places use the same names as chronicles, without revealing
+## nearby but unexplored villages.
+func test_seen_places_are_named_for_the_map() -> void:
 	var a := _player("Аня", null)
+	eq(_req(a, {"type": "places"}).get("places"), [], "an unseen village stays private")
+	var fire: Vector2i = plan["fire"]
+	w.explore(a, "surface", fire.x >> 5, fire.y >> 5)
 	var r := _req(a, {"type": "places"})
 	check(r.get("ok", false), str(r))
 	var names := (r["places"] as Array).map(func(p: Dictionary) -> String: return String(p["name"]))

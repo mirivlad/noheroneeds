@@ -76,6 +76,7 @@ func _make(k: int, dx: int, dy: int) -> Array:
 		return []
 	var s := settlements
 	var villages := s.villages(k, dx, dy)
+	if villages.is_empty(): return []  # also true when the loader cancels this cluster
 	var roads := s.roads_of(k, dx, dy)
 	var area := s._district_rect(k, dx, dy)
 	var camp := s.camps.of_cluster(k, dx, dy)

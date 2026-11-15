@@ -1,0 +1,18 @@
+{
+  "native-v020-before.x86_64": {
+    "sha256": "49ac405b07e9cc6cd8782d4e5487ce17370ae356357fa54d97b5a176392977a0",
+    "bytes": 225777528
+  },
+  "native-v020-after.x86_64": {
+    "sha256": "405592c563a9b60a1491af6d3c87f134ed67106a6baeea6b1cd0684cd4ae9cbd",
+    "bytes": 225786696
+  },
+  "baseline/v020-release.x86_64": {
+    "sha256": "68158820c66172db74531ef2427a6ef5f164cf3f7afde9e24b0ab2cfbe5d13de",
+    "bytes": 225771128
+  },
+  "candidate-v020-release.x86_64": {
+    "sha256": "cefadabc87f9b5eb1bbeb5167e3e0fae71ab16e133765c1cfc2de62d932daf4c",
+    "bytes": 225780296
+  }
+}

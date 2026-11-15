@@ -1,0 +1,6 @@
+PASS test_streaming_readiness::test_streaming_waits_for_ready_chunks_and_resumes_without_exploring_missing_land (50 ms)
+PASS test_streaming_readiness::test_movement_waits_for_missing_footprint_without_loading_it (50 ms)
+PASS test_streaming_readiness::test_environmental_needs_wait_for_ready_terrain (47 ms)
+PASS test_streaming_readiness::test_initial_prepared_view_survives_the_prejoin_unload_tick (46 ms)
+expected engine errors: 0
+4 tests, 0 failed checks, 1.0s

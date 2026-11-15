@@ -555,6 +555,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		else:
 			c = Chunk.new()
 		_chunks[key] = c
+		if location == SURFACE: _remember_map_chunk(cx, cy, c)
 		var rows := store.entities_in_chunk(location, cx, cy)
 		_take_items(location, rows)
 		creatures.take_rows(location, rows)
@@ -721,6 +722,7 @@ func prepare_spawn_view(radius: int) -> void:
 	for cy in range(middle.y - radius, middle.y + radius + 1):
 		for cx in range(middle.x - radius, middle.x + radius + 1):
 			chunk(spawn_location, cx, cy)
+			mark_needed(spawn_location, cx, cy)
 	sync()
 
 
@@ -733,7 +735,9 @@ func loaded_chunks() -> int:
 func _settlement_levels(location: String, cx: int, cy: int) -> void:
 	if location != SURFACE or generator == null:
 		return
+	var foundations := []
 	for plan: Dictionary in generator.settlements.plans_touching(cx, cy):
+		foundations.append_array(Settlements.foundation_rows(plan))
 		for building: String in plan["upper"]:
 			var upper := levels.level(building, 1)
 			if upper != "":
@@ -755,6 +759,11 @@ func _settlement_levels(location: String, cx: int, cy: int) -> void:
 					c.set_cell(layer, at.x & 31, at.y & 31, String(spec.get(layer, "")))
 				c.set_props(at.x & 31, at.y & 31, spec["props"].duplicate(true))
 				_changed(chunk_key(upper, at.x >> 5, at.y >> 5))
+	var key := chunk_key(location, cx, cy)
+	var source: Chunk = _chunks[key]
+	if not source.meta.has("terrain_pads"):
+		source.meta["terrain_pads"] = foundations
+		_changed(key)
 
 
 ## Asks the loader thread for a chunk that is not in memory yet.
@@ -765,22 +774,24 @@ func prefetch(location: String, cx: int, cy: int) -> void:
 
 
 ## Takes chunks the loader finished (call every tick).
-func poll_loaded() -> void:
-	for r: Array in loader.take_ready():
+func poll_loaded(limit := -1) -> void:
+	for r: Array in loader.take_ready(limit):
+		if r.size() > 7 and generator: generator.settlements.accept_plans(r[7])
 		var key := chunk_key(r[0], r[1], r[2])
 		if _chunks.has(key):
 			continue  # loaded meanwhile by chunk(); the same content
 		_chunks[key] = r[3]
+		if r[0] == SURFACE: _remember_map_chunk(r[1], r[2], r[3])
 		_take_items(r[0], r[5])
 		creatures.take_rows(r[0], r[5])
 		creatures.on_chunk_ready(r[0], r[1], r[2], r[3])
-		_settlement_levels(r[0], r[1], r[2])
-		settlement_life.arrived(r[0], r[1], r[2], r[3])
-		hospitality.arrived(r[0], r[3])
 		if not (r[6] as PackedByteArray).is_empty():
 			_encoded[key] = [_chunk_rev.get(key, 0), r[6]]
 		if r[4]:
 			_dirty_chunks[key] = true
+		_settlement_levels(r[0], r[1], r[2])
+		settlement_life.arrived(r[0], r[1], r[2], r[3])
+		hospitality.arrived(r[0], r[3])
 		_settle_stairs(r[0], r[1], r[2], r[3])  # after its encoding is kept: a change makes it stale
 		growth.arrived(r[0], r[1], r[2], r[3])
 		chronicles.lie_lost(r[0], r[1], r[2])  # the same as _chunk: a lost thing lies again
@@ -965,6 +976,7 @@ func map_tile(location: String, cx: int, cy: int) -> PackedByteArray:
 		c = ChunkCodec.decode(data)
 		if c == null:
 			return PackedByteArray()
+	if location == SURFACE: _remember_map_chunk(at.x, at.y, c)
 	if reflected:
 		c = ReflectedChunk.new(c)
 	var shown := shown_chunk(location, cx, cy, c, func(x: int, y: int) -> bool:
@@ -3095,20 +3107,67 @@ func station_near(actor: String, station: String) -> bool:
 	return false
 
 
-## Settlements near one, for the map (ADR-0038): their names and where their
-## fires are; the map shows only those whose place the character has seen.
-const PLACES_RADIUS := 1600
+## Derived map labels come from real chunks, never from a procedural search.
+## Keep them across reopening; older chunks can fill the cache as tiles arrive.
+var _map_places := {}
+var _map_places_loaded := false
+
+
+func _load_map_places() -> void:
+	if _map_places_loaded: return
+	var text := fact("map_places")
+	var raw: Variant = JSON.parse_string(text) if text != "" else null
+	_map_places = raw if raw is Dictionary else {}
+	for place: Dictionary in _map_places.values():
+		place["x"] = int(place["x"])
+		place["y"] = int(place["y"])
+	_map_places_loaded = true
+
+
+func _remember_map_chunk(cx: int, cy: int, c: Chunk) -> void:
+	_load_map_places()
+	var changed := false
+	var origin := Vector2i(cx, cy) * Chunk.SIZE
+	var inn := String(c.meta.get("hospitality", ""))
+	var door := -1
+	for i: int in c.props:
+		var props: Dictionary = c.props[i]
+		var part := c.get_cell("structure", i % Chunk.SIZE, i / Chunk.SIZE)
+		var village := String(props.get("village", ""))
+		if village != "" and not props.has("building") and not props.has("hospitality") and part != "" and part == content.get_def(village.get_slice("@", 0)).get("square", ""):
+			var at := origin + Vector2i(i % Chunk.SIZE, i / Chunk.SIZE)
+			var place := {"x": at.x, "y": at.y}
+			if _map_places.get(village, {}) != place:
+				_map_places[village] = place
+				changed = true
+		if inn != "" and props.get("hospitality", "") == inn and content.get_def(part).get("role", "") == "door":
+			door = maxi(door, i)
+	if door >= 0:
+		var at := origin + Vector2i(door % Chunk.SIZE, door / Chunk.SIZE)
+		var names: Array = hospitality.services.get("names", ["Тёплый очаг"])
+		var roll := absi(hash([world_seed, inn, "decor"]))
+		var place := {"x": at.x, "y": at.y, "kind": "tavern" if inn.begins_with("tavern@") else "inn", "name": names[roll % names.size()]}
+		if _map_places.get(inn, {}) != place:
+			_map_places[inn] = place
+			changed = true
+	if changed: note_fact("map_places", JSON.stringify(_map_places))
 
 
 func _places(actor: String) -> Dictionary:
-	if not present.has(actor) or generator == null or generator.settlements == null:
+	if not present.has(actor):
 		return {"ok": true, "places": []}
-	var at := Movement.cell_of(present[actor]["pos"])
+	_load_map_places()
+	var seen: Dictionary = explored(actor).get(SURFACE, {})
 	var out := []
-	for p: Dictionary in generator.settlements.plans_near(at, PLACES_RADIUS):
-		var fire: Vector2i = p["fire"]
-		out.append({"name": chronicles.village_name(String(p["id"])), "x": fire.x, "y": fire.y})
-	out.append_array(hospitality.places(at, mini(PLACES_RADIUS, 400)))
+	for id: String in _map_places:
+		var place: Dictionary = _map_places[id]
+		if not seen.has(Vector2i(int(place.x) >> 5, int(place.y) >> 5)): continue
+		var label := {"name": chronicles.village_name(id), "x": place.x, "y": place.y}
+		if place.has("kind"):
+			label["kind"] = place.kind
+			label["name"] = "%s «%s»%s" % ["Таверна" if place.kind == "tavern" else "Постоялый двор", place.name,
+				" (закрыто)" if hospitality.state(id).get("closed", false) else ""]
+		out.append(label)
 	return {"ok": true, "places": out}
 
 

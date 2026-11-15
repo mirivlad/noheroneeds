@@ -136,8 +136,11 @@ func settle() -> void:
 	# there can never succeed. Require a stable completed render instead.
 	var stable := 0
 	var complete := false
-	for i in 1800:
+	var deadline := Time.get_ticks_msec() + 120000
+	var i := 0
+	while Time.get_ticks_msec() < deadline:
 		await pump(1)
+		i += 1
 		# Captures can spend extra build time; gameplay keeps its normal frame budget.
 		for pass_index in 4:
 			view.update_view(1.0, 0.0)

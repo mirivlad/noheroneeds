@@ -1,0 +1,5 @@
+PASS test_creature_chunk_safety::test_fishers_and_door_searches_never_load_missing_chunks (409 ms)
+PASS test_creature_chunk_safety::test_fishing_spot_order_is_preserved_and_geometry_is_sampled_once (197 ms)
+PASS test_creature_chunk_safety::test_failed_caravan_detours_retry_only_after_their_inputs_change (62 ms)
+expected engine errors: 0
+3 tests, 0 failed checks, 1.0s

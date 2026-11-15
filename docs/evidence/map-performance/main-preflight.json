@@ -1,0 +1,18 @@
+{
+  "approval_date": "2026-11-16",
+  "target": "origin/main",
+  "local_base": "c2d60cef74e01d69aaf06eaadd5efb3859b6a793",
+  "remote_base": "9e0c0f8800a834e2b0fc586b4dd1b6adb79578c2",
+  "identical_base_tree": "15a19d238f9439ddcf1f84d36fb0f6dbf9921297",
+  "caravan": {
+    "ok": true,
+    "tests": 26,
+    "suites": 5,
+    "sources_unchanged": true,
+    "wall_seconds": 52.71
+  },
+  "creature_tests": 3,
+  "site_python_tests": 32,
+  "site_browser_tests": 10,
+  "release_requested": false
+}

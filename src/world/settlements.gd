@@ -28,7 +28,7 @@ extends RefCounted
 const NONE := Vector2i(1 << 30, 1 << 30)
 ## The plan is reconstructed from the seed; changing its rules requires a new
 ## version and an explicit world-format decision.
-const VERSION := 5
+const VERSION := 6
 ## Cells round each building, field and pen kept free of any plant.
 const MARGIN := 1
 ## Cells round the whole settlement kept free of trees and bushes.
@@ -62,6 +62,7 @@ static var _shared_clusters := {}
 static var _shared_lock := Mutex.new()
 const SHARED_CLUSTERS := 32
 var _shared_key := ""
+var cancel_requested: Callable
 
 var world_seed := 0
 var content: ContentRegistry
@@ -111,6 +112,25 @@ func _init(seed_value: int, registry: ContentRegistry, wet: Callable, clearing: 
 	inns = HospitalityPlans.new(self)
 
 
+## Immutable generated plans can be handed from the chunk loader to the
+## simulation. Recomputing them on arrival would block the main thread.
+func planning_cache() -> Dictionary:
+	return {"villages": _villages, "roads": _roads, "camps": camps._plans, "inns": inns._plans}
+
+
+func accept_plans(prepared: Dictionary) -> void:
+	var caches := planning_cache()
+	for family: String in prepared:
+		var target: Dictionary = caches[family]
+		var incoming: Dictionary = prepared[family]
+		var limit := 1024 if family == "roads" else 512
+		if family in ["roads", "villages"] and target.size() + incoming.size() > limit: target.clear()
+		target.merge(incoming, true)
+		if family == "inns":
+			for plans: Array in incoming.values():
+				for plan: Dictionary in plans: inns._by_id[plan["id"]] = plan
+
+
 func _district_size(k: int) -> int:
 	return int(_kinds[k]["def"]["district_chunks"]) * Chunk.SIZE
 
@@ -154,6 +174,7 @@ func plans_touching(cx: int, cy: int) -> Array:
 
 ## The villages of a district's cluster ([] — none there).
 func villages(k: int, dx: int, dy: int) -> Array:
+	if _cancelled(): return []
 	var key := "%d|%d|%d" % [k, dx, dy]
 	if _villages.has(key):
 		return _villages[key]
@@ -168,6 +189,7 @@ func villages(k: int, dx: int, dy: int) -> Array:
 		_shared_lock.unlock()
 	if not cached:
 		made = _cluster(k, dx, dy)
+		if _cancelled(): return []  # never publish a partially cancelled cluster
 		if _shared_key != "":
 			_shared_lock.lock()
 			if _shared_clusters.size() >= SHARED_CLUSTERS:
@@ -218,6 +240,14 @@ func plans_near(at: Vector2i, radius: int) -> Array:
 		var reach := ceili(float(radius) / size) + 1
 		for dy in range(r.y - reach, r.y + reach + 1):
 			for dx in range(r.x - reach, r.x + reach + 1):
+				# Ordinary village centres stay inside their district. Do not
+				# generate distant clusters which cannot enter this query's circle.
+				# The home search has its own bounds, so always include its district.
+				var area := _district_rect(k, dx, dy)
+				var nearest := Vector2(at).clamp(Vector2(area.position), Vector2(area.end))
+				var home: bool = _kinds[k]["def"].get("near_spawn", false) and _district_of(k, Vector2i.ZERO) == Vector2i(dx, dy)
+				if not home and nearest.distance_squared_to(Vector2(at)) > float(radius) * radius:
+					continue
 				for p: Dictionary in villages(k, dx, dy):
 					if Vector2(p["centre"]).distance_to(Vector2(at)) <= radius:
 						out.append(p)
@@ -250,6 +280,7 @@ func _cluster(k: int, dx: int, dy: int) -> Array:
 		var best := {}
 		var best_score := -INF
 		for t in TRIES:
+			if _cancelled(): return []
 			var centre: Vector2i
 			if seat == NONE:
 				centre = area.position + Vector2i(int(_hash(k, dx, dy, 10 + t + i * 64) * area.size.x),
@@ -281,6 +312,38 @@ func _cluster(k: int, dx: int, dy: int) -> Array:
 			out.append(_place(best["layout"], best["centre"], best["id"], best["definition"]))
 			if seat == NONE:
 				seat = best["centre"]
+	if out.size() < n and _land.is_valid():
+		var sites := []
+		for y in range(area.position.y + 32, area.end.y, 64):
+			for x in range(area.position.x + 32, area.end.x, 64):
+				var centre := Vector2i(x, y)
+				var score := _site_score(centre)
+				if score == -INF: continue
+				for oy: int in [-64, 0, 64]:
+					for ox: int in [-64, 0, 64]:
+						if (_land.call(x + ox, y + oy) as Dictionary).what == "land": score += 1.0
+				sites.append({"centre": centre, "score": score})
+		sites.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
+		for i in range(out.size(), n):
+			var attempts := 0
+			var added := false
+			for candidate: Dictionary in sites:
+				if _cancelled(): return []
+				var centre: Vector2i = candidate.centre
+				if seat != NONE and Vector2(centre - seat).length() > spread: continue
+				if out.any(func(o: Dictionary) -> bool: return Vector2(o["centre"] - centre).length() < APART): continue
+				var id := "%s@%d,%d#%d" % [_kinds[k]["id"], dx, dy, out.size()]
+				var built := _way(style_at(d, centre), centre)
+				var layout := _layout(k, dx, dy * 16 + out.size(), built, id, true)
+				var site := _site(layout, centre)
+				if _dry(site) and not out.any(func(o: Dictionary) -> bool: return (o["bounds"] as Rect2i).grow(4).intersects(site["bounds"])):
+					out.append(_place(layout, centre, id, built))
+					if seat == NONE: seat = centre
+					added = true
+					break
+				attempts += 1
+				if attempts >= 4: break
+			if not added: break
 	return out
 
 
@@ -299,6 +362,7 @@ func _home(k: int, dx: int, dy: int, d: Dictionary) -> Dictionary:
 			candidates.append(Vector2i(Vector2.from_angle(direction * TAU / 24.0) * radius))
 	var layouts := {}
 	for centre: Vector2i in candidates:
+		if _cancelled(): return {}
 		var local := _way(style_at(d, centre), centre)
 		var key := _layout_key(local, village_id)
 		if not layouts.has(key):
@@ -311,13 +375,13 @@ func _home(k: int, dx: int, dy: int, d: Dictionary) -> Dictionary:
 
 
 ## How good a place is for a village: water near (to drink, to fish), the
-## land low and flat; never the heights.
+## land low and flat preferred; dry plateaus remain candidates.
 func _site_score(at: Vector2i) -> float:
 	if not _land.is_valid():
 		return 0.0
 	var here: Dictionary = _land.call(at.x, at.y)
 	var h := float(here["height"])
-	if String(here["what"]) != "land" or h > Geography.HILLS + 0.1:
+	if String(here["what"]) != "land":
 		return -INF
 	var score := -absf(h - 0.08) * 4.0
 	var water := 0
@@ -461,7 +525,7 @@ func _layout_kind(d: Dictionary, scale: String, id: String) -> String:
 
 ## What a settlement has, before it is put anywhere: its buildings (sizes,
 ## furniture, dwellers), fields and pen, laid out relative to its centre.
-func _layout(k: int, rx: int, ry: int, d: Dictionary, village_id: String) -> Dictionary:
+func _layout(k: int, rx: int, ry: int, d: Dictionary, village_id: String, adaptive := false) -> Dictionary:
 	var houses: Array = d["houses"]
 	var environment: Dictionary = d.get("environment", {})
 	var scale := _settlement_scale(d, village_id)
@@ -534,9 +598,17 @@ func _layout(k: int, rx: int, ry: int, d: Dictionary, village_id: String) -> Dic
 	var pd: Dictionary = d.get("pen", {})
 	if not pd.is_empty():
 		pen = {"rect": Rect2i(fx + 1, low, int(pd["size"][0]), int(pd["size"][1])), "animals": pd.get("animals", {})}
-	return {"buildings": buildings, "streets": streets, "fields": fields, "pen": pen,
+	var result := {"buildings": buildings, "streets": streets, "fields": fields, "pen": pen,
 		"complete": buildings.size() == chosen.size(), "layout": kind, "environment": environment, "scale": scale, "half": maxi(int(placed["half"]), fx + 15),
 		"square": placed["square"], "yard": placed["yard"], "fire": (placed["square"] as Rect2i).position + Vector2i(1, 2)}
+	if adaptive:
+		var fitted := SettlementTerrainLayout.make(chosen, fields, pen, _land, d["site_centre"], hash([world_seed, village_id, "terrain"]), cancel_requested)
+		if fitted.is_empty():
+			result["complete"] = false
+		else:
+			result.merge(fitted, true)
+			result["fire"] = (result["square"] as Rect2i).position + Vector2i(1, 2)
+	return result
 
 
 
@@ -552,7 +624,8 @@ func _site(layout: Dictionary, centre: Vector2i) -> Dictionary:
 		bounds = bounds.merge(Rect2i(street.position + centre, street.size))
 	var square := Rect2i((layout["square"] as Rect2i).position + centre, (layout["square"] as Rect2i).size)
 	var yard := Rect2i((layout["yard"] as Rect2i).position + centre, (layout["yard"] as Rect2i).size)
-	var reserve := Rect2i(yard.position + Vector2i(6, -13), Vector2i(13, 14))
+	var relative_reserve: Rect2i = layout.get("reserve", Rect2i((layout["yard"] as Rect2i).position + Vector2i(6, -13), Vector2i(13, 14)))
+	var reserve := Rect2i(relative_reserve.position + centre, relative_reserve.size)
 	for area: Rect2i in [square, yard, reserve]:
 		bounds = bounds.merge(area)
 	for building: Dictionary in layout["buildings"]:
@@ -573,7 +646,7 @@ func _site(layout: Dictionary, centre: Vector2i) -> Dictionary:
 		var rect: Rect2i = layout["pen"]["rect"]
 		ground_areas.append(Rect2i(rect.position + centre, rect.size))
 		bounds = bounds.merge(Rect2i(rect.position + centre, rect.size).grow(MARGIN))
-	return {"bounds": bounds, "centre": centre, "square": square, "parking_yard": yard, "parking_reserve": reserve, "plots": plots, "ground_areas": ground_areas, "complete": layout.get("complete", true)}
+	return {"bounds": bounds, "centre": centre, "square": square, "parking_yard": yard, "parking_reserve": reserve, "plots": plots, "ground_areas": ground_areas, "complete": layout.get("complete", true), "adaptive": layout.get("adaptive", false), "streets": layout["streets"].map(func(r: Rect2i) -> Rect2i: return Rect2i(r.position + centre, r.size))}
 
 
 ## The layout put at `centre`: every cell it sets.
@@ -598,6 +671,7 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 			for x in range(r.position.x, r.end.x):
 				put.call(Vector2i(x, y), "ground", String(d["road"]))
 				put.call(Vector2i(x, y), "cover", "")
+				put.call(Vector2i(x, y), "structure", "")
 	var square: Rect2i = site["square"]
 	var yard: Rect2i = site["parking_yard"]
 	var market_site := Rect2i(square.position + Vector2i(0, 8), Vector2i(2, 2))
@@ -621,15 +695,16 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 			var local := at - square.position
 			if market_site.has_point(at) or local.y >= 8 or Vector2(local - Vector2i(5, 4)).length() <= 5.0:
 				put.call(at, "ground", String(d["road"]))
-	for x in range(square.position.x, yard.position.x + 1):
-		for y in range(centre.y, centre.y + 3):
-			put.call(Vector2i(x, y), "ground", String(d["road"]))
-			put.call(Vector2i(x, y), "cover", "")
-			put.call(Vector2i(x, y), "structure", "")
-	for y in range(square.position.y + 5, centre.y + 1):
-		for x in range(square.position.x + 4, square.position.x + 7):
-			put.call(Vector2i(x, y), "ground", String(d["road"]))
-			put.call(Vector2i(x, y), "cover", "")
+	if not layout.get("adaptive", false):
+		for x in range(square.position.x, yard.position.x + 1):
+			for y in range(centre.y, centre.y + 3):
+				put.call(Vector2i(x, y), "ground", String(d["road"]))
+				put.call(Vector2i(x, y), "cover", "")
+				put.call(Vector2i(x, y), "structure", "")
+		for y in range(square.position.y + 5, centre.y + 1):
+			for x in range(square.position.x + 4, square.position.x + 7):
+				put.call(Vector2i(x, y), "ground", String(d["road"]))
+				put.call(Vector2i(x, y), "cover", "")
 	for y in range(yard.position.y, yard.end.y):
 		for x in range(yard.position.x, yard.end.x):
 			var at := Vector2i(x, y)
@@ -709,12 +784,14 @@ func _place(layout: Dictionary, centre: Vector2i, id: String, d: Dictionary) -> 
 	# far from it; the bounded local cart planner must not start across town.
 	# Cell-centred wagons need clearance on both sides. The northern street
 	# row adjoins house walls, so the through line uses the next row.
-	var road_start := Vector2i(yard.get_center().x, centre.y + 1)
+	var road_start: Vector2i = layout["root"] + centre if layout.get("adaptive", false) else Vector2i(yard.get_center().x, centre.y + 1)
 	var ends := [road_start, road_start]
 	return {"id": id, "kind": String(d.get("id", "")), "name": String(d.get("name", "")), "centre": centre,
 		"bounds": bounds, "ground_areas": site["ground_areas"], "plots": site["plots"], "cells": cells, "homes": homes, "buildings": buildings, "upper": upper, "layout": layout["layout"], "environment": d.get("environment", layout["environment"]), "scale": layout["scale"], "fields": fields, "pen": pen, "fire": fire,
 		"square": square, "market_sites": [market_site], "parking_yard": yard, "parking_reserve": reserve,
 		"parking": [yard.position + Vector2i(6, 5), yard.position + Vector2i(19, 5), reserve.get_center()],
+		"approaches": layout.get("approaches", []).map(func(path: Array) -> Array: return path.map(func(at: Vector2i) -> Vector2i: return at + centre)),
+		"adaptive": layout.get("adaptive", false), "road_obstacles": site["plots"] + fields + [Rect2i(square.position, Vector2i(square.size.x, square.size.y - 3)), Rect2i(yard.position, Vector2i(yard.size.x, 9)), reserve] + ([pen["rect"]] if not pen.is_empty() else []),
 		"ends": ends, "half": int(layout["half"]), "road": String(d["road"]), "bridge": String(d.get("bridge", "")),
 		"way": String(d.get("way", "")), "way_name": String(d.get("way_name", "")), "tradition": String(d.get("tradition", "plains"))}
 
@@ -834,13 +911,14 @@ func _district_roads(k: int, dx: int, dy: int) -> Array:
 func _road(a: Dictionary, b: Dictionary, key: Array) -> Dictionary:
 	var from_a := _way_out(a, b["centre"])
 	var from_b := _way_out(b, a["centre"])
-	var avoid: Array = [a["bounds"], b["bounds"]]
+	var avoid: Array = (a["road_obstacles"] if a.get("adaptive", false) else [a["bounds"]]) + (b["road_obstacles"] if b.get("adaptive", false) else [b["bounds"]])
+	var parcels: Array = a.get("road_obstacles", []) + b.get("road_obstacles", [])
 	var banned := {}
 	var route := _route(from_a[-1], from_b[-1], avoid, banned)
 	if route.is_empty():
 		return {}
 	var path := _way_path(from_a, from_b, route)
-	var bad := _bad_cells(path)
+	var bad := _bad_cells(path, parcels)
 	var tries := 0
 	while not bad.is_empty() and tries < ROUTE_TRIES:
 		# The coarse search only looked at its own points; the way between
@@ -850,7 +928,7 @@ func _road(a: Dictionary, b: Dictionary, key: Array) -> Dictionary:
 		if route.is_empty():
 			return {}
 		path = _way_path(from_a, from_b, route)
-		bad = _bad_cells(path)
+		bad = _bad_cells(path, parcels)
 		tries += 1
 	if not bad.is_empty():
 		return {}
@@ -862,11 +940,7 @@ func _road(a: Dictionary, b: Dictionary, key: Array) -> Dictionary:
 		var p: Vector2i = path[i]
 		# Two cells wide (a cart and its horse), and a wider patch where the
 		# way turns: the whole harness swings through the corner.
-		var stamp := [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]
-		if _turns(path, i):
-			stamp = [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
-				Vector2i(-1, 0), Vector2i(0, 0), Vector2i(1, 0),
-				Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)]
+		var stamp := _road_stamp(path, i)
 		for o: Vector2i in stamp:
 			var at := p + o
 			cells[at] = {"ground": ground, "cover": "", "over_water": bridge}
@@ -894,12 +968,21 @@ func _way_path(from_a: Array[Vector2i], from_b: Array[Vector2i], route: Array[Ve
 ## than BRIDGE_MAX cells of water, a bridge that does not meet the land, and
 ## deep water under the bridge's two-cell deck. Cells to keep the way away
 ## from are returned. Rock in a way is cut through (a pass), as before.
-func _bad_cells(path: Array[Vector2i]) -> Array[Vector2i]:
+func _bad_cells(path: Array[Vector2i], parcels: Array = []) -> Array[Vector2i]:
 	var bad: Array[Vector2i] = []
 	var n := path.size()
+	for index in n:
+		for offset: Vector2i in _road_stamp(path, index):
+			var at := path[index] + offset
+			if parcels.any(func(r: Rect2i) -> bool: return r.has_point(at)):
+				bad.append(path[index])
+				break
 	var i := 0
 	while i < n:
 		var what := _what(path[i])
+		if what == "rock" and _land.is_valid():
+			var sample: Dictionary = _land.call(path[i].x, path[i].y)
+			if not sample.get("cliff", false): bad.append(path[i])
 		if what == "deep":
 			bad.append(path[i])
 			i += 1
@@ -949,11 +1032,30 @@ static func _turns(path: Array[Vector2i], i: int) -> bool:
 	return before != Vector2i.ZERO and after != Vector2i.ZERO and before != after
 
 
+## Use the same clearance for validation and materialization, including turns.
+static func _road_stamp(path: Array[Vector2i], i: int) -> Array[Vector2i]:
+	if _turns(path, i):
+		return [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
+			Vector2i(-1, 0), Vector2i(0, 0), Vector2i(1, 0),
+			Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)]
+	return [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]
+
+
 ## A village's way out toward `to`: along its first street past its actual
 ## side. The two sides need not be equally far from the centre (the caravan
 ## yards are to the east); using the eastern reach on the west can send a
 ## road through its neighbouring village. Leave room for grid rounding.
 func _way_out(p: Dictionary, to: Vector2i) -> Array[Vector2i]:
+	if p.get("adaptive", false):
+		var best: Array[Vector2i] = []
+		var distance := INF
+		for path: Array in p.get("approaches", []):
+			var gap := Vector2((path[-1] as Vector2i) - to).length_squared()
+			if gap < distance:
+				distance = gap
+				best.assign(path)
+		if best.is_empty(): best.append(p["ends"][0])
+		return best
 	var ends: Array = p["ends"]
 	var centre: Vector2i = p["centre"]
 	var side := 1 if to.x >= centre.x else -1
@@ -967,8 +1069,8 @@ func _way_out(p: Dictionary, to: Vector2i) -> Array[Vector2i]:
 
 
 ## The easiest way from `a` to `b` (cells), as points ROUTE_STEP apart: A*
-## over the grid, the cost of a point by the land there — rock and deep
-## water not at all, water dear (a bridge), shallows a little (a ford), the
+## over the grid, the cost of a point by the land there — crags and deep
+## water not at all, terrain steps cut as passes, water dear (a bridge), the
 ## heights and slopes dear (so passes); `avoid` rects (the villages' own) not
 ## gone through, coarse grid points in `banned` kept away from. [] if there is
 ## no way.
@@ -1051,8 +1153,10 @@ func _point(g: Vector2i) -> Vector2:
 		var height := float(land["height"])
 		var c := 1.0
 		match String(land["what"]):
-			"deep", "rock":
+			"deep":
 				c = INF
+			"rock":
+				c = 4.0 if land.get("cliff", false) else INF
 			"water":
 				c = 12.0  # a bridge
 			"shallows":
@@ -1126,6 +1230,27 @@ static func _line(out: Array[Vector2i], a: Vector2i, b: Vector2i) -> void:
 		out.append(a + Vector2i(roundi(float(d.x) * i / n), roundi(float(d.y) * i / n)))
 
 
+## Canonical presentation foundations, also sent with generated chunks.
+## Integer rows survive the chunk codec without regenerating plans on clients.
+static func foundation_rows(p: Dictionary) -> Array:
+	var out := []
+	var square: Rect2i = p["square"]
+	for area: Rect2i in [square, p["parking_yard"], p["parking_reserve"]]:
+		var anchor := area.get_center() if p.get("adaptive", false) else square.get_center()
+		out.append([area.position.x, area.position.y, area.size.x, area.size.y, anchor.x, anchor.y])
+	for building: Dictionary in p.get("buildings", p.get("homes", [])):
+		var rect: Rect2i = building["rect"]
+		var anchor := rect.get_center()
+		out.append([rect.position.x, rect.position.y, rect.size.x, rect.size.y, anchor.x, anchor.y])
+		var design: Dictionary = building.get("architecture", {})
+		if not design.is_empty() and (design["yard"] as Rect2i).has_area():
+			var shed := SettlementArchitecture.local_rect(design, Rect2i(0, -5, 3, 3))
+			shed.position += rect.position
+			anchor = shed.get_center()
+			out.append([shed.position.x, shed.position.y, shed.size.x, shed.size.y, anchor.x, anchor.y])
+	return out
+
+
 ## Whether a placed plan stands on dry land (a little water at its edge is
 ## let be: it is made ground under its cells).
 func _dry(p: Dictionary) -> bool:
@@ -1143,14 +1268,27 @@ func _dry(p: Dictionary) -> bool:
 				for x in range(area.position.x, area.end.x):
 					if String((_land.call(x, y) as Dictionary).get("what", "")) != "land":
 						return false
-		# The fixed approaches must reach dry land beyond either side. The
-		# coarse road search cannot reroute a submerged endpoint afterwards.
-		var margin := ROAD_OUT + ROUTE_STEP / 2 + 2
-		var middle: Vector2i = p["centre"]
-		for x in range(r.position.x - margin, r.end.x + margin + 1):
-			for y in range(middle.y + 1, middle.y + 3):
-				if String((_land.call(x, y) as Dictionary).get("what", "")) in ["water", "deep"]:
-					return false
+		if not p.get("adaptive", false):
+			# The fixed approaches must reach dry land beyond either side. The
+			# coarse road search cannot reroute a submerged endpoint afterwards.
+			var margin := ROAD_OUT + ROUTE_STEP / 2 + 2
+			var middle: Vector2i = p["centre"]
+			for x in range(r.position.x - margin, r.end.x + margin + 1):
+				for y in range(middle.y + 1, middle.y + 3):
+					if String((_land.call(x, y) as Dictionary).get("what", "")) in ["water", "deep"]:
+						return false
+	if p.get("adaptive", false):
+		for street: Rect2i in p["streets"]:
+			for y in range(street.position.y, street.end.y):
+				for x in range(street.position.x, street.end.x):
+					var sample: Dictionary = _land.call(x, y)
+					if sample.what != "land" and not (sample.what == "rock" and sample.get("cliff", false)): return false
+		for area: Rect2i in p["ground_areas"]:
+			if (p["streets"] as Array).has(area): continue
+			for y in range(area.position.y, area.end.y):
+				for x in range(area.position.x, area.end.x):
+					if (_land.call(x, y) as Dictionary).what != "land": return false
+		return true
 	# Empty land between curved streets is not a parcel: ponds there need
 	# not reject a dry village. Check the actual streets/fields/pen instead.
 	# Homes and caravan yards already passed their stricter checks above.
@@ -1179,3 +1317,7 @@ func _pick(weights: Dictionary, roll: float) -> String:
 
 func _hash(k: int, rx: int, ry: int, salt: int) -> float:
 	return float(absi(hash([world_seed, "settlement", k, rx, ry, salt])) % 1000003) / 1000003.0
+
+
+func _cancelled() -> bool:
+	return cancel_requested.is_valid() and cancel_requested.call()

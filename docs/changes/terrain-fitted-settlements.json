@@ -1,0 +1,27 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Поселения подгоняют отдельные участки и связанные трёхклеточные проходы под планетарный рельеф; сухие плато допускаются по фактической пригодности. Дороги различают ступени и настоящие скалы. Общественные площадки сохраняют собственные высоты. Версия генератора 6 отказывает прежним мирам без миграции.",
+      "sources": {
+        "src/world/settlements.gd": "642d2cdb23f10e240c198af6c5c4bb96e1ff702e9f1f5fe01a71c5396fe0947e",
+        "src/world/surface_generator.gd": "2d20af80069b8940ee670db4ec227d3dfb7fc3a9f2a1ba18d1f17a05aa25f3a6",
+        "src/world/settlement_terrain_layout.gd": "d703b77f2f97898c698365893a8ae132cb0152b3ddd3184516f484d9ab04fd0c",
+        "src/world/settlement_terrain_layout.gd.uid": "d9092269f8771591752197679cfbb85b95e6d391c11381c32611a762e494682a",
+        "src/experiment_3d/terrain_shape_3d.gd": "072a097c2836b6b1d5ae92fabcc16f97cd81da3f5f0d37a14ac1115058cd999f"
+      },
+      "mechanics": [
+        "settlements",
+        "settlement-architecture",
+        "nature",
+        "trade"
+      ],
+      "guides": {
+        "site/content/guides/trade.html": "505b79ca7adef2ae1dfba0713c4fccd1f489c1182188c3eea63dc8014bbf0611",
+        "site/content/guides/building.html": "72b7abca6f94f8e2909764353799cb00191e04245c04b4df45ef33e65c79be8d",
+        "site/content/guides/nature.html": "3dad628a8d5513cfb6fe11f561ca5b69de8844a56fafb8627936409d3ff3eab4"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

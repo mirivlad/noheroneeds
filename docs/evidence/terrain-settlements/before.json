@@ -1,0 +1,147 @@
+{
+  "climate": "temperate",
+  "districts": [
+    {
+      "chance": 0.796810609568171,
+      "district": [
+        -1,
+        -1
+      ],
+      "ms": 0,
+      "rejections": {},
+      "villages": []
+    },
+    {
+      "chance": 0.297573107280678,
+      "district": [
+        0,
+        -1
+      ],
+      "ms": 558,
+      "rejections": {
+        "building_plot_water": 4,
+        "public_yard_water": 3
+      },
+      "villages": []
+    },
+    {
+      "chance": 0.0343968968093096,
+      "district": [
+        1,
+        -1
+      ],
+      "ms": 1,
+      "rejections": {},
+      "villages": []
+    },
+    {
+      "chance": 0.0507958476124572,
+      "district": [
+        -1,
+        0
+      ],
+      "ms": 1165,
+      "rejections": {
+        "building_plot_water": 7,
+        "incomplete": 1
+      },
+      "villages": []
+    },
+    {
+      "chance": 0.286969139092583,
+      "district": [
+        0,
+        0
+      ],
+      "ms": 12664,
+      "rejections": {
+        "building_plot_water": 124,
+        "clearing": 9,
+        "ok": 2,
+        "public_yard_water": 10,
+        "straight_approach_water": 1
+      },
+      "villages": [
+        {
+          "bounds": [
+            -16,
+            128,
+            135,
+            89
+          ],
+          "centre": [
+            45,
+            170
+          ],
+          "id": "base:village@0,0#0",
+          "layout": "crossroads",
+          "scale": "village"
+        },
+        {
+          "bounds": [
+            58,
+            276,
+            132,
+            62
+          ],
+          "centre": [
+            114,
+            324
+          ],
+          "id": "base:village@0,0#1",
+          "layout": "terraces",
+          "scale": "village"
+        }
+      ]
+    },
+    {
+      "chance": 0.190579428261715,
+      "district": [
+        1,
+        0
+      ],
+      "ms": 3,
+      "rejections": {},
+      "villages": []
+    },
+    {
+      "chance": 0.12664762005714,
+      "district": [
+        -1,
+        1
+      ],
+      "ms": 6,
+      "rejections": {},
+      "villages": []
+    },
+    {
+      "chance": 0.444117667646997,
+      "district": [
+        0,
+        1
+      ],
+      "ms": 175,
+      "rejections": {
+        "building_plot_water": 1
+      },
+      "villages": []
+    },
+    {
+      "chance": 0.679760960717118,
+      "district": [
+        1,
+        1
+      ],
+      "ms": 1066,
+      "rejections": {
+        "building_plot_water": 8,
+        "public_yard_water": 3
+      },
+      "villages": []
+    }
+  ],
+  "ms": 31082,
+  "preset": "huge",
+  "roads": [],
+  "seed": 237895547
+}

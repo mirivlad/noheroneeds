@@ -1,0 +1,7 @@
+PASS test_chunk_handoff::test_prepared_plans_are_owned_by_receiver_and_avoid_foreground_generation (673 ms)
+PASS test_chunk_handoff::test_ready_queue_is_bounded_without_duplicate_requests (1 ms)
+PASS test_chunk_handoff::test_stopping_the_loader_cancels_an_in_progress_chunk (126 ms)
+PASS test_chunk_handoff::test_cancellation_never_publishes_a_partial_cluster (392 ms)
+PASS test_chunk_handoff::test_inn_search_stops_when_cancellation_removes_its_villages (48 ms)
+expected engine errors: 0
+5 tests, 0 failed checks, 2.0s

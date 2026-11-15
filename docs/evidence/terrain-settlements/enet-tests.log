@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_enet::test_join_move_and_build_over_enet (38005 ms)
+PASS test_enet::test_huge_plan_is_transferred_over_enet (34097 ms)
+expected engine errors: 0
+
+2 tests, 0 failed checks, 73.0s

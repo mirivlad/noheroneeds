@@ -1,0 +1,3 @@
+PASS test_settlements::test_villages_are_met_often (78990 ms)
+expected engine errors: 0
+1 tests, 0 failed checks, 80.0s

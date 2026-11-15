@@ -1,0 +1,9 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_settlement_planets::test_huge_mirv_has_a_northern_cluster (19615 ms)
+PASS test_settlement_planets::test_huge_mirv_has_a_western_cluster (41703 ms)
+PASS test_settlement_planets::test_huge_mirv_start_has_neighbours_and_real_roads (44219 ms)
+PASS test_settlement_planets::test_lake_plan_has_a_northern_cluster_and_is_order_independent (25579 ms)
+expected engine errors: 0
+
+4 tests, 0 failed checks, 132.0s

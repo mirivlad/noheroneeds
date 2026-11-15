@@ -1,0 +1,4 @@
+tools/run_tests.sh: line 33: 1209968 Killed                  timeout -k 5 "${TEST_TIMEOUT:-1200}" "$GODOT" --headless --audio-driver Dummy --path "$ROOT" -s res://tests/framework/run.gd -- "$@" 2>&1
+     1209969 Done                    | head -c "$MAX" > "$LOG"
+TOO LONG: test_settlements::test_villages_are_met_often ran over 180 s (a wait in it never came true: something broke)
+STOPPED: the run was ended early

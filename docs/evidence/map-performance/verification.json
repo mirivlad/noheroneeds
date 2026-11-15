@@ -1,0 +1,35 @@
+{
+  "full_base": {
+    "tests": 700,
+    "suites": 108,
+    "seconds": 1008.51,
+    "scope": "before final local cache change",
+    "evidence": "full-tests.json"
+  },
+  "final_delta": [
+    "src/server/creature_sim.gd",
+    "tests/unit/server/test_creature_chunk_safety.gd"
+  ],
+  "unchanged_other_full_inputs": 533,
+  "final_focused": {
+    "caravan_tests": 26,
+    "creature_safety_tests": 3,
+    "sources_unchanged": true,
+    "source_files": 535
+  },
+  "native": {
+    "failures": [],
+    "idle_unloaded_chunks": 39,
+    "evidence": "final-runtime.json"
+  },
+  "site": {
+    "python_tests": 32,
+    "browser_tests": 10,
+    "check_base": "origin/main"
+  },
+  "git": {
+    "branch": "codex/settlement-placement",
+    "commit": "c2d60cef74e01d69aaf06eaadd5efb3859b6a793",
+    "local_uncommitted": true
+  }
+}

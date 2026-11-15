@@ -58,6 +58,9 @@ func test_huge_plan_is_transferred_over_enet() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	var plan := WorldPlan.generate(431, "huge", "cold")
 	var world := ServerWorld.open(tmp_dir().path_join("world.db"), content, {"world_plan": plan.to_dict()})
+	# Match dedicated-server readiness: this deadline tests ENet transfer,
+	# not a cold settlement search during the first handshake.
+	world.prepare_spawn_view(2)
 	var st := ENetTransport.new()
 	var port := 0
 	for p in range(41000, 41050):

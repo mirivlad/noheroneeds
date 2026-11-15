@@ -13,6 +13,8 @@ var sag: Callable
 var heights := {}
 var pads := {}
 var extra_pads: Array = []
+## Runtime clients supply foundations from received chunk metadata.
+var foundation_source: Callable
 var _cells := {}
 
 func _init(source: SurfaceGenerator, is_solid := Callable()) -> void:
@@ -70,26 +72,15 @@ func height(c: Vector2i) -> float:
 	var chunk := Vector2i(floori(c.x / 32.0), floori(c.y / 32.0))
 	if not pads.has(chunk):
 		var list := []
-		for p: Dictionary in land.settlements.plans_touching(chunk.x, chunk.y):
-			if p.has("square"):
-				var square: Rect2i = p["square"]
-				list.append([Rect2(square), natural(square.get_center()) + .04])
-			if p.has("parking_yard"):
-				var yard: Rect2i = p["parking_yard"]
-				var square: Rect2i = p["square"]
-				list.append([Rect2(yard), natural(square.get_center()) + .04])
-			if p.has("parking_reserve"):
-				var reserve: Rect2i = p["parking_reserve"]
-				var square: Rect2i = p["square"]
-				list.append([Rect2(reserve), natural(square.get_center()) + .04])
-			for home: Dictionary in p.get("buildings", p.get("homes", [])):
-				var rect: Rect2i = home["rect"]
-				list.append([Rect2(rect), natural(Vector2i(rect.get_center())) + .04])
-				var design: Dictionary = home.get("architecture", {})
-				if not design.is_empty() and (design["yard"] as Rect2i).size != Vector2i.ZERO:
-					var shed := SettlementArchitecture.local_rect(design, Rect2i(0, -5, 3, 3))
-					shed.position += rect.position
-					list.append([Rect2(shed), natural(Vector2i(shed.get_center())) + .04])
+		var rows: Array = []
+		if foundation_source.is_valid():
+			rows = foundation_source.call(chunk)
+		else:
+			for p: Dictionary in land.settlements.plans_touching(chunk.x, chunk.y):
+				rows.append_array(Settlements.foundation_rows(p))
+		for row: Array in rows:
+			var rect := Rect2(float(row[0]), float(row[1]), float(row[2]), float(row[3]))
+			list.append([rect, natural(Vector2i(int(row[4]), int(row[5]))) + .04])
 		pads[chunk] = list
 	for pad: Array in pads[chunk] + extra_pads:
 		var r: Rect2 = pad[0]

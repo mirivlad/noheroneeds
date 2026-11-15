@@ -157,10 +157,23 @@ func _fire_near(location: String, at: Vector2i) -> float:
 	var best := 0.0
 	for y in range(at.y - FIRE_REACH, at.y + FIRE_REACH + 1):
 		for x in range(at.x - FIRE_REACH, at.x + FIRE_REACH + 1):
+			if not world.has_chunk(location, x >> 5, y >> 5): continue
 			var part := world.part_at(location, x, y)
 			if part != "" and float(world.content.get_def(part).get("heat", 0.0)) > best:
 				best = float(world.content.get_def(part).get("heat", 0.0))
 	return best
+
+
+## Environmental needs wait for actual ground and nearby heat. A joining
+## character must not force terrain generation from the simulation tick.
+func _terrain_ready(location: String, at: Vector2i) -> bool:
+	var ready := true
+	for cy in range((at.y - FIRE_REACH) >> 5, ((at.y + FIRE_REACH) >> 5) + 1):
+		for cx in range((at.x - FIRE_REACH) >> 5, ((at.x + FIRE_REACH) >> 5) + 1):
+			if not world.has_chunk(location, cx, cy):
+				world.prefetch(location, cx, cy)
+				ready = false
+	return ready
 
 
 ## Work done (a blow, a cast): it costs a little satiety.
@@ -190,6 +203,8 @@ func step() -> void:
 		return
 	var hours := float(gone) / Daylight.HOUR_MS
 	for id: String in world.present:
+		var p: Dictionary = world.present[id]
+		if not _terrain_ready(String(p["location"]), Movement.cell_of(p["pos"])): continue
 		# Awake it runs down; asleep in a bed it comes back, and full one wakes.
 		var sleeping := asleep(id)
 		if sleeping and world.hospitality.sleep_reason(id, String(world.present[id]["location"]), world.present[id]["asleep"]) != "":

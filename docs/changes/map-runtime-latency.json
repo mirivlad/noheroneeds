@@ -1,0 +1,34 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Убрана процедурная генерация из запроса подписей карты, рендера и поиска NPC. Выдача и движение ждут настоящих чанков загрузчика; расчёт потребностей ждёт данных окружения. Планы передаются без повторного построения, неудачные объезды кешируются до изменения условий, закрытие отменяет незавершённую генерацию. Подготовленный стартовый вид сохраняется до входа игрока; отменённый поиск двора не обращается к пустому списку деревень.",
+      "sources": {
+        "src/server/server_world.gd": "3baf820dd019bce80685b66ed9ca85a78236e6a34a9577774085cf732fa6573b",
+        "src/server/game_server.gd": "7311540edbafaf3d7bb1c0438ce6110d5a2855b5481d5b0a72982b234d96ddbb",
+        "src/server/creature_sim.gd": "4e7fc0ac53970efc6317776f348401d516676bdb92d03028b37dfce3beb3c7da",
+        "src/server/needs.gd": "5d049c1844ef9295307c08be24fd9b3b57e7c0a1c810fda42014b1a7f945dcab",
+        "src/presentation/game_screen.gd": "e605f92b5552b5e64b8999ba49b8716367117a73ee77fbc7c5192254846572dc",
+        "src/presentation/map_painter.gd": "7642426ac123339012925f13dd8810dd510ac086ec7b732dc23ce37d21a5c6bc",
+        "src/experiment_3d/world_view_3d.gd": "dbbeb779f7aa8ecce2d624270af572a5404c70d81b15235d1aa8db174b6e1309",
+        "src/experiment_3d/terrain_shape_3d.gd": "072a097c2836b6b1d5ae92fabcc16f97cd81da3f5f0d37a14ac1115058cd999f",
+        "src/world/chunk_loader.gd": "8fd33f0b3d122b217ac6f51d7756e8caadb5ead122928f0f5cd2c6d702d6a0de",
+        "src/world/settlements.gd": "642d2cdb23f10e240c198af6c5c4bb96e1ff702e9f1f5fe01a71c5396fe0947e",
+        "src/world/surface_generator.gd": "2d20af80069b8940ee670db4ec227d3dfb7fc3a9f2a1ba18d1f17a05aa25f3a6",
+        "src/world/settlement_terrain_layout.gd": "d703b77f2f97898c698365893a8ae132cb0152b3ddd3184516f484d9ab04fd0c",
+        "src/world/hospitality_plans.gd": "0dbb233274351014873862fef37b038d80072e7b129a256299b7aa0b52f98e75"
+      },
+      "mechanics": [
+        "controls",
+        "nature",
+        "survival"
+      ],
+      "guides": {
+        "site/content/guides/controls.html": "95e421e25e56edc4a30414c13e2e8a843a4f22b83a63583a6c4e39c6f745720a",
+        "site/content/guides/nature.html": "3dad628a8d5513cfb6fe11f561ca5b69de8844a56fafb8627936409d3ff3eab4",
+        "site/content/guides/survival.html": "28c145f78cede01a6ada1db760244436954c955ef481305a1329976640bf87b9"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

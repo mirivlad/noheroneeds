@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_settlement_terrain_layout::test_parcels_and_wide_streets_fit_around_a_lake (166 ms)
+PASS test_settlement_terrain_layout::test_small_islands_do_not_turn_into_filled_land (80 ms)
+PASS test_settlement_terrain_layout::test_dry_high_plateaus_are_scored_without_requiring_a_low_altitude (57 ms)
+expected engine errors: 0
+
+3 tests, 0 failed checks, 1.0s

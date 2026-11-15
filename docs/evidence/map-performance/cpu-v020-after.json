@@ -1,0 +1,47 @@
+{
+  "debug": false,
+  "engine": "4.7.2-stable (official)",
+  "runs": [
+    {
+      "ms": 0.015,
+      "returned_places": 1,
+      "visible_places": [
+        {
+          "name": "Боровое",
+          "x": 79,
+          "y": 164
+        }
+      ]
+    },
+    {
+      "ms": 0.007,
+      "returned_places": 1,
+      "visible_places": [
+        {
+          "name": "Боровое",
+          "x": 79,
+          "y": 164
+        }
+      ]
+    },
+    {
+      "ms": 0.005,
+      "returned_places": 1,
+      "visible_places": [
+        {
+          "name": "Боровое",
+          "x": 79,
+          "y": 164
+        }
+      ]
+    }
+  ],
+  "seed": 237895547,
+  "settlement_generator": 5,
+  "sources": {
+    "src/server/server_world.gd": "",
+    "src/world/settlements.gd": "",
+    "src/world/surface_generator.gd": ""
+  },
+  "surface_generator": 18
+}

@@ -1,0 +1,31 @@
+{
+  "seed_text": "M.I.R.V.",
+  "seed": 237895547,
+  "preset": "huge",
+  "climate": "temperate",
+  "starting_village": "Боровое",
+  "plan_sha256": "6982cf53ad36e30118d63489fda8cd35f58a9d7b1fc4fd936c076748169b609e",
+  "before_version": 5,
+  "after_version": 6,
+  "before_villages": 2,
+  "after_villages": 23,
+  "before_roads": 0,
+  "after_roads": 8,
+  "roads_scope": "starting, western and northern districts",
+  "road_cells_checked": 6403,
+  "road_collisions": 0,
+  "native_checks": 9,
+  "native_failures": [],
+  "native_source_hashes_match": true,
+  "before_rechecked_from_v020_source": true,
+  "full_game_tests": {
+    "ok": true,
+    "tests": 680,
+    "suites": 104,
+    "sources_unchanged": true,
+    "wall_seconds": 1193.91,
+    "command": "TEST_TIMEOUT=2400 TEST_JOBS=6 tools/run_tests.sh",
+    "environment": "Godot 4.7.2; Linux; headless; 6 isolated worker profiles",
+    "source_files": 527
+  }
+}

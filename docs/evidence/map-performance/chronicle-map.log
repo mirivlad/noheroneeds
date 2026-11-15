@@ -1,0 +1,3 @@
+PASS test_chronicles::test_seen_places_are_named_for_the_map (34165 ms)
+expected engine errors: 0
+1 tests, 0 failed checks, 35.0s

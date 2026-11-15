@@ -1,0 +1,13 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_surface::test_same_seed_same_world (37915 ms)
+PASS test_surface::test_spawn_clearing_and_solid_terrain (36781 ms)
+PASS test_surface::test_woods_have_glades_and_a_way_through (47699 ms)
+PASS test_surface::test_biomes_are_data (185 ms)
+PASS test_surface::test_generated_once_then_kept_through_generator_changes (69675 ms)
+PASS test_surface::test_loader_thread_brings_and_persists_chunks (15710 ms)
+PASS test_surface::test_walk_across_chunks_seamlessly (6494 ms)
+PASS test_surface::test_chasms_have_hanging_bridges (2961 ms)
+expected engine errors: 0
+
+8 tests, 0 failed checks, 218.0s

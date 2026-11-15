@@ -1,0 +1,11 @@
+PASS test_needs::test_satiety_goes_down_with_time_and_work (24411 ms)
+PASS test_needs::test_food_fills_and_full_ones_do_not_eat (2176 ms)
+PASS test_needs::test_the_hungry_do_not_heal_and_hunger_does_not_kill (2434 ms)
+PASS test_needs::test_satiety_is_kept_and_death_does_not_starve (2512 ms)
+PASS test_needs::test_the_night_and_the_rain_chill_clothes_roofs_and_fires_warm (2075 ms)
+PASS test_needs::test_the_cold_burns_food_stops_healing_and_freezes_but_not_to_death (2269 ms)
+PASS test_needs::test_energy_runs_down_and_a_bed_brings_it_back (3105 ms)
+PASS test_needs::test_winter_is_colder_and_summer_nights_milder (2223 ms)
+PASS test_needs::test_sitting_rests_and_heals_faster (2217 ms)
+expected engine errors: 0
+9 tests, 0 failed checks, 44.0s

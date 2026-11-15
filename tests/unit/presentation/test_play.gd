@@ -17,6 +17,9 @@ func before_each() -> void:
 	(Engine.get_main_loop() as SceneTree).root.add_child(app)
 	g = app.game
 	w = g.game.world
+	# Interaction tests start with ready terrain; asynchronous arrivals are
+	# covered by streaming readiness and the native runtime probe.
+	w.prepare_spawn_view(g.game.server.view_chunks)
 	_frames(120, true)
 	# A clear field round the player, things to build with and to use.
 	var me := _me()

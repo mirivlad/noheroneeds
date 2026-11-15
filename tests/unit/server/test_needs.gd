@@ -21,6 +21,12 @@ func _player() -> String:
 	var c := PortableCharacter.create("Аня", "base:human_m")
 	c.styles = CharacterLibrary.STYLE_DEFAULTS.duplicate()
 	w.enter("k-" + c.character_id, c)
+	# These tests advance needs directly, without the server's async loader.
+	# Supply the same ready environment that a playing character receives.
+	var at := Movement.cell_of(w.present[c.character_id]["pos"])
+	for cy in range((at.y - Needs.FIRE_REACH) >> 5, ((at.y + Needs.FIRE_REACH) >> 5) + 1):
+		for cx in range((at.x - Needs.FIRE_REACH) >> 5, ((at.x + Needs.FIRE_REACH) >> 5) + 1):
+			w.chunk("surface", cx, cy)
 	return c.character_id
 
 

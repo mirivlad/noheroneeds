@@ -1,0 +1,121 @@
+{
+  "climate": "temperate",
+  "districts": [
+    {
+      "chance": 0.796810609568171,
+      "district": [
+        -1,
+        -1
+      ],
+      "ms": 0,
+      "villages": []
+    },
+    {
+      "chance": 0.297573107280678,
+      "district": [
+        0,
+        -1
+      ],
+      "ms": 572,
+      "villages": []
+    },
+    {
+      "chance": 0.0343968968093096,
+      "district": [
+        1,
+        -1
+      ],
+      "ms": 1,
+      "villages": []
+    },
+    {
+      "chance": 0.0507958476124572,
+      "district": [
+        -1,
+        0
+      ],
+      "ms": 1220,
+      "villages": []
+    },
+    {
+      "chance": 0.286969139092583,
+      "district": [
+        0,
+        0
+      ],
+      "ms": 13521,
+      "villages": [
+        {
+          "bounds": [
+            -16,
+            128,
+            135,
+            89
+          ],
+          "centre": [
+            45,
+            170
+          ],
+          "id": "base:village@0,0#0",
+          "layout": "crossroads",
+          "scale": "village"
+        },
+        {
+          "bounds": [
+            58,
+            276,
+            132,
+            62
+          ],
+          "centre": [
+            114,
+            324
+          ],
+          "id": "base:village@0,0#1",
+          "layout": "terraces",
+          "scale": "village"
+        }
+      ]
+    },
+    {
+      "chance": 0.190579428261715,
+      "district": [
+        1,
+        0
+      ],
+      "ms": 2,
+      "villages": []
+    },
+    {
+      "chance": 0.12664762005714,
+      "district": [
+        -1,
+        1
+      ],
+      "ms": 7,
+      "villages": []
+    },
+    {
+      "chance": 0.444117667646997,
+      "district": [
+        0,
+        1
+      ],
+      "ms": 176,
+      "villages": []
+    },
+    {
+      "chance": 0.679760960717118,
+      "district": [
+        1,
+        1
+      ],
+      "ms": 1088,
+      "villages": []
+    }
+  ],
+  "ms": 17116,
+  "preset": "huge",
+  "roads": [],
+  "seed": 237895547
+}

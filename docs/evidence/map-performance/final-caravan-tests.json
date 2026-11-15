@@ -1,0 +1,54 @@
+{
+  "ok": true,
+  "tests": 26,
+  "suites": 5,
+  "sources_unchanged": true,
+  "wall_seconds": 51.91,
+  "results": [
+    {
+      "suite": "tests/unit/experiment_3d/test_caravan_harness_3d.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.81,
+      "log": "build/test-runs/20261115-185341-33186/tests__unit__experiment_3d__test_caravan_harness_3d.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_contracts.gd",
+      "ok": true,
+      "expected_tests": 10,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 45.88,
+      "log": "build/test-runs/20261115-185341-33186/tests__unit__server__test_caravan_contracts.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_motion.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 37.98,
+      "log": "build/test-runs/20261115-185341-33186/tests__unit__server__test_caravan_motion.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_navigation.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 39.97,
+      "log": "build/test-runs/20261115-185341-33186/tests__unit__server__test_caravan_navigation.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_stops.gd",
+      "ok": true,
+      "expected_tests": 7,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 48.98,
+      "log": "build/test-runs/20261115-185341-33186/tests__unit__server__test_caravan_stops.gd.log"
+    }
+  ]
+}

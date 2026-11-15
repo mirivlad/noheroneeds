@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PHASE open_ms 551.864
+PHASE prepare_ms 13302.393
+PHASE map 0 {"ms":18429.356,"returned_places":2,"visible_places":[{"name":"Боровое","x":79,"y":164}]}
+PHASE map 1 {"ms":0.156,"returned_places":2,"visible_places":[{"name":"Боровое","x":79,"y":164}]}
+PHASE map 2 {"ms":0.135,"returned_places":2,"visible_places":[{"name":"Боровое","x":79,"y":164}]}

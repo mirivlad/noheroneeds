@@ -198,3 +198,17 @@ func test_a_dweller_is_talked_and_traded_with() -> void:
 	smith["entity"]["asleep"] = true
 	check(not _ids(Actions.of(content, client, view, "", smith, Vector2i.ZERO)).has("trade"), "not in its sleep")
 	check(not _ids(Actions.of(content, client, view, "", smith, Vector2i.ZERO)).has("talk"), "nor talked with")
+
+func test_visible_map_chunks_preserve_order_at_near_and_far_zoom() -> void:
+	var chunks := {}
+	for y in range(3, -4, -1):
+		for x in range(3, -4, -1): chunks[Vector2i(x, y)] = true
+	var near: Array[Vector2i] = []
+	var all: Array[Vector2i] = []
+	for y in range(-3, 4):
+		for x in range(-3, 4):
+			var at := Vector2i(x, y)
+			all.append(at)
+			if absi(x) <= 1 and absi(y) <= 1: near.append(at)
+	eq(MapPainter.visible_chunks(chunks, Vector2i(-1, -1), Vector2i(1, 1)), near, "near view keeps the same scanline order")
+	eq(MapPainter.visible_chunks(chunks, Vector2i(-100000, -100000), Vector2i(100000, 100000)), all, "a vast unexplored view visits only the known tiles, in the same order")

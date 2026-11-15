@@ -1,0 +1,26 @@
+{
+  "comparison.webp": {
+    "width": 2240,
+    "height": 1218,
+    "rgba_lossless": true,
+    "sha256": "59433444aa878a2049a164eb7e3708b3dabff8ffb6e87dee29eb41d81e1ee117"
+  },
+  "settlement-0.webp": {
+    "width": 1800,
+    "height": 1013,
+    "rgba_lossless": true,
+    "sha256": "915ac37a0ac63fcb90d33e3fdcdb81f6e9e9a01262bc2f9468d97a8ec0fc8899"
+  },
+  "settlement-1.webp": {
+    "width": 1800,
+    "height": 1013,
+    "rgba_lossless": true,
+    "sha256": "de87a43e18124376a934bd419d78098181555045d06cafe63775d5b9a3910bc2"
+  },
+  "caravan.webp": {
+    "width": 1800,
+    "height": 1013,
+    "rgba_lossless": true,
+    "sha256": "83018d29e94c1f89c0679e6e57f679c12e3ccb9637e3f046782b7224cc1146cc"
+  }
+}

@@ -26,6 +26,9 @@ func _start() -> void:
 	world = ServerWorld.open(db, content)
 	server = GameServer.new(world, net.server(), _key("server"))
 	server.wait_for_disk = true
+	# Protocol tests begin with a ready initial view, like a listening
+	# dedicated server. Pending loader behaviour has its own regression suite.
+	world.prepare_spawn_view(server.view_chunks)
 
 
 func _restart() -> void:

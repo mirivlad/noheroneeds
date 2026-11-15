@@ -161,6 +161,7 @@ var _frames := 0
 var _demo_done := false
 ## The request for the settlements' names on the map (ADR-0038).
 var _places_rid := ""
+var _places_wait := 0.0
 ## Development runs (--demo, --goto, --ui...): none in a player's game.
 var _dev: DevRuns
 ## The blueprint's cells this frame ([cell, why not]) and their pictures.
@@ -476,6 +477,11 @@ func _process(delta: float) -> void:
 		return
 	var t0 := Time.get_ticks_usec()
 	painter.refresh()
+	if world_map.visible:
+		_places_wait -= delta
+		if _places_wait <= 0.0 and _places_rid == "":
+			_places_wait = 1.0
+			_places_rid = client.request({"type": "places"})
 	var t_map := Time.get_ticks_usec()
 	client.move = _steer(delta) if not paused and not world_map.visible else Vector2i.ZERO
 	if client.move != Vector2i.ZERO:
@@ -846,7 +852,7 @@ func open_window(name: String) -> void:
 		"map":
 			windows.close_all()
 			world_map.open()
-			_places_rid = client.request({"type": "places"})  # the settlements' names on it
+			_places_wait = 0.0  # labels also refresh as old map tiles refill the cache
 
 
 ## The colour of what flies off a thing worked: wood, stone, earth, green.
@@ -1321,6 +1327,7 @@ func _update_hud() -> void:
 		var r: Dictionary = client.results[rid]
 		if rid == _places_rid:
 			client.results.erase(rid)
+			_places_rid = ""
 			world_map.places = r.get("places", [])
 			continue
 		if _talk_rids.has(rid):
@@ -1465,6 +1472,8 @@ func _update_hud() -> void:
 	var cell := Movement.cell_of(client.position)
 	var state: String = {"playing": "", "connecting": "подключение…", "joining": "вход…", "disconnected": "нет связи",
 		"rejected": "отказ: " + client.reject_reason}.get(client.state, client.state)
+	if state == "" and client.has_position and not client.chunks.has(ServerWorld.chunk_key(client.location, cell.x >> 5, cell.y >> 5)):
+		state = "загрузка местности…"
 	var inv := client.inventory()
 	var level := "" if client.z == 0 else ("Этаж %+d" % client.z if client.z > 0 else "Глубина −%d" % -client.z)
 	if client.has_time:

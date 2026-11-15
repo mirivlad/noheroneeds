@@ -1,0 +1,32 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+DISTRICT -1,-1 villages=0
+DISTRICT 0,-1 villages=2
+DISTRICT 1,-1 villages=0
+DISTRICT -1,0 villages=4
+DISTRICT 0,0 villages=4
+DISTRICT 1,0 villages=2
+DISTRICT -1,1 villages=4
+DISTRICT 0,1 villages=3
+DISTRICT 1,1 villages=4
+PASS all road cells avoid solid buildings, deep water and crags
+PASS real LocalGame client joined
+PASS terrain-fitted settlement: base:village@0,0#3
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":20.048,"chunks":11,"fps":5.025211514084,"location":"surface","objects":2303,"renderer":"gl_compatibility","worst_frame_ms":42772.809}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":18.052,"chunks":19,"fps":37.2663724527969,"location":"surface","objects":4920,"renderer":"gl_compatibility","worst_frame_ms":204.639}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":17.609,"chunks":28,"fps":35.7434336333796,"location":"surface","objects":7151,"renderer":"gl_compatibility","worst_frame_ms":566.823}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":18.337,"chunks":27,"fps":10.7053387274443,"location":"surface","objects":6937,"renderer":"gl_compatibility","worst_frame_ms":14506.009}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":20.306,"chunks":27,"fps":28.8084175891522,"location":"surface","objects":6937,"renderer":"gl_compatibility","worst_frame_ms":259.781}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":20.678,"chunks":30,"fps":27.5147167048082,"location":"surface","objects":7668,"renderer":"gl_compatibility","worst_frame_ms":553.155}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":22.481,"chunks":33,"fps":27.2473030619429,"location":"surface","objects":8487,"renderer":"gl_compatibility","worst_frame_ms":348.947}
+PASS all expected chunks received and native geometry settled
+PASS a real server caravan fits and trades at the generated berth
+PASS all expected chunks received and native geometry settled
+PASS terrain-fitted settlement: base:village@0,0#2
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":26.319,"chunks":13,"fps":21.8814901411487,"location":"surface","objects":3412,"renderer":"gl_compatibility","worst_frame_ms":1545.727}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":29.836,"chunks":18,"fps":28.0929968091974,"location":"surface","objects":4676,"renderer":"gl_compatibility","worst_frame_ms":637.486}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":24.922,"chunks":21,"fps":28.9953684731425,"location":"surface","objects":5567,"renderer":"gl_compatibility","worst_frame_ms":576.141}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":30.627,"chunks":30,"fps":33.1340833638075,"location":"surface","objects":7424,"renderer":"gl_compatibility","worst_frame_ms":578.712}
+PASS all expected chunks received and native geometry settled

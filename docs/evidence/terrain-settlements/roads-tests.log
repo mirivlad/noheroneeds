@@ -1,0 +1,12 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_roads::test_approaches_use_each_side_of_an_asymmetric_village (56 ms)
+PASS test_roads::test_short_water_is_bridged_without_a_gap (86 ms)
+PASS test_roads::test_a_too_long_bridge_is_gone_round_by_land (72 ms)
+PASS test_roads::test_the_sea_between_two_villages_makes_no_road (148 ms)
+PASS test_roads::test_a_bridge_never_stands_over_deep_water (67 ms)
+PASS test_roads::test_a_terrain_step_is_a_pass_while_a_crag_remains_blocked (88 ms)
+PASS test_roads::test_full_road_width_avoids_walls_at_diagonals_and_turns (65 ms)
+expected engine errors: 0
+
+7 tests, 0 failed checks, 1.0s

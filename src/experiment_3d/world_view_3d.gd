@@ -192,6 +192,7 @@ func update_view(alpha: float, delta: float) -> void:
 	if _land and client.z >= 0: _refresh_foundations(changed)
 	if terrain and not changed.is_empty():
 		terrain.heights.clear()  # rock dug out (or laid) moves the ground at its corners
+		terrain.pads.clear()  # received foundations can replace an empty chunk edge
 	if not changed.is_empty():
 		_cut_from = Vector2i(1 << 30, 0)  # a roof laid or taken off: the cut again
 	for key: String in changed:
@@ -227,7 +228,7 @@ func update_view(alpha: float, delta: float) -> void:
 			_begin_chunk(around)
 			if _job.is_empty():
 				break
-		_build_row()
+		_build_row(start + BUILD_BUDGET_US)
 	_last_build_ms = (Time.get_ticks_usec() - start) / 1000.0
 	_update_actors(alpha, delta)
 	_glimmer(delta)
@@ -378,7 +379,24 @@ func _rock_top(c: Vector2i, corner: Vector2i) -> float:
 func _new_terrain() -> TerrainShape3D:
 	var shape := TerrainShape3D.new(_land, func(c: Vector2i) -> bool: return _rock_at(c) or _ground_is(c, "chasm"))
 	shape.sag = func(c: Vector2i) -> float: return _land.bridge_sag(c.x, c.y) if _ground_is(c, "hanging_bridge") else 0.0
+	shape.foundation_source = _received_foundations
 	return shape
+
+
+## The server already fitted these plots. Rendering must not run settlement
+## planning, including before the first chunk or at a streamed chunk edge.
+func _received_foundations(chunk: Vector2i) -> Array:
+	var own := ServerWorld.chunk_key(Levels.SURFACE, chunk.x, chunk.y)
+	var source: Chunk = client.chunks.get(own)
+	if source and source.meta.has("terrain_pads"): return source.meta["terrain_pads"]
+	var rows := []
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			source = client.chunks.get(ServerWorld.chunk_key(Levels.SURFACE, chunk.x + dx, chunk.y + dy))
+			if source == null: continue
+			for row: Array in source.meta.get("terrain_pads", []):
+				if not rows.has(row): rows.append(row)
+	return rows
 
 ## Whether a cell's ground is the surface generator's `what` ("chasm", "hanging_bridge").
 func _ground_is(c: Vector2i, what: String) -> bool:
@@ -451,13 +469,17 @@ func _begin_chunk(around: Vector2i) -> void:
 	rock_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_job = {"rock": rock_surface, "rock_count": 0, "key": best, "chunk": client.chunks[best], "origin": Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE, "row": 0, "root": root, "ground": st, "faces": PackedVector3Array(), "targets": [], "instances": {}, "meshes": {}, "parts": {}, "crops": [], "ambient": {}, "count": 0}
 
-func _build_row() -> void:
+func _build_row(deadline_us := 0) -> void:
 	var c: Chunk = _job["chunk"]
 	_drawing_location = String(_job["key"]).get_slice("|", 0)
 	_drawing_z = 0 if _drawing_location == Levels.SURFACE else (client.z if _drawing_location == client.location else int(c.meta.get("building_z", 0)))
 	var y: int = _job["row"]
 	var origin: Vector2i = _job["origin"]
-	for x in Chunk.SIZE:
+	for x in range(int(_job.get("column", 0)), Chunk.SIZE):
+		if deadline_us > 0 and Time.get_ticks_usec() >= deadline_us:
+			_job["column"] = x
+			_drawing_location = ""
+			return
 		var cell := origin + Vector2i(x, y)
 		var ground := c.get_cell("ground", x, y)
 		if ground == "" and not c.get_props(x, y).get("stairs_down", false) \
@@ -495,6 +517,7 @@ func _build_row() -> void:
 				if a != "":
 					var at := Vector2(cell) + Vector2.ONE * .5
 					(_job["ambient"].get_or_add(a, []) as Array).append(Vector3(at.x, elevation(at) + level, at.y))
+	_job["column"] = 0
 	_job["row"] = y + 1
 	if y + 1 == Chunk.SIZE:
 		_finish_chunk()

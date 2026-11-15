@@ -145,6 +145,22 @@ func ask_missing(location: String, centre: Vector2i, radius: int) -> void:
 		client.request_map(location, want)
 
 
+## Preserve scanline order while visiting the smaller of the viewport grid
+## and the known chunks. Zooming out must not scan vast unexplored rectangles.
+static func visible_chunks(chunks: Dictionary, lo: Vector2i, hi: Vector2i) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if (hi.x - lo.x + 1) * (hi.y - lo.y + 1) <= chunks.size():
+		for cy in range(lo.y, hi.y + 1):
+			for cx in range(lo.x, hi.x + 1):
+				var at := Vector2i(cx, cy)
+				if chunks.has(at): out.append(at)
+	else:
+		for at: Vector2i in chunks:
+			if at.x >= lo.x and at.x <= hi.x and at.y >= lo.y and at.y <= hi.y: out.append(at)
+		out.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
+	return out
+
+
 ## Draws the seen tiles of `location` onto `canvas` (a Control's _draw):
 ## the cell `centre` at `origin`, `scale` pixels a cell, within `rect`.
 func draw(canvas: CanvasItem, location: String, centre: Vector2, origin: Vector2, scale: float, rect: Rect2) -> void:
@@ -156,18 +172,15 @@ func draw(canvas: CanvasItem, location: String, centre: Vector2, origin: Vector2
 	var hi := Vector2i(floori((centre.x + half.x) / Chunk.SIZE) + 1, floori((centre.y + half.y) / Chunk.SIZE) + 1)
 	var chunks: Dictionary = known["chunks"]
 	var ways := []
-	for cy in range(lo.y, hi.y + 1):
-		for cx in range(lo.x, hi.x + 1):
-			if not chunks.has(Vector2i(cx, cy)):
-				continue
-			var t := texture(location, Vector2i(cx, cy))
-			if t == null:
-				continue
-			var at := origin + (Vector2(cx * Chunk.SIZE, cy * Chunk.SIZE) - centre) * scale
-			canvas.draw_texture_rect(t, Rect2(at, Vector2.ONE * Chunk.SIZE * scale), false)
-			for m: Array in marks(location, Vector2i(cx, cy)):
-				var p: Vector2 = at + (Vector2(m[0]) + Vector2(0.5, 0.5)) * scale
-				if rect.has_point(p):
-					ways.append([p, bool(m[1])])
+	for chunk: Vector2i in visible_chunks(chunks, lo, hi):
+		var t := texture(location, chunk)
+		if t == null:
+			continue
+		var at := origin + (Vector2(chunk * Chunk.SIZE) - centre) * scale
+		canvas.draw_texture_rect(t, Rect2(at, Vector2.ONE * Chunk.SIZE * scale), false)
+		for m: Array in marks(location, chunk):
+			var p: Vector2 = at + (Vector2(m[0]) + Vector2(0.5, 0.5)) * scale
+			if rect.has_point(p):
+				ways.append([p, bool(m[1])])
 	for w: Array in ways:  # over every tile, not under the next one
 		draw_way(canvas, w[0], w[1])

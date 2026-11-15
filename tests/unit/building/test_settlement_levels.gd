@@ -89,6 +89,15 @@ func _run(server: GameServer, clients: Array[GameClient], ticks: int) -> void:
 		for client: GameClient in clients:
 			client.step()
 
+## Streaming is asynchronous: a fixed count of accelerated ticks is not a
+## terrain readiness barrier. Keep the saved floors on disk until requested.
+func _wait_for(server: GameServer, clients: Array[GameClient], ready: Callable) -> void:
+	var began := Time.get_ticks_msec()
+	while not ready.call() and Time.get_ticks_msec() - began < 120000:
+		_run(server, clients, 1)
+		OS.delay_msec(50)
+	check(ready.call(), "requested saved floor chunks arrive asynchronously")
+
 func test_inn_exterior_reaches_street_after_climbing_and_reopening() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	var path := tmp_dir().path_join("inn-exterior.db")
@@ -125,6 +134,7 @@ func test_inn_exterior_reaches_street_after_climbing_and_reopening() -> void:
 			return
 		world.move_character(client.character_id, stair * Movement.UNIT + Vector2i(128, 128))
 		_run(server, [client], 80)
+		_wait_for(server, [client], func() -> bool: return client.chunk_at(upper, roof.x, roof.y) != null)
 		_check_inn_exterior(client, plan, upper, roof, "after reopening" if reopened else "before entering")
 		if not reopened:
 			var rid := client.request({"type": "climb", "location": "surface", "x": stair.x, "y": stair.y})
@@ -200,6 +210,7 @@ func test_third_floor_receives_saved_lower_architecture_without_private_contents
 	world.move_character(client.character_id, Vector2i(2, 2) * Movement.UNIT + Vector2i(128, 128))
 	world.relocated[client.character_id] = true
 	_run(server, [client], 100)
+	_wait_for(server, [client], func() -> bool: return client.chunk_at(current, 2, 2) != null and client.chunk_at(lower, 1, 1) != null)
 	eq(client.z, 2, "the character is on the real third floor")
 	eq(client.cell_at(current, Vector2i(2, 2), "structure"), "base:bed", "current floor retains the full interior")
 	eq(client.cell_at(lower, Vector2i(1, 1), "structure"), "base:wood_wall", "saved lower exterior is streamed without visiting it")

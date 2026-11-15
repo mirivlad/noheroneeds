@@ -15,6 +15,8 @@ var _wake := Semaphore.new()
 var _queue: Array = []
 var _queued := {}
 var _ready: Array = []
+var _ready_keys := {}
+var _sent_plans := {}
 var _stop := false
 
 
@@ -24,6 +26,9 @@ func start(db_path: String, generator: SurfaceGenerator, underground: Undergroun
 	if not _store.open(db_path):
 		return false
 	_generator = generator
+	if _generator:
+		_generator.cancel_requested = _stopping
+		_generator.settlements.cancel_requested = _stopping
 	_thread.start(_run)
 	return true
 
@@ -31,20 +36,22 @@ func start(db_path: String, generator: SurfaceGenerator, underground: Undergroun
 func request(location: String, cx: int, cy: int) -> void:
 	var key := ServerWorld.chunk_key(location, cx, cy)
 	_mutex.lock()
-	if not _queued.has(key):
+	if not _queued.has(key) and not _ready_keys.has(key):
 		_queued[key] = true
 		_queue.append([location, cx, cy])
 		_wake.post()
 	_mutex.unlock()
 
 
-## [[location, cx, cy, Chunk, generated: bool, entity rows, encoded bytes], ...]
+## [[location, cx, cy, Chunk, generated: bool, entity rows, encoded bytes, plans], ...]
 ## The bytes are what clients receive, so the simulation never encodes an
 ## unchanged chunk: stored ones come as stored, new ones are encoded here.
-func take_ready() -> Array:
+func take_ready(limit := -1) -> Array:
 	_mutex.lock()
-	var out := _ready
-	_ready = []
+	var count := _ready.size() if limit < 0 else mini(limit, _ready.size())
+	var out := _ready.slice(0, count)
+	_ready = _ready.slice(count)
+	for row: Array in out: _ready_keys.erase(ServerWorld.chunk_key(row[0], row[1], row[2]))
 	_mutex.unlock()
 	return out
 
@@ -85,10 +92,18 @@ func _run() -> void:
 			var generated := false
 			if not data.is_empty():
 				c = ChunkCodec.decode(data)
+				if r[0] == ServerWorld.SURFACE and _generator:
+					# Saved cells do not need regeneration, but the simulation's
+					# population/upper-floor callbacks still need their plans.
+					_generator.settlements.plans_touching(r[1], r[2])
+					_generator.settlements.roads_touching(r[1], r[2])
+					_generator.settlements.camps.plans_touching(r[1], r[2])
+					_generator.settlements.inns.plans_touching(r[1], r[2])
 			elif r[0] == ServerWorld.SURFACE and _generator:
 				c = _generator.generate(r[1], r[2])
-				data = ChunkCodec.encode(c)
-				generated = true
+				if c:
+					data = ChunkCodec.encode(c)
+					generated = true
 			elif Levels.is_depth(r[0]) and _underground:
 				c = _underground.generate(int(String(r[0]).substr(Levels.DEPTH_PREFIX.length())), r[1], r[2])
 				data = ChunkCodec.encode(c)
@@ -96,8 +111,35 @@ func _run() -> void:
 			else:
 				c = Chunk.new()
 			var rows := _store.entities_in_chunk(r[0], r[1], r[2]) if not data.is_empty() else []
+			var plans := _planning_delta() if r[0] == ServerWorld.SURFACE and _generator and not _stopping() else {}
 			_mutex.lock()
 			_queued.erase(ServerWorld.chunk_key(r[0], r[1], r[2]))
-			if c:
-				_ready.append([r[0], r[1], r[2], c, generated, rows, data])
+			if c and not _stop:
+				_ready.append([r[0], r[1], r[2], c, generated, rows, data, plans])
+				_ready_keys[ServerWorld.chunk_key(r[0], r[1], r[2])] = true
 			_mutex.unlock()
+
+
+## Only new entries are copied, on the worker, before ownership crosses
+## threads. The main thread never touches the worker's mutable dictionaries.
+func _planning_delta() -> Dictionary:
+	var out := {}
+	var caches := _generator.settlements.planning_cache()
+	for family: String in caches:
+		var cache: Dictionary = caches[family]
+		var sent: Dictionary = _sent_plans.get_or_add(family, {})
+		if cache.size() < sent.size(): sent.clear()  # the generator evicted its cache
+		var added := {}
+		for key: String in cache:
+			if sent.has(key): continue
+			added[key] = cache[key].duplicate(true)
+			sent[key] = true
+		if not added.is_empty(): out[family] = added
+	return out
+
+
+func _stopping() -> bool:
+	_mutex.lock()
+	var stopping := _stop
+	_mutex.unlock()
+	return stopping

@@ -368,6 +368,10 @@ func test_real_mountain_route_is_levels_cliffs_and_ramps() -> void:
 
 func test_house_platform_joints_and_door_hinge() -> void:
 	var rect: Rect2i = view._land.settlements.home_plan()["homes"][0]["rect"]
+	# Foundations now arrive with real chunk data; the renderer never plans.
+	for cy in range(rect.position.y >> 5, (rect.end.y >> 5) + 1):
+		for cx in range(rect.position.x >> 5, (rect.end.x >> 5) + 1):
+			client.chunks[ServerWorld.chunk_key("surface", cx, cy)] = ChunkCodec.decode(ChunkCodec.encode(view._land.generate(cx, cy)))
 	var h := view.corner_height(rect.position)
 	for corner: Vector2i in [rect.position, rect.end, Vector2i(rect.position.x,rect.end.y), Vector2i(rect.end.x,rect.position.y)]:
 		check(is_equal_approx(view.corner_height(corner),h), "level house foundation including chunk boundary")
@@ -939,3 +943,44 @@ func test_open_door_leaf_keeps_its_jamb_and_matches_the_chosen_opening_side() ->
 			check(leaf.intersects(jamb), "the open leaf remains attached to the same side jamb: " + facing)
 			inspected = true
 		check(inspected, "actual generated door mesh inspected")
+
+class NoRenderPlanning extends Settlements:
+	var searches := 0
+	func plans_touching(_cx: int, _cy: int) -> Array:
+		searches += 1
+		return []
+
+func test_render_foundations_come_from_chunk_metadata_without_planning() -> void:
+	var plans := NoRenderPlanning.new(431, content, func(_x: int, _y: int) -> bool: return false, 8)
+	view._land.settlements = plans
+	view.corner_height(Vector2i(28, 28))
+	eq(plans.searches, 0, "even a view without its first chunk must not generate settlements")
+	var c := Chunk.new()
+	c.meta["terrain_pads"] = [[28, 28, 8, 6, 32, 31]]
+	client.chunks["surface|0|0"] = ChunkCodec.decode(ChunkCodec.encode(c))
+	view.terrain.heights.clear()
+	view.terrain.pads.clear()
+	var expected := view.terrain.natural(Vector2i(32, 31)) + .04
+	for y in range(28, 35):
+		for x in range(28, 37):
+			check(is_equal_approx(view.corner_height(Vector2i(x, y)), expected), "received foundation survives codec and crosses a streamed chunk edge")
+	eq(plans.searches, 0, "rendering received and adjacent foundations never invokes settlement planning")
+
+func test_geometry_row_resumes_after_budget_without_losing_or_repeating_cells() -> void:
+	view._land = null
+	var c := Chunk.new()
+	for x in Chunk.SIZE: c.set_cell("ground", x, 0, "base:grass")
+	client.chunks["surface|0|0"] = c
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	view._build_row(1)
+	eq(view._job.row, 0, "an exhausted budget does not advance past an unfinished row")
+	eq(view._job.targets.size(), 0, "an exhausted budget does no geometry work")
+	for i in 200:
+		view._build_row(Time.get_ticks_usec() + 500)
+		if view._job.row > 0: break
+	eq(view._job.row, 1, "bounded work eventually completes the row")
+	eq(view._job.targets.size(), Chunk.SIZE * 2, "one pair of pickable triangles per cell")
+	eq(view._job.faces.size(), Chunk.SIZE * 6, "no ground triangles are lost or duplicated")
+	for x in Chunk.SIZE:
+		eq(view._job.targets[x * 2].cell, Vector2i(x, 0), "resuming preserves scanline order")

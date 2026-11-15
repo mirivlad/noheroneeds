@@ -20,6 +20,8 @@ var yaw := 0.0
 var tilt := 55.0
 var zoom := 16.875
 var camera_settings: GameSettings
+var _grass_noise := FastNoiseLite.new()
+var _plant_season := -1
 var _location := ""
 var _geometry := {}
 var _queued := {}
@@ -104,6 +106,7 @@ func configure_camera(settings: GameSettings) -> void:
 	yaw = float(settings.values.get("experiment_3d_yaw", 0.0))
 	tilt = clampf(float(settings.values.get("experiment_3d_tilt", 55)), 25, 78)
 	zoom = clampf(float(settings.values.get("experiment_3d_zoom", 16.875)), 12, 48)
+	models.set_wind(float(settings.values.get("vegetation_wind", .5)))
 
 ## The camera as in RO: the right button dragged turns it (with Shift tilts
 ## it), a double right click turns it back north; the wheel zooms. A right
@@ -180,7 +183,13 @@ func update_view(alpha: float, delta: float) -> void:
 		# Call the ORIGINAL surface sampler, never a new world generator.
 		var plan: WorldPlan = (client.geography as PlannedGeography).plan if client.geography is PlannedGeography else null
 		_land = SurfaceGenerator.new(client.geography.world_seed, content, plan)
+		_grass_noise.seed = client.geography.world_seed
+		_grass_noise.frequency = .09
 		terrain = _new_terrain()
+	var season := Seasons.of(client.world_time)
+	if season != _plant_season:
+		_plant_season = season
+		for key: String in _geometry: _queued[key] = true
 	if client.location != _location:
 		_location = client.location
 		_clear_geometry()
@@ -508,6 +517,7 @@ func _build_row(deadline_us := 0) -> void:
 			var id := c.get_cell(layer, x, y)
 			if id != "":
 				_add_object(cell, id, layer, c.get_props(x, y))
+		_add_decorative_grass(cell, ground, c, x, y)
 		if _drawing_location == client.location and c.get_props(x, y).get("stairs_down", false):
 			_add_object(cell, "base:stairs_down", "transition", {})
 		# Life over the land, by what lies there ("ambient"): a cell in AMBIENT_EVERY.
@@ -528,6 +538,33 @@ func ground_color(id: String) -> Color:
 	var base := Color(String(colors.get(id, "93947b")))
 	return base
 
+func _plant_tint(cell: Vector2i, ground: String) -> Color:
+	var climate := client.climate_at(cell)
+	var dry := .5 if ground == "base:grass_dry" else clampf(-climate.y * .4, 0, .4)
+	if _plant_season == Seasons.AUTUMN: dry = maxf(dry, .65 * (1.0 - maxf(0, climate.x)))
+	var frost := 1.0 if Seasons.freezing(client.world_time, climate.x) else 0.0
+	return Color(dry, frost, 0, 1)
+
+func _add_decorative_grass(cell: Vector2i, ground: String, chunk: Chunk, x: int, y: int) -> void:
+	if _drawing_location != Levels.SURFACE or _drawing_z != 0 or ground not in ["base:grass", "base:grass_dry", "base:moss", "base:forest_floor"]:
+		return
+	for layer: String in ["cover", "structure", "ceiling", "roof"]:
+		if chunk.get_cell(layer, x, y) != "": return
+	if chunk.get_props(x, y).get("stairs_down", false) or _hollow(cell): return
+	var field := _grass_noise.get_noise_2d(cell.x, cell.y)
+	var roll := posmod(hash([cell.x, cell.y, "decorative-grass"]), 1024)
+	if field < -.12 or roll > int((field + .3) * 1100): return
+	var variant := roll % 3
+	var key := "decoration:grass:" + str(variant)
+	var mesh := models.decorative_grass(variant)
+	_job["meshes"][key] = mesh
+	var at := Vector2(cell) + Vector2(.25 + (roll % 13) / 26.0, .25 + (roll % 17) / 34.0)
+	var t := Transform3D(Basis(Vector3.UP, roll * TAU / 1024), Vector3(at.x, elevation(at), at.y))
+	(_job["instances"].get_or_add(key, []) as Array).append(t)
+	(_job["parts"].get_or_add(key, []) as Array).append([cell, "object", _drawing_location])
+	(_job.get_or_add("plant_tints", {}).get_or_add(key, []) as Array).append(_plant_tint(cell, ground))
+	# No faces, picking target, collision, cover or network entity is created.
+
 func _quad(p: Array[Vector3], color: Color, target: Dictionary) -> void:
 	var st: SurfaceTool = _job["ground"]
 	var normal := (p[2] - p[0]).cross(p[1] - p[0]).normalized()
@@ -545,7 +582,8 @@ func _quad(p: Array[Vector3], color: Color, target: Dictionary) -> void:
 func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -> void:
 	var d := content.get_def(id)
 	var model_id := "base:surface_rock" if id == "base:rock" and client.z >= 0 else id
-	var mesh := models.mesh_for(model_id, d)
+	var variant := PlantMeshes3D.variant_at(model_id, cell) if PlantMeshes3D.supports(model_id) else 0
+	var mesh := models.mesh_for(model_id, d, variant)
 	var at := Vector2(cell) + Vector2.ONE * .5
 	var lift := (0.0 if _drawing_z < 0 else _drawing_z * STOREY) + (STOREY if layer in ["ceiling", "roof"] else 0.0)
 	if layer == "roof" and props.has("wall_height"):
@@ -581,6 +619,11 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		basis = basis.scaled(Vector3.ONE * lerpf(.35, 1.0, float(stage) / maxf(1, stages - 1)))
 		(_job["crops"] as Array).append([cell, d, float(planted), stage])
 	var instance_id := model_id
+	if PlantMeshes3D.supports(model_id):
+		instance_id += ":" + str(variant)
+		basis = Basis(Vector3.UP, posmod(hash([cell.x, cell.y, id, 61]), 4096) * TAU / 4096.0) * basis
+		if model_id in PlantMeshes3D.SHRUBS:
+			basis = Basis(Vector3.UP, posmod(hash([cell.x, cell.y, "shrub", 61]), 4096) * TAU / 4096.0)
 	var role := String(d.get("role", ""))
 	if role == "door":
 		var normal: Vector2i = ContentRegistry.FACINGS.get(facing, Vector2i.DOWN)
@@ -688,6 +731,8 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	else:
 		var entries: Array = _job["instances"].get_or_add(instance_id, [])
 		entries.append(t)
+		if d.get("kind") == "plant":
+			(_job.get_or_add("plant_tints", {}).get_or_add(instance_id, []) as Array).append(_plant_tint(cell, ground_at(_drawing_location, cell)))
 		# The same cell/kind/location policy drives rendering and mouse picking.
 		var parts: Array = _job["parts"].get_or_add(instance_id, [])
 		var cover := layer in ["ceiling", "roof"]
@@ -980,9 +1025,17 @@ func _finish_chunk() -> void:
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = _job["meshes"][id] if _job["meshes"].has(id) else models.mesh_for(id, content.get_def(id))
+		var tints: Array = _job.get("plant_tints", {}).get(id, [])
+		mm.use_custom_data = not tints.is_empty()
+		# GL Compatibility needs the colour slot when custom data is present;
+		# otherwise it multiplies vertex colours by the climate data (black).
+		mm.use_colors = not tints.is_empty()
 		mm.instance_count = transforms.size()
 		for i in transforms.size():
 			mm.set_instance_transform(i, transforms[i])
+			if not tints.is_empty():
+				mm.set_instance_color(i, Color.WHITE)
+				mm.set_instance_custom_data(i, tints[i])
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = mm
 		var parts: Array = _job["parts"].get(id, [])

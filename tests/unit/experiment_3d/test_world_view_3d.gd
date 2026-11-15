@@ -950,6 +950,63 @@ class NoRenderPlanning extends Settlements:
 		searches += 1
 		return []
 
+func test_decorative_grass_has_no_gameplay_targets_or_chunk_mutations() -> void:
+	view._land = null
+	var c := Chunk.new()
+	for y in Chunk.SIZE:
+		for x in Chunk.SIZE: c.set_cell("ground", x, y, "base:grass")
+	var before := ChunkCodec.encode(c)
+	client.chunks["surface|0|0"] = c
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in Chunk.SIZE - 1: view._build_row()
+	var decorations := 0
+	for key: String in view._job.instances:
+		if key.begins_with("decoration:"): decorations += view._job.instances[key].size()
+	check(decorations > 0, "native render batches contain low grass")
+	eq(view._job.targets.size(), Chunk.SIZE * (Chunk.SIZE - 1) * 2, "only the original ground is pickable")
+	eq(view._job.faces.size(), Chunk.SIZE * (Chunk.SIZE - 1) * 6, "decoration adds no collision faces")
+	eq(ChunkCodec.encode(c), before, "rendering does not write resources, props or persistence")
+	var transforms: Dictionary = view._job.instances.duplicate(true)
+	view._clear_geometry()
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in Chunk.SIZE - 1: view._build_row()
+	eq(view._job.instances, transforms, "chunk reload reproduces every decorative transform")
+	view._build_row()
+	var inspected := false
+	for node: Node in (view._geometry["surface|0|0"] as Node).get_children():
+		if node is MultiMeshInstance3D:
+			var mm := (node as MultiMeshInstance3D).multimesh
+			check(mm.use_custom_data and mm.use_colors, "climate data has a separate GL colour slot")
+			# The headless dummy renderer does not retain GPU instance colours;
+			# their actual appearance is checked by the native capture scenario.
+			inspected = true
+	check(inspected, "actual finished MultiMesh inspected")
+
+func test_bush_transform_survives_harvest_and_seasons_do_not_add_resources() -> void:
+	view._land = null
+	var cell := Vector2i(4, 0)
+	var c := Chunk.new()
+	c.set_cell("ground", cell.x, cell.y, "base:grass")
+	client.chunks["surface|0|0"] = c
+	var poses := []
+	for id: String in ["base:berry_bush", "base:bush"]:
+		view._clear_geometry()
+		c.set_cell("cover", cell.x, cell.y, id)
+		view._queued["surface|0|0"] = true
+		view._begin_chunk(Vector2i.ZERO)
+		view._build_row()
+		var key := id + ":" + str(PlantMeshes3D.variant_at(id, cell))
+		poses.append(view._job.instances[key][0])
+	eq(poses[0], poses[1], "harvesting changes neither orientation nor scale nor position")
+	client.world_time = Seasons.AUTUMN * Seasons.SEASON_MS
+	view._plant_season = Seasons.AUTUMN
+	var tint := view._plant_tint(cell, "base:grass")
+	check(tint.r > 0, "autumn dries green foliage")
+	check(view._plant_tint(cell, "base:grass_dry").r >= .5, "dry biome has its own palette")
+	eq(c.get_cell("cover", cell.x, cell.y), "base:bush", "visual palette never changes the server resource")
+
 func test_render_foundations_come_from_chunk_metadata_without_planning() -> void:
 	var plans := NoRenderPlanning.new(431, content, func(_x: int, _y: int) -> bool: return false, 8)
 	view._land.settlements = plans

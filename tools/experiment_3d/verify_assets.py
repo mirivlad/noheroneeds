@@ -23,9 +23,15 @@ for name, record in manifest['files'].items():
 for pack in manifest['packs']:
  assert b'CC0' in (ROOT/'assets/experiment_3d'/pack/'LICENSE.txt').read_bytes()
 catalog = json.loads((ROOT/'assets/experiment_3d/catalog.json').read_text())
-used = {entry['path'] for entry in catalog.values()}
+used = {entry['path'] for entry in catalog.values() if 'path' in entry}
+procedural = {name for name, entry in catalog.items() if entry.get('procedural') == 'plant'}
+shrubs = {'base:bush', 'base:berry_bush', 'base:dry_bush'}
+assert procedural == shrubs | {'base:' + name for name in ['tall_grass', 'clover', 'reeds', 'cattail', 'wheat_crop', 'carrot_crop']}
+assert all(catalog[name]['variants'] == (4 if name in shrubs else 6) for name in procedural)
 models = {str(Path(name).relative_to('assets/experiment_3d')) for name in manifest['files'] if name.endswith('.gltf')}
-assert used - {'bandits/shelter.glb'} == models, (used-models, models-used)
+# Keep the original grass source and its verified license for historical captures.
+retained = {'nature/Grass_Common_Short.gltf', 'nature/Bush_Common.gltf', 'nature/Bush_Common_Flowers.gltf'}
+assert used - {'bandits/shelter.glb'} == models - retained, (used-models, models-used)
 for name, relative in [('cart', 'caravan/cart.glb'), ('packs', 'caravan/packs.glb'), ('shelter', 'bandits/shelter.glb')]:
  path = ROOT/'assets/experiment_3d'/relative
  assert not path.is_symlink() and path.is_file(), str(path)
@@ -39,6 +45,6 @@ for name, relative in [('cart', 'caravan/cart.glb'), ('packs', 'caravan/packs.gl
   assert not resource.get('uri'), (str(path), resource.get('uri'))
  if name == 'cart':
   assert {f'Wheel{i}' for i in range(4)} <= {n.get('name') for n in doc.get('nodes', [])}
-print(f'ASSETS_VERIFIED: {len(manifest["packs"])} CC0 packs, {len(models)} used models, {len(manifest["files"])} source files')
+print(f'ASSETS_VERIFIED: {len(manifest["packs"])} CC0 packs, {len(models)} source models ({len(retained)} retained originals), {len(manifest["files"])} source files')
 print('CARAVAN_MODELS_VERIFIED: cart and packs, embedded dependencies, four wheels')
 print('BANDIT_SHELTER_VERIFIED: original Blender model, embedded dependencies')

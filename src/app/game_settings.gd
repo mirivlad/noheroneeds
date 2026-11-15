@@ -10,6 +10,7 @@ const DEFAULTS := {
 	"experiment_3d_zoom": 16.875,
 	"fullscreen": false,
 	"vsync": true,
+	"vegetation_wind": 0.5,
 	"volume": 0.8,
 	"music_volume": 0.7,
 	"effects_volume": 0.8,
@@ -58,6 +59,7 @@ static func load_from(file_path: String) -> GameSettings:
 				s.values[key] = v
 	for key: String in BUSES:
 		s.values[key] = clampf(float(s.values[key]), 0.0, 1.0)
+	s.values["vegetation_wind"] = clampf(float(s.values["vegetation_wind"]), 0.0, 1.0)
 	s.values["view_zoom"] = 0.75 if float(s.values["view_zoom"]) < 0.9 else 1.0
 	s.values["server_port"] = clampi(int(s.values["server_port"]), 1024, 65535)
 	s.values["max_players"] = clampi(int(s.values["max_players"]), 1, 64)

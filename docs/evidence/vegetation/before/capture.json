@@ -1,0 +1,17 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "checks": 5,
+  "failures": [],
+  "frame_p50_ms": 35.932,
+  "frame_p95_ms": 109.21,
+  "frame_worst_ms": 485.66,
+  "home": "(0, 0)",
+  "logical_size": "(1680, 983)",
+  "meadow": "(24, 24)",
+  "plot": "(48, 16)",
+  "raster_size": "(1680, 945)",
+  "renderer": "gl_compatibility",
+  "scenario_sha256": "df16de7432cc62127300712ad81d2ff94f9819dfa511f25a9fcaf8c7e32b01f8",
+  "seed": 431,
+  "world_time": 43200000.0
+}

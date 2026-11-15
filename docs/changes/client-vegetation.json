@@ -1,0 +1,27 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Различимые собираемые растения и кусты, видимые ягоды до сбора и после восстановления, низкая несобираемая трава и настраиваемый ветер без изменения количества ресурсов.",
+      "sources": {
+        "src/app/game_settings.gd": "a1fb7114507cecc96d6576c17f9a60a3d3d54ff035806439869ec5c597c2dfe2",
+        "src/experiment_3d/foliage.gdshader": "67ac7de26c20e813e734e66d56e0a0fc42e7d6f188799ce4a4f5b2eeb35c9d74",
+        "src/experiment_3d/model_library_3d.gd": "2e559e4e0b2ccef04377b552417cf422b369b8b96f5c5c8409c77aa9f65eaf2e",
+        "src/experiment_3d/world_view_3d.gd": "c29b5b810b00f5bfd851fe9f154bce8c03d9941ad1597e02d736e227768ff5e8",
+        "src/presentation/game_screen.gd": "ca23eb6409515430b4100473198b416b11bef4bc2c0e9919753e10843b2ef9b6",
+        "src/presentation/main_menu.gd": "6fd903041d7824dfdc972452fdea8901cb69a8ae5c0b4891c2c6f9d20568b3e1",
+        "src/experiment_3d/plant_meshes_3d.gd": "d694c683e136d8640e5bf3ecd7b1334cbaaa836862f962a6ef7ee6fb92f03c5b",
+        "src/experiment_3d/plant_meshes_3d.gd.uid": "a1d701e18269b1760cf5420c9e840baad8c9446dea428cb7513e486a851034e5"
+      },
+      "mechanics": [
+        "vegetation-presentation",
+        "controls"
+      ],
+      "guides": {
+        "site/content/guides/nature.html": "c8504b74317fa7d6d45852035f08816c7a8aafcf28e6e56488ce6a812dda5468",
+        "site/content/guides/controls.html": "75fbbd0dad68cbdb74735cb16634b4599a53603e418247f6ec5357823e1e293f"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

@@ -454,6 +454,15 @@ func show_settings() -> void:
 	zoom.tooltip_text = "Дальний вид показывает больше мира теми же пикселями"
 	_field("Вид", zoom)
 	zoom.item_selected.connect(func(i: int) -> void: changed.call("view_zoom", 0.75 if i == 1 else 1.0))
+	var wind := HSlider.new()
+	wind.min_value = 0.0
+	wind.max_value = 1.0
+	wind.step = .1
+	wind.value = float(settings.get_value("vegetation_wind"))
+	wind.custom_minimum_size = Vector2(100, 12)
+	wind.tooltip_text = "Сила колыхания растений; ноль отключает движение"
+	_field("Ветер в листве", wind)
+	wind.value_changed.connect(func(v: float) -> void: changed.call("vegetation_wind", v))
 	_label("Звук", Art.TEXT_DIM)
 	for pair: Array in [["volume", "Общая"], ["music_volume", "Музыка"], ["effects_volume", "Эффекты"],
 			["ambience_volume", "Окружение"]]:

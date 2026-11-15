@@ -1,0 +1,7 @@
+{
+  "baseline_commit": "356c7e47179222f437ae20d659c5c79484d833fe",
+  "candidate_branch": "codex/natural-world-vegetation",
+  "resources_unchanged": [],
+  "asset_catalog_sha256": "7729f19c8cb37279047826e45ad5c51c08d32d47fec298227f23c77fae06cb9e",
+  "sources": "Native LocalGame captures on Radeon RX 580 / Godot 4.7.2 / gl_compatibility. Final candidate run contains stills and 15 successful native checks."
+}

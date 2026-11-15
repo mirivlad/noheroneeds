@@ -386,6 +386,8 @@ func music_mood() -> String:
 ## The view and HUD parts of the player's settings.
 func apply_settings() -> void:
 	if settings:
+		if view is WorldView3D:
+			(view as WorldView3D).models.set_wind(float(settings.get_value("vegetation_wind")))
 		for n in 4:
 			_walk[n] = KeyMap.key(settings, ["up", "left", "down", "right"][n]) as Key
 		window_buttons.show_keys(func(w: String) -> String: return KeyMap.key_name(KeyMap.key(settings, w)))

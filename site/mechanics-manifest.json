@@ -303,6 +303,19 @@
         "content/base/art/ro_animals/**"
       ],
       "kinds": []
+    },
+    {
+      "id": "vegetation-presentation",
+      "guide": "nature",
+      "sources": [
+        "src/experiment_3d/plant_meshes_3d.gd",
+        "src/experiment_3d/model_library_3d.gd",
+        "src/experiment_3d/foliage.gdshader",
+        "src/experiment_3d/world_view_3d.gd",
+        "assets/experiment_3d/catalog.json",
+        "src/experiment_3d/plant_meshes_3d.gd.uid"
+      ],
+      "kinds": []
     }
   ]
 }

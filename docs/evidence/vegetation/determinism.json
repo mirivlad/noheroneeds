@@ -1,0 +1,152 @@
+{
+  "equal_across_two_processes": true,
+  "sample_count": 36,
+  "script_sha256": "72963b431209adeb61a531207f7c050c2b51674d8e9d8c412f6d4bd83fe20de3",
+  "geometry_hash_algorithm": "Godot hash(PackedVector3Array), non-cryptographic",
+  "samples": {
+    "base:berry_bush|(-1, -33)": {
+      "variant": 3,
+      "vertices_hash": "3064002790"
+    },
+    "base:berry_bush|(-32, -1)": {
+      "variant": 0,
+      "vertices_hash": "228388222"
+    },
+    "base:berry_bush|(0, 0)": {
+      "variant": 1,
+      "vertices_hash": "1141482434"
+    },
+    "base:berry_bush|(31, 32)": {
+      "variant": 0,
+      "vertices_hash": "228388222"
+    },
+    "base:bush|(-1, -33)": {
+      "variant": 3,
+      "vertices_hash": "2210780823"
+    },
+    "base:bush|(-32, -1)": {
+      "variant": 0,
+      "vertices_hash": "1311525021"
+    },
+    "base:bush|(0, 0)": {
+      "variant": 1,
+      "vertices_hash": "558080534"
+    },
+    "base:bush|(31, 32)": {
+      "variant": 0,
+      "vertices_hash": "1311525021"
+    },
+    "base:carrot_crop|(-1, -33)": {
+      "variant": 2,
+      "vertices_hash": "3221513101"
+    },
+    "base:carrot_crop|(-32, -1)": {
+      "variant": 1,
+      "vertices_hash": "3008281841"
+    },
+    "base:carrot_crop|(0, 0)": {
+      "variant": 5,
+      "vertices_hash": "66411842"
+    },
+    "base:carrot_crop|(31, 32)": {
+      "variant": 1,
+      "vertices_hash": "3008281841"
+    },
+    "base:cattail|(-1, -33)": {
+      "variant": 5,
+      "vertices_hash": "2855365557"
+    },
+    "base:cattail|(-32, -1)": {
+      "variant": 2,
+      "vertices_hash": "1525034052"
+    },
+    "base:cattail|(0, 0)": {
+      "variant": 4,
+      "vertices_hash": "3210865474"
+    },
+    "base:cattail|(31, 32)": {
+      "variant": 5,
+      "vertices_hash": "2855365557"
+    },
+    "base:clover|(-1, -33)": {
+      "variant": 4,
+      "vertices_hash": "385949202"
+    },
+    "base:clover|(-32, -1)": {
+      "variant": 2,
+      "vertices_hash": "1359645449"
+    },
+    "base:clover|(0, 0)": {
+      "variant": 0,
+      "vertices_hash": "179112989"
+    },
+    "base:clover|(31, 32)": {
+      "variant": 3,
+      "vertices_hash": "828236790"
+    },
+    "base:dry_bush|(-1, -33)": {
+      "variant": 3,
+      "vertices_hash": "1566445230"
+    },
+    "base:dry_bush|(-32, -1)": {
+      "variant": 0,
+      "vertices_hash": "58603230"
+    },
+    "base:dry_bush|(0, 0)": {
+      "variant": 1,
+      "vertices_hash": "2913496710"
+    },
+    "base:dry_bush|(31, 32)": {
+      "variant": 0,
+      "vertices_hash": "58603230"
+    },
+    "base:reeds|(-1, -33)": {
+      "variant": 0,
+      "vertices_hash": "920707505"
+    },
+    "base:reeds|(-32, -1)": {
+      "variant": 5,
+      "vertices_hash": "1316691833"
+    },
+    "base:reeds|(0, 0)": {
+      "variant": 0,
+      "vertices_hash": "920707505"
+    },
+    "base:reeds|(31, 32)": {
+      "variant": 3,
+      "vertices_hash": "3801982275"
+    },
+    "base:tall_grass|(-1, -33)": {
+      "variant": 4,
+      "vertices_hash": "2324826650"
+    },
+    "base:tall_grass|(-32, -1)": {
+      "variant": 3,
+      "vertices_hash": "2848547641"
+    },
+    "base:tall_grass|(0, 0)": {
+      "variant": 4,
+      "vertices_hash": "2324826650"
+    },
+    "base:tall_grass|(31, 32)": {
+      "variant": 2,
+      "vertices_hash": "2624759900"
+    },
+    "base:wheat_crop|(-1, -33)": {
+      "variant": 0,
+      "vertices_hash": "3098317205"
+    },
+    "base:wheat_crop|(-32, -1)": {
+      "variant": 5,
+      "vertices_hash": "827804574"
+    },
+    "base:wheat_crop|(0, 0)": {
+      "variant": 5,
+      "vertices_hash": "827804574"
+    },
+    "base:wheat_crop|(31, 32)": {
+      "variant": 0,
+      "vertices_hash": "3098317205"
+    }
+  }
+}

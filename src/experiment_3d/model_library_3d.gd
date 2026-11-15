@@ -4,6 +4,24 @@ extends RefCounted
 var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/experiment_3d/catalog.json"))
 var _meshes := {}
 var _materials := {}
+var plants := PlantMeshes3D.new()
+var wind_strength := .5
+
+func set_wind(value: float) -> void:
+	wind_strength = clampf(value, 0, 1)
+	for m: Variant in _materials.values():
+		if m is ShaderMaterial and m.shader == FOLIAGE:
+			m.set_shader_parameter("wind_strength", wind_strength)
+
+func decorative_grass(variant: int) -> Mesh:
+	var key := "decoration:" + str(posmod(variant, 3))
+	if not _meshes.has(key):
+		var grass := plants.decoration(posmod(variant, 3))
+		var mat := _foliage(null, grass.get_aabb().end.y) as ShaderMaterial
+		mat.set_shader_parameter("vertex_colors", true)
+		grass.surface_set_material(0, mat)
+		_meshes[key] = grass
+	return _meshes[key]
 
 func material(color: Color) -> StandardMaterial3D:
 	if not _materials.has(color):
@@ -13,8 +31,18 @@ func material(color: Color) -> StandardMaterial3D:
 		_materials[color] = m
 	return _materials[color]
 
-func mesh_for(id: String, definition: Dictionary) -> Mesh:
+func mesh_for(id: String, definition: Dictionary, variant := 0) -> Mesh:
 	var entry: Dictionary = catalog.get(id, {})
+	if entry.get("procedural") == "plant":
+		var count := int(entry["variants"])
+		var plant_key := "%s:%d" % [id, posmod(variant, count)]
+		if not _meshes.has(plant_key):
+			var plant := plants.build(id, posmod(variant, count))
+			var mat := _foliage(null, plant.get_aabb().end.y) as ShaderMaterial
+			mat.set_shader_parameter("vertex_colors", true)
+			plant.surface_set_material(0, mat)
+			_meshes[plant_key] = plant
+		return _meshes[plant_key]
 	var key := id if not entry.is_empty() else "fallback:" + String(definition.get("role", "resource"))
 	if _meshes.has(key):
 		return _meshes[key]
@@ -68,6 +96,7 @@ func _foliage(own: Material, height: float) -> Material:
 	var m := ShaderMaterial.new()
 	m.shader = FOLIAGE
 	m.set_shader_parameter("height", height)
+	m.set_shader_parameter("wind_strength", wind_strength)
 	if own is BaseMaterial3D:
 		var b := own as BaseMaterial3D
 		m.set_shader_parameter("albedo", b.albedo_color)

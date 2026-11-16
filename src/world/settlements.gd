@@ -916,22 +916,31 @@ func _road(a: Dictionary, b: Dictionary, key: Array) -> Dictionary:
 	var from_b := _way_out(b, a["centre"])
 	var avoid: Array = (a["road_obstacles"] if a.get("adaptive", false) else [a["bounds"]]) + (b["road_obstacles"] if b.get("adaptive", false) else [b["bounds"]])
 	var parcels: Array = a.get("road_obstacles", []) + b.get("road_obstacles", [])
+	var graded := {}
+	if _natural_routes:
+		# These streets already replace rock/cover when the village is stamped.
+		# Recognise that real public ground without allowing new wild cliff cuts.
+		for village: Dictionary in [a, b]:
+			for at: Vector2i in village.get("cells", {}):
+				var part: Dictionary = village["cells"][at]
+				if part.get("ground") == village["road"] and part.get("structure", "") == "" and part.get("cover", "") == "": graded[at] = true
 	var banned := {}
 	var route := _route(from_a[-1], from_b[-1], avoid, banned)
 	if route.is_empty():
 		return {}
 	var path := _way_path(from_a, from_b, route)
-	var bad := _bad_cells(path, parcels)
+	var bad := _bad_cells(path, parcels, graded)
 	var tries := 0
 	while not bad.is_empty() and tries < ROUTE_TRIES:
 		# The coarse search only looked at its own points; the way between
 		# them crossed water or rock. Keep it away from there and look again.
-		_ban_cells(bad, banned)
+		if _natural_routes: _ban_route_segments(bad, route, banned)
+		else: _ban_cells(bad, banned)
 		route = _route(from_a[-1], from_b[-1], avoid, banned)
 		if route.is_empty():
 			return {}
 		path = _way_path(from_a, from_b, route)
-		bad = _bad_cells(path, parcels)
+		bad = _bad_cells(path, parcels, graded)
 		tries += 1
 	if not bad.is_empty():
 		return {}
@@ -943,7 +952,7 @@ func _road(a: Dictionary, b: Dictionary, key: Array) -> Dictionary:
 		var p: Vector2i = path[i]
 		# Two cells wide (a cart and its horse), and a wider patch where the
 		# way turns: the whole harness swings through the corner.
-		var stamp := _road_stamp(path, i)
+		var stamp := _road_stamp(path, i, _natural_routes and not graded.has(path[i]))
 		for o: Vector2i in stamp:
 			var at := p + o
 			cells[at] = {"ground": ground, "cover": "", "over_water": bridge}
@@ -971,22 +980,22 @@ func _way_path(from_a: Array[Vector2i], from_b: Array[Vector2i], route: Array[Ve
 ## than BRIDGE_MAX cells of water, a bridge that does not meet the land, and
 ## deep water under the bridge's two-cell deck. Cells to keep the way away
 ## from are returned. Rock in a way is cut through (a pass), as before.
-func _bad_cells(path: Array[Vector2i], parcels: Array = []) -> Array[Vector2i]:
+func _bad_cells(path: Array[Vector2i], parcels: Array = [], graded: Dictionary = {}) -> Array[Vector2i]:
 	var bad: Array[Vector2i] = []
 	var n := path.size()
 	for index in n:
-		for offset: Vector2i in _road_stamp(path, index):
+		for offset: Vector2i in _road_stamp(path, index, _natural_routes and not graded.has(path[index])):
 			var at := path[index] + offset
 			if parcels.any(func(r: Rect2i) -> bool: return r.has_point(at)):
 				bad.append(path[index])
 				break
-			if _natural_routes and _land.is_valid():
+			if _natural_routes and _land.is_valid() and not graded.has(at):
 				var sample: Dictionary = _land.call(at.x, at.y)
 				if sample.what == "deep" or (sample.what == "rock" and not sample.get("cliff", false)):
 					bad.append(path[index])
 					break
-				if sample.what in ["chasm", "bridge"] and _what(path[index]) not in ["chasm", "bridge"]:
-					var crossing_beside := (index > 0 and _what(path[index - 1]) in ["chasm", "bridge"]) or (index + 1 < n and _what(path[index + 1]) in ["chasm", "bridge"])
+				if sample.what in ["chasm", "bridge"] and _road_what(path[index], graded) not in ["chasm", "bridge"]:
+					var crossing_beside := (index > 0 and _road_what(path[index - 1], graded) in ["chasm", "bridge"]) or (index + 1 < n and _road_what(path[index + 1], graded) in ["chasm", "bridge"])
 					if not crossing_beside:
 						bad.append(path[index])
 						break
@@ -994,7 +1003,7 @@ func _bad_cells(path: Array[Vector2i], parcels: Array = []) -> Array[Vector2i]:
 	var cliff_run := 0
 	var crossings := ["water", "chasm", "bridge"] if _natural_routes else ["water"]
 	while i < n:
-		var what := _what(path[i])
+		var what := _road_what(path[i], graded)
 		if what == "rock" and _land.is_valid():
 			var sample: Dictionary = _land.call(path[i].x, path[i].y)
 			if not sample.get("cliff", false): bad.append(path[i])
@@ -1010,10 +1019,10 @@ func _bad_cells(path: Array[Vector2i], parcels: Array = []) -> Array[Vector2i]:
 			i += 1
 			continue
 		var j := i
-		while j < n and _what(path[j]) in crossings:
+		while j < n and _road_what(path[j], graded) in crossings:
 			j += 1
-		var before_ok := i > 0 and _what(path[i - 1]) in ["land", "shore", "shallows"]
-		var after_ok := j < n and _what(path[j]) in ["land", "shore", "shallows"]
+		var before_ok := i > 0 and _road_what(path[i - 1], graded) in ["land", "shore", "shallows"]
+		var after_ok := j < n and _road_what(path[j], graded) in ["land", "shore", "shallows"]
 		if j - i > BRIDGE_MAX or not before_ok or not after_ok:
 			for k in range(i, j):
 				bad.append(path[k])
@@ -1022,18 +1031,33 @@ func _bad_cells(path: Array[Vector2i], parcels: Array = []) -> Array[Vector2i]:
 			var side := Vector2i.DOWN if absi(direction.x) >= absi(direction.y) else Vector2i.RIGHT
 			# Both sides of the two-cell deck meet a dry approach, rather than
 			# one lane ending in rock or dangling beside the shore.
-			if _what(path[i - 1] + side) not in ["land", "shore", "shallows"] or _what(path[j] + side) not in ["land", "shore", "shallows"]:
+			if _road_what(path[i - 1] + side, graded) not in ["land", "shore", "shallows"] or _road_what(path[j] + side, graded) not in ["land", "shore", "shallows"]:
 				for k in range(i, j): bad.append(path[k])
 			if what in ["chasm", "bridge"] and BridgeRoutes.land_detour(path[i - 1], path[j], mini(18, (j - i) * 2 + 6), _land) >= 0:
 				for k in range(i, j): bad.append(path[k])
 		# The deck is two cells wide: no part of it may hang over deep water.
 		for k in range(i, j):
 			for o: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
-				if _what(path[k] + o) == "deep":
+				if _road_what(path[k] + o, graded) == "deep":
 					bad.append(path[k])
 		i = j
 	return bad
 
+
+func _road_what(at: Vector2i, graded: Dictionary) -> String:
+	return "land" if graded.has(at) else _what(at)
+
+## Reject the coarse leg whose full-width raster touched an obstacle.
+## Banning a 3x3 neighbourhood round a cell near a village exit can seal the
+## start entirely; banning only its rounded cell can miss a diagonal leg.
+func _ban_route_segments(bad: Array[Vector2i], route: Array[Vector2i], banned: Dictionary) -> void:
+	for at: Vector2i in bad:
+		for i in range(1, route.size()):
+			var leg := Rect2i(route[i - 1], Vector2i.ONE).expand(route[i]).grow(2)
+			if not leg.has_point(at): continue
+			var point := route[i] if i + 1 < route.size() else route[i - 1]
+			if point == route[0]: continue
+			banned[Vector2i(roundi(float(point.x) / ROUTE_STEP), roundi(float(point.y) / ROUTE_STEP))] = true
 
 ## Keep the coarse search away from the cells that are not passable.
 func _ban_cells(bad: Array[Vector2i], banned: Dictionary) -> void:
@@ -1061,11 +1085,24 @@ static func _turns(path: Array[Vector2i], i: int) -> bool:
 
 
 ## Use the same clearance for validation and materialization, including turns.
-static func _road_stamp(path: Array[Vector2i], i: int) -> Array[Vector2i]:
+static func _road_stamp(path: Array[Vector2i], i: int, natural_width := false) -> Array[Vector2i]:
 	if _turns(path, i):
-		return [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
+		var stamp: Array[Vector2i] = [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
 			Vector2i(-1, 0), Vector2i(0, 0), Vector2i(1, 0),
 			Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)]
+		if natural_width:
+			# The horse is 3.5 m ahead of the cart. Leave its swept sector
+			# clear while the harness turns, not merely the driver's 3x3 patch.
+			var before := Vector2(path[i] - path[i - 1]).normalized()
+			var after := Vector2(path[i + 1] - path[i]).normalized()
+			var middle := (before + after).normalized()
+			var limit := cos(acos(clampf(before.dot(after), -1, 1)) * .5)
+			for y in range(-4, 5):
+				for x in range(-4, 5):
+					var offset := Vector2i(x, y)
+					if Vector2(offset).length() > 4.5 or stamp.has(offset): continue
+					if middle.is_zero_approx() or Vector2(offset).normalized().dot(middle) >= limit - .001: stamp.append(offset)
+		return stamp
 	return [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]
 
 

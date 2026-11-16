@@ -1,0 +1,17 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FIXTURE test_stop_checks_fire_and_other_caravan_reservations road=road:0,0,0 from=base:village@0,0#0 to=base:village@0,0#2 home=base:village@0,0#0
+FIXTURE test_occupied_berths_use_the_connected_reserve road=road:0,0,0 from=base:village@0,0#0 to=base:village@0,0#2 home=base:village@0,0#0
+FIXTURE test_two_caravans_reserve_and_trade_at_distinct_berths road=road:0,0,0 from=base:village@0,0#0 to=base:village@0,0#0 home=base:village@0,0#0
+FIXTURE trace road=road:0,0,0 from=base:village@0,0#0 to=base:village@0,0#0 home=base:village@0,0#0
+TRACE tick=0 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=400 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=800 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=1200 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=1600 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=2000 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=2400 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=2800 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=3200 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=3600 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)
+TRACE tick=4000 cell=(164, 170) state=idle phase=travel route={ "road": [0, 0, 0, 0], "i": 0, "step": 1 } goal=(1073741824, 1073741824) from=base:village@0,0#0 target=(1073741824, 1073741824)

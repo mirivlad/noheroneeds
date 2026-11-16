@@ -1,0 +1,9 @@
+PASS test_caravan_stops::test_stop_checks_fire_and_other_caravan_reservations (30418 ms)
+PASS test_caravan_stops::test_occupied_berths_use_the_connected_reserve (3984 ms)
+PASS test_caravan_stops::test_two_caravans_reserve_and_trade_at_distinct_berths (3646 ms)
+PASS test_caravan_stops::test_a_caravan_stops_trades_rests_and_only_then_goes_on (2602 ms)
+PASS test_caravan_stops::test_it_stops_in_the_village_it_came_to (5370 ms)
+PASS test_caravan_stops::test_a_restart_in_the_middle_of_a_stop_does_not_send_the_caravan_off (2356 ms)
+PASS test_caravan_stops::test_two_caravans_move_into_separate_berths_of_a_generated_settlement (3987 ms)
+expected engine errors: 0
+7 tests, 0 failed checks, 53.0s

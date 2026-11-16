@@ -1,0 +1,17 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ROADS v=19 home=base:village@0,0#0 centre=(74, 43) ends=[(134, 44), (134, 44)]
+PAIR base:village@0,0#0 -> base:village@0,0#1 accepted=true
+PAIR base:village@0,0#1 -> base:village@0,0#2 accepted=true
+PAIR base:village@0,0#2 -> base:village@0,0#3 accepted=true
+PAIR base:village@0,0#2 -> base:village@0,1#0 accepted=true
+ROADS v=20 home=base:village@0,0#0 centre=(74, 43) ends=[(134, 44), (134, 44)]
+PAIR base:village@0,0#0 -> base:village@0,0#1 accepted=false
+ATTEMPT 0 path=335 bad=1
+BAD (155, 49) land={ "what": "land", "height": 0.28746565962036, "biome": 1 } start=false end=false in_home=false
+ATTEMPT 1 path=335 bad=1
+BAD (163, 51) land={ "what": "land", "height": 0.29728742579755, "biome": 1 } start=false end=false in_home=false
+ATTEMPT 2 no coarse route
+PAIR base:village@0,0#1 -> base:village@0,0#2 accepted=true
+PAIR base:village@0,0#2 -> base:village@0,0#3 accepted=true
+PAIR base:village@0,0#2 -> base:village@0,1#0 accepted=true

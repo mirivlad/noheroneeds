@@ -1,0 +1,3 @@
+Running 4 tests in 1 suites with 2 isolated workers; logs: /home/mirivlad/git/noheroneeds/build/test-runs/20261116-071455-864918
+PASS tests/unit/world/test_settlement_planets.gd: 4 tests, 117.98s
+{"ok": true, "tests": 4, "suites": 1, "sources_unchanged": true, "wall_seconds": 118.12}

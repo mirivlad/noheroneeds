@@ -1,0 +1,3 @@
+Running 16 tests in 1 suites with 3 isolated workers; logs: /home/mirivlad/git/noheroneeds/build/test-runs/20261116-070727-854050
+PASS tests/unit/world/test_roads.gd: 16 tests, 3.81s
+{"ok": true, "tests": 16, "suites": 1, "sources_unchanged": true, "wall_seconds": 3.94}

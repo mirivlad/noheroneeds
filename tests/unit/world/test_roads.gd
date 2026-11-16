@@ -218,3 +218,41 @@ func test_road_goes_round_a_long_chasm_instead_of_filling_it() -> void:
 	if not check(not road.is_empty(), "a nearby natural route still connects the villages"): return
 	check(_is_contiguous(road["path"]), "the reroute has no missing cells")
 	for at: Vector2i in road["cells"]: check(not ravine.has_point(at), "no part of the road becomes a gratuitous long deck")
+
+func test_natural_road_retry_rejects_the_bad_leg_without_sealing_its_exit() -> void:
+	var s := Settlements.new(431, content, Callable(), 8, Callable(), Callable(), "", 20)
+	var route: Array[Vector2i] = [Vector2i(157, 44), Vector2i(152, 56), Vector2i(152, 64), Vector2i(176, 80)]
+	var bad: Array[Vector2i] = [Vector2i(155, 49)]
+	var banned := {}
+	s._ban_route_segments(bad, route, banned)
+	check(banned.has(Vector2i(19, 7)), "the actual diagonal leg's far waypoint is rejected")
+	check(not banned.has(Vector2i(20, 6)), "the village exit stays open")
+	check(not banned.has(Vector2i(21, 6)), "the next alternative beside the exit stays available")
+
+func test_existing_public_street_is_not_rejected_as_a_new_wild_cliff_cut() -> void:
+	var cliff := func(_x: int, _y: int) -> Dictionary: return {"what": "rock", "height": .4, "cliff": true}
+	var s := Settlements.new(431, content, Callable(), 8, Callable(), cliff, "", 20)
+	var path: Array[Vector2i] = []
+	var graded := {}
+	for x in range(10, 20):
+		path.append(Vector2i(x, 10))
+		for y in range(9, 13): graded[Vector2i(x, y)] = true
+	check(not s._bad_cells(path).is_empty(), "a new long wild cut is still refused")
+	check(s._bad_cells(path, [], graded).is_empty(), "a previously stamped clear public street remains connected")
+
+func test_new_road_turn_leaves_room_for_the_horse_ahead_of_the_cart() -> void:
+	var path: Array[Vector2i] = [Vector2i(-1, -1), Vector2i.ZERO, Vector2i(-1, 1)]
+	var old := Settlements._road_stamp(path, 1)
+	var current := Settlements._road_stamp(path, 1, true)
+	var horse_ahead := Vector2i(2, 3)
+	check(not old.has(horse_ahead), "the former driver-only corner did not clear the horse's arc")
+	check(current.has(horse_ahead), "the full harness has turning space")
+	check(not current.has(Vector2i(0, -4)), "the clearing follows the turn, not an indiscriminate square")
+
+func test_existing_street_is_not_widened_through_its_neighbouring_building() -> void:
+	var s := Settlements.new(431, content, Callable(), 8, Callable(), Callable(), "", 20)
+	var path: Array[Vector2i] = [Vector2i(-1, -1), Vector2i.ZERO, Vector2i(-1, 1)]
+	var plot := Rect2i(2, 3, 1, 1)
+	check(not s._bad_cells(path, [plot]).is_empty(), "a new wild cart turn must avoid the whole horse sector")
+	var graded := {Vector2i.ZERO: true}
+	check(s._bad_cells(path, [plot], graded).is_empty(), "the existing public street keeps its established width beside the building")

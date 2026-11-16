@@ -1,0 +1,6 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_caravan_stops::test_a_caravan_stops_trades_rests_and_only_then_goes_on (30406 ms)
+expected engine errors: 0
+
+1 tests, 0 failed checks, 31.0s

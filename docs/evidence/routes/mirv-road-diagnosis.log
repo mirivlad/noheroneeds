@@ -1,0 +1,106 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ROADS v=20 home=base:village@0,0#0 centre=(45, 170) ends=[(105, 171), (105, 171)]
+PAIR base:village@0,0#0 -> base:village@0,0#2 accepted=false
+OUT_A size=131 end=(-25, 171) OUT_B size=121 end=(72, 272)
+ATTEMPT 0 path=425 bad=13
+BAD (2, 242) index=209 route_head=[(-25, 171), (-24, 176), (-32, 184), (-40, 192), (-32, 200)]
+STAMP (2, 242) { "what": "land", "height": 0.16604792750934, "biome": 3 } parcel=false
+STAMP (3, 242) { "what": "land", "height": 0.16101412634931, "biome": 3 } parcel=false
+STAMP (2, 243) { "what": "land", "height": 0.16677789996068, "biome": 3 } parcel=true
+STAMP (3, 243) { "what": "land", "height": 0.1617921599103, "biome": 3 } parcel=false
+BAD (6, 258) index=225 route_head=[(-25, 171), (-24, 176), (-32, 184), (-40, 192), (-32, 200)]
+STAMP (6, 258) { "what": "land", "height": 0.17870974890888, "biome": 3 } parcel=false
+STAMP (7, 258) { "what": "land", "height": 0.17678406233735, "biome": 3 } parcel=false
+STAMP (6, 259) { "what": "land", "height": 0.18083273124169, "biome": 3 } parcel=true
+STAMP (7, 259) { "what": "land", "height": 0.177515886705, "biome": 3 } parcel=true
+ATTEMPT 1 path=401 bad=7
+BAD (-24, 192) index=151 route_head=[(-25, 171), (-24, 176), (-24, 184), (-24, 192), (-24, 200)]
+STAMP (-24, 192) { "what": "water", "height": 0.22403220210772, "biome": 0 } parcel=false
+STAMP (-23, 192) { "what": "shore", "height": 0.22453601409042, "biome": 0 } parcel=false
+STAMP (-24, 193) { "what": "water", "height": 0.22390636976187, "biome": 0 } parcel=false
+STAMP (-23, 193) { "what": "water", "height": 0.22550362028474, "biome": 0 } parcel=false
+BAD (-24, 193) index=152 route_head=[(-25, 171), (-24, 176), (-24, 184), (-24, 192), (-24, 200)]
+STAMP (-24, 193) { "what": "water", "height": 0.22390636976187, "biome": 0 } parcel=false
+STAMP (-23, 193) { "what": "water", "height": 0.22550362028474, "biome": 0 } parcel=false
+STAMP (-24, 194) { "what": "water", "height": 0.22388726731835, "biome": 0 } parcel=false
+STAMP (-23, 194) { "what": "water", "height": 0.22604281656736, "biome": 0 } parcel=false
+ATTEMPT 2 path=401 bad=7
+BAD (-40, 200) index=159 route_head=[(-25, 171), (-24, 176), (-32, 184), (-32, 192), (-40, 200)]
+STAMP (-41, 199) { "what": "land", "height": 0.23737738920777, "biome": 3 } parcel=false
+STAMP (-40, 199) { "what": "land", "height": 0.2341859543791, "biome": 3 } parcel=false
+STAMP (-39, 199) { "what": "land", "height": 0.2342258810588, "biome": 3 } parcel=false
+STAMP (-41, 200) { "what": "land", "height": 0.24368334682841, "biome": 3 } parcel=false
+STAMP (-40, 200) { "what": "chasm", "height": 0.2419423999389, "biome": 3 } parcel=false
+STAMP (-39, 200) { "what": "chasm", "height": 0.2416563939347, "biome": 3 } parcel=false
+STAMP (-41, 201) { "what": "land", "height": 0.2511489417214, "biome": 3 } parcel=false
+STAMP (-40, 201) { "what": "chasm", "height": 0.2509926803936, "biome": 3 } parcel=false
+STAMP (-39, 201) { "what": "chasm", "height": 0.25022841220101, "biome": 3 } parcel=false
+BAD (-39, 201) index=160 route_head=[(-25, 171), (-24, 176), (-32, 184), (-32, 192), (-40, 200)]
+STAMP (-39, 201) { "what": "chasm", "height": 0.25022841220101, "biome": 3 } parcel=false
+STAMP (-38, 201) { "what": "chasm", "height": 0.24788760540094, "biome": 3 } parcel=false
+STAMP (-39, 202) { "what": "land", "height": 0.25655968012471, "biome": 3 } parcel=false
+STAMP (-38, 202) { "what": "land", "height": 0.25379091412231, "biome": 3 } parcel=false
+ATTEMPT 3 path=427 bad=11
+BAD (-47, 191) index=152 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 192), (-48, 200)]
+STAMP (-47, 191) { "what": "water", "height": 0.27097194156445, "biome": 0 } parcel=false
+STAMP (-46, 191) { "what": "land", "height": 0.26894503214415, "biome": 3 } parcel=false
+STAMP (-47, 192) { "what": "water", "height": 0.26806049216173, "biome": 0 } parcel=false
+STAMP (-46, 192) { "what": "water", "height": 0.26592198709355, "biome": 0 } parcel=false
+BAD (-48, 192) index=153 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 192), (-48, 200)]
+STAMP (-49, 191) { "what": "shallows", "height": 0.27502470532834, "biome": 0 } parcel=false
+STAMP (-48, 191) { "what": "water", "height": 0.27257268969554, "biome": 0 } parcel=false
+STAMP (-47, 191) { "what": "water", "height": 0.27097194156445, "biome": 0 } parcel=false
+STAMP (-49, 192) { "what": "shallows", "height": 0.27042996062075, "biome": 0 } parcel=false
+STAMP (-48, 192) { "what": "water", "height": 0.2692922028607, "biome": 0 } parcel=false
+STAMP (-47, 192) { "what": "water", "height": 0.26806049216173, "biome": 0 } parcel=false
+STAMP (-49, 193) { "what": "water", "height": 0.2677165834372, "biome": 0 } parcel=false
+STAMP (-48, 193) { "what": "water", "height": 0.26708343968526, "biome": 0 } parcel=false
+STAMP (-47, 193) { "what": "water", "height": 0.2663129429899, "biome": 0 } parcel=false
+ATTEMPT 4 path=443 bad=11
+BAD (-59, 187) index=164 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 184), (-56, 184)]
+STAMP (-59, 187) { "what": "water", "height": 0.32309283241337, "biome": 0 } parcel=false
+STAMP (-58, 187) { "what": "water", "height": 0.3228652821452, "biome": 0 } parcel=false
+STAMP (-59, 188) { "what": "water", "height": 0.31565246241058, "biome": 0 } parcel=false
+STAMP (-58, 188) { "what": "water", "height": 0.31488987451821, "biome": 0 } parcel=false
+BAD (-60, 188) index=165 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 184), (-56, 184)]
+STAMP (-60, 188) { "what": "water", "height": 0.31744487584879, "biome": 0 } parcel=false
+STAMP (-59, 188) { "what": "water", "height": 0.31565246241058, "biome": 0 } parcel=false
+STAMP (-60, 189) { "what": "water", "height": 0.31289101324026, "biome": 0 } parcel=false
+STAMP (-59, 189) { "what": "water", "height": 0.31014684964044, "biome": 0 } parcel=false
+ATTEMPT 5 path=443 bad=9
+BAD (-54, 190) index=159 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 184), (-56, 192)]
+STAMP (-54, 190) { "what": "water", "height": 0.30812000321699, "biome": 0 } parcel=false
+STAMP (-53, 190) { "what": "water", "height": 0.30402838327137, "biome": 0 } parcel=false
+STAMP (-54, 191) { "what": "water", "height": 0.30632997411723, "biome": 0 } parcel=false
+STAMP (-53, 191) { "what": "water", "height": 0.30272903626456, "biome": 0 } parcel=false
+BAD (-55, 191) index=160 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 184), (-56, 192)]
+STAMP (-55, 191) { "what": "water", "height": 0.30536847756482, "biome": 0 } parcel=false
+STAMP (-54, 191) { "what": "water", "height": 0.30632997411723, "biome": 0 } parcel=false
+STAMP (-55, 192) { "what": "water", "height": 0.30092974645688, "biome": 0 } parcel=false
+STAMP (-54, 192) { "what": "water", "height": 0.30221184183277, "biome": 0 } parcel=false
+ATTEMPT 6 path=475 bad=3
+BAD (26, 304) index=432 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 184), (-56, 184)]
+STAMP (26, 304) { "what": "rock", "height": 0.27971507690116, "biome": 3, "cliff": true } parcel=false
+STAMP (27, 304) { "what": "rock", "height": 0.28011661096823, "biome": 3, "cliff": true } parcel=false
+STAMP (26, 305) { "what": "land", "height": 0.28637976630938, "biome": 3 } parcel=false
+STAMP (27, 305) { "what": "land", "height": 0.2861729552962, "biome": 3 } parcel=false
+BAD (25, 304) index=433 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 184), (-56, 184)]
+STAMP (25, 304) { "what": "rock", "height": 0.28037782891708, "biome": 3, "cliff": true } parcel=false
+STAMP (26, 304) { "what": "rock", "height": 0.27971507690116, "biome": 3, "cliff": true } parcel=false
+STAMP (25, 305) { "what": "land", "height": 0.28563269096262, "biome": 3 } parcel=false
+STAMP (26, 305) { "what": "land", "height": 0.28637976630938, "biome": 3 } parcel=false
+ATTEMPT 7 path=475 bad=3
+BAD (26, 304) index=432 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 184), (-56, 184)]
+STAMP (26, 304) { "what": "rock", "height": 0.27971507690116, "biome": 3, "cliff": true } parcel=false
+STAMP (27, 304) { "what": "rock", "height": 0.28011661096823, "biome": 3, "cliff": true } parcel=false
+STAMP (26, 305) { "what": "land", "height": 0.28637976630938, "biome": 3 } parcel=false
+STAMP (27, 305) { "what": "land", "height": 0.2861729552962, "biome": 3 } parcel=false
+BAD (25, 304) index=433 route_head=[(-25, 171), (-32, 176), (-40, 184), (-48, 184), (-56, 184)]
+STAMP (25, 304) { "what": "rock", "height": 0.28037782891708, "biome": 3, "cliff": true } parcel=false
+STAMP (26, 304) { "what": "rock", "height": 0.27971507690116, "biome": 3, "cliff": true } parcel=false
+STAMP (25, 305) { "what": "land", "height": 0.28563269096262, "biome": 3 } parcel=false
+STAMP (26, 305) { "what": "land", "height": 0.28637976630938, "biome": 3 } parcel=false
+PAIR base:village@0,0#2 -> base:village@0,0#1 accepted=false
+PAIR base:village@0,0#2 -> base:village@0,0#3 accepted=false
+PAIR base:village@0,0#1 -> base:village@0,1#1 accepted=true

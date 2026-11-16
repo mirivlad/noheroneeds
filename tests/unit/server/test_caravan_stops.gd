@@ -13,6 +13,8 @@ var db: String
 
 
 func before_each() -> void:
+	# Every case gets its own road; earlier cases deliberately rewrite its destination.
+	road = {}
 	db = tmp_dir().path_join("world.db")
 	w = ServerWorld.open(db, ContentRegistry.load_packs(["res://content/base"]), {"seed": 11})
 	var chunk := w.chunk("surface", 5, 5)

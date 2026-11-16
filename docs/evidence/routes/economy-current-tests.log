@@ -1,0 +1,3 @@
+Running 13 tests in 1 suites with 2 isolated workers; logs: /home/mirivlad/git/noheroneeds/build/test-runs/20261116-071456-865013
+PASS tests/unit/server/test_village_economy.gd: 13 tests, 124.1s
+{"ok": true, "tests": 13, "suites": 1, "sources_unchanged": true, "wall_seconds": 124.22}

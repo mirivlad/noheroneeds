@@ -432,6 +432,10 @@ func _hauler_heading(c: Creature) -> Vector2:
 func _turn_caravan(c: Creature, desired: Vector2) -> Array:
 	var cart := _heading_of(c.job.get("caravan_heading", [0, 1]))
 	var horse := _heading_of(c.job.get("horse_heading", c.job.get("caravan_heading", [0, 1])))
+	return _turned_headings(cart, horse, desired)
+
+
+func _turned_headings(cart: Vector2, horse: Vector2, desired: Vector2) -> Array:
 	if desired.length_squared() < 0.000001:
 		return [cart, horse]
 	horse = _turn_to(horse, desired, HORSE_TURN)
@@ -2186,20 +2190,36 @@ func _find_caravan_route(c: Creature, goal: Vector2i, margin: int) -> Array[Vect
 	return out
 
 
-## The first edge starts at the real fractional position, not at the cell
-## centre used by the search. Check the same bounded steps as movement:
-## checking only its first few pixels can pick the same blocked turn forever.
+## The first edge starts at the real fractional position and harness headings.
+## Follow the movement rules, including a blocked turn's old-heading slide or
+## in-place turn. Checking a fully aligned horse invents an impossible departure.
 func _caravan_departure_fits(c: Creature, goal: Vector2i, heading: Vector2, origin := Creature.NO_TARGET) -> bool:
 	var at := c.pos if origin == Creature.NO_TARGET else origin
+	var cart := _heading_of(c.job.get("caravan_heading", [0, 1]))
+	var horse := _hauler_heading(c)
 	var speed := int(float(world.content.get_def(c.kind)["speed"]) * Movement.WALK)
 	for i in 40:
-		var delta := goal - at
-		if delta == Vector2i.ZERO:
+		if goal == at:
 			return true
 		var next := _waypoint_step(c, at, goal, speed)
-		if next == at or not _caravan_cart_fits(c, next, heading) or not _caravan_horse_fits(c, next, heading):
+		if next == at:
 			return false
+		var turned := _turned_headings(cart, horse, heading)
+		var turn_cart: Vector2 = turned[0]
+		var turn_horse: Vector2 = turned[1]
+		if _caravan_cart_fits(c, next, turn_cart) and _caravan_horse_fits(c, next, turn_horse):
+			cart = turn_cart
+			horse = turn_horse
+		elif not (_caravan_cart_fits(c, next, cart) and _caravan_horse_fits(c, next, horse)):
+			if (_saved_heading(turn_cart) == _saved_heading(cart) and _saved_heading(turn_horse) == _saved_heading(horse)) \
+					or not _caravan_cart_fits(c, at, turn_cart) or not _caravan_horse_fits(c, at, turn_horse):
+				return false
+			cart = _heading_of(_saved_heading(turn_cart))
+			horse = _heading_of(_saved_heading(turn_horse))
+			continue
 		at = next
+		cart = _heading_of(_saved_heading(cart))
+		horse = _heading_of(_saved_heading(horse))
 	return false
 
 

@@ -168,3 +168,20 @@ func test_a_cart_goes_down_a_narrow_passage_without_touching_the_walls() -> void
 	check(not collision, "neither the cart nor the horse touched a wall")
 	check(worst_bend <= CreatureSim.HITCH_ANGLE + 0.01, "the harness stayed whole in the passage")
 	check(trader.cell().distance_to(START + Vector2i(18, 0)) <= 1, "and it came out the other end")
+
+func test_departure_checks_the_horses_actual_heading_at_a_building_corner() -> void:
+	_caravan()
+	var chunk := w.chunk("surface", 5, 5)
+	for x in range(160, 168):
+		chunk.set_cell("structure", x & 31, 168 & 31, "base:wood_wall")
+	for y in range(160, 169):
+		chunk.set_cell("structure", 167 & 31, y & 31, "base:wood_wall")
+	# The cart can slide east if both bodies point along its own heading,
+	# but the horse is still leading north-east toward the building corner.
+	trader.pos = START * Movement.UNIT + Vector2i(12, 128)
+	trader.job["caravan_heading"] = [.252, -.968]
+	trader.job["horse_heading"] = [.501, -.865]
+	w.creatures._move_caravan_horse(trader)
+	var goal := START * Movement.UNIT + Vector2i(128, 128)
+	check(not w.creatures._caravan_departure_fits(trader, goal, Vector2.RIGHT),
+		"reject a recentering step the real horse cannot execute")

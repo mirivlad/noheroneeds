@@ -876,10 +876,14 @@ func chasm_mesh(cell: Vector2i, middle: float) -> Mesh:
 ## following the deck's sag, and a rope rail each side; posts where it meets the
 ## land. Its way runs toward the land or the next bridge cell.
 func hanging_bridge_mesh(cell: Vector2i) -> Mesh:
-	var along_x := _ground_is(cell + Vector2i.RIGHT, "hanging_bridge") or _ground_is(cell + Vector2i.LEFT, "hanging_bridge") \
-		or not (_hollow(cell + Vector2i.RIGHT) and _hollow(cell + Vector2i.LEFT))
-	var u := Vector3.RIGHT if along_x else Vector3.BACK
-	var v := Vector3.BACK if along_x else Vector3.RIGHT
+	var axis := _hanging_axis(cell)
+	var side_axis := Vector2i(axis.y, axis.x)
+	var u := Vector3(axis.x, 0, axis.y)
+	var v := Vector3(side_axis.x, 0, side_axis.y)
+	var joined_left := _ground_is(cell - side_axis, "hanging_bridge")
+	var joined_right := _ground_is(cell + side_axis, "hanging_bridge")
+	var left := -.5 if joined_left else -.45
+	var right := .5 if joined_right else .45
 	var at := Vector2(cell) + Vector2.ONE * .5
 	var mid := surface_elevation(at)
 	# The deck's height at the middles of the cell's two ends along its way (the
@@ -892,26 +896,49 @@ func hanging_bridge_mesh(cell: Vector2i) -> Mesh:
 	for i in 5:
 		var f := (i + .5) / 5.0
 		var c := u * (f - .5) + Vector3.UP * lerpf(ends[0], ends[1], f)
-		_slab(wood, c - u * .07, c + u * .07, v, .9, .05)
+		c += v * (left + right) * .5
+		_slab(wood, c - u * .07, c + u * .07, v, right - left, .05)
 	var rope := SurfaceTool.new()
 	rope.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rail_count := 0
 	for side: float in [-.45, .45]:
+		if (side < 0 and joined_left) or (side > 0 and joined_right): continue
 		var a := u * -.5 + v * side + Vector3.UP * (ends[0] + .75)
 		var b := u * .5 + v * side + Vector3.UP * (ends[1] + .75)
 		_slab(rope, a, b, v, .04, .04)
 		_slab(rope, a - Vector3.UP * .75, a - Vector3.UP * .75 + u * .03, v, .03, -.75)  # a hanger down to the deck
+		rail_count += 1
 	for s: int in [-1, 1]:
 		var next := cell + Vector2i(roundi(u.x), roundi(u.z)) * s
 		if not _hollow(next):  # it meets the land: two posts
 			for side: float in [-.45, .45]:
+				if (side < 0 and joined_left) or (side > 0 and joined_right): continue
 				var foot := u * (s * .5) + v * side + Vector3.UP * ends[(s + 1) / 2]
 				_slab(wood, foot - Vector3.UP * .1, foot - Vector3.UP * .1 + u * .1, v, .1, -1.1)
 	var mesh := ArrayMesh.new()
 	wood.set_material(models.material(Color("8a6a45")))
 	wood.commit(mesh)
-	rope.set_material(models.material(Color("c9b48a")))
-	rope.commit(mesh)
+	if rail_count > 0:
+		rope.set_material(models.material(Color("c9b48a")))
+		rope.commit(mesh)
 	return mesh
+
+func _hanging_axis(cell: Vector2i) -> Vector2i:
+	var across := _hanging_length(cell, Vector2i.RIGHT)
+	var along := _hanging_length(cell, Vector2i.DOWN)
+	if across != along: return Vector2i.RIGHT if across > along else Vector2i.DOWN
+	if _land:
+		var cut := _land._chasm_cut(cell.x, cell.y)
+		if cut[2] != Vector2i.ZERO: return cut[2]
+	return Vector2i.RIGHT if not (_hollow(cell + Vector2i.RIGHT) and _hollow(cell + Vector2i.LEFT)) else Vector2i.DOWN
+
+func _hanging_length(cell: Vector2i, axis: Vector2i) -> int:
+	var count := 1
+	for sign_step: int in [-1, 1]:
+		for distance in range(1, 17):
+			if not _ground_is(cell + axis * distance * sign_step, "hanging_bridge"): break
+			count += 1
+	return count
 
 ## A box from `a` to `b` (its top's middle line), `width` across along `v`,
 ## `thick` deep below the top (negative: rising above it).

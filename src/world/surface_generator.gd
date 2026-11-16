@@ -30,8 +30,9 @@ const ID := "base:surface"
 ## 16: settlement plans include public ground and caravan parking.
 ## 18: terrain-aware streets, contextual settlement scales and full building turns.
 ## 19: coherent geological groups on the surface; old worlds retain recipe 18.
-const VERSION := 19
-const SUPPORTED_VERSIONS := [18, 19]
+## 20: useful crossings with dry trails, no forced cliff cuts at their ends.
+const VERSION := 20
+const SUPPORTED_VERSIONS := [18, 19, 20]
 var generation_version := VERSION
 var world_seed := 0
 ## The land as a whole (shared, read only).
@@ -49,6 +50,14 @@ var _rock := ""
 ## Grounds of a chasm and of a hanging bridge over it (ADR-0064); "" for none.
 var _chasm := ""
 var _hanging := ""
+var _trail_ground := ""
+## Per-generator immutable route data. Never asks settlement plans, and never
+## depends on which chunk happened to be generated first.
+const BRIDGE_CACHE_LIMIT := 96
+const TRAIL_CACHE_LIMIT := 96
+var _bridge_plans := {}
+var _bridge_trails := {}
+var _chasm_sites := {}
 ## All dry land of one height (no geography): asked for, or no generator
 ## described at all.
 var _flat := true
@@ -148,6 +157,7 @@ func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null, sa
 		_rock = String(g.get("rock", ""))
 		_chasm = String(g.get("chasm", ""))
 		_hanging = String(g.get("hanging_bridge", ""))
+		_trail_ground = String(g.get("trail_ground", ""))
 		_flat = bool(g["flat"])
 	geography = (PlannedGeography.new(plan) if plan else Geography.of(seed_value)) if can_generate() and not _flat else null
 	_grain.seed = seed_value + 7919
@@ -179,7 +189,8 @@ func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null, sa
 	_geology.fractal_octaves = 2
 	var plan_key := JSON.stringify(plan.to_dict()).sha256_text() if plan != null else "legacy"
 	var shared_key := "%d|%d|%d|%s|%s" % [generation_version, Settlements.VERSION, seed_value, JSON.stringify(content.defs).sha256_text(), plan_key]
-	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at, land_at if geography else Callable(), shared_key)
+	var route_land := (_route_land if generation_version >= 20 else land_at) if geography else Callable()
+	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at, route_land, shared_key, generation_version)
 	for i in 8:
 		var n := FastNoiseLite.new()
 		n.seed = seed_value + 104729 * (i + 1)
@@ -234,6 +245,13 @@ func generate(cx: int, cy: int) -> Chunk:
 				plant = _mineral_cover(b, x, y, land) if not clearing else ""
 			if plant != "" and not (clearing and _solid.has(plant)):
 				c.set_cell("cover", lx, ly, plant)
+	if generation_version >= 20 and _trail_ground != "":
+		for at: Vector2i in _trail_cells(Vector2i(cx, cy)):
+			var local := at - Vector2i(cx, cy) * Chunk.SIZE
+			if not Rect2i(Vector2i.ZERO, Vector2i.ONE * Chunk.SIZE).has_point(local): continue
+			if c.get_cell("structure", local.x, local.y) != "": continue
+			c.set_cell("ground", local.x, local.y, _trail_ground)
+			c.set_cell("cover", local.x, local.y, "")
 	# Roads between settlements, under them (a settlement's own cells win).
 	for road: Dictionary in settlements.roads_touching(cx, cy):
 		var cells: Dictionary = road["cells"]
@@ -407,8 +425,19 @@ func _wet(ground: String) -> bool:
 ## Whether a settlement parcel may not stand on a cell: water, shore, rock
 ## or a chasm. Absolute altitude does not make a dry plateau unsuitable.
 func is_unfit(x: int, y: int) -> bool:
+	if generation_version >= 20 and _topology.canonical_cell(Vector2i(x, y)) != Vector2i(x, y): return true
 	var land := land_at(x, y)
-	return String(land["what"]) != "land"
+	if String(land["what"]) != "land": return true
+	# Keep generated buildings, camps and yards off a bridge's continuation.
+	# These trails are independent of settlements, so this cannot recurse.
+	return generation_version >= 20 and _trail_cells(Vector2i(x >> 5, y >> 5)).has(Vector2i(x, y))
+
+## Plans belong to stored canonical chunks, never to their unfolded aliases.
+## Presentation still samples the continuous covering space through land_at.
+func _route_land(x: int, y: int, bridges := true) -> Dictionary:
+	if _topology.canonical_cell(Vector2i(x, y)) != Vector2i(x, y):
+		return {"what": "deep", "height": -1.0, "biome": 0}
+	return land_at(x, y, bridges)
 
 
 ## What a world cell is (ADR-0049), from the land as a whole and a little
@@ -457,6 +486,10 @@ func _land_at_uncached(x: int, y: int, bridges: bool) -> Dictionary:
 		return {"what": "shore", "height": h, "biome": 0}
 	var biome := _biome_at(x, y, h, near < 10.0)
 	var chasm := (chasm_at(x, y, near) if bridges else _chasm_kind(x, y, near)) if _chasm != "" else NO_CHASM
+	# Old recipes cut an approach even when its bridge was later rejected.
+	# New crossings use real dry land; no neighbouring candidate may create
+	# an imaginary pass for this one's route planner.
+	if generation_version >= 20 and chasm == APPROACH: chasm = NO_CHASM
 	if chasm == BRIDGE and not bridges:
 		return {"what": "chasm", "height": h, "biome": biome}
 	if chasm == CHASM or chasm == BRIDGE:
@@ -528,7 +561,12 @@ const BRIDGE_SAG := 0.7
 
 ## The site of a square of the chasms' grid (a point inside it, not near its edges).
 func _chasm_site(k: Vector2i) -> Vector2:
-	return (Vector2(k) + Vector2(0.2 + 0.6 * _hash(k.x, k.y, 31), 0.2 + 0.6 * _hash(k.x, k.y, 32))) * CHASM_GRID
+	if generation_version >= 20 and _chasm_sites.has(k): return _chasm_sites[k]
+	var point := (Vector2(k) + Vector2(0.2 + 0.6 * _hash(k.x, k.y, 31), 0.2 + 0.6 * _hash(k.x, k.y, 32))) * CHASM_GRID
+	if generation_version >= 20:
+		if _chasm_sites.size() >= 512: _chasm_sites.erase(_chasm_sites.keys()[0])
+		_chasm_sites[k] = point
+	return point
 
 
 ## What a cell is for chasms, by the two nearest sites, wherever the land allows
@@ -619,7 +657,8 @@ func _chasm_cut(x: int, y: int) -> Array:
 ## the whole row (a bridge over the open air or over a river is no bridge), and
 ## the land must go on past both ends: a way from one real side to the other.
 ## Otherwise the cutting is a plain chasm and no bridge is made.
-func _crossing_stands(x: int, y: int, axis: Vector2i) -> bool:
+func _crossing_stands(x: int, y: int, axis: Vector2i, shape_only := false) -> bool:
+	if generation_version >= 20 and not shape_only: return bool(_bridge_data(x, y, axis)["accepted"])
 	if axis == Vector2i.ZERO:
 		return false
 	# The row of the bridge: as long as the cutting makes it.
@@ -652,6 +691,7 @@ func _crossing_stands(x: int, y: int, axis: Vector2i) -> bool:
 		if at == high:
 			break
 		at += axis
+	if generation_version >= 20 and shape_only: return true
 	# Both ends on dry walkable land (the cleared approach included), and the way
 	# goes on beyond them: a route from one side to the other.
 	var ends: Array = [[low - axis, -1], [high + axis, 1]]
@@ -668,6 +708,83 @@ func _crossing_stands(x: int, y: int, axis: Vector2i) -> bool:
 		if not gone:
 			return false
 	return true
+
+
+func _bridge_data(x: int, y: int, axis: Vector2i) -> Dictionary:
+	if axis == Vector2i.ZERO: return {"accepted": false, "reason": "axis"}
+	var low := Vector2i(x, y)
+	var high := low
+	for i in 6:
+		if _chasm_kind(low.x - axis.x, low.y - axis.y) != BRIDGE: break
+		low -= axis
+	for i in 6:
+		if _chasm_kind(high.x + axis.x, high.y + axis.y) != BRIDGE: break
+		high += axis
+	var key := Vector4i(low.x, low.y, high.x, high.y)
+	if _bridge_plans.has(key): return _bridge_plans[key]
+	var route := {"accepted": false, "reason": "shape"}
+	if _crossing_stands(x, y, axis, true):
+		route = BridgeRoutes.plan(low, high, axis, func(px: int, py: int) -> Dictionary: return _route_land(px, py, false))
+	route["low"] = low
+	route["high"] = high
+	route["axis"] = axis
+	if _bridge_plans.size() >= BRIDGE_CACHE_LIMIT: _bridge_plans.erase(_bridge_plans.keys()[0])
+	_bridge_plans[key] = route
+	return route
+
+## Enumerate nearby candidates from their sites, never from an already visited
+## chunk/cache. An approach in chunk A is thus present even if A loads first.
+func bridge_routes_touching(cx: int, cy: int) -> Array:
+	if generation_version < 20 or geography == null or _chasm == "": return []
+	var box := Rect2i(Vector2i(cx, cy) * Chunk.SIZE, Vector2i.ONE * Chunk.SIZE).grow(BridgeRoutes.REACH + 8)
+	var first := Vector2i(floori(box.position.x / CHASM_GRID), floori(box.position.y / CHASM_GRID)) - Vector2i.ONE
+	var last := Vector2i(floori(box.end.x / CHASM_GRID), floori(box.end.y / CHASM_GRID)) + Vector2i.ONE
+	var found := {}
+	for y in range(first.y, last.y + 1):
+		if _cancelled(): return []
+		for x in range(first.x, last.x + 1):
+			var key := Vector2i(x, y)
+			var a := _chasm_site(key)
+			# The two nearest sites in _chasm_cut's 3x3 neighbourhood can
+			# be TWO squares apart. Adjacent pairs alone miss real decks.
+			for d: Vector2i in [Vector2i(0, 1), Vector2i(0, 2), Vector2i(1, -2), Vector2i(1, -1), Vector2i(1, 0), Vector2i(1, 1), Vector2i(1, 2), Vector2i(2, -2), Vector2i(2, -1), Vector2i(2, 0), Vector2i(2, 1), Vector2i(2, 2)]:
+				var other := key + d
+				if _hash(key.x * 9176 + other.x, key.y * 7919 + other.y, 33) >= CHASM_SHARE: continue
+				var b := _chasm_site(other)
+				var middle := Vector2i(((a + b) * .5).floor())
+				if not box.has_point(middle): continue
+				var axis := Vector2i.RIGHT if absf(b.x - a.x) >= absf(b.y - a.y) else Vector2i.DOWN
+				# Another site may occlude the exact midpoint while leaving a
+				# valid short span beside it on the same crossing row.
+				for offset in range(-3, 4):
+					var probe := middle + axis * offset
+					var raw := _chasm_cut(probe.x, probe.y)
+					if raw[0] != BRIDGE or _chasm_kind(probe.x, probe.y) != BRIDGE: continue
+					var route := _bridge_data(probe.x, probe.y, raw[2])
+					if route["accepted"]: found[route["low"]] = route
+	return found.values().duplicate(true)
+
+func _trail_cells(chunk: Vector2i) -> Dictionary:
+	if generation_version < 20 or _trail_ground == "" or geography == null or _chasm == "": return {}
+	if _bridge_trails.has(chunk): return _bridge_trails[chunk]
+	var cells := {}
+	for route: Dictionary in bridge_routes_touching(chunk.x, chunk.y):
+		for path: Array in route["paths"]:
+			for i in path.size():
+				var at: Vector2i = path[i]
+				cells[at] = true
+				if i == 0: continue
+				var before: Vector2i = path[i - 1]
+				var step := at - before
+				if step.x != 0 and step.y != 0:
+					# The walker's body also needs the two orthogonal corner
+					# cells. A diagonal cannot remain blocked by cover there.
+					cells[before + Vector2i(step.x, 0)] = true
+					cells[before + Vector2i(0, step.y)] = true
+	if _cancelled(): return {}
+	if _bridge_trails.size() >= TRAIL_CACHE_LIMIT: _bridge_trails.erase(_bridge_trails.keys()[0])
+	_bridge_trails[chunk] = cells
+	return cells
 
 
 # --- Relief in levels (ADR-0061) ---------------------------------------------

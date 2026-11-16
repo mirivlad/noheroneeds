@@ -6,6 +6,12 @@ const LEGACY := {
 	431: ["50ee6aad1aed1073f7f0cf30a7c2164486a6ac28f844835f06a3120d828500fd", "8748f9e993046fb626c24c4055083552d3cf084ccbd0e9adb5781083df45a2e0", "cd054f92fcceed031bee65c6d70b0c84f95989e0ca32cdeee0a17fa17b920201"],
 	991: ["c58b6fb80c788bcbd9540589b54885b7db47ba88ce68d01614560b27265d825a", "4baa9b3b9cacf7b333744d44b7d9fdf313272aa6a92c6033536344c0deb98170", "864190caf55bd5d7cbc53af3ecc0b8c2011221fad333ea31ce0e395e80c28e18"]}
 
+# Captured from verified main 1e55635 before adding recipe 20.
+const RECIPE19 := {
+	2: ["eda6d5bf69faabbfffa2a71f6d4a281fe43f1af93a51e50f3e6bb28a6e24cf8c", "b29ae6f93556be1c157623a7e8afe4250008f874d8137b0cfca7dfe5662a9e2b", "1f1dc4445643f66be2cffe7c364ea41488f165a27874e3defbe2fe52a517eaeb"],
+	431: ["76e3d608e4967aa24eb31972bc4655781fe23344afd60e58dff44ba788ac705e", "4395f8810b2336e1ba089d651aa8e8b4cf3307fdccd5af7c6ce961ebd38313d8", "cdde53b39c719ad537449a6257bedf4e87dfce59db14ab261a1507000e0134c4"],
+	991: ["06ae501229cbcef0aca0a40bb2fe552d1cb92f8bd90613f4cee098e92ddce318", "9efbd79fb2aac0b24dce5791673beda47a4d9b69608ec0151614ce555cf47826", "75ce585d0b2ea2922e1c6da78fcbd41f51978c6bdb09a9bd735781cfa6464af9"]}
+
 func test_old_recipe_matches_main_chunk_bytes_on_three_planets() -> void:
 	var content := ContentRegistry.load_packs(["res://content/base"])
 	for seed_value: int in LEGACY:
@@ -72,3 +78,13 @@ func test_geological_groups_repeat_across_longitude_and_query_order() -> void:
 		check(is_equal_approx(first["weight"], wrapped["weight"]), "group weight is periodic")
 		generator._mineral_group(at.y * 79, at.x * 53)
 		eq(generator._mineral_group(at.x, at.y), first, "unrelated queries cannot change a group")
+
+func test_recipe19_still_matches_the_verified_main_snapshot() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	for seed_value: int in RECIPE19:
+		var plan := WorldPlan.generate(seed_value, "small", "temperate", content)
+		var generator := SurfaceGenerator.new(seed_value, content, plan, 19)
+		var cells := [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-2, 1)]
+		for i in cells.size():
+			var at: Vector2i = cells[i]
+			eq(Hash.sha256(ChunkCodec.encode(generator.generate(at.x, at.y))).hex_encode(), RECIPE19[seed_value][i], "recipe 19 unchanged: seed %d, %s" % [seed_value, at])

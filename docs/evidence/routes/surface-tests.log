@@ -1,0 +1,7 @@
+PASS test_surface_routes::test_planet_aliases_do_not_receive_phantom_settlements_or_roads (1987 ms)
+PASS test_surface_routes::test_real_crossings_have_natural_landings_and_reserved_continuations (6548 ms)
+PASS test_surface_routes::test_old_forced_approach_does_not_turn_into_a_cut_without_a_bridge (2170 ms)
+PASS test_surface_routes::test_route_data_does_not_depend_on_neighbour_chunk_query_order (2338 ms)
+PASS test_surface_routes::test_generated_approaches_stay_walkable_and_do_not_depend_on_chunk_order (36550 ms)
+expected engine errors: 0
+5 tests, 0 failed checks, 50.0s

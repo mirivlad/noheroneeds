@@ -1,0 +1,15 @@
+PASS test_roads::test_approaches_use_each_side_of_an_asymmetric_village (54 ms)
+PASS test_roads::test_short_water_is_bridged_without_a_gap (64 ms)
+PASS test_roads::test_a_too_long_bridge_is_gone_round_by_land (73 ms)
+PASS test_roads::test_the_sea_between_two_villages_makes_no_road (162 ms)
+PASS test_roads::test_a_bridge_never_stands_over_deep_water (68 ms)
+PASS test_roads::test_a_terrain_step_is_a_pass_while_a_crag_remains_blocked (80 ms)
+PASS test_roads::test_full_road_width_avoids_walls_at_diagonals_and_turns (63 ms)
+PASS test_roads::test_a_chasm_is_a_costly_crossing_and_long_decks_are_rejected (63 ms)
+PASS test_roads::test_short_chasm_crossings_need_land_at_both_full_width_ends (64 ms)
+PASS test_roads::test_side_of_a_road_cannot_cut_an_unchecked_crag (63 ms)
+PASS test_roads::test_a_road_cannot_sprout_a_hanging_lane_along_a_ravine (63 ms)
+PASS test_roads::test_a_long_cliff_cut_is_rerouted_but_a_narrow_pass_still_works (61 ms)
+PASS test_roads::test_road_goes_round_a_long_chasm_instead_of_filling_it (80 ms)
+expected engine errors: 0
+13 tests, 0 failed checks, 1.0s

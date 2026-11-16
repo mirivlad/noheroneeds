@@ -1,0 +1,7 @@
+PASS test_surface_versions::test_old_recipe_matches_main_chunk_bytes_on_three_planets (81741 ms)
+PASS test_surface_versions::test_old_world_keeps_recipe_for_loader_and_new_chunks (20749 ms)
+PASS test_surface_versions::test_unknown_surface_recipe_is_refused_without_writing (248 ms)
+PASS test_surface_versions::test_geological_groups_repeat_across_longitude_and_query_order (2136 ms)
+PASS test_surface_versions::test_recipe19_still_matches_the_verified_main_snapshot (83535 ms)
+expected engine errors: 0
+5 tests, 0 failed checks, 189.0s

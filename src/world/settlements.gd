@@ -78,6 +78,8 @@ var _biome: Callable
 ## (x, y) -> the land there: {"what", "height", "biome"} (the surface
 ## generator's land_at); invalid — flat dry land everywhere.
 var _land: Callable
+## Surface recipe 20 tightens roads without changing saved recipe 18/19 plans.
+var _natural_routes := false
 ## "kind|dx|dy" -> [plans] of the district's cluster ([] wild land)
 var _villages := {}
 ## "kind|dx|dy" -> the roads the district owns, before their ways are found:
@@ -93,13 +95,14 @@ var camps: BanditCampPlans
 var inns: HospitalityPlans
 
 
-func _init(seed_value: int, registry: ContentRegistry, wet: Callable, clearing: int, biome := Callable(), land := Callable(), shared_key := "") -> void:
+func _init(seed_value: int, registry: ContentRegistry, wet: Callable, clearing: int, biome := Callable(), land := Callable(), shared_key := "", surface_version := 18) -> void:
 	world_seed = seed_value
 	_shared_key = shared_key
 	content = registry
 	_wet = wet
 	_biome = biome
 	_land = land
+	_natural_routes = surface_version >= 20
 	_clearing = clearing
 	var ids: Array = []
 	for id: String in registry.defs:
@@ -977,27 +980,52 @@ func _bad_cells(path: Array[Vector2i], parcels: Array = []) -> Array[Vector2i]:
 			if parcels.any(func(r: Rect2i) -> bool: return r.has_point(at)):
 				bad.append(path[index])
 				break
+			if _natural_routes and _land.is_valid():
+				var sample: Dictionary = _land.call(at.x, at.y)
+				if sample.what == "deep" or (sample.what == "rock" and not sample.get("cliff", false)):
+					bad.append(path[index])
+					break
+				if sample.what in ["chasm", "bridge"] and _what(path[index]) not in ["chasm", "bridge"]:
+					var crossing_beside := (index > 0 and _what(path[index - 1]) in ["chasm", "bridge"]) or (index + 1 < n and _what(path[index + 1]) in ["chasm", "bridge"])
+					if not crossing_beside:
+						bad.append(path[index])
+						break
 	var i := 0
+	var cliff_run := 0
+	var crossings := ["water", "chasm", "bridge"] if _natural_routes else ["water"]
 	while i < n:
 		var what := _what(path[i])
 		if what == "rock" and _land.is_valid():
 			var sample: Dictionary = _land.call(path[i].x, path[i].y)
 			if not sample.get("cliff", false): bad.append(path[i])
+			cliff_run += 1
+			if _natural_routes and cliff_run > 2: bad.append(path[i])
+		else:
+			cliff_run = 0
 		if what == "deep":
 			bad.append(path[i])
 			i += 1
 			continue
-		if what != "water":
+		if what not in crossings:
 			i += 1
 			continue
 		var j := i
-		while j < n and _what(path[j]) == "water":
+		while j < n and _what(path[j]) in crossings:
 			j += 1
 		var before_ok := i > 0 and _what(path[i - 1]) in ["land", "shore", "shallows"]
 		var after_ok := j < n and _what(path[j]) in ["land", "shore", "shallows"]
 		if j - i > BRIDGE_MAX or not before_ok or not after_ok:
 			for k in range(i, j):
 				bad.append(path[k])
+		if _natural_routes and before_ok and after_ok:
+			var direction := path[j] - path[i - 1]
+			var side := Vector2i.DOWN if absi(direction.x) >= absi(direction.y) else Vector2i.RIGHT
+			# Both sides of the two-cell deck meet a dry approach, rather than
+			# one lane ending in rock or dangling beside the shore.
+			if _what(path[i - 1] + side) not in ["land", "shore", "shallows"] or _what(path[j] + side) not in ["land", "shore", "shallows"]:
+				for k in range(i, j): bad.append(path[k])
+			if what in ["chasm", "bridge"] and BridgeRoutes.land_detour(path[i - 1], path[j], mini(18, (j - i) * 2 + 6), _land) >= 0:
+				for k in range(i, j): bad.append(path[k])
 		# The deck is two cells wide: no part of it may hang over deep water.
 		for k in range(i, j):
 			for o: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
@@ -1156,7 +1184,9 @@ func _point(g: Vector2i) -> Vector2:
 			"deep":
 				c = INF
 			"rock":
-				c = 4.0 if land.get("cliff", false) else INF
+				c = (16.0 if _natural_routes else 4.0) if land.get("cliff", false) else INF
+			"chasm":
+				c = 12.0 if _natural_routes else 1.0
 			"water":
 				c = 12.0  # a bridge
 			"shallows":

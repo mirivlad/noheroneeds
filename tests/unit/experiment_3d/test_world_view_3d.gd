@@ -622,6 +622,21 @@ func test_life_over_the_land() -> void:
 	check(Effects3D.ambient("fireflies", PackedVector3Array()) == null, "nowhere: nothing")
 	check(Effects3D.ambient("nothing", at) == null, "unknown: nothing")
 
+func test_wide_hanging_decks_follow_the_span_and_keep_rails_only_outside() -> void:
+	var chunk := Chunk.new()
+	for y in range(0, 7):
+		for x in range(2, 9):
+			chunk.set_cell("ground", x, y, "base:chasm" if y >= 1 and y <= 5 else "base:grass")
+			if y >= 1 and y <= 5 and x >= 4 and x <= 6: chunk.set_cell("ground", x, y, "base:hanging_bridge")
+	client.chunks["surface|0|0"] = chunk
+	eq(view._hanging_axis(Vector2i(4, 3)), Vector2i.DOWN, "a wide north-south span is not mistaken for an east-west span")
+	var outside := view.hanging_bridge_mesh(Vector2i(4, 3))
+	var middle := view.hanging_bridge_mesh(Vector2i(5, 3))
+	eq(outside.get_surface_count(), 2, "outer lane has its rope")
+	eq(middle.get_surface_count(), 1, "middle lane has no blocking inside railing")
+	var bounds := middle.get_aabb()
+	check(is_equal_approx(bounds.position.x, -.5) and is_equal_approx(bounds.end.x, .5), "joined lane boards meet without a longitudinal gap")
+
 func test_chasm_walls_and_a_hanging_bridge() -> void:
 	# A chasm three cells across (x 4..6) at row y 2, a bridge over it along x.
 	var c := Chunk.new()

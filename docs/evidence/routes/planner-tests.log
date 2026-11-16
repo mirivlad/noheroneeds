@@ -1,0 +1,8 @@
+PASS test_bridge_routes::test_crossing_joins_regions_and_trails_continue_both_sides (4 ms)
+PASS test_bridge_routes::test_nearby_dry_detour_makes_a_bridge_unnecessary (1 ms)
+PASS test_bridge_routes::test_three_dry_cells_leading_into_a_pocket_are_not_a_route (1 ms)
+PASS test_bridge_routes::test_diagonally_touching_pockets_cannot_fake_a_connected_region (2 ms)
+PASS test_bridge_routes::test_work_is_bounded_and_unrelated_queries_do_not_change_the_plan (8 ms)
+PASS test_bridge_routes::test_an_unbounded_span_is_refused_before_searching (0 ms)
+expected engine errors: 0
+6 tests, 0 failed checks, 1.0s

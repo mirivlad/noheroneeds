@@ -1,0 +1,231 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "checks": 20,
+  "failures": [],
+  "preset": "small",
+  "raster": [
+    960,
+    540
+  ],
+  "scenes": {
+    "former-cut": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-78.57852, 77.25613, -6.304523)]",
+      "cell": [
+        -55,
+        -42
+      ],
+      "ground": "base:chasm",
+      "procedural_kind": "chasm",
+      "render_benchmark": {
+        "actors": 1,
+        "chunks": 25,
+        "draw_calls": 661.0,
+        "frames": 360,
+        "p50_ms": 4.883,
+        "p95_ms": 8.374,
+        "raster": "(960, 540)",
+        "rendered_primitives": 342917.0,
+        "window": "(960, 540)",
+        "worst_ms": 9.71
+      },
+      "route": {
+        "accepted": false,
+        "reason": "landing"
+      }
+    },
+    "small-region": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-40.57852, 62.25613, 4.695477)]",
+      "cell": [
+        -17,
+        -31
+      ],
+      "ground": "base:chasm",
+      "procedural_kind": "chasm",
+      "render_benchmark": {
+        "actors": 2,
+        "chunks": 26,
+        "draw_calls": 1338.0,
+        "frames": 360,
+        "p50_ms": 6.362,
+        "p95_ms": 9.702,
+        "raster": "(960, 540)",
+        "rendered_primitives": 1142887.0,
+        "window": "(960, 540)",
+        "worst_ms": 11.956
+      },
+      "route": {
+        "accepted": false,
+        "reason": "no-connected-region",
+        "regions": [
+          137,
+          83
+        ]
+      }
+    },
+    "useful": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-2.578524, 68.25613, -6.304523)]",
+      "cell": [
+        21,
+        -42
+      ],
+      "ground": "base:hanging_bridge",
+      "procedural_kind": "bridge",
+      "render_benchmark": {
+        "actors": 6,
+        "chunks": 27,
+        "draw_calls": 2076.0,
+        "frames": 360,
+        "p50_ms": 7.613,
+        "p95_ms": 11.695,
+        "raster": "(960, 540)",
+        "rendered_primitives": 1056028.0,
+        "window": "(960, 540)",
+        "worst_ms": 13.641
+      },
+      "route": {
+        "accepted": true,
+        "detour_steps": -1,
+        "paths": [
+          [
+            [
+              21,
+              -44
+            ],
+            [
+              20,
+              -44
+            ],
+            [
+              19,
+              -44
+            ],
+            [
+              18,
+              -44
+            ],
+            [
+              17,
+              -44
+            ],
+            [
+              16,
+              -44
+            ],
+            [
+              15,
+              -44
+            ],
+            [
+              14,
+              -45
+            ],
+            [
+              13,
+              -46
+            ],
+            [
+              12,
+              -47
+            ],
+            [
+              11,
+              -48
+            ],
+            [
+              10,
+              -49
+            ],
+            [
+              10,
+              -50
+            ]
+          ],
+          [
+            [
+              21,
+              -39
+            ],
+            [
+              21,
+              -38
+            ],
+            [
+              21,
+              -37
+            ],
+            [
+              22,
+              -36
+            ],
+            [
+              23,
+              -35
+            ],
+            [
+              24,
+              -34
+            ],
+            [
+              25,
+              -33
+            ],
+            [
+              26,
+              -32
+            ],
+            [
+              27,
+              -31
+            ],
+            [
+              27,
+              -30
+            ],
+            [
+              27,
+              -29
+            ],
+            [
+              26,
+              -29
+            ],
+            [
+              25,
+              -29
+            ]
+          ]
+        ],
+        "regions": [
+          472,
+          236
+        ]
+      }
+    },
+    "wide-deck": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-2.578524, 68.25613, -6.304523)]",
+      "render_benchmark": {
+        "actors": 5,
+        "chunks": 27,
+        "draw_calls": 1614.0,
+        "frames": 360,
+        "p50_ms": 7.421,
+        "p95_ms": 11.432,
+        "raster": "(960, 540)",
+        "rendered_primitives": 745678.0,
+        "window": "(960, 540)",
+        "worst_ms": 12.615
+      }
+    }
+  },
+  "seed": 431,
+  "sources": {
+    "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd",
+    "src/experiment_3d/world_view_3d.gd": "b54d5f0a8f3ef78b81376a20030d921b277cd1a26fb6fa18a933493753a819d2",
+    "src/world/bridge_routes.gd": "c6b53eeaf8d9672e55c9743d0e9ac3c19362f955077255c86a1ea12c38811fa2",
+    "src/world/settlements.gd": "1ff3cc1d1bad4d4240d168639861d1c17b62ca40bb53666ee80a9ffa9af67529",
+    "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
+    "src/world/world_plan.gd": "ecf5c0c7ba3f51efbe6ddff54c92fb272d5833079e8a75297bc4d541776e62c1"
+  },
+  "surface_version": 20,
+  "time_ms": 43200000.0
+}

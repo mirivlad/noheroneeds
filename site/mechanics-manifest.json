@@ -340,6 +340,19 @@
         "assets/experiment_3d/catalog.json"
       ],
       "kinds": []
+    },
+    {
+      "id": "route-connectivity",
+      "guide": "nature",
+      "sources": [
+        "src/world/bridge_routes.gd",
+        "src/world/bridge_routes.gd.uid",
+        "src/world/surface_generator.gd",
+        "src/world/settlements.gd",
+        "src/experiment_3d/world_view_3d.gd",
+        "content/base/terrain.json"
+      ],
+      "kinds": []
     }
   ]
 }

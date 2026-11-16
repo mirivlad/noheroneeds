@@ -167,3 +167,54 @@ func test_full_road_width_avoids_walls_at_diagonals_and_turns() -> void:
 	if not check(not road.is_empty(), "a road can go around the obstructed diagonal"): return
 	for at: Vector2i in road.cells:
 		check(not wall.has_point(at), "no materialized part of the road clips the wall")
+
+
+# Recipe 20: route validation follows the materialized footprint.
+func _terrain(sample: Callable, recipe := 20) -> Settlements:
+	return Settlements.new(1, content, func(_x: int, _y: int) -> bool: return false, 8, Callable(), sample, "", recipe)
+
+func _line_path() -> Array[Vector2i]:
+	var path: Array[Vector2i] = []
+	for x in 24: path.append(Vector2i(x, 0))
+	return path
+
+func test_a_chasm_is_a_costly_crossing_and_long_decks_are_rejected() -> void:
+	var land := func(x: int, _y: int) -> Dictionary: return {"what": "chasm" if x >= 2 and x <= 21 else "land", "height": .1}
+	var current := _terrain(land)
+	var old := _terrain(land, 18)
+	check(current._point(Vector2i(1, 0)).x >= 12, "the route does not treat a ravine like flat land")
+	eq(old._point(Vector2i(1, 0)).x, 1.0, "saved roads retain the old recipe")
+	check(not current._bad_cells(_line_path()).is_empty(), "a twenty-cell chasm bridge is refused")
+	eq(old._bad_cells(_line_path()), [], "the legacy road validator is preserved")
+
+func test_short_chasm_crossings_need_land_at_both_full_width_ends() -> void:
+	var land := func(x: int, y: int) -> Dictionary:
+		return {"what": "chasm" if (x >= 8 and x <= 11) or (x == 12 and y == 1) else "land", "height": .1}
+	check(not _terrain(land)._bad_cells(_line_path()).is_empty(), "the second lane cannot end over the ravine")
+	var good := func(x: int, _y: int) -> Dictionary: return {"what": "chasm" if x >= 8 and x <= 11 else "land", "height": .1}
+	eq(_terrain(good)._bad_cells(_line_path()), [], "a short two-ended crossing remains possible")
+
+func test_side_of_a_road_cannot_cut_an_unchecked_crag() -> void:
+	var land := func(x: int, y: int) -> Dictionary:
+		return {"what": "rock" if x == 8 and y == 1 else "land", "height": .1, "cliff": false}
+	check(not _terrain(land)._bad_cells(_line_path()).is_empty(), "actual materialized width is checked")
+	eq(_terrain(land, 19)._bad_cells(_line_path()), [], "recipe 19's validator is retained")
+
+func test_a_road_cannot_sprout_a_hanging_lane_along_a_ravine() -> void:
+	var land := func(_x: int, y: int) -> Dictionary: return {"what": "chasm" if y == 1 else "land", "height": .1}
+	check(not _terrain(land)._bad_cells(_line_path()).is_empty(), "a bridge must cross the ravine, not run along its bank")
+	eq(_terrain(land, 19)._bad_cells(_line_path()), [], "the stored legacy route remains unchanged")
+
+func test_a_long_cliff_cut_is_rerouted_but_a_narrow_pass_still_works() -> void:
+	var long_cut := func(x: int, _y: int) -> Dictionary: return {"what": "rock" if x >= 7 and x <= 13 else "land", "height": .1, "cliff": true}
+	check(not _terrain(long_cut)._bad_cells(_line_path()).is_empty(), "no seven-cell trench through a cliff")
+	var short_pass := func(x: int, _y: int) -> Dictionary: return {"what": "rock" if x == 8 else "land", "height": .1, "cliff": true}
+	eq(_terrain(short_pass)._bad_cells(_line_path()), [], "a narrow worked pass remains available")
+
+func test_road_goes_round_a_long_chasm_instead_of_filling_it() -> void:
+	var ravine := Rect2i(90, -20, 22, 41)
+	var land := func(x: int, y: int) -> Dictionary: return {"what": "chasm" if ravine.has_point(Vector2i(x, y)) else "land", "height": .1}
+	var road := _terrain(land)._road(_village("a", Vector2i.ZERO), _village("b", Vector2i(200, 0)), [0, 0, 0, 0])
+	if not check(not road.is_empty(), "a nearby natural route still connects the villages"): return
+	check(_is_contiguous(road["path"]), "the reroute has no missing cells")
+	for at: Vector2i in road["cells"]: check(not ravine.has_point(at), "no part of the road becomes a gratuitous long deck")

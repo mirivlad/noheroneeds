@@ -1,0 +1,98 @@
+{
+  "failures": [],
+  "sources": {
+    "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd",
+    "src/world/bridge_routes.gd": "c6b53eeaf8d9672e55c9743d0e9ac3c19362f955077255c86a1ea12c38811fa2",
+    "src/world/settlements.gd": "1ff3cc1d1bad4d4240d168639861d1c17b62ca40bb53666ee80a9ffa9af67529",
+    "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957"
+  },
+  "worlds": {
+    "2": {
+      "blocked_road_cells": [],
+      "cave": [
+        -15,
+        -14
+      ],
+      "cave_reached": true,
+      "reachable_resource_counts": {
+        "base:berry_bush": 4,
+        "base:birch": 8,
+        "base:boletus": 2,
+        "base:boulder": 3,
+        "base:bush": 27,
+        "base:clover": 342,
+        "base:honey_mushrooms": 2,
+        "base:oak": 21,
+        "base:pebbles": 126,
+        "base:reeds": 244,
+        "base:spruce": 1,
+        "base:stump": 1,
+        "base:tall_grass": 670
+      },
+      "reachable_spawn_cells": 6936,
+      "road_cells_checked": 1236,
+      "roads20": 8,
+      "roads_materialized": 2,
+      "villages19_canonical": 14,
+      "villages19_raw": 14,
+      "villages20": 14
+    },
+    "431": {
+      "blocked_road_cells": [],
+      "cave": [
+        -18,
+        -13
+      ],
+      "cave_reached": true,
+      "reachable_resource_counts": {
+        "base:berry_bush": 18,
+        "base:birch": 16,
+        "base:boletus": 4,
+        "base:boulder": 7,
+        "base:bush": 26,
+        "base:clover": 228,
+        "base:honey_mushrooms": 4,
+        "base:maple": 12,
+        "base:oak": 14,
+        "base:pebbles": 161,
+        "base:reeds": 288,
+        "base:spruce": 11,
+        "base:stump": 3,
+        "base:tall_grass": 573
+      },
+      "reachable_spawn_cells": 6871,
+      "road_cells_checked": 2801,
+      "roads20": 2,
+      "roads_materialized": 2,
+      "villages19_canonical": 8,
+      "villages19_raw": 8,
+      "villages20": 8
+    },
+    "991": {
+      "blocked_road_cells": [],
+      "cave": [
+        -20,
+        -14
+      ],
+      "cave_reached": true,
+      "reachable_resource_counts": {
+        "base:birch": 16,
+        "base:boulder": 11,
+        "base:bush": 71,
+        "base:clover": 522,
+        "base:honey_mushrooms": 2,
+        "base:oak": 31,
+        "base:pebbles": 89,
+        "base:reeds": 134,
+        "base:tall_grass": 1069
+      },
+      "reachable_spawn_cells": 8079,
+      "road_cells_checked": 850,
+      "roads20": 1,
+      "roads_materialized": 1,
+      "villages19_canonical": 2,
+      "villages19_raw": 14,
+      "villages20": 2
+    }
+  }
+}

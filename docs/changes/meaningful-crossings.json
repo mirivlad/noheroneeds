@@ -1,0 +1,23 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Осмысленные висячие переходы с естественными тропами, проверки ширины дорог и канонической территории новых миров; прежние рецепты 18/19 и сохранённые изменения сохраняются.",
+      "sources": {
+        "src/world/bridge_routes.gd": "c6b53eeaf8d9672e55c9743d0e9ac3c19362f955077255c86a1ea12c38811fa2",
+        "src/world/bridge_routes.gd.uid": "1982c7ba08dd1322f40bc7935c0c4e2edfaefa77b7ba83b2e3a529adb9465c34",
+        "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
+        "src/world/settlements.gd": "1ff3cc1d1bad4d4240d168639861d1c17b62ca40bb53666ee80a9ffa9af67529",
+        "src/experiment_3d/world_view_3d.gd": "b54d5f0a8f3ef78b81376a20030d921b277cd1a26fb6fa18a933493753a819d2",
+        "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd"
+      },
+      "mechanics": [
+        "route-connectivity"
+      ],
+      "guides": {
+        "site/content/guides/nature.html": "8d370240720a72f025860cd8fd42b0dde5e4714129e428ce2acbc6fdd715b1e2"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

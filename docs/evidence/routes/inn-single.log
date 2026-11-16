@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FAIL test_hospitality::test_cart_visits_the_real_inn_yard_and_resumes_with_guards (38417 ms)
+    - test_hospitality::test_cart_visits_the_real_inn_yard_and_resumes_with_guards: cart leaves the yard and continues along its road
+expected engine errors: 0
+
+1 tests, 1 failed checks, 39.0s

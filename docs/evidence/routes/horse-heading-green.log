@@ -1,0 +1,7 @@
+PASS test_caravan_motion::test_a_straight_way_keeps_the_horse_ahead_and_turns_at_a_cart_pace (29267 ms)
+PASS test_caravan_motion::test_the_horse_goes_first_into_a_ninety_degree_turn (2703 ms)
+PASS test_caravan_motion::test_a_run_of_turns_is_smooth_and_the_harness_keeps_together (2655 ms)
+PASS test_caravan_motion::test_a_cart_goes_down_a_narrow_passage_without_touching_the_walls (2696 ms)
+PASS test_caravan_motion::test_departure_checks_the_horses_actual_heading_at_a_building_corner (2668 ms)
+expected engine errors: 0
+5 tests, 0 failed checks, 41.0s

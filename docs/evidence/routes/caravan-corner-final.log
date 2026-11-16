@@ -1,0 +1,13 @@
+Running 98 tests in 11 suites with 4 isolated workers; logs: /home/mirivlad/git/noheroneeds/build/test-runs/20261116-142617-1268226
+PASS tests/unit/server/test_caravan_navigation.gd: 4 tests, 42.97s
+PASS tests/unit/server/test_caravan_motion.gd: 5 tests, 43.97s
+PASS tests/unit/server/test_caravan_contracts.gd: 10 tests, 48.98s
+PASS tests/unit/server/test_caravan_stops.gd: 7 tests, 52.88s
+PASS tests/unit/server/test_containers.gd: 6 tests, 19.83s
+PASS tests/unit/server/test_crash_recovery.gd: 1 tests, 8.81s
+PASS tests/unit/server/test_creature_chunk_safety.gd: 3 tests, 2.7s
+PASS tests/unit/server/test_crafts.gd: 14 tests, 28.84s
+PASS tests/unit/server/test_combat.gd: 15 tests, 71.81s
+PASS tests/unit/server/test_chronicles.gd: 6 tests, 98.94s
+PASS tests/unit/server/test_creatures.gd: 27 tests, 159.12s
+{"ok": true, "tests": 98, "suites": 11, "sources_unchanged": true, "wall_seconds": 239.59}

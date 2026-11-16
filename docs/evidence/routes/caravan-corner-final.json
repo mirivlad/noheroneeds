@@ -1,0 +1,108 @@
+{
+  "ok": true,
+  "tests": 98,
+  "suites": 11,
+  "sources_unchanged": true,
+  "wall_seconds": 239.59,
+  "results": [
+    {
+      "suite": "tests/unit/server/test_caravan_contracts.gd",
+      "ok": true,
+      "expected_tests": 10,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 48.98,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_caravan_contracts.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_motion.gd",
+      "ok": true,
+      "expected_tests": 5,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 43.97,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_caravan_motion.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_navigation.gd",
+      "ok": true,
+      "expected_tests": 4,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 42.97,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_caravan_navigation.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_caravan_stops.gd",
+      "ok": true,
+      "expected_tests": 7,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 52.88,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_caravan_stops.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_chronicles.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 98.94,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_chronicles.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_combat.gd",
+      "ok": true,
+      "expected_tests": 15,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 71.81,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_combat.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_containers.gd",
+      "ok": true,
+      "expected_tests": 6,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 19.83,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_containers.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_crafts.gd",
+      "ok": true,
+      "expected_tests": 14,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 28.84,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_crafts.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_crash_recovery.gd",
+      "ok": true,
+      "expected_tests": 1,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 8.81,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_crash_recovery.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_creature_chunk_safety.gd",
+      "ok": true,
+      "expected_tests": 3,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 2.7,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_creature_chunk_safety.gd.log"
+    },
+    {
+      "suite": "tests/unit/server/test_creatures.gd",
+      "ok": true,
+      "expected_tests": 27,
+      "exit_code": 0,
+      "output_flood": false,
+      "wall_seconds": 159.12,
+      "log": "build/test-runs/20261116-142617-1268226/tests__unit__server__test_creatures.gd.log"
+    }
+  ]
+}

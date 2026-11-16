@@ -1,6 +1,6 @@
 {
   "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
-  "checks": 20,
+  "checks": 21,
   "failures": [],
   "preset": "small",
   "raster": [
@@ -19,14 +19,14 @@
       "render_benchmark": {
         "actors": 1,
         "chunks": 25,
-        "draw_calls": 661.0,
+        "draw_calls": 662.0,
         "frames": 360,
-        "p50_ms": 4.883,
-        "p95_ms": 8.374,
+        "p50_ms": 4.733,
+        "p95_ms": 8.874,
         "raster": "(960, 540)",
-        "rendered_primitives": 342917.0,
+        "rendered_primitives": 342935.0,
         "window": "(960, 540)",
-        "worst_ms": 9.71
+        "worst_ms": 13.773
       },
       "route": {
         "accepted": false,
@@ -42,16 +42,16 @@
       "ground": "base:chasm",
       "procedural_kind": "chasm",
       "render_benchmark": {
-        "actors": 2,
+        "actors": 3,
         "chunks": 26,
-        "draw_calls": 1338.0,
+        "draw_calls": 1339.0,
         "frames": 360,
-        "p50_ms": 6.362,
-        "p95_ms": 9.702,
+        "p50_ms": 6.229,
+        "p95_ms": 10.334,
         "raster": "(960, 540)",
-        "rendered_primitives": 1142887.0,
+        "rendered_primitives": 1142889.0,
         "window": "(960, 540)",
-        "worst_ms": 11.956
+        "worst_ms": 11.725
       },
       "route": {
         "accepted": false,
@@ -75,12 +75,12 @@
         "chunks": 27,
         "draw_calls": 2076.0,
         "frames": 360,
-        "p50_ms": 7.613,
-        "p95_ms": 11.695,
+        "p50_ms": 7.0,
+        "p95_ms": 9.681,
         "raster": "(960, 540)",
-        "rendered_primitives": 1056028.0,
+        "rendered_primitives": 1056006.0,
         "window": "(960, 540)",
-        "worst_ms": 13.641
+        "worst_ms": 12.767
       },
       "route": {
         "accepted": true,
@@ -204,25 +204,25 @@
     "wide-deck": {
       "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-2.578524, 68.25613, -6.304523)]",
       "render_benchmark": {
-        "actors": 5,
+        "actors": 6,
         "chunks": 27,
-        "draw_calls": 1614.0,
+        "draw_calls": 1613.0,
         "frames": 360,
-        "p50_ms": 7.421,
-        "p95_ms": 11.432,
+        "p50_ms": 7.27,
+        "p95_ms": 11.297,
         "raster": "(960, 540)",
-        "rendered_primitives": 745678.0,
+        "rendered_primitives": 745632.0,
         "window": "(960, 540)",
-        "worst_ms": 12.615
+        "worst_ms": 12.935
       }
     }
   },
   "seed": 431,
   "sources": {
     "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd",
-    "src/experiment_3d/world_view_3d.gd": "b54d5f0a8f3ef78b81376a20030d921b277cd1a26fb6fa18a933493753a819d2",
+    "src/experiment_3d/world_view_3d.gd": "461f6ebf658cb524fabed421d26927c4313da9cf9737ac0f4856f9cd4e539fb4",
     "src/world/bridge_routes.gd": "c6b53eeaf8d9672e55c9743d0e9ac3c19362f955077255c86a1ea12c38811fa2",
-    "src/world/settlements.gd": "1ff3cc1d1bad4d4240d168639861d1c17b62ca40bb53666ee80a9ffa9af67529",
+    "src/world/settlements.gd": "f4230973e1c2bedd31f816e043dd26c72c15066578cd4da58d5bff95cfebd835",
     "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
     "src/world/world_plan.gd": "ecf5c0c7ba3f51efbe6ddff54c92fb272d5833079e8a75297bc4d541776e62c1"
   },

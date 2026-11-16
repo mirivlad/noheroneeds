@@ -1,0 +1,3 @@
+PASS test_hospitality::test_cart_visits_the_real_inn_yard_and_resumes_with_guards (36500 ms)
+expected engine errors: 0
+1 tests, 0 failed checks, 37.0s

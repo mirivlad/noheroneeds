@@ -1,0 +1,36 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+PASS baseline main save opens in the candidate
+PASS old world recipe reaches simulation, loader and native client
+PASS original server rock survives loading without regeneration
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":2,"fps":12.408292550148,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":18688.55}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":2,"fps":277.648465575755,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":24.971}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":2,"fps":257.984180410057,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":26.358}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":2,"fps":175.771946445803,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":297.947}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":2,"fps":222.411024469661,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":28.239}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":2,"fps":234.744906622389,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":41.405}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.006,"chunks":2,"fps":241.464239146182,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":33.525}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":2,"fps":229.733486182679,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":38.74}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":2,"fps":263.345008295368,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":41.562}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":2,"fps":247.221233337289,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":26.879}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":2,"fps":284.146070023063,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":23.279}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":6.141,"chunks":2,"fps":102.299766961131,"location":"surface","objects":340,"renderer":"gl_compatibility","worst_frame_ms":1037.923}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.574,"chunks":4,"fps":100.177949430839,"location":"surface","objects":979,"renderer":"gl_compatibility","worst_frame_ms":85.615}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.527,"chunks":8,"fps":106.730724075463,"location":"surface","objects":1724,"renderer":"gl_compatibility","worst_frame_ms":68.734}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.548,"chunks":11,"fps":101.998594459368,"location":"surface","objects":2362,"renderer":"gl_compatibility","worst_frame_ms":71.169}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.835,"chunks":14,"fps":103.830695053056,"location":"surface","objects":2818,"renderer":"gl_compatibility","worst_frame_ms":66.427}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.635,"chunks":16,"fps":100.301439258786,"location":"surface","objects":3896,"renderer":"gl_compatibility","worst_frame_ms":86.601}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.736,"chunks":20,"fps":104.785483158877,"location":"surface","objects":4701,"renderer":"gl_compatibility","worst_frame_ms":66.252}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.376,"chunks":22,"fps":98.9089029222306,"location":"surface","objects":4895,"renderer":"gl_compatibility","worst_frame_ms":63.922}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.647,"chunks":25,"fps":95.4646343306736,"location":"surface","objects":5910,"renderer":"gl_compatibility","worst_frame_ms":86.022}
+PASS all expected chunks received and native geometry settled
+PASS cursor selects the rock at the actual chunk boundary
+PASS normal pickaxe work removes rock through the server
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.505,"chunks":26,"fps":59.865792865554,"location":"surface","objects":6088,"renderer":"gl_compatibility","worst_frame_ms":211.117}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.922,"chunks":26,"fps":101.994987966291,"location":"surface","objects":6088,"renderer":"gl_compatibility","worst_frame_ms":82.822}
+PASS all expected chunks received and native geometry settled
+PASS rendered and authoritative collision cells both open after mining
+PASS normal player movement crosses the mined opening
+PASS save reopens after mining
+PASS saved mined opening has priority over procedural rock on reload

@@ -1,0 +1,42 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "capture_script_sha256": "ef80b1e3f6d65cf451c3ed4bddd1e27c0c3425eb8ea1e7504686d5d0cc6922ed",
+  "checks": 34,
+  "failures": [],
+  "preset": "small",
+  "raster": [
+    960,
+    540
+  ],
+  "scenes": {
+    "mineral-gallery": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (13.92148, 53.5887, 51.19548)]",
+      "plot": [
+        28,
+        8
+      ]
+    },
+    "natural-rocky": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-46.07852, 71.55612, -7.804523)]",
+      "cell": [
+        -22,
+        -43
+      ]
+    }
+  },
+  "seed": 431,
+  "sources": {
+    "assets/experiment_3d/catalog.json": "fc6f9280aee0ffb28c0cab37542bcba9338caaa45d51a68f42f071387b80eb0c",
+    "content/base/terrain.json": "eb631655ae722c003493e0ee722553a97c38d48942a0bd5a2425eb9cd187f318",
+    "src/client/game_client.gd": "d6c56544fe391d3a2a1daf80ffb219643d18d1eab0d3b6e48def13341d710094",
+    "src/experiment_3d/ground.gdshader": "803c4b93edd3672fe9f5e1c2536798634a562edc4a298f79355d7caa069465a0",
+    "src/experiment_3d/mineral_meshes_3d.gd": "f844c537d2896d22c3cf29364604c1e59c885fd0766cc68ed95aab480ce54726",
+    "src/experiment_3d/model_library_3d.gd": "721ea0b32d19aff270ffa4f0dd443761cee36ce35beeef71cc5020a45ad1b968",
+    "src/experiment_3d/world_view_3d.gd": "6c4d9ea1ad4d4ad4882f8422cb0d629a6bae26d7d9fb35a7cdb262f1ab12e41b",
+    "src/network/protocol.gd": "ca09006549e0c1287bf5065a1eaace9ee20dba56ec2558573fa10e05c38d376a",
+    "src/server/game_server.gd": "a821aa77366dbacc9821b7a14533ca83b74f956f9cc599c25edfaa300cb65436",
+    "src/server/server_world.gd": "7d0313478fa28e72517200fb50d70da57402c3e9e3eb4892c1c204991c784cf3",
+    "src/world/surface_generator.gd": "2d0ba8bbc0c414f4cba5b966e7c7cad5e425932344e3b62869f34456bb82d2d3"
+  },
+  "time_ms": 43200000.0
+}

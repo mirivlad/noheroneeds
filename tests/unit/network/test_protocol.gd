@@ -19,6 +19,22 @@ func test_inputs_are_cleaned() -> void:
 	eq(Protocol.clean_inputs(raw), [[3, -1, -1, 1], [6, 0, 0, 0]], "only the last few, only valid ones")
 
 
+func test_welcome_preserves_saved_surface_recipe_and_rejects_unknown_one() -> void:
+	var net := MemoryTransport.MemoryNetwork.new()
+	var client := GameClient.new(net.client(), null, PackedByteArray(), null)
+	var welcome := {"character_id": "a", "location": "surface", "tick": 0, "max_levels": 3, "weather_seed": 1, "surface_version": 18}
+	var decoded := Protocol.decode(Protocol.encode(Protocol.WELCOME, welcome), false)
+	client._on_message(decoded)
+	eq(client.state, "playing", "supported legacy world is accepted")
+	eq(client.surface_generation_version, 18, "saved recipe overrides the current client's default")
+	welcome["surface_version"] = "18"
+	eq(Protocol.decode(Protocol.encode(Protocol.WELCOME, welcome), false), {}, "surface version must be an integer")
+	welcome["surface_version"] = 999
+	client._on_message(Protocol.decode(Protocol.encode(Protocol.WELCOME, welcome), false))
+	eq(client.state, "rejected", "unknown terrain is not sampled with a guessed recipe")
+	check(client.reject_reason.contains("генератора"), "the failure is explained")
+
+
 ## Running: 1.5 times as far a tick, the same on both sides, never through walls.
 func test_running_is_faster_and_still_stops_at_walls() -> void:
 	var open := func(_x: int, _y: int) -> bool: return false

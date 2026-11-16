@@ -2,7 +2,8 @@ class_name SurfaceGenerator
 extends RefCounted
 ## Makes surface chunks from the world seed. The same seed, ID and VERSION
 ## always give the same chunk. A chunk is generated once and then stored
-## whole (ADR-0005), so a new VERSION only shapes places nobody has visited.
+## whole (ADR-0005). Each world keeps its original generation_version, even
+## for places nobody has visited; new recipes apply only to new worlds.
 ##
 ## Biomes are content: each lists its ground and plants with weights and how
 ## densely plants grow. Code here only decides where a biome is and samples
@@ -28,7 +29,10 @@ const ID := "base:surface"
 ##     from a coarse point, and woods thin into glades with open trails.
 ## 16: settlement plans include public ground and caravan parking.
 ## 18: terrain-aware streets, contextual settlement scales and full building turns.
-const VERSION := 18
+## 19: coherent geological groups on the surface; old worlds retain recipe 18.
+const VERSION := 19
+const SUPPORTED_VERSIONS := [18, 19]
+var generation_version := VERSION
 var world_seed := 0
 ## The land as a whole (shared, read only).
 var geography: Geography
@@ -72,6 +76,11 @@ var _meander := FastNoiseLite.new()
 ## Openings in a wood, and the winding trails that always cross it.
 var _glade := FastNoiseLite.new()
 var _track := FastNoiseLite.new()
+## Geological provinces and smaller talus/outcrop groups (recipe 19 only).
+var _geology := FastNoiseLite.new()
+var _topology: PlanetTopology
+const MINERAL_COVER := ["base:pebbles", "base:boulder", "base:iron_outcrop", "base:copper_outcrop", "base:silver_outcrop", "base:gold_outcrop"]
+const MINERAL_GRID := 16
 ## One noise field per patch slot (the n-th lesser ground of any biome uses field n).
 var _patch_noise: Array[FastNoiseLite] = []
 ## Where the ways into the underground are (null: none).
@@ -89,7 +98,10 @@ const LAND_CACHE_CHUNKS := 128
 var _land_samples := {}
 
 
-func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null) -> void:
+func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null, saved_version := VERSION) -> void:
+	assert(saved_version in SUPPORTED_VERSIONS, "unsupported surface generator")
+	generation_version = saved_version
+	_topology = PlanetTopology.new(plan)
 	world_seed = seed_value
 	var ids: Array = []
 	for id: String in content.defs:
@@ -106,6 +118,21 @@ func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null) ->
 		_b_span.append(Vector2(span[0], span[1]))
 		_b_climate.append(Vector2(d["climate"][0], d["climate"][1]))
 		_b_wet.append(1 if d.get("wet_lowland", false) else 0)
+		var minerals := {}
+		var ores := {}
+		var total := 0.0
+		var mineral_total := 0.0
+		for id_cover: String in d.get("cover", {}):
+			var weight := float(d["cover"][id_cover])
+			total += weight
+			if id_cover in MINERAL_COVER:
+				minerals[id_cover] = weight
+				mineral_total += weight
+				if id_cover.ends_with("_outcrop"): ores[id_cover] = weight
+		var density := float(d["cover_density"])
+		_biomes[-1]["minerals"] = _table(minerals)
+		_biomes[-1]["ores"] = _table(ores)
+		_biomes[-1]["mineral_chance"] = density * mineral_total / maxf(.001, total - density * (total - mineral_total))
 		for plant: String in d.get("cover", {}):
 			if content.get_def(plant).get("solid", false):
 				_solid[plant] = true
@@ -147,8 +174,11 @@ func _init(seed_value: int, content: ContentRegistry, plan: WorldPlan = null) ->
 	_track.seed = seed_value + 32452843
 	_track.frequency = 0.017
 	_track.fractal_octaves = 2
+	_geology.seed = seed_value + 49979687
+	_geology.frequency = .008
+	_geology.fractal_octaves = 2
 	var plan_key := JSON.stringify(plan.to_dict()).sha256_text() if plan != null else "legacy"
-	var shared_key := "%d|%d|%d|%s|%s" % [VERSION, Settlements.VERSION, seed_value, JSON.stringify(content.defs).sha256_text(), plan_key]
+	var shared_key := "%d|%d|%d|%s|%s" % [generation_version, Settlements.VERSION, seed_value, JSON.stringify(content.defs).sha256_text(), plan_key]
 	settlements = Settlements.new(seed_value, content, is_unfit, _clearing, biome_id_at, land_at if geography else Callable(), shared_key)
 	for i in 8:
 		var n := FastNoiseLite.new()
@@ -165,7 +195,7 @@ func can_generate() -> bool:
 
 func generate(cx: int, cy: int) -> Chunk:
 	var c := Chunk.new()
-	c.meta = {"gen": ID, "gen_version": VERSION}
+	c.meta = {"gen": ID, "gen_version": generation_version}
 	for ly in Chunk.SIZE:
 		if _cancelled(): return null
 		for lx in Chunk.SIZE:
@@ -190,8 +220,9 @@ func generate(cx: int, cy: int) -> Chunk:
 			if what in ["chasm", "bridge"] and not clearing:
 				c.set_cell("ground", lx, ly, _chasm if what == "chasm" else _hanging)
 				continue
+			var plant := ""
 			if _hash(x, y, 2) < float(b["density"]):
-				var plant := _pick(b["cover"], _hash(x, y, 3))
+				plant = _pick(b["cover"], _hash(x, y, 3))
 				if plant != "" and _solid.has(plant):
 					# A wood thins into glades and is crossed by trails (a person
 					# must be seen, and a way found, through the thickest of it);
@@ -199,8 +230,10 @@ func generate(cx: int, cy: int) -> Chunk:
 					var shade := 0.55 + 0.45 * smoothstep(-0.3, 0.4, _glade.get_noise_2d(x, y))
 					if _on_trail(x, y) or _hash(x, y, 8) >= shade:
 						plant = ""
-				if plant != "" and not (clearing and _solid.has(plant)):
-					c.set_cell("cover", lx, ly, plant)
+			if generation_version >= 19 and (plant == "" or plant in MINERAL_COVER):
+				plant = _mineral_cover(b, x, y, land) if not clearing else ""
+			if plant != "" and not (clearing and _solid.has(plant)):
+				c.set_cell("cover", lx, ly, plant)
 	# Roads between settlements, under them (a settlement's own cells win).
 	for road: Dictionary in settlements.roads_touching(cx, cy):
 		var cells: Dictionary = road["cells"]
@@ -292,6 +325,62 @@ func generate(cx: int, cy: int) -> Chunk:
 
 func _cancelled() -> bool:
 	return cancel_requested.is_valid() and cancel_requested.call()
+
+
+## A jittered group inside a broad geological province. Neighbouring cells
+## share its centre and ore type; neither a chunk border nor query order is
+## part of the choice. A planet's longitude repeats exactly at its seam.
+func _mineral_group(x: int, y: int) -> Dictionary:
+	var grid := Vector2i(floori(float(x) / MINERAL_GRID), floori(float(y) / MINERAL_GRID))
+	var best := INF
+	var site := Vector2i.ZERO
+	var radius := 0.0
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var square := (grid + Vector2i(dx, dy)) * MINERAL_GRID
+			var key := _topology.canonical_cell(square)
+			var centre := Vector2(square) + Vector2(3 + _hash(key.x, key.y, 81) * 10, 3 + _hash(key.x, key.y, 82) * 10)
+			var distance := Vector2(x + .5, y + .5).distance_squared_to(centre)
+			if distance < best:
+				best = distance
+				site = key
+				radius = 4.5 + 3.5 * _hash(key.x, key.y, 83)
+	var macro: float
+	if _topology.wraps():
+		var radius_world := _topology.cells_across() / TAU
+		var angle := x / radius_world
+		macro = _geology.get_noise_3d(sin(angle) * radius_world, cos(angle) * radius_world, y)
+	else:
+		macro = _geology.get_noise_2d(x, y)
+	var province := .55 + 1.2 * smoothstep(-.35, .35, macro)
+	return {"site": site, "weight": province * 7.0 * smoothstep(radius, radius * .25, sqrt(best))}
+
+
+func _mineral_cover(b: Dictionary, x: int, y: int, land: Dictionary) -> String:
+	if float(b["mineral_chance"]) <= 0 or _on_trail(x, y): return ""
+	var group := _mineral_group(x, y)
+	var height := float(land["height"])
+	# Open, mild plains keep scattered stones rare. Hills and mountain
+	# provinces carry most of the groups; ore still uses its biome's table.
+	var relief := .4 + .9 * smoothstep(Geography.HILLS * .5, Geography.MOUNTAINS, height)
+	var chance := float(b["mineral_chance"]) * float(group["weight"]) * relief
+	if _hash(x, y, 84) >= minf(.65, chance): return ""
+	var free := 0
+	var cliff := false
+	for step: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+		var adjacent := land_at(x + step.x, y + step.y)
+		free += 1 if adjacent["what"] == "land" else 0
+		cliff = cliff or adjacent["what"] == "rock"
+	# Never strand a solid resource in an enclosed pocket in a rock mass.
+	if free < 2: return ""
+	# The foot of exposed rock keeps more of the group's rubble than a
+	# smooth plateau. This affects new placement, never saved terrain.
+	if not cliff and _hash(x, y, 85) > .7: return ""
+	var mineral := _pick(b["minerals"], _hash(x, y, 86))
+	if mineral.ends_with("_outcrop"):
+		var site: Vector2i = group["site"]
+		mineral = _pick(b["ores"], _hash(site.x, site.y, 87))
+	return mineral
 
 
 ## Whether the surface at a world cell is water or its shore.

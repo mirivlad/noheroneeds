@@ -182,7 +182,7 @@ func update_view(alpha: float, delta: float) -> void:
 	if client.geography and _land == null:
 		# Call the ORIGINAL surface sampler, never a new world generator.
 		var plan: WorldPlan = (client.geography as PlannedGeography).plan if client.geography is PlannedGeography else null
-		_land = SurfaceGenerator.new(client.geography.world_seed, content, plan)
+		_land = SurfaceGenerator.new(client.geography.world_seed, content, plan, client.surface_generation_version)
 		_grass_noise.seed = client.geography.world_seed
 		_grass_noise.frequency = .09
 		terrain = _new_terrain()
@@ -616,6 +616,9 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	var d := content.get_def(id)
 	var model_id := "base:surface_rock" if id == "base:rock" and client.z >= 0 else id
 	var variant := PlantMeshes3D.variant_at(model_id, cell) if PlantMeshes3D.supports(model_id) else 0
+	var mineral := MineralMeshes3D.supports(model_id)
+	var model_cell := client.topology.canonical_cell(cell) if client.topology else cell
+	if mineral: variant = MineralMeshes3D.variant_at(model_id, model_cell)
 	var mesh := models.mesh_for(model_id, d, variant)
 	var at := Vector2(cell) + Vector2.ONE * .5
 	var lift := (0.0 if _drawing_z < 0 else _drawing_z * STOREY) + (STOREY if layer in ["ceiling", "roof"] else 0.0)
@@ -652,6 +655,9 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		basis = basis.scaled(Vector3.ONE * lerpf(.35, 1.0, float(stage) / maxf(1, stages - 1)))
 		(_job["crops"] as Array).append([cell, d, float(planted), stage])
 	var instance_id := model_id
+	if mineral:
+		instance_id += ":" + str(variant)
+		basis = Basis(Vector3.UP, posmod(hash([model_cell.x, model_cell.y, model_id, 97]), 4096) * TAU / 4096.0)
 	if PlantMeshes3D.supports(model_id):
 		instance_id += ":" + str(variant)
 		basis = Basis(Vector3.UP, posmod(hash([cell.x, cell.y, id, 61]), 4096) * TAU / 4096.0) * basis

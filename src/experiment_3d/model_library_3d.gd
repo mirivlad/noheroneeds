@@ -5,6 +5,7 @@ var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res:/
 var _meshes := {}
 var _materials := {}
 var plants := PlantMeshes3D.new()
+var minerals := MineralMeshes3D.new()
 var wind_strength := .5
 
 func set_wind(value: float) -> void:
@@ -33,6 +34,11 @@ func material(color: Color) -> StandardMaterial3D:
 
 func mesh_for(id: String, definition: Dictionary, variant := 0) -> Mesh:
 	var entry: Dictionary = catalog.get(id, {})
+	if entry.get("procedural") == "mineral":
+		var mineral_key := "%s:%d" % [id, posmod(variant, MineralMeshes3D.VARIANTS)]
+		if not _meshes.has(mineral_key):
+			_meshes[mineral_key] = minerals.build(id, posmod(variant, MineralMeshes3D.VARIANTS))
+		return _meshes[mineral_key]
 	if entry.get("procedural") == "plant":
 		var count := int(entry["variants"])
 		var plant_key := "%s:%d" % [id, posmod(variant, count)]

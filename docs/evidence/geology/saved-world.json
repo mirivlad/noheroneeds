@@ -1,0 +1,10 @@
+{
+  "checks": 11,
+  "failures": [],
+  "mined_cell": [
+    32,
+    11
+  ],
+  "source_sha256": "b9c4276713770177a11e6ad2c51273caec23e9cfd37421b6d6340539127edb3b",
+  "source_world": "native baseline main 829a3cb, saved surface recipe 18"
+}

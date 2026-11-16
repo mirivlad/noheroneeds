@@ -1,0 +1,28 @@
+{
+  "captured_from_main": "829a3cb",
+  "surface_version": 18,
+  "preset": "small",
+  "climate": "temperate",
+  "sources": {
+    "src/world/surface_generator.gd": "2d20af80069b8940ee670db4ec227d3dfb7fc3a9f2a1ba18d1f17a05aa25f3a6",
+    "src/world/world_plan.gd": "ecf5c0c7ba3f51efbe6ddff54c92fb272d5833079e8a75297bc4d541776e62c1",
+    "content/base/terrain.json": "eb631655ae722c003493e0ee722553a97c38d48942a0bd5a2425eb9cd187f318"
+  },
+  "chunks": {
+    "2": {
+      "-2,1": "70783b886a9ca50fcdb8d3f0f1f08c322dcb1d0f2bb18a0414cf3cf2a4509024",
+      "0,0": "ee00df9798c73167b71056d9f201ee6bc28d2576ed156a4ece3c89f2043fdd8d",
+      "1,0": "37a919ba0009832ead8856d6259f1275b9c6e3b64141f1da11d6b11027234d7e"
+    },
+    "431": {
+      "-2,1": "cd054f92fcceed031bee65c6d70b0c84f95989e0ca32cdeee0a17fa17b920201",
+      "0,0": "50ee6aad1aed1073f7f0cf30a7c2164486a6ac28f844835f06a3120d828500fd",
+      "1,0": "8748f9e993046fb626c24c4055083552d3cf084ccbd0e9adb5781083df45a2e0"
+    },
+    "991": {
+      "-2,1": "864190caf55bd5d7cbc53af3ecc0b8c2011221fad333ea31ce0e395e80c28e18",
+      "0,0": "c58b6fb80c788bcbd9540589b54885b7db47ba88ce68d01614560b27265d825a",
+      "1,0": "4baa9b3b9cacf7b333744d44b7d9fdf313272aa6a92c6033536344c0deb98170"
+    }
+  }
+}

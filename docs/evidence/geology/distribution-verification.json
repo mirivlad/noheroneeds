@@ -1,0 +1,215 @@
+{
+  "failures": [],
+  "new_version": 19,
+  "old_version": 18,
+  "worlds": {
+    "2": {
+      "counts": {
+        "mountains": {
+          "after": {
+            "base:boulder": 272,
+            "base:copper_outcrop": 27,
+            "base:gold_outcrop": 1,
+            "base:iron_outcrop": 43,
+            "base:pebbles": 234,
+            "base:silver_outcrop": 18
+          },
+          "before": {
+            "base:boulder": 218,
+            "base:copper_outcrop": 19,
+            "base:gold_outcrop": 1,
+            "base:iron_outcrop": 23,
+            "base:pebbles": 299,
+            "base:silver_outcrop": 9
+          },
+          "chunks": 18,
+          "with_adjacent_mineral_after": [
+            355,
+            595
+          ]
+        },
+        "plains": {
+          "after": {
+            "base:boulder": 6,
+            "base:pebbles": 75
+          },
+          "before": {
+            "base:boulder": 11,
+            "base:pebbles": 90
+          },
+          "chunks": 6,
+          "with_adjacent_mineral_after": [
+            21,
+            81
+          ]
+        }
+      },
+      "snapshots": {
+        "(-2, -14)": "79e90953b0d1e570cd2699cbabb7d1b11dd60efd3f18bcfebdf3712df4f42f12",
+        "(-44, -23)": "11f914bd7377fdf427c62737162e3ec9d7a417cf77a127aff7b6d61894f2ea25",
+        "(-47, -29)": "1534d20010ed4b135872475b584814d2d7a6e52ac709af3950ec7995ecfcbe13",
+        "(-48, -24)": "7a4d8238d59ff63808c05698e7c61fa369d2c0dd5ea7a29f90c8e722a66f9f22",
+        "(-48, -27)": "ecc1bb15b04dc66478f40d1692362e582d93c2e8c98064845d5fe03df4e15832",
+        "(-52, -32)": "a40286df2d6265323937ec0590a188d8c1d7ba7d41f85d814c3f8c63aaa479cd",
+        "(-52, -34)": "1e63b13d4b533e0814a5a8ad1de50df0498a76d4884319208afc01b8157f3111",
+        "(-58, -23)": "3309bb036ec380dd8989dcbfb4d5db8477c73f7ce3b4e4a53affd81a4a5d53a4",
+        "(-60, -7)": "d470c57380aafaff1f962d3d693b32d9b150de19d33a86d7dc2314a560d47fbd",
+        "(1, -9)": "3205a75302bfe6963f38c2e6b95f23e224c53517e23fb99705fa8904aeb6d09f",
+        "(12, -18)": "1f62f2df9cf2ddcc10d46ff08e99f51c9218287cebc54a7fa9ef1285989b76f4",
+        "(13, -24)": "e289d98e0af9ee88a76d311329e07b2b2deab7fac5a9344734201d5fa55d3493",
+        "(13, -25)": "440b85bb2ccacf8d7d271dbffc40e5aa20a3f9ea4eed6b098f82c19f44dfb62e",
+        "(14, -25)": "0d140208bbd8e16e5a1279d8833e99cc0ae09b1ece289dd68f595f8dd06a1180",
+        "(15, -26)": "49fda9470f2b7853a051a755e9825faa33defe0c393a4db7a1431dc6890ef5d8",
+        "(16, -26)": "f8790399450db7b5e80f1b5dde49517715cb2a2381bbeca7b5f83a9aaabffda0",
+        "(20, -26)": "1a3db7748985dbe9b8f4c7c61969454833ddfaf7c14f765c4cd93334f13655fe",
+        "(20, -9)": "65aded585cefa99d5ace6f919cc249fa21bda109f6a689152fb35f4b95848c55",
+        "(69, -26)": "e0c9e2c42af012ee95a40320fbb394afe5d86e27554a4d179919c53755b1a2a4",
+        "(7, -17)": "f74123fb95e0af9a8cdd031dbb7eeeabc049317300465317cca86917012a60a6",
+        "(8, -4)": "51586bb1c57581c58fb6e5c2690d366a72ae8cdad6ae33af1f7c2f629f851864",
+        "(93, -15)": "3955b30d6d26a28975c40e62605d055d76194d05678a124ef39b23b6f0095040",
+        "(95, -29)": "f50247b6c853fe7db0d1302d7dd5dcc8a40d7cf3fceb06ffb169d318f03e5d93",
+        "(96, -5)": "912634fedec77b6a840d9977cd6b0758f60de8a91fbb56b813377877597565b5"
+      }
+    },
+    "431": {
+      "counts": {
+        "mountains": {
+          "after": {
+            "base:boulder": 20,
+            "base:iron_outcrop": 5,
+            "base:pebbles": 91
+          },
+          "before": {
+            "base:boulder": 14,
+            "base:iron_outcrop": 2,
+            "base:pebbles": 98
+          },
+          "chunks": 18,
+          "with_adjacent_mineral_after": [
+            41,
+            116
+          ]
+        },
+        "plains": {
+          "after": {
+            "base:boulder": 76,
+            "base:copper_outcrop": 8,
+            "base:iron_outcrop": 14,
+            "base:pebbles": 126,
+            "base:silver_outcrop": 1
+          },
+          "before": {
+            "base:boulder": 76,
+            "base:copper_outcrop": 8,
+            "base:iron_outcrop": 4,
+            "base:pebbles": 130,
+            "base:silver_outcrop": 4
+          },
+          "chunks": 6,
+          "with_adjacent_mineral_after": [
+            102,
+            225
+          ]
+        }
+      },
+      "snapshots": {
+        "(-18, 15)": "658eb03f8aa1819cdf40432e13bf372f5f378872fa25f1644e5e55d45427ed6c",
+        "(-23, -22)": "965c5f5fff5b7c3fa08a03616b613767df0708f2952c32fb33d82a9ace84000e",
+        "(-25, -4)": "5cfb13275d4d66aec7ebb86135ba38397a692f5cc48bed5ff67184808f09b6e1",
+        "(-29, -20)": "cca721e8c8b56a018e59ab2f92446e391c1cf2f486b910211d9d2a1243557bc4",
+        "(-33, -22)": "5f9ac3e33211f91cae1ee8add4d756fea241590906c1776dad5f561f9ae6c64d",
+        "(-36, -19)": "a351e71e92b1396d88bef53bd533d5223dfd128bcf239aaa359d153f84382dd4",
+        "(-40, -35)": "b433c08913a499e32a30fb1d747c282a8c60b1caf6e0ca2486815b1902494b17",
+        "(-42, -20)": "32d3109dd78a3e5488ba5cb316aa9bfd06bd8c927560014e35e2f57a180317d3",
+        "(-47, -15)": "871bd9f897c4c274e288bf2c9bf304c3e864cc9fabcf8149564684f5dc913c69",
+        "(-51, -19)": "26be17b56a73e148ca5f4e1be4b9c357849dd187da6343ecd96fccbbdd0dc0af",
+        "(-54, -8)": "bc8c2a0791c0a0c703d231f6ac86ece2fa779a9517934fafef4ecec518243e57",
+        "(-55, -27)": "83fd198c8b57c946b6d05efde3d35578f083a1f24b6be13d1370661579cdce22",
+        "(-6, -14)": "68908809f1112e65180d8f88b8c946c6bb6ff9f950bed8af83fff7c6d5d668e3",
+        "(-7, 9)": "99f7614a6955c9f64ef4f9f3447d2dec6fab50b508ff95f57f753e0b34abfdf8",
+        "(28, -20)": "c29b638edcd18580a0f7bad56420030515edc861176a64da27ce28933e8d0570",
+        "(3, -15)": "603150cbdeb4ccaf0ba2f3f1bc97057bb9bdae86398ff34ae125c471d7d6167a",
+        "(36, -25)": "d126e6861f6818a650041b0264779f44da11a91fbd398fbc1f55fe3a584e2e41",
+        "(38, -24)": "7b709bc863489fbc259802dae64c39314d7e99c0401aa2cb21ced1ff32beb167",
+        "(38, -29)": "10f1ebcdbf8eeb70b3506fa8901fa4d9a542736426ef6b3b3969a7c1f97bb9a5",
+        "(49, 2)": "a61b7ee4c1d4d81c8d1237331057942a9b6a07b4062a5dc2ea30d8a111eac8a4",
+        "(50, -12)": "92ae0d36b423023ada6464203c32ccf9e400289ca3493f462410355c946a5ee7",
+        "(60, -8)": "bb4dbc6acdc7d0347d7ac57e901d118db68cfa5198f6d469b46979f7d873ed61",
+        "(66, -20)": "0e451bff4e89b9b78178541b6f93e9fa220c5f73a113dcd4d7c0685107a5369e",
+        "(7, -1)": "307d9d1191128c5e52c8fc2241931d9a2aae6364ae2e039d5839f496997c08a4"
+      }
+    },
+    "991": {
+      "counts": {
+        "mountains": {
+          "after": {
+            "base:boulder": 644,
+            "base:copper_outcrop": 46,
+            "base:gold_outcrop": 6,
+            "base:iron_outcrop": 79,
+            "base:pebbles": 361,
+            "base:silver_outcrop": 25
+          },
+          "before": {
+            "base:boulder": 515,
+            "base:copper_outcrop": 63,
+            "base:gold_outcrop": 8,
+            "base:iron_outcrop": 63,
+            "base:pebbles": 424,
+            "base:silver_outcrop": 15
+          },
+          "chunks": 18,
+          "with_adjacent_mineral_after": [
+            771,
+            1161
+          ]
+        },
+        "plains": {
+          "after": {
+            "base:boulder": 31,
+            "base:iron_outcrop": 2,
+            "base:pebbles": 65,
+            "base:silver_outcrop": 2
+          },
+          "before": {
+            "base:boulder": 31,
+            "base:copper_outcrop": 5,
+            "base:iron_outcrop": 1,
+            "base:pebbles": 89
+          },
+          "chunks": 6,
+          "with_adjacent_mineral_after": [
+            45,
+            100
+          ]
+        }
+      },
+      "snapshots": {
+        "(-1, -36)": "e950cb6d78dd2afe2d440eb3e233b6f306193fefd9b7d674775650f644bf2ebd",
+        "(-2, -23)": "7b85016c3d7d6599a5d8b6441d4aa09847dbd47556664b622b11c8de130116b7",
+        "(-2, -30)": "73ba941ff9f11d74950c1ccc223563ce93278ac9764fa5197015cfbd771cc21b",
+        "(-4, -30)": "44c01e3d7340a2b2a5aa1f21856dfe6326d5befd7c12d4982e75af1cd8a7f560",
+        "(11, -37)": "7ad7927f955788fd24ebff75d604bb71c6f865fb8bd87a27aa470289fe81dde1",
+        "(129, -12)": "295f3df6ae088044bfb536e02f290815f110c4ccc77452be503094e96b236bef",
+        "(132, -10)": "8b3fa72876efcbc1cd2cfaab641cdde3900af5768b3b5ab8e12686fbbb456acb",
+        "(132, 2)": "87dbde600cf000f414b06058d47f7d5376955769ff9a17feb64a65d0f82bfef5",
+        "(138, -34)": "ffb4eae7d913a6076b873a6471b261318c683f9bbc3847d06e03ee2368f13aa6",
+        "(14, -36)": "404419cc52f52d4f07f5fab2df80bb1e024f01443b71f84191c50f46f553b244",
+        "(141, -34)": "729c6caab17a4300f9f61ff815b717760d918063c58bf1cb91fff1bf0df8ab5a",
+        "(142, -2)": "edcda4e3449bd2e2009297d8af10d28c98bf4dc4f0c0f385173fcfacf477bfd8",
+        "(142, -32)": "d6644c676940dcfa1a977346589af0fd8c07012bfcfce594d695a9830a2e6ce6",
+        "(143, -34)": "c47881d4625b0de533316850a2bc5915bc4653e2a04a71ae4c40f6a03e97116c",
+        "(144, -31)": "6de9575e751548e969d8f18da6840208d54e569c3f82ab57bc683cd15b7f1896",
+        "(145, -30)": "b1e70d325c5bc152c075fa24778ef17874326a1c5bc707d13094085e1050bb81",
+        "(2, 5)": "82a3179b608d9a5e4831aa52f96aa7ed550bb8dad6d3cd11063058ad685b81ff",
+        "(5, -25)": "00b19ad7dba73a78a7dd52f1850cfd552b9fcf8f099cf405f28d0e4823d45671",
+        "(53, -10)": "4505661668aca6b97bdf06eb51d3dcfdc95e0b60407849ddace853bb94a22dd8",
+        "(6, -36)": "e77fa241e740ea581b3b357bc0763ac9c91cf7da2becb0fbbeab6d683ffd73af",
+        "(67, -3)": "e16ff8640b5fed5eca7f4ea6d9805105468ce0d1a5c18b53d2712b533d0a4048",
+        "(7, -28)": "d134c1aba85efe3d11cd5dadc0e0b0f472578be17d9c15186b190497af26d995",
+        "(7, -29)": "7ac14d473d76d70d103a9b6a0a514ef70e5807199accd41851c061f54c4293c6",
+        "(8, -26)": "c4c4495a583763457db227def463d842866f35b26b6696939cee9b7ba785481d"
+      }
+    }
+  }
+}

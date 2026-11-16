@@ -1,0 +1,119 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+PASS native LocalGame joined with matching protocol
+PASS fixed native window and render raster
+PASS simulation, client terrain and loader agree on new-world recipe
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":125.865605740814,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":579.916}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":299.595546012883,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.612}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.005,"chunks":0,"fps":300.255517445346,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.752}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":299.853971116066,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.005}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":300.151876849686,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.711}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":300.308416743996,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.723}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.004,"chunks":0,"fps":299.992200202795,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.934}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.004,"chunks":0,"fps":299.48667983077,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.595}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":300.203838406278,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.954}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":300.338481468615,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.858}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":299.716468221063,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.812}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":300.235685012735,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.012}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.004,"chunks":0,"fps":299.724852585327,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.407}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":300.242896503271,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.518}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":299.973002429781,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.745}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":300.010800388814,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.561}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":299.523159130664,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.864}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":300.457596920109,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.412}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":299.789248158545,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.95}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.001,"chunks":0,"fps":300.297594916562,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.083}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":299.452899552518,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.322}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":300.288577322807,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.898}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.001,"chunks":0,"fps":300.197529974723,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.489}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.004,"chunks":0,"fps":299.895636318561,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.813}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":299.955606570228,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.454}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":300.03510410718,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.162}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":299.9976000192,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.274}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":300.003900050701,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.996}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":0,"fps":299.938512604916,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.638}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":300.039305148975,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.318}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.004,"chunks":0,"fps":299.986500607473,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.744}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.003,"chunks":0,"fps":299.782358008086,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":19.079}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.004,"chunks":0,"fps":299.806624727051,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":18.732}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.888,"chunks":0,"fps":119.153722600601,"location":"surface","objects":0,"renderer":"gl_compatibility","worst_frame_ms":395.814}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.72,"chunks":1,"fps":99.2529560838754,"location":"surface","objects":292,"renderer":"gl_compatibility","worst_frame_ms":104.25}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.778,"chunks":3,"fps":122.613331502308,"location":"surface","objects":1465,"renderer":"gl_compatibility","worst_frame_ms":122.683}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.99,"chunks":3,"fps":127.830050799662,"location":"surface","objects":1465,"renderer":"gl_compatibility","worst_frame_ms":43.945}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":6.397,"chunks":4,"fps":121.032894723571,"location":"surface","objects":2478,"renderer":"gl_compatibility","worst_frame_ms":77.515}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.164,"chunks":5,"fps":120.181474025779,"location":"surface","objects":3166,"renderer":"gl_compatibility","worst_frame_ms":71.69}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.651,"chunks":6,"fps":124.853713066191,"location":"surface","objects":4183,"renderer":"gl_compatibility","worst_frame_ms":81.021}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.627,"chunks":8,"fps":121.52085784004,"location":"surface","objects":5008,"renderer":"gl_compatibility","worst_frame_ms":81.364}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.883,"chunks":8,"fps":122.284020943177,"location":"surface","objects":5008,"renderer":"gl_compatibility","worst_frame_ms":68.318}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.927,"chunks":9,"fps":122.063508015707,"location":"surface","objects":5950,"renderer":"gl_compatibility","worst_frame_ms":84.551}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.611,"chunks":10,"fps":122.515237832705,"location":"surface","objects":6920,"renderer":"gl_compatibility","worst_frame_ms":72.26}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":6.304,"chunks":12,"fps":83.3487296959022,"location":"surface","objects":7559,"renderer":"gl_compatibility","worst_frame_ms":606.392}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":39.7,"chunks":13,"fps":119.398327945815,"location":"surface","objects":8583,"renderer":"gl_compatibility","worst_frame_ms":70.588}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.825,"chunks":14,"fps":120.401031756575,"location":"surface","objects":8961,"renderer":"gl_compatibility","worst_frame_ms":74.493}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.054,"chunks":17,"fps":122.343115345089,"location":"surface","objects":9728,"renderer":"gl_compatibility","worst_frame_ms":64.868}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.053,"chunks":17,"fps":121.72775506428,"location":"surface","objects":9728,"renderer":"gl_compatibility","worst_frame_ms":54.701}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":6.916,"chunks":18,"fps":123.128952952427,"location":"surface","objects":10752,"renderer":"gl_compatibility","worst_frame_ms":83.96}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.077,"chunks":19,"fps":125.869179127366,"location":"surface","objects":11766,"renderer":"gl_compatibility","worst_frame_ms":76.465}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.056,"chunks":21,"fps":117.958701085967,"location":"surface","objects":12338,"renderer":"gl_compatibility","worst_frame_ms":75.425}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.761,"chunks":22,"fps":119.197798813982,"location":"surface","objects":13340,"renderer":"gl_compatibility","worst_frame_ms":77.419}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.984,"chunks":24,"fps":119.798642441784,"location":"surface","objects":14087,"renderer":"gl_compatibility","worst_frame_ms":82.093}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":6.712,"chunks":25,"fps":124.93087158439,"location":"surface","objects":14710,"renderer":"gl_compatibility","worst_frame_ms":67.776}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.504,"chunks":9,"fps":70.2594047482711,"location":"surface","objects":3748,"renderer":"gl_compatibility","worst_frame_ms":992.713}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.64,"chunks":11,"fps":106.140098561695,"location":"surface","objects":4003,"renderer":"gl_compatibility","worst_frame_ms":130.163}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.823,"chunks":14,"fps":96.8034219364298,"location":"surface","objects":4420,"renderer":"gl_compatibility","worst_frame_ms":86.417}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.759,"chunks":17,"fps":101.149257867895,"location":"surface","objects":5071,"renderer":"gl_compatibility","worst_frame_ms":67.158}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.64,"chunks":21,"fps":98.5779473902639,"location":"surface","objects":5549,"renderer":"gl_compatibility","worst_frame_ms":69.063}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.058,"chunks":26,"fps":79.3503848493665,"location":"surface","objects":6144,"renderer":"gl_compatibility","worst_frame_ms":461.426}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.565,"chunks":26,"fps":99.4846694124435,"location":"surface","objects":6058,"renderer":"gl_compatibility","worst_frame_ms":69.311}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.743,"chunks":26,"fps":98.569493793079,"location":"surface","objects":6058,"renderer":"gl_compatibility","worst_frame_ms":80.833}
+PASS all expected chunks received and native geometry settled
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.502,"chunks":21,"fps":88.2397580112876,"location":"surface","objects":5398,"renderer":"gl_compatibility","worst_frame_ms":313.769}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.779,"chunks":22,"fps":99.6911236685004,"location":"surface","objects":5744,"renderer":"gl_compatibility","worst_frame_ms":76.878}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.671,"chunks":24,"fps":97.0414645239049,"location":"surface","objects":6498,"renderer":"gl_compatibility","worst_frame_ms":89.388}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":6.343,"chunks":25,"fps":93.9005049030148,"location":"surface","objects":6849,"renderer":"gl_compatibility","worst_frame_ms":81.654}
+PASS all expected chunks received and native geometry settled
+PASS cursor selects base:iron_outcrop
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.556,"chunks":26,"fps":80.7127256526027,"location":"surface","objects":7862,"renderer":"gl_compatibility","worst_frame_ms":174.487}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.547,"chunks":26,"fps":55.5787545393948,"location":"surface","objects":7861,"renderer":"gl_compatibility","worst_frame_ms":70.056}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.554,"chunks":26,"fps":92.9395957685221,"location":"surface","objects":7861,"renderer":"gl_compatibility","worst_frame_ms":74.502}
+PASS all expected chunks received and native geometry settled
+PASS ordinary mining depletes base:iron_outcrop
+PASS unchanged yield base:iron_ore
+PASS unchanged yield base:stone
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":26,"fps":97.7274459713815,"location":"surface","objects":7861,"renderer":"gl_compatibility","worst_frame_ms":97.927}
+PASS all expected chunks received and native geometry settled
+PASS cursor selects base:copper_outcrop
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.539,"chunks":26,"fps":61.2616343501335,"location":"surface","objects":7861,"renderer":"gl_compatibility","worst_frame_ms":46.236}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.807,"chunks":26,"fps":90.4663813356999,"location":"surface","objects":7860,"renderer":"gl_compatibility","worst_frame_ms":77.635}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.784,"chunks":26,"fps":91.5293548370366,"location":"surface","objects":7860,"renderer":"gl_compatibility","worst_frame_ms":81.385}
+PASS all expected chunks received and native geometry settled
+PASS ordinary mining depletes base:copper_outcrop
+PASS unchanged yield base:copper_ore
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":0.002,"chunks":26,"fps":121.093425192115,"location":"surface","objects":7860,"renderer":"gl_compatibility","worst_frame_ms":66.418}
+PASS all expected chunks received and native geometry settled
+PASS cursor selects base:silver_outcrop
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.59,"chunks":26,"fps":42.325128089946,"location":"surface","objects":7860,"renderer":"gl_compatibility","worst_frame_ms":79.855}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.534,"chunks":26,"fps":96.5268046892721,"location":"surface","objects":7859,"renderer":"gl_compatibility","worst_frame_ms":82.147}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.663,"chunks":26,"fps":96.7120170806317,"location":"surface","objects":7859,"renderer":"gl_compatibility","worst_frame_ms":87.641}
+PASS all expected chunks received and native geometry settled
+PASS ordinary mining depletes base:silver_outcrop
+PASS unchanged yield base:silver_ore
+PASS unchanged yield base:stone
+PASS all expected chunks received and native geometry settled
+PASS cursor selects base:gold_outcrop
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.687,"chunks":26,"fps":111.209675834916,"location":"surface","objects":7859,"renderer":"gl_compatibility","worst_frame_ms":71.848}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.801,"chunks":26,"fps":32.668286868503,"location":"surface","objects":7859,"renderer":"gl_compatibility","worst_frame_ms":492.552}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.618,"chunks":26,"fps":97.5928718166426,"location":"surface","objects":7858,"renderer":"gl_compatibility","worst_frame_ms":82.001}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.713,"chunks":26,"fps":97.4515763117307,"location":"surface","objects":7858,"renderer":"gl_compatibility","worst_frame_ms":88.02}
+PASS all expected chunks received and native geometry settled
+PASS ordinary mining depletes base:gold_outcrop
+PASS unchanged yield base:gold_ore
+PASS unchanged yield base:stone
+PASS mineral world reopens after gathering
+PASS saved depleted base:iron_outcrop stays empty
+PASS saved depleted base:copper_outcrop stays empty
+PASS saved depleted base:silver_outcrop stays empty
+PASS saved depleted base:gold_outcrop stays empty

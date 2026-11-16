@@ -10,7 +10,13 @@ vec3 ground(vec2 cell, vec2 at) {
 	vec2 tile = vec2(mod(id, 4.0), floor(id / 4.0));
 	vec2 fill = fract(at * 0.5);
 	vec3 color = textureGrad(atlas, (tile * 64.0 + vec2(1.0) + fill * 62.0) / 256.0, dFdx(at) * (31.0 / 256.0), dFdy(at) * (31.0 / 256.0)).rgb;
-	if (id == 6.0 || id == 9.0) color = mix(color, vec3(dot(color, vec3(0.33))), 0.85) * 1.25;
+	if (id == 6.0) color = mix(color, vec3(dot(color, vec3(0.33))), 0.85) * 1.25;
+	if (id == 9.0) {
+		float grain = smoothstep(0.18, 0.8, dot(color, vec3(0.33)));
+		float patch = 0.5 + 0.5 * sin(at.x * 0.17 + sin(at.y * 0.13)) * sin(at.y * 0.11 + at.x * 0.07);
+		vec3 rubble = mix(vec3(0.15, 0.16, 0.14), vec3(0.28, 0.28, 0.24), grain);
+		color = mix(rubble, vec3(0.23, 0.20, 0.16), patch * 0.38);
+	}
 	if (id == 7.0) color *= vec3(1.12, 0.91, 0.65);
 	if (id == 8.0 || id == 10.0) color *= vec3(0.75, 0.68, 0.58);
 	if (id >= 12.0) color = mix(vec3(0.16, 0.36, 0.44), vec3(0.28, 0.51, 0.56), color.r) * (id == 14.0 ? 0.75 : 1.0);

@@ -32,6 +32,9 @@ var weather_seed := 0
 ## The world's geography (ADR-0049) for the climate of places (ADR-0055); null
 ## — a world without one (all places mild).
 var geography: Geography
+## The saved surface recipe, including on unexplored land. Presentation must
+## never infer a newer recipe merely because this client has been updated.
+var surface_generation_version := SurfaceGenerator.VERSION
 var location := ""
 ## The level label of the location (0 on the surface).
 var z := 0
@@ -249,6 +252,11 @@ func _on_message(m: Dictionary) -> void:
 			location = m["location"]
 			max_levels = int(m["max_levels"])
 			weather_seed = int(m.get("weather_seed", 0))
+			surface_generation_version = int(m["surface_version"])
+			if surface_generation_version not in SurfaceGenerator.SUPPORTED_VERSIONS:
+				reject_reason = "Сервер использует неподдерживаемую версию генератора мира"
+				state = "rejected"
+				return
 			# The land's climate (ADR-0055), worked out here as the server does.
 			var seed_value := int(m.get("world_seed", -1))
 			var raw_plan: Variant = m.get("world_plan")

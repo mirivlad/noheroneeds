@@ -391,7 +391,8 @@ func _join(s: Session, file: PackedByteArray) -> void:
 	var p: Dictionary = world.present[id]
 	var welcome := {"character_id": id, "location": p["location"], "tick": tick,
 		"max_levels": world.max_levels, "weather_seed": world.weather_seed,
-		"world_seed": world.world_seed if world.generator and world.generator.geography else -1}
+		"world_seed": world.world_seed if world.generator and world.generator.geography else -1,
+		"surface_version": world.generator.generation_version if world.generator else SurfaceGenerator.VERSION}
 	if world.generator and world.generator.geography is PlannedGeography:
 		welcome["world_plan"] = (world.generator.geography as PlannedGeography).plan.to_dict()
 	_send(s, Transport.Channel.RELIABLE, Protocol.WELCOME, welcome)

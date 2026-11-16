@@ -28,9 +28,12 @@ procedural = {name for name, entry in catalog.items() if entry.get('procedural')
 shrubs = {'base:bush', 'base:berry_bush', 'base:dry_bush'}
 assert procedural == shrubs | {'base:' + name for name in ['tall_grass', 'clover', 'reeds', 'cattail', 'wheat_crop', 'carrot_crop']}
 assert all(catalog[name]['variants'] == (4 if name in shrubs else 6) for name in procedural)
+minerals = {name for name, entry in catalog.items() if entry.get('procedural') == 'mineral'}
+assert minerals == {'base:' + name for name in ['boulder', 'pebbles', 'iron_outcrop', 'copper_outcrop', 'silver_outcrop', 'gold_outcrop']}
+assert all(catalog[name]['variants'] == 6 for name in minerals)
 models = {str(Path(name).relative_to('assets/experiment_3d')) for name in manifest['files'] if name.endswith('.gltf')}
 # Keep the original grass source and its verified license for historical captures.
-retained = {'nature/Grass_Common_Short.gltf', 'nature/Bush_Common.gltf', 'nature/Bush_Common_Flowers.gltf'}
+retained = {'nature/Pebble_Round_1.gltf', 'nature/Grass_Common_Short.gltf', 'nature/Bush_Common_Flowers.gltf', 'nature/Bush_Common.gltf', 'nature/Rock_Medium_1.gltf', 'resource/Iron_Nugget_Large.gltf', 'resource/Copper_Nugget_Large.gltf', 'resource/Silver_Nugget_Large.gltf', 'resource/Gold_Nugget_Large.gltf'}
 assert used - {'bandits/shelter.glb'} == models - retained, (used-models, models-used)
 for name, relative in [('cart', 'caravan/cart.glb'), ('packs', 'caravan/packs.glb'), ('shelter', 'bandits/shelter.glb')]:
  path = ROOT/'assets/experiment_3d'/relative

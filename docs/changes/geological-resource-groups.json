@@ -1,0 +1,29 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Шесть форм каменных ресурсов и прожилки руд, каменистый грунт и геологические группы для новых миров; сохранённый рецепт старого мира используется сервером, загрузчиком и клиентом без пересоздания.",
+      "sources": {
+        "src/client/game_client.gd": "d6c56544fe391d3a2a1daf80ffb219643d18d1eab0d3b6e48def13341d710094",
+        "src/experiment_3d/ground.gdshader": "803c4b93edd3672fe9f5e1c2536798634a562edc4a298f79355d7caa069465a0",
+        "src/experiment_3d/model_library_3d.gd": "721ea0b32d19aff270ffa4f0dd443761cee36ce35beeef71cc5020a45ad1b968",
+        "src/experiment_3d/world_view_3d.gd": "6c4d9ea1ad4d4ad4882f8422cb0d629a6bae26d7d9fb35a7cdb262f1ab12e41b",
+        "src/network/protocol.gd": "ca09006549e0c1287bf5065a1eaace9ee20dba56ec2558573fa10e05c38d376a",
+        "src/server/game_server.gd": "a821aa77366dbacc9821b7a14533ca83b74f956f9cc599c25edfaa300cb65436",
+        "src/server/server_world.gd": "7d0313478fa28e72517200fb50d70da57402c3e9e3eb4892c1c204991c784cf3",
+        "src/world/surface_generator.gd": "2d0ba8bbc0c414f4cba5b966e7c7cad5e425932344e3b62869f34456bb82d2d3",
+        "src/experiment_3d/mineral_meshes_3d.gd": "f844c537d2896d22c3cf29364604c1e59c885fd0766cc68ed95aab480ce54726",
+        "src/experiment_3d/mineral_meshes_3d.gd.uid": "665ba2505df35327f55c2e7e0ea4ea0df77464799aa7c76a871f61d78774373b"
+      },
+      "mechanics": [
+        "geological-resources",
+        "multiplayer"
+      ],
+      "guides": {
+        "site/content/guides/nature.html": "21bca0adedc6925b0f2a1c50ff72a7b2f3dc21eaeb79493f1c523d22be41829e",
+        "site/content/guides/multiplayer.html": "d1ebacb9e05573168bd0b75ee752efd9717495d013b08f10288f9e79db11f66b"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

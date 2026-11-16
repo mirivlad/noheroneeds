@@ -1,0 +1,7 @@
+PASS test_protocol::test_round_trip_and_type_checks (0 ms)
+PASS test_protocol::test_inputs_are_cleaned (0 ms)
+PASS test_protocol::test_welcome_preserves_saved_surface_recipe_and_rejects_unknown_one (1 ms)
+PASS test_protocol::test_running_is_faster_and_still_stops_at_walls (0 ms)
+PASS test_protocol::test_memory_network_keeps_reliable_order_under_bad_conditions (0 ms)
+expected engine errors: 0
+5 tests, 0 failed checks, 1.0s

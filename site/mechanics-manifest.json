@@ -326,6 +326,20 @@
         "src/experiment_3d/world_view_3d.gd"
       ],
       "kinds": []
+    },
+    {
+      "id": "geological-resources",
+      "guide": "nature",
+      "sources": [
+        "src/world/surface_generator.gd",
+        "src/experiment_3d/mineral_meshes_3d.gd",
+        "src/experiment_3d/mineral_meshes_3d.gd.uid",
+        "src/experiment_3d/model_library_3d.gd",
+        "src/experiment_3d/world_view_3d.gd",
+        "src/experiment_3d/ground.gdshader",
+        "assets/experiment_3d/catalog.json"
+      ],
+      "kinds": []
     }
   ]
 }

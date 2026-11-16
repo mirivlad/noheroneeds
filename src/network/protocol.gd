@@ -33,7 +33,9 @@ class_name Protocol
 ##    near this tick; a creature that strikes carries "hunting" (a bool) while
 ##    it hunts — for their voices. JOIN may carry "password" or "invite" (a
 ##    server with a password lets in only with one of them, ADR-0060).
-const VERSION := 13
+## 14: WELCOME names the saved surface recipe; client and server sample the
+##     same terrain even when new worlds use a newer generator.
+const VERSION := 14
 
 
 ## A refusal's reason as a player reads it.
@@ -76,7 +78,7 @@ const CLIENT_FIELDS := {
 const SERVER_FIELDS := {
 	CHALLENGE: {"nonce": TYPE_PACKED_BYTE_ARRAY, "server_id": TYPE_STRING},
 	WELCOME: {"character_id": TYPE_STRING, "location": TYPE_STRING, "tick": TYPE_INT, "max_levels": TYPE_INT,
-		"weather_seed": TYPE_INT},
+		"weather_seed": TYPE_INT, "surface_version": TYPE_INT},
 	REJECT: {"reason": TYPE_STRING},
 	# Differences from what the client acknowledged. hot: int32 [net, x, y]
 	# positions; entities: {net number: {field: value}} - whole when new to

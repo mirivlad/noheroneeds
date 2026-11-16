@@ -216,22 +216,12 @@
     "keep_aspect": true
   },
   "base:boulder": {
-    "path": "nature/Rock_Medium_1.gltf",
-    "size": [
-      0.95,
-      1.1,
-      0.95
-    ],
-    "keep_aspect": false
+    "procedural": "mineral",
+    "variants": 6
   },
   "base:pebbles": {
-    "path": "nature/Pebble_Round_1.gltf",
-    "size": [
-      0.4,
-      0.14,
-      0.4
-    ],
-    "keep_aspect": false
+    "procedural": "mineral",
+    "variants": 6
   },
   "base:stump": {
     "path": "resource/Wood_Log_A.gltf",
@@ -243,40 +233,20 @@
     "keep_aspect": false
   },
   "base:iron_outcrop": {
-    "path": "resource/Iron_Nugget_Large.gltf",
-    "size": [
-      0.9,
-      0.8,
-      0.9
-    ],
-    "keep_aspect": false
+    "procedural": "mineral",
+    "variants": 6
   },
   "base:copper_outcrop": {
-    "path": "resource/Copper_Nugget_Large.gltf",
-    "size": [
-      0.9,
-      0.8,
-      0.9
-    ],
-    "keep_aspect": false
+    "procedural": "mineral",
+    "variants": 6
   },
   "base:silver_outcrop": {
-    "path": "resource/Silver_Nugget_Large.gltf",
-    "size": [
-      0.9,
-      0.8,
-      0.9
-    ],
-    "keep_aspect": false
+    "procedural": "mineral",
+    "variants": 6
   },
   "base:gold_outcrop": {
-    "path": "resource/Gold_Nugget_Large.gltf",
-    "size": [
-      0.9,
-      0.8,
-      0.9
-    ],
-    "keep_aspect": false
+    "procedural": "mineral",
+    "variants": 6
   },
   "base:rock": {
     "path": "dungeon/wall.gltf",

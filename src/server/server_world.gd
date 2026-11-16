@@ -233,13 +233,14 @@ static func open(db_path: String, registry: ContentRegistry, options := {}) -> S
 	if saved_time.is_valid_int():
 		world.world_time = int(saved_time)
 	world.levels.load_rows(s.all_locations())
-	var g := SurfaceGenerator.new(world.world_seed, registry, plan)
+	var surface_version := int(s.read_meta("surface_generator_version"))
+	var g := SurfaceGenerator.new(world.world_seed, registry, plan, surface_version)
 	world.generator = g if g.can_generate() else null
 	world.topology = PlanetTopology.new(plan)
 	var ug := UndergroundGenerator.new(world.world_seed, registry)
 	world.underground = ug if ug.can_generate() else null
 	var spawn_way := world._spawn_way()
-	var lg := SurfaceGenerator.new(world.world_seed, registry, plan) if world.generator else null
+	var lg := SurfaceGenerator.new(world.world_seed, registry, plan, surface_version) if world.generator else null
 	var lug := UndergroundGenerator.new(world.world_seed, registry) if world.underground else null
 	for gen: UndergroundGenerator in [world.underground, lug]:
 		if gen and spawn_way != NO_CELL:
@@ -300,7 +301,8 @@ static func _check_world_format(db_path: String, require_planned: bool) -> bool:
 	if saved != str(PLANNED_WORLD_FORMAT) and (require_planned or saved != str(WORLD_FORMAT)):
 		open_error = "Неподдерживаемый или повреждённый формат мира. Сохранение не изменено."
 		return false
-	if surface_version != str(SurfaceGenerator.VERSION) or settlement_version != str(Settlements.VERSION):
+	if not surface_version.is_valid_int() or int(surface_version) not in SurfaceGenerator.SUPPORTED_VERSIONS \
+			or settlement_version != str(Settlements.VERSION):
 		open_error = "Версия генератора мира не совпадает с текущей. Сохранение не изменено."
 		return false
 	return true

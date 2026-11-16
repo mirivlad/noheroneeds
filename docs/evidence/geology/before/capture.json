@@ -1,0 +1,67 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "capture_script_sha256": "a546db31b34193d3a09c3cec3ee2f7f00a66aa5e0fc642cd9c2e51c199df4882",
+  "checks": 5,
+  "failures": [],
+  "preset": "small",
+  "raster": [
+    960,
+    540
+  ],
+  "render_only": true,
+  "scenes": {
+    "mineral-gallery": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (13.92148, 53.5887, 51.19548)]",
+      "plot": [
+        28,
+        8
+      ],
+      "render_benchmark": {
+        "actors": 9,
+        "chunks": 26,
+        "draw_calls": 1642.0,
+        "frames": 360,
+        "p50_ms": 6.668,
+        "p95_ms": 7.896,
+        "raster": "(960, 540)",
+        "rendered_primitives": 1473921.0,
+        "window": "(960, 540)",
+        "worst_ms": 9.034
+      }
+    },
+    "natural-rocky": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-46.07852, 71.55612, -7.804523)]",
+      "cell": [
+        -22,
+        -43
+      ],
+      "render_benchmark": {
+        "actors": 3,
+        "chunks": 26,
+        "draw_calls": 584.0,
+        "frames": 360,
+        "p50_ms": 4.813,
+        "p95_ms": 5.405,
+        "raster": "(960, 540)",
+        "rendered_primitives": 799455.0,
+        "window": "(960, 540)",
+        "worst_ms": 6.661
+      }
+    }
+  },
+  "seed": 431,
+  "sources": {
+    "assets/experiment_3d/catalog.json": "7729f19c8cb37279047826e45ad5c51c08d32d47fec298227f23c77fae06cb9e",
+    "content/base/terrain.json": "eb631655ae722c003493e0ee722553a97c38d48942a0bd5a2425eb9cd187f318",
+    "src/client/game_client.gd": "d0cd267198516af801e44e29b38b7fa18615462c8c8cf7a0a668d8bd63da0dcf",
+    "src/experiment_3d/ground.gdshader": "d97c8306692d5ba6a9f514e957de75d0749facb16bb31db920d7bb32d26eda16",
+    "src/experiment_3d/mineral_meshes_3d.gd": "not-present-in-baseline",
+    "src/experiment_3d/model_library_3d.gd": "2e559e4e0b2ccef04377b552417cf422b369b8b96f5c5c8409c77aa9f65eaf2e",
+    "src/experiment_3d/world_view_3d.gd": "312a63a7606c24cdf339111f60edbd68aeb69eb4a66ebbd71491835504c3809c",
+    "src/network/protocol.gd": "db68fcf89dc13b779e08bfeda1cf8d334e18a439b289ae972e147f9934cf5774",
+    "src/server/game_server.gd": "7311540edbafaf3d7bb1c0438ce6110d5a2855b5481d5b0a72982b234d96ddbb",
+    "src/server/server_world.gd": "3baf820dd019bce80685b66ed9ca85a78236e6a34a9577774085cf732fa6573b",
+    "src/world/surface_generator.gd": "2d20af80069b8940ee670db4ec227d3dfb7fc3a9f2a1ba18d1f17a05aa25f3a6"
+  },
+  "time_ms": 43200000.0
+}

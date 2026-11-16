@@ -14,6 +14,11 @@ func set_wind(value: float) -> void:
 		if m is ShaderMaterial and m.shader == FOLIAGE:
 			m.set_shader_parameter("wind_strength", wind_strength)
 
+func touch_plants(at: Vector3, amount: float) -> void:
+	for m: Variant in _materials.values():
+		if m is ShaderMaterial and m.shader == FOLIAGE:
+			m.set_shader_parameter("touch", Vector4(at.x, at.y, at.z, clampf(amount, -1, 1)))
+
 func decorative_grass(variant: int) -> Mesh:
 	var key := "decoration:" + str(posmod(variant, 3))
 	if not _meshes.has(key):

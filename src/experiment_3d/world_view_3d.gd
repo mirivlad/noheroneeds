@@ -22,6 +22,8 @@ var zoom := 16.875
 var camera_settings: GameSettings
 var _grass_noise := FastNoiseLite.new()
 var _plant_season := -1
+var _touch_left := 0.0
+var _touch_at := Vector3.ZERO
 var _location := ""
 var _geometry := {}
 var _queued := {}
@@ -263,10 +265,10 @@ func update_view(alpha: float, delta: float) -> void:
 		eye.look_at(_follow, Vector3.UP)
 	_update_interior_actors()
 	_update_own_silhouette()
-	var daylight := Daylight.sun(client.world_time) if client.z >= 0 else 0.0
-	sun.light_energy = .15 + daylight * .95 if client.z >= 0 else 0.0
-	environment.environment.ambient_light_energy = .14 + daylight * .1 if client.z >= 0 else .28
-	environment.environment.background_color = Color("b9c7ce") * (.35 + daylight * .65) if client.z >= 0 else Color("181b27")
+	_update_lighting()
+	if _touch_left > 0:
+		_touch_left = maxf(0, _touch_left - delta)
+		models.touch_plants(_touch_at, sin((.6 - _touch_left) * 18.0) * _touch_left / .6)
 	_report_frames += 1
 	_delta_sum += delta
 	_max_delta = maxf(_max_delta, delta)
@@ -275,6 +277,30 @@ func update_view(alpha: float, delta: float) -> void:
 		_report_frames = 0
 		_delta_sum = 0
 		_max_delta = 0
+
+## Presentation only: a cool fill keeps resources readable after sunset;
+## a low warm key shapes dawn/dusk, and clouds soften the daytime contrast.
+func _update_lighting() -> void:
+	var env := environment.environment
+	if client.z < 0:
+		sun.light_energy = 0.0
+		env.ambient_light_energy = .28
+		env.ambient_light_color = Color("aebfcf")
+		env.background_color = Color("181b27")
+		return
+	var time := client.world_time
+	var daylight := Daylight.sun(time)
+	var clouds := Weather.clouds(client.weather_seed, time, client.weather_place(), client.climate())
+	var low_sun := clampf(1.0 - absf(daylight - .5) * 2.0, 0, 1)
+	var day_color := Color("fff1d8").lerp(Color("ffd0a0"), low_sun * .65)
+	if Seasons.of(time) == Seasons.WINTER: day_color = day_color.lerp(Color("dce9ee"), .2)
+	sun.light_color = Color("91a8cc").lerp(day_color, daylight)
+	sun.light_energy = (.14 + daylight * .87) * (1.0 - clouds * .28)
+	# Keep the established shadow direction: rotating its frustum draws many
+	# unseen forest batches. Time and weather shape colour and energy instead.
+	env.ambient_light_color = Color("92a7c6").lerp(Color("b7c5cf"), daylight)
+	env.ambient_light_energy = .70 - daylight * .42 + clouds * .025
+	env.background_color = Color("253347").lerp(Color("a9bcc4"), daylight)
 
 func _clear_geometry() -> void:
 	_cut_from = Vector2i(1 << 30, 0)
@@ -484,7 +510,9 @@ func _begin_chunk(around: Vector2i) -> void:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rock_surface := SurfaceTool.new()
 	rock_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_job = {"rock": rock_surface, "rock_count": 0, "key": best, "chunk": client.chunks[best], "origin": Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE, "row": 0, "root": root, "ground": st, "faces": PackedVector3Array(), "targets": [], "instances": {}, "meshes": {}, "parts": {}, "crops": [], "ambient": {}, "count": 0}
+	var water_surface := SurfaceTool.new()
+	water_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_job = {"water": water_surface, "water_count": 0, "ground_count": 0, "rock": rock_surface, "rock_count": 0, "key": best, "chunk": client.chunks[best], "origin": Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE, "row": 0, "root": root, "ground": st, "faces": PackedVector3Array(), "targets": [], "instances": {}, "meshes": {}, "parts": {}, "crops": [], "ambient": {}, "count": 0}
 
 func _build_row(deadline_us := 0) -> void:
 	var c: Chunk = _job["chunk"]
@@ -575,7 +603,10 @@ func _add_decorative_grass(cell: Vector2i, ground: String, chunk: Chunk, x: int,
 	# No faces, picking target, collision, cover or network entity is created.
 
 func _quad(p: Array[Vector3], color: Color, target: Dictionary) -> void:
-	var st: SurfaceTool = _job["ground"]
+	var water := String(target.get("id", "")) in GroundMaterial3D.WATER and _job.has("water")
+	var st: SurfaceTool = _job["water"] if water else _job["ground"]
+	var counter := "water_count" if water else "ground_count"
+	_job[counter] = int(_job.get(counter, 0)) + 1
 	var normal := (p[2] - p[0]).cross(p[1] - p[0]).normalized()
 	for i in [0, 1, 2, 1, 3, 2]:
 		st.set_color(color)
@@ -658,6 +689,9 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	if mineral:
 		instance_id += ":" + str(variant)
 		basis = Basis(Vector3.UP, posmod(hash([model_cell.x, model_cell.y, model_id, 97]), 4096) * TAU / 4096.0)
+	if layer == "cover" and d.get("kind") == "plant" and float(models.catalog.get(model_id, {}).get("size", [0, 0])[1]) >= 2.0:
+		var roll := posmod(hash([model_cell.x, model_cell.y, model_id, "tree"]), 4096)
+		basis = Basis(Vector3.UP, roll * TAU / 4096.0).scaled(Vector3.ONE * (.90 + (roll % 101) / 1000.0))
 	if PlantMeshes3D.supports(model_id):
 		instance_id += ":" + str(variant)
 		basis = Basis(Vector3.UP, posmod(hash([cell.x, cell.y, id, 61]), 4096) * TAU / 4096.0) * basis
@@ -846,31 +880,44 @@ const CHASM_DEPTH := 7.0
 const DECK := .06
 
 func chasm_mesh(cell: Vector2i, middle: float) -> Mesh:
-	var top: Array[Vector3] = []
-	for d: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
-		top.append(Vector3(d.x - .5, corner_height(cell + d) - middle, d.y - .5))
-	var floor_y := minf(minf(top[0].y, top[1].y), minf(top[2].y, top[3].y)) - CHASM_DEPTH
+	var corners := [cell, cell + Vector2i.RIGHT, cell + Vector2i.DOWN, cell + Vector2i.ONE]
 	var mesh := ArrayMesh.new()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var walls := 0
-	# A wall on each side the land is (seen from inside): [top a, top b, toward].
+	# Every vertical ring samples shared corners, including chunk boundaries.
+	# The top stays on the walkable rim; the facets bulge into the hollow only.
 	for side: Array in [[1, 0, Vector2i.UP], [3, 1, Vector2i.RIGHT], [2, 3, Vector2i.DOWN], [0, 2, Vector2i.LEFT]]:
-		if _hollow(cell + (side[2] as Vector2i)):
-			continue
-		var a: Vector3 = top[side[0]]
-		var b: Vector3 = top[side[1]]
-		_inward(st, [a, b, Vector3(a.x, floor_y, a.z), Vector3(b.x, floor_y, b.z)])
+		if _hollow(cell + (side[2] as Vector2i)): continue
+		var ca: Vector2i = corners[side[0]]
+		var cb: Vector2i = corners[side[1]]
+		st.set_color(Color(RockCells3D.style_at(cell) / 3.0, 0, 0, 1))
+		var rings := [0.0, 0.10, 0.32, 0.59, 0.82, 1.0]
+		for i in rings.size() - 1:
+			_inward(st, [_chasm_point(ca, rings[i], cell, middle), _chasm_point(cb, rings[i], cell, middle),
+				_chasm_point(ca, rings[i + 1], cell, middle), _chasm_point(cb, rings[i + 1], cell, middle)])
 		walls += 1
 	if walls > 0:
 		st.set_material(buildings.rock)
 		st.commit(mesh)
 	var dark := SurfaceTool.new()
 	dark.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_inward(dark, [Vector3(-.5, floor_y, -.5), Vector3(.5, floor_y, -.5), Vector3(-.5, floor_y, .5), Vector3(.5, floor_y, .5)])
+	var bottom := []
+	for corner: Vector2i in corners: bottom.append(_chasm_point(corner, 1.0, cell, middle))
+	_inward(dark, bottom)
 	dark.set_material(models.material(Color("0b0a0d")))
 	dark.commit(mesh)
 	return mesh
+
+func _chasm_point(corner: Vector2i, depth: float, cell: Vector2i, middle: float) -> Vector3:
+	var inward := Vector2.ZERO
+	for d: Vector2i in [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(-1, 0), Vector2i.ZERO]:
+		if _hollow(corner + d): inward += Vector2(d) + Vector2.ONE * .5
+	var sample := client.topology.canonical_cell(corner) if client.topology else corner
+	var grain := .13 + .07 * sin(sample.x * .73 + sin(sample.y * .49) + depth * 7.0)
+	var shift := inward.normalized() * grain * sin(depth * PI)
+	var local := Vector2(corner - cell) - Vector2.ONE * .5 + shift
+	return Vector3(local.x, corner_height(corner) - middle - CHASM_DEPTH * depth, local.y)
 
 ## A hanging bridge's span over a cell: planks across its way with gaps between,
 ## following the deck's sag, and a rope rail each side; posts where it meets the
@@ -1081,13 +1128,14 @@ func _add_box_faces(box: AABB, target: Dictionary) -> void:
 
 func _finish_chunk() -> void:
 	var root: Node3D = _job["root"]
-	var st: SurfaceTool = _job["ground"]
 	var location := String(_job["key"]).get_slice("|", 0)
-	var material := ground_material.make(_job["origin"], func(at: Vector2i) -> String: return client.cell_at(location, at, "ground"))
-	st.set_material(material)
-	var mesh := MeshInstance3D.new()
-	mesh.mesh = st.commit()
-	root.add_child(mesh)
+	for kind: String in ["ground", "water"]:
+		if not _job.has(kind) or int(_job.get(kind + "_count", 0)) == 0: continue
+		var st: SurfaceTool = _job[kind]
+		st.set_material(ground_material.make(_job["origin"], func(at: Vector2i) -> String: return client.cell_at(location, at, "ground"), kind == "water"))
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = st.commit()
+		root.add_child(mesh)
 	if int(_job["rock_count"]) > 0:
 		var rock := MeshInstance3D.new()
 		(_job["rock"] as SurfaceTool).set_material(buildings.rock)
@@ -1777,10 +1825,17 @@ func _glimmer(delta: float) -> void:
 
 ## A short burst at a point of the world (pixels), about chest high (Effects3D.burst).
 func burst_at(at: Vector2, kind: String, tint := Color.WHITE) -> void:
+	var m := at / CELL
+	var cell := Vector2i(m.floor())
+	var id := _cell_layer(cell, "cover")
+	var plant: bool = content.get_def(id).get("kind") == "plant"
+	if kind == "chips" and plant:
+		_touch_left = .6
+		_touch_at = Vector3(m.x, _floor_at(m), m.y)
+		if float(models.catalog.get(id, {}).get("size", [0, 0])[1]) < 1.8: kind = "leaves"
 	var p := Effects3D.burst(kind, tint)
 	if p:
-		var m := at / CELL
-		p.position = Vector3(m.x, _floor_at(m) + .9, m.y)
+		p.position = Vector3(m.x, _floor_at(m) + (.25 if plant or kind == "dust" else .9), m.y)
 		space.add_child(p)
 
 ## A word that floats up from over a point of the world (pixels) and fades

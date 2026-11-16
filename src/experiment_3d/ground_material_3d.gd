@@ -2,6 +2,7 @@ class_name GroundMaterial3D
 extends RefCounted
 ## Reuse original LPC terrain fills, never modify source artwork.
 const IDS := ["base:grass", "base:dirt", "base:forest_floor", "base:sand", "base:snow", "base:cave_floor", "base:stone_floor", "base:grass_dry", "base:mud", "base:gravel", "base:farmland", "base:moss", "base:water", "base:shallows", "base:deep_water", "base:bridge"]
+const WATER := ["base:water", "base:shallows", "base:deep_water"]
 var atlas: ImageTexture
 var shader := preload("res://src/experiment_3d/ground.gdshader")
 
@@ -17,7 +18,7 @@ func _init() -> void:
 	image.generate_mipmaps()
 	atlas = ImageTexture.create_from_image(image)
 
-func make(origin: Vector2i, ground_at: Callable) -> ShaderMaterial:
+func make(origin: Vector2i, ground_at: Callable, water := false) -> ShaderMaterial:
 	var control := Image.create(34, 34, false, Image.FORMAT_RGBA8)
 	for y in 34:
 		for x in 34:
@@ -25,7 +26,7 @@ func make(origin: Vector2i, ground_at: Callable) -> ShaderMaterial:
 			var index := IDS.find(id)
 			control.set_pixel(x, y, Color(maxi(index, 0) / 255.0, 0, 0, 1))
 	var mat := ShaderMaterial.new()
-	mat.shader = shader
+	mat.shader = preload("res://src/experiment_3d/water.gdshader") if water else shader
 	mat.set_shader_parameter("atlas", atlas)
 	mat.set_shader_parameter("control_map", ImageTexture.create_from_image(control))
 	mat.set_shader_parameter("chunk_origin", Vector2(origin))

@@ -353,6 +353,22 @@
         "content/base/terrain.json"
       ],
       "kinds": []
+    },
+    {
+      "id": "environment-presentation",
+      "guide": "nature",
+      "sources": [
+        "src/experiment_3d/ground.gdshader",
+        "src/experiment_3d/water.gdshader",
+        "src/experiment_3d/ground_material_3d.gd",
+        "src/experiment_3d/foliage.gdshader",
+        "src/experiment_3d/model_library_3d.gd",
+        "src/experiment_3d/world_view_3d.gd",
+        "src/experiment_3d/effects_3d.gd",
+        "src/presentation/weather_view.gd",
+        "src/presentation/game_screen.gd",
+        "src/experiment_3d/water.gdshader.uid"
+      ]
     }
   ]
 }

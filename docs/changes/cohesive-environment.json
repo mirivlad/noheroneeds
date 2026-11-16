@@ -1,0 +1,27 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Согласованная палитра окружения, отдельная вода, профили ущелий, освещение и разреженная погода; короткая реакция растений без изменений серверных правил.",
+      "sources": {
+        "src/experiment_3d/ground.gdshader": "3ea753d20145ae8bae734dc04b889caee15a6e545878dbeab2a3a2390d6534ae",
+        "src/experiment_3d/water.gdshader": "59ee6772a1fb2bde637215fcda5cd67100ffe5b22c792ea2c574dd60d1c3a233",
+        "src/experiment_3d/ground_material_3d.gd": "c42841366776fc9171c846d3a8cb3a3178a4801b1b8842412cbc0d3a1ee6fab9",
+        "src/experiment_3d/foliage.gdshader": "9c676e63621cf4f9185f93b7d829adc2722670578e783fc0d170c625070c0998",
+        "src/experiment_3d/model_library_3d.gd": "09b5cc3cd806ed3e71367214fc4af8096f447f5fbb25cfd11adf2847aebc073b",
+        "src/experiment_3d/world_view_3d.gd": "68ac909e0545b41f66ea3487ed558c6b6b28cc2d6e6e7bb03ddb4b3af99d91bf",
+        "src/experiment_3d/effects_3d.gd": "beb41c0d087a4415c01c561a8190ca72c72cb7e414dc3b2323f5d1ee820d1503",
+        "src/presentation/weather_view.gd": "de2757f8a87f120ab0c4c55670bb74a1a0c6d4eddc5cddde8989dd7d56ce0cb1",
+        "src/presentation/game_screen.gd": "1d4794f518a4104df0fac6989fc25b7f31fc1eec181ca89dc2e23b7e061033af",
+        "src/experiment_3d/water.gdshader.uid": "17c139035f8b6dd0b9a31b2fb557735a9d0c30d6b5168fb1fb2dd98df4ab8069"
+      },
+      "mechanics": [
+        "environment-presentation"
+      ],
+      "guides": {
+        "site/content/guides/nature.html": "34020a38548206dc9d89e37f8705b1ac6eb8be248f20d5d4ef08899524bb7c7e"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

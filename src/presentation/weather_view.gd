@@ -8,8 +8,8 @@ extends Control
 
 ## A flash of lightning began (the audio's thunder answers it).
 signal lightning
-const DROPS := 520
-const DROP := Color(0.78, 0.85, 1.0, 0.75)
+const DROPS := 280
+const DROP := Color(0.67, 0.76, 0.80, 0.30)
 const FOG := Color(0.82, 0.85, 0.88)
 var client: GameClient
 var view: WorldView
@@ -20,6 +20,7 @@ var fog := 0.0
 var flash := 0.0
 var _t := 0.0
 var _flash_seen := -1
+var _fog_texture: GradientTexture2D
 
 
 func setup(game_client: GameClient, world_view: WorldView) -> void:
@@ -62,25 +63,42 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var r := get_rect()
 	if fog > 0.0:
-		draw_rect(r, Color(FOG, 0.38 * fog))
-	if rain > 0.0:
-		draw_rect(r, Color(0.45, 0.5, 0.6, 0.14 * rain))  # the air greys in the rain
-	var n := int(DROPS * minf(1.0, 0.25 + rain)) if rain > 0.0 else 0
-	for i in n:
-		# Each drop its own column and pace; it falls and comes round again.
+		# Broad drifting banks, with a much thinner veil over the actor at centre.
+		draw_rect(r, Color(FOG, 0.055 * fog))
+		if _fog_texture == null:
+			_fog_texture = GradientTexture2D.new()
+			_fog_texture.width = 64
+			_fog_texture.height = 64
+			_fog_texture.fill = GradientTexture2D.FILL_RADIAL
+			_fog_texture.fill_from = Vector2(.5, .5)
+			_fog_texture.fill_to = Vector2(1, .5)
+			_fog_texture.gradient = Gradient.new()
+			_fog_texture.gradient.set_color(0, Color.WHITE)
+			_fog_texture.gradient.set_color(1, Color(1, 1, 1, 0))
+		for i in 3:
+			var size := Vector2(r.size.x * .85, r.size.y * .65)
+			var at := Vector2(r.size.x * (i * .42 - .18) + sin(_t * .06 + i) * 35, r.size.y * (-.25 if i % 2 == 0 else .7))
+			draw_texture_rect(_fog_texture, Rect2(at, size), false, Color(FOG, .16 * fog))
+	if rain > 0.0: draw_rect(r, Color(0.36, 0.43, 0.48, 0.055 * rain))
+	for i in int(DROPS * rain):
 		var h := absi(hash(i * 7919 + 13))
+		var depth := float(h % 101) / 100.0
 		var x := float(h % int(r.size.x + 40)) - 20.0
-		var speed := 380.0 + float((h >> 8) % 160)
+		# Sparse sheets move through the view, rather than a uniform white hatch.
+		if sin(x * .013 + _t * .21) + depth < -.25: continue
+		var speed := 240.0 + depth * 220.0
 		var y := fmod(float((h >> 4) % 997) + _t * speed, r.size.y + 20.0) - 10.0
-		var at := Vector2(roundf(x - y * 0.12), roundf(y))
-		draw_line(at, at + Vector2(-1, 9), DROP, 1.0)
-	# Snow (ADR-0036): flakes, slower, drifting from side to side.
-	for i in int(DROPS * 0.7 * minf(1.0, 0.25 + snow)) if snow > 0.0 else 0:
+		var at := Vector2(x - y * .09, y)
+		var length := 2.0 + depth * 5.0
+		draw_line(at, at + Vector2(-length * .12, length), Color(DROP, .10 + depth * .20), 1.0)
+	# Fewer near flakes, fine distant specks: no opaque all-screen curtain.
+	for i in int(180 * snow):
 		var h := absi(hash(i * 104729 + 7))
-		var speed := 30.0 + float((h >> 8) % 40)
+		var depth := float(h % 101) / 100.0
+		var speed := 18.0 + depth * 38.0
 		var y := fmod(float((h >> 4) % 991) + _t * speed, r.size.y + 10.0) - 5.0
-		var x := fmod(float(h % int(r.size.x + 20)) + sin(_t * 1.3 + float(h % 97)) * 6.0, r.size.x + 20.0) - 10.0
-		var big := (h >> 3) % 3 == 0
-		draw_rect(Rect2(roundf(x), roundf(y), 2 if big else 1, 2 if big else 1), Color(1, 1, 1, 0.85))
+		var x := fmod(float(h % int(r.size.x + 20)) + sin(_t * .8 + float(h % 97)) * (3.0 + depth * 7.0), r.size.x + 20.0) - 10.0
+		var width := 2.0 if depth > .8 else 1.0
+		draw_rect(Rect2(roundf(x), roundf(y), width, width), Color(.88, .93, .94, .30 + depth * .4))
 	if flash > 0.0:
 		draw_rect(r, Color(1, 1, 1, flash))

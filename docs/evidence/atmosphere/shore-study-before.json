@@ -1,0 +1,123 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "checks": 3,
+  "failures": [],
+  "raster": [
+    960,
+    540
+  ],
+  "scenario_sha256": "e5dae8784ac84650c7b519ef135b0922e79c976e450ff0e877202ca37c25deb3",
+  "scenes": {
+    "shore": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-52.07852, 50.55613, 43.19548)]",
+      "render_benchmark": {
+        "actors": 2,
+        "chunks": 25,
+        "draw_calls": 968.0,
+        "frames": 360,
+        "p50_ms": 5.225,
+        "p95_ms": 6.179,
+        "raster": "(960, 540)",
+        "rendered_primitives": 2274647.0,
+        "window": "(960, 540)",
+        "worst_ms": 7.457
+      },
+      "time": 43200000.0
+    }
+  },
+  "shore_study": {
+    "normal": [
+      {
+        "actors": 2,
+        "chunks": 25,
+        "draw_calls": 968.0,
+        "frames": 360,
+        "p50_ms": 5.225,
+        "p95_ms": 6.179,
+        "raster": "(960, 540)",
+        "rendered_primitives": 2274647.0,
+        "window": "(960, 540)",
+        "worst_ms": 7.457
+      },
+      {
+        "actors": 2,
+        "chunks": 25,
+        "draw_calls": 968.0,
+        "frames": 360,
+        "p50_ms": 5.267,
+        "p95_ms": 6.098,
+        "raster": "(960, 540)",
+        "rendered_primitives": 2274647.0,
+        "window": "(960, 540)",
+        "worst_ms": 7.369
+      },
+      {
+        "actors": 2,
+        "chunks": 25,
+        "draw_calls": 968.0,
+        "frames": 360,
+        "p50_ms": 5.295,
+        "p95_ms": 6.134,
+        "raster": "(960, 540)",
+        "rendered_primitives": 2274647.0,
+        "window": "(960, 540)",
+        "worst_ms": 8.527
+      }
+    ],
+    "old_sun_orientation": [
+      {
+        "actors": 2,
+        "chunks": 25,
+        "draw_calls": 968.0,
+        "frames": 360,
+        "p50_ms": 5.313,
+        "p95_ms": 6.1,
+        "raster": "(960, 540)",
+        "rendered_primitives": 2274647.0,
+        "window": "(960, 540)",
+        "worst_ms": 7.081
+      },
+      {
+        "actors": 2,
+        "chunks": 25,
+        "draw_calls": 968.0,
+        "frames": 360,
+        "p50_ms": 5.057,
+        "p95_ms": 5.887,
+        "raster": "(960, 540)",
+        "rendered_primitives": 2274647.0,
+        "window": "(960, 540)",
+        "worst_ms": 7.006
+      },
+      {
+        "actors": 2,
+        "chunks": 25,
+        "draw_calls": 968.0,
+        "frames": 360,
+        "p50_ms": 5.274,
+        "p95_ms": 5.98,
+        "raster": "(960, 540)",
+        "rendered_primitives": 2274647.0,
+        "window": "(960, 540)",
+        "worst_ms": 7.318
+      }
+    ]
+  },
+  "sources": {
+    "assets/experiment_3d/catalog.json": "fc6f9280aee0ffb28c0cab37542bcba9338caaa45d51a68f42f071387b80eb0c",
+    "src/experiment_3d/effects_3d.gd": "50479ffa03f66191f331ec8794dc79e9e6ceb489904ec728d183f43cbb01a2b3",
+    "src/experiment_3d/foliage.gdshader": "67ac7de26c20e813e734e66d56e0a0fc42e7d6f188799ce4a4f5b2eeb35c9d74",
+    "src/experiment_3d/ground.gdshader": "803c4b93edd3672fe9f5e1c2536798634a562edc4a298f79355d7caa069465a0",
+    "src/experiment_3d/ground_material_3d.gd": "f8bc05f32b10a2578205bba9991810096f332e4a59e54e12606974fb0fee2441",
+    "src/experiment_3d/model_library_3d.gd": "721ea0b32d19aff270ffa4f0dd443761cee36ce35beeef71cc5020a45ad1b968",
+    "src/experiment_3d/water.gdshader": "not-present-in-baseline",
+    "src/experiment_3d/world_view_3d.gd": "461f6ebf658cb524fabed421d26927c4313da9cf9737ac0f4856f9cd4e539fb4",
+    "src/presentation/game_screen.gd": "ca23eb6409515430b4100473198b416b11bef4bc2c0e9919753e10843b2ef9b6",
+    "src/presentation/weather_view.gd": "61aa7885170788d3b7c92f338f82274043ce1f6e6adbfe68604f83c865183a25",
+    "src/server/creature_sim.gd": "0205132b6e580761a6a5bd846148f3c450e430b055421e73b870c1b0965992fa",
+    "src/world/settlements.gd": "f4230973e1c2bedd31f816e043dd26c72c15066578cd4da58d5bff95cfebd835",
+    "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
+    "src/world/world_plan.gd": "ecf5c0c7ba3f51efbe6ddff54c92fb272d5833079e8a75297bc4d541776e62c1"
+  },
+  "static_memory_bytes": 336584041
+}

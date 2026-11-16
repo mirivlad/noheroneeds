@@ -916,7 +916,7 @@ func _do(a: Dictionary) -> void:
 					audio.play("swing", item, null)
 				if a["id"] in ["gather", "strike_part", "till"]:  # chips off what is worked
 					var at := Vector2(int(a["request"].get("x", 0)) + 0.5, int(a["request"].get("y", 0)) + 0.5) * WorldView.CELL
-					view.burst_at(at, "chips", _chip_tint(String(target.get("id", ""))))
+					view.burst_at(at, "dust" if a["id"] == "till" else "chips", _chip_tint(String(target.get("id", ""))))
 			if a["id"] != "gather":
 				hotbar.used(item)
 		"feed":

@@ -1104,3 +1104,49 @@ func test_wide_deck_lane_edges_share_the_actual_sloping_surface() -> void:
 	view._add_object(Vector2i(4, 3), "base:hanging_bridge", "ground", {})
 	var placed: Transform3D = view._job["instances"]["hanging:" + str(Vector2i(4, 3))][0]
 	check(is_equal_approx(placed.origin.y, view.elevation(Vector2(4.5, 3.5))), "procedural deck discards the placeholder box's normalisation offset")
+
+func test_water_has_its_own_surface_but_keeps_original_picking_triangles() -> void:
+	var ground := SurfaceTool.new()
+	ground.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var water := SurfaceTool.new()
+	water.begin(Mesh.PRIMITIVE_TRIANGLES)
+	view._job = {"ground": ground, "water": water, "faces": PackedVector3Array(), "targets": []}
+	var points: Array[Vector3] = [Vector3.ZERO, Vector3.RIGHT, Vector3.BACK, Vector3(1, 0, 1)]
+	view._quad(points, Color.WHITE, {"kind": "ground", "id": "base:grass"})
+	view._quad(points, Color.WHITE, {"kind": "ground", "id": "base:water"})
+	eq(view._job["ground_count"], 1)
+	eq(view._job["water_count"], 1)
+	eq(view._job["targets"].size(), 4, "each original triangle retains a target")
+	eq(view._job["faces"].size(), 12, "water does not change or displace the picked geometry")
+	var mat := view.ground_material.make(Vector2i.ZERO, func(_at: Vector2i) -> String: return "base:water", true)
+	check(mat.shader.resource_path.ends_with("/water.gdshader"), "a dedicated material, with no overlapping ground surface")
+	view._job = {}
+
+func test_chasm_profiles_share_vertices_across_chunk_edges() -> void:
+	for y in 5:
+		for x in range(30, 35):
+			var c: Chunk = client.chunks.get_or_add(ServerWorld.chunk_key("surface", x >> 5, y >> 5), Chunk.new())
+			c.set_cell("ground", x & 31, y & 31, "base:grass" if y == 0 or y == 4 else "base:chasm")
+	view.terrain = null
+	var a := Vector2i(31, 1)
+	var b := Vector2i(32, 1)
+	var shared := Vector2i(32, 1)
+	for depth: float in [0.0, .1, .32, .59, .82, 1.0]:
+		var left := view._chasm_point(shared, depth, a, 2.0) + Vector3(a.x + .5, 2.0, a.y + .5)
+		var right := view._chasm_point(shared, depth, b, -3.0) + Vector3(b.x + .5, -3.0, b.y + .5)
+		check(left.is_equal_approx(right), "same world point with different local mesh origins")
+		if depth == 0.0: check(is_equal_approx(left.y, view.corner_height(shared)), "the original rim stays fixed")
+		if depth == .32: check(left.z > shared.y, "the wall has a real inward facet")
+	check(view.chasm_mesh(a, 0).get_faces().size() > 60, "the wall is a profiled surface rather than a flat quad")
+
+func test_lighting_keeps_night_fill_and_turns_sun_off_underground() -> void:
+	client.world_time = 12 * Daylight.HOUR_MS
+	view._update_lighting()
+	var day := view.sun.light_energy
+	client.world_time = 0
+	view._update_lighting()
+	check(view.sun.light_energy < day and view.environment.environment.ambient_light_energy >= .2, "night is cooler and darker, with a readable fill")
+	client.z = -1
+	view._update_lighting()
+	eq(view.sun.light_energy, 0.0)
+	check(is_equal_approx(view.environment.environment.ambient_light_energy, .28), "cave lighting retains its established fill")

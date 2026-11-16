@@ -1,0 +1,3 @@
+PASS test_world_view_3d::test_lighting_keeps_night_fill_and_turns_sun_off_underground (1361 ms)
+expected engine errors: 0
+1 tests, 0 failed checks, 2.0s

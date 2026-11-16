@@ -1,0 +1,185 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "checks": 22,
+  "failures": [],
+  "raster": [
+    960,
+    540
+  ],
+  "scenario_sha256": "94bfb27d96bb7d13acaa1c366825b79a1389fe8193e8fb81e9c676aa644c7e1c",
+  "scenes": {
+    "chasm": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-79.07852, 77.55612, -6.804523)]",
+      "former_white_sample": {
+        "bounds": "[P: (-64.0, 21.0, -64.0), S: (32.0, 9.216936, 32.0)]",
+        "distance": 65.4555130004883,
+        "materials": [
+          "():<ShaderMaterial#-9223369724618862962> shader=res://src/experiment_3d/ground.gdshader"
+        ],
+        "point": "(-48.15356, 26.85011, -35.95004)",
+        "transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.0, 0.0, 0.0)]"
+      },
+      "render_benchmark": {
+        "actors": 1,
+        "chunks": 25,
+        "draw_calls": 719.0,
+        "frames": 360,
+        "p50_ms": 4.572,
+        "p95_ms": 5.229,
+        "raster": "(960, 540)",
+        "rendered_primitives": 381945.0,
+        "window": "(960, 540)",
+        "worst_ms": 5.754
+      },
+      "time": 43200000.0
+    },
+    "crossing": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-3.078524, 68.26742, -6.804523)]",
+      "render_benchmark": {
+        "actors": 1,
+        "chunks": 27,
+        "draw_calls": 2249.0,
+        "frames": 360,
+        "p50_ms": 6.957,
+        "p95_ms": 8.062,
+        "raster": "(960, 540)",
+        "rendered_primitives": 986171.0,
+        "window": "(960, 540)",
+        "worst_ms": 9.252
+      },
+      "time": 43200000.0
+    },
+    "day": {
+      "ambient": 0.280000001192093,
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (10.92148, 54.95469, 46.19548)]",
+      "fog": 0.0,
+      "rain": 0.0,
+      "render_benchmark": {
+        "actors": 4,
+        "chunks": 26,
+        "draw_calls": 1349.0,
+        "frames": 360,
+        "p50_ms": 5.987,
+        "p95_ms": 7.164,
+        "raster": "(960, 540)",
+        "rendered_primitives": 1262643.0,
+        "window": "(960, 540)",
+        "worst_ms": 8.501
+      },
+      "snow": 0.0,
+      "sun": 1.00999999046326,
+      "time": 43200000.0
+    },
+    "evening": {
+      "ambient": 0.50145411491394,
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (10.92148, 54.95469, 46.19548)]",
+      "fog": 0.0,
+      "rain": 0.0,
+      "snow": 0.0,
+      "sun": 0.501235365867615,
+      "time": 70200000.0
+    },
+    "fog": {
+      "ambient": 0.295203745365143,
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (10.92148, 54.95469, 46.19548)]",
+      "fog": 0.722886289726368,
+      "rain": 0.0,
+      "snow": 0.0,
+      "sun": 0.838015377521515,
+      "time": 25200000.0
+    },
+    "morning": {
+      "ambient": 0.506427466869354,
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (10.92148, 54.95469, 46.19548)]",
+      "fog": 0.620094157092461,
+      "rain": 0.0,
+      "snow": 0.0,
+      "sun": 0.469207227230072,
+      "time": 19800000.0
+    },
+    "night": {
+      "ambient": 0.699999988079071,
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (10.92148, 54.95469, 46.19548)]",
+      "fog": 0.0,
+      "rain": 0.0,
+      "snow": 0.0,
+      "sun": 0.140000000596046,
+      "time": 0.0
+    },
+    "rain": {
+      "ambient": 0.305000007152557,
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (10.92148, 54.95469, 46.19548)]",
+      "fog": 0.0,
+      "rain": 0.697416273945274,
+      "render_benchmark": {
+        "actors": 4,
+        "chunks": 26,
+        "draw_calls": 1467.0,
+        "frames": 360,
+        "p50_ms": 6.183,
+        "p95_ms": 7.451,
+        "raster": "(960, 540)",
+        "rendered_primitives": 1329851.0,
+        "window": "(960, 540)",
+        "worst_ms": 8.487
+      },
+      "snow": 0.0,
+      "sun": 0.727199971675873,
+      "time": 125100000.0
+    },
+    "shore": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-52.07852, 50.55613, 43.19548)]",
+      "render_benchmark": {
+        "actors": 2,
+        "chunks": 25,
+        "draw_calls": 1495.0,
+        "frames": 360,
+        "p50_ms": 5.779,
+        "p95_ms": 6.958,
+        "raster": "(960, 540)",
+        "rendered_primitives": 2184381.0,
+        "window": "(960, 540)",
+        "worst_ms": 8.65
+      },
+      "time": 43200000.0
+    },
+    "snow": {
+      "ambient": 0.305000007152557,
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (10.92148, 54.95469, 46.19548)]",
+      "fog": 0.0,
+      "rain": 0.0,
+      "render_benchmark": {
+        "actors": 4,
+        "chunks": 26,
+        "draw_calls": 1565.0,
+        "frames": 360,
+        "p50_ms": 6.137,
+        "p95_ms": 7.314,
+        "raster": "(960, 540)",
+        "rendered_primitives": 1325999.0,
+        "window": "(960, 540)",
+        "worst_ms": 8.608
+      },
+      "snow": 0.675316116372357,
+      "sun": 0.727199971675873,
+      "time": 1848600000.0
+    }
+  },
+  "sources": {
+    "assets/experiment_3d/catalog.json": "fc6f9280aee0ffb28c0cab37542bcba9338caaa45d51a68f42f071387b80eb0c",
+    "src/experiment_3d/effects_3d.gd": "beb41c0d087a4415c01c561a8190ca72c72cb7e414dc3b2323f5d1ee820d1503",
+    "src/experiment_3d/foliage.gdshader": "9c676e63621cf4f9185f93b7d829adc2722670578e783fc0d170c625070c0998",
+    "src/experiment_3d/ground.gdshader": "3ea753d20145ae8bae734dc04b889caee15a6e545878dbeab2a3a2390d6534ae",
+    "src/experiment_3d/ground_material_3d.gd": "c42841366776fc9171c846d3a8cb3a3178a4801b1b8842412cbc0d3a1ee6fab9",
+    "src/experiment_3d/model_library_3d.gd": "09b5cc3cd806ed3e71367214fc4af8096f447f5fbb25cfd11adf2847aebc073b",
+    "src/experiment_3d/water.gdshader": "59ee6772a1fb2bde637215fcda5cd67100ffe5b22c792ea2c574dd60d1c3a233",
+    "src/experiment_3d/world_view_3d.gd": "4063104a33d06957c37e6e39ef56a263a801580ce771bb47c15ad2e69c8d5c7a",
+    "src/presentation/game_screen.gd": "1d4794f518a4104df0fac6989fc25b7f31fc1eec181ca89dc2e23b7e061033af",
+    "src/presentation/weather_view.gd": "de2757f8a87f120ab0c4c55670bb74a1a0c6d4eddc5cddde8989dd7d56ce0cb1",
+    "src/server/creature_sim.gd": "0205132b6e580761a6a5bd846148f3c450e430b055421e73b870c1b0965992fa",
+    "src/world/settlements.gd": "f4230973e1c2bedd31f816e043dd26c72c15066578cd4da58d5bff95cfebd835",
+    "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
+    "src/world/world_plan.gd": "ecf5c0c7ba3f51efbe6ddff54c92fb272d5833079e8a75297bc4d541776e62c1"
+  },
+  "static_memory_bytes": 348258030
+}

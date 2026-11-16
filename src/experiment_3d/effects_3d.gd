@@ -69,6 +69,11 @@ static func burst(kind: String, tint := Color.WHITE) -> CPUParticles3D:
 			p.lifetime = 0.45
 			_spray(p, 90.0, 1.8, 3.4, Vector3(0, -10, 0))
 			p.color_ramp = _ramp(tint, Color(tint, 0))
+		"leaves":
+			p.amount = 5
+			p.lifetime = .5
+			_spray(p, 110.0, .35, .8, Vector3(.1, -1.4, 0))
+			p.color_ramp = _ramp(Color(.34, .43, .20, .75), Color(.34, .43, .20, 0))
 		"blood":
 			p.amount = 8
 			p.lifetime = 0.4

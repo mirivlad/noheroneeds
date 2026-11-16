@@ -1,0 +1,23 @@
+FAIL test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface (1249 ms)
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: neighbour lanes join at the same world height
+    - test_world_view_3d::test_wide_deck_lane_edges_share_the_actual_sloping_surface: boards follow the same surface as the walker's feet
+expected engine errors: 0
+1 tests, 20 failed checks, 2.0s

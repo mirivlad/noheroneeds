@@ -730,7 +730,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		instance_id = "chasm:" + str(cell)
 	elif layer == "ground" and _ground_is(cell, "hanging_bridge"):
 		mesh = hanging_bridge_mesh(cell)
-		position3.y += .1
+		position3.y = elevation(at) + lift
 		basis = Basis.IDENTITY
 		instance_id = "hanging:" + str(cell)
 	elif layer == "ground" and id == "base:bridge":
@@ -886,25 +886,26 @@ func hanging_bridge_mesh(cell: Vector2i) -> Mesh:
 	var right := .5 if joined_right else .45
 	var at := Vector2(cell) + Vector2.ONE * .5
 	var mid := surface_elevation(at)
-	# The deck's height at the middles of the cell's two ends along its way (the
-	# mesh stands at the deck over the cell's middle).
-	var ends: Array[float] = []
-	for s: float in [-.5, .5]:
-		ends.append(surface_elevation(at + Vector2(u.x, u.z) * s) - mid)
 	var wood := SurfaceTool.new()
 	wood.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in 5:
 		var f := (i + .5) / 5.0
-		var c := u * (f - .5) + Vector3.UP * lerpf(ends[0], ends[1], f)
-		c += v * (left + right) * .5
-		_slab(wood, c - u * .07, c + u * .07, v, right - left, .05)
+		var p: Array[Vector3] = []
+		for side: float in [left, right]:
+			for along: float in [f - .5 - .07, f - .5 + .07]:
+				p.append(_hanging_point(at, u * along + v * side, mid))
+		var q: Array[Vector3] = []
+		for point: Vector3 in p: q.append(point + Vector3.DOWN * .05)
+		for face: Array in [[p[0], p[1], p[2], p[3]], [q[2], q[3], q[0], q[1]], [p[2], p[3], q[2], q[3]],
+				[p[1], p[0], q[1], q[0]], [p[0], p[2], q[0], q[2]], [p[3], p[1], q[3], q[1]]]:
+			_inward(wood, face)
 	var rope := SurfaceTool.new()
 	rope.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rail_count := 0
 	for side: float in [-.45, .45]:
 		if (side < 0 and joined_left) or (side > 0 and joined_right): continue
-		var a := u * -.5 + v * side + Vector3.UP * (ends[0] + .75)
-		var b := u * .5 + v * side + Vector3.UP * (ends[1] + .75)
+		var a := _hanging_point(at, u * -.5 + v * side + Vector3.UP * .75, mid)
+		var b := _hanging_point(at, u * .5 + v * side + Vector3.UP * .75, mid)
 		_slab(rope, a, b, v, .04, .04)
 		_slab(rope, a - Vector3.UP * .75, a - Vector3.UP * .75 + u * .03, v, .03, -.75)  # a hanger down to the deck
 		rail_count += 1
@@ -913,7 +914,7 @@ func hanging_bridge_mesh(cell: Vector2i) -> Mesh:
 		if not _hollow(next):  # it meets the land: two posts
 			for side: float in [-.45, .45]:
 				if (side < 0 and joined_left) or (side > 0 and joined_right): continue
-				var foot := u * (s * .5) + v * side + Vector3.UP * ends[(s + 1) / 2]
+				var foot := _hanging_point(at, u * (s * .5) + v * side, mid)
 				_slab(wood, foot - Vector3.UP * .1, foot - Vector3.UP * .1 + u * .1, v, .1, -1.1)
 	var mesh := ArrayMesh.new()
 	wood.set_material(models.material(Color("8a6a45")))
@@ -922,6 +923,11 @@ func hanging_bridge_mesh(cell: Vector2i) -> Mesh:
 		rope.set_material(models.material(Color("c9b48a")))
 		rope.commit(mesh)
 	return mesh
+
+## Shared world samples join neighbouring lanes even on a transverse slope.
+func _hanging_point(at: Vector2, point: Vector3, middle: float) -> Vector3:
+	point.y += surface_elevation(at + Vector2(point.x, point.z)) - middle
+	return point
 
 func _hanging_axis(cell: Vector2i) -> Vector2i:
 	var across := _hanging_length(cell, Vector2i.RIGHT)

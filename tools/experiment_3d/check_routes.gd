@@ -75,6 +75,9 @@ func run() -> void:
 	var good := Vector2i(21, -42)
 	await move_to(Vector2i(21, -44))
 	await settle()
+	verify(await walk_cell(Vector2i(21, -42)), "ordinary movement reaches the middle of the deck")
+	pose(good)
+	await capture("feet-on-deck")
 	verify(await walk_cell(Vector2i(21, -39)), "ordinary client movement crosses the useful bridge")
 	if not baseline:
 		var route: Dictionary = world.generator.call("_bridge_data", good.x, good.y, Vector2i.DOWN)

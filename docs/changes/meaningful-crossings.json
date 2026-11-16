@@ -8,7 +8,7 @@
         "src/world/bridge_routes.gd.uid": "1982c7ba08dd1322f40bc7935c0c4e2edfaefa77b7ba83b2e3a529adb9465c34",
         "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
         "src/world/settlements.gd": "f4230973e1c2bedd31f816e043dd26c72c15066578cd4da58d5bff95cfebd835",
-        "src/experiment_3d/world_view_3d.gd": "b54d5f0a8f3ef78b81376a20030d921b277cd1a26fb6fa18a933493753a819d2",
+        "src/experiment_3d/world_view_3d.gd": "461f6ebf658cb524fabed421d26927c4313da9cf9737ac0f4856f9cd4e539fb4",
         "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd"
       },
       "mechanics": [

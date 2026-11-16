@@ -1071,3 +1071,36 @@ func test_geometry_row_resumes_after_budget_without_losing_or_repeating_cells() 
 	eq(view._job.faces.size(), Chunk.SIZE * 6, "no ground triangles are lost or duplicated")
 	for x in Chunk.SIZE:
 		eq(view._job.targets[x * 2].cell, Vector2i(x, 0), "resuming preserves scanline order")
+
+func test_wide_deck_lane_edges_share_the_actual_sloping_surface() -> void:
+	var chunk := Chunk.new()
+	for y in 7:
+		for x in range(2, 9):
+			chunk.set_cell("ground", x, y, "base:chasm" if y >= 1 and y <= 5 else "base:grass")
+			if y >= 1 and y <= 5 and x >= 4 and x <= 6: chunk.set_cell("ground", x, y, "base:hanging_bridge")
+	client.chunks["surface|0|0"] = chunk
+	view.terrain = view._new_terrain()
+	for y in range(2, 6):
+		for x in range(3, 9): view.terrain.heights[Vector2i(x, y)] = x * .6 + y * .1
+	var heights := []
+	for cell: Vector2i in [Vector2i(4, 3), Vector2i(5, 3)]:
+		var mesh := view.hanging_bridge_mesh(cell)
+		var vertices: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var edge := {}
+		var mid := view.surface_elevation(Vector2(cell) + Vector2.ONE * .5)
+		for vertex: Vector3 in vertices:
+			var world_at := vertex + Vector3(cell.x + .5, mid, cell.y + .5)
+			if is_equal_approx(world_at.x, 5.0):
+				var z := roundi(world_at.z * 10000)
+				edge[z] = maxf(float(edge.get(z, -INF)), world_at.y)
+		heights.append(edge)
+	check(not heights[0].is_empty() and heights[0].size() == heights[1].size(), "both lanes expose the same board endpoints")
+	for z: int in heights[0]:
+		check(heights[1].has(z) and is_equal_approx(heights[0][z], heights[1][z]), "neighbour lanes join at the same world height")
+		check(is_equal_approx(heights[0][z], view.surface_elevation(Vector2(5, z / 10000.0))), "boards follow the same surface as the walker's feet")
+
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	view._add_object(Vector2i(4, 3), "base:hanging_bridge", "ground", {})
+	var placed: Transform3D = view._job["instances"]["hanging:" + str(Vector2i(4, 3))][0]
+	check(is_equal_approx(placed.origin.y, view.elevation(Vector2(4.5, 3.5))), "procedural deck discards the placeholder box's normalisation offset")

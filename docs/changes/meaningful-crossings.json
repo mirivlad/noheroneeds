@@ -10,7 +10,7 @@
         "src/world/settlements.gd": "f4230973e1c2bedd31f816e043dd26c72c15066578cd4da58d5bff95cfebd835",
         "src/experiment_3d/world_view_3d.gd": "461f6ebf658cb524fabed421d26927c4313da9cf9737ac0f4856f9cd4e539fb4",
         "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd",
-        "src/server/creature_sim.gd": "1bbe277c2303f4643f64c2427b901a2988a6580708e29970f7704a02f094907a"
+        "src/server/creature_sim.gd": "0205132b6e580761a6a5bd846148f3c450e430b055421e73b870c1b0965992fa"
       },
       "mechanics": [
         "route-connectivity",

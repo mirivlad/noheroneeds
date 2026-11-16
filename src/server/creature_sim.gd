@@ -2228,8 +2228,8 @@ func _caravan_departure_fits(c: Creature, goal: Vector2i, heading: Vector2, orig
 func _departure_heading(c: Creature, goal: Vector2i, preferred: Vector2, origin: Vector2i) -> Vector2:
 	var saved := _heading_of(c.job.get("caravan_heading", [0, 1]))
 	for heading: Vector2 in [preferred, saved]:
-		if _caravan_cart_fits(c, goal, heading) and _caravan_horse_fits(c, goal, heading) \
-				and _caravan_departure_fits(c, goal, heading, origin):
+		if _caravan_cart_fits(c, origin, heading) and _caravan_cart_fits(c, goal, heading) \
+				and _caravan_horse_fits(c, goal, heading) and _caravan_departure_fits(c, goal, heading, origin):
 			return heading
 	return Vector2.ZERO
 

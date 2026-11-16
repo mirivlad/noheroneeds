@@ -1,0 +1,76 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "checks": 7,
+  "failures": [],
+  "preset": "small",
+  "raster": [
+    960,
+    540
+  ],
+  "scenes": {
+    "cliff": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (5.921476, 59.68054, 32.19548)]",
+      "cell": [
+        30,
+        -3
+      ],
+      "render_benchmark": {
+        "actors": 9,
+        "chunks": 27,
+        "draw_calls": 2094.0,
+        "frames": 360,
+        "p50_ms": 7.21,
+        "p95_ms": 8.409,
+        "raster": "(960, 540)",
+        "rendered_primitives": 1416990.0,
+        "window": "(960, 540)",
+        "worst_ms": 9.63
+      }
+    },
+    "crag": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-46.07852, 71.55612, -7.804523)]",
+      "cell": [
+        -22,
+        -43
+      ],
+      "render_benchmark": {
+        "actors": 2,
+        "chunks": 26,
+        "draw_calls": 583.0,
+        "frames": 360,
+        "p50_ms": 4.744,
+        "p95_ms": 5.375,
+        "raster": "(960, 540)",
+        "rendered_primitives": 625060.0,
+        "window": "(960, 540)",
+        "worst_ms": 6.436
+      }
+    },
+    "lithology": {
+      "render_benchmark": {
+        "actors": 9,
+        "chunks": 26,
+        "draw_calls": 1494.0,
+        "frames": 360,
+        "p50_ms": 6.399,
+        "p95_ms": 7.769,
+        "raster": "(960, 540)",
+        "rendered_primitives": 1372524.0,
+        "window": "(960, 540)",
+        "worst_ms": 9.402
+      }
+    }
+  },
+  "seed": 431,
+  "sources": {
+    "content/base/structures.json": "735b3d62fa895c2bc474f126ecb70bb6beec50f3ccd01bb7083e338b702a196b",
+    "content/base/terrain.json": "eb631655ae722c003493e0ee722553a97c38d48942a0bd5a2425eb9cd187f318",
+    "src/experiment_3d/rock.gdshader": "a8a7511bcf62ba8bec8c8c59715e6eda3ac4c7ada397d8144469c370039058ba",
+    "src/experiment_3d/rock_cells_3d.gd": "a19ecc13bfcb815befa0524e7ed7bfe7fdf5030c1879445f2be46677816557e6",
+    "src/experiment_3d/world_view_3d.gd": "c29b5b810b00f5bfd851fe9f154bce8c03d9941ad1597e02d736e227768ff5e8",
+    "src/world/surface_generator.gd": "2d20af80069b8940ee670db4ec227d3dfb7fc3a9f2a1ba18d1f17a05aa25f3a6",
+    "tools/experiment_3d/check_rocks.gd": "10f1e09dd034819ce690d884f3460fbd61db489451aa2a1644aaf08be4c47375"
+  },
+  "static_memory_bytes": 391753137,
+  "time_ms": 43200000.0
+}

@@ -316,6 +316,16 @@
         "src/experiment_3d/plant_meshes_3d.gd.uid"
       ],
       "kinds": []
+    },
+    {
+      "id": "rock-presentation",
+      "guide": "nature",
+      "sources": [
+        "src/experiment_3d/rock_cells_3d.gd",
+        "src/experiment_3d/rock.gdshader",
+        "src/experiment_3d/world_view_3d.gd"
+      ],
+      "kinds": []
     }
   ]
 }

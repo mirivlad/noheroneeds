@@ -373,14 +373,22 @@ func _rock_cliff(c: Vector2i) -> bool:
 		_rock_flush[c] = _land.is_cliff(c.x, c.y, _land.height_at(c.x, c.y))
 	return bool(_rock_flush[c])
 
-## The top of a rock cell at one of its corners, metres: flush with its level
-## when it is a shelf's edge, else a crag (RockCells3D.top).
+## A shelf has a low chipped lip above its level. Crags share a continuous
+## cap with received neighbors rather than repeating one box per cell.
 func _rock_top(c: Vector2i, corner: Vector2i) -> float:
 	if client.z < 0 or terrain == null:
 		return RockCells3D.top(corner)
 	var ground := terrain.cell(c)
 	if _rock_cliff(c):
-		return ground + .05
+		# A small uneven lip stays above its plateau, closing the join to
+		# walkable ground without the former ruler-straight concrete coping.
+		return ground + clampf(.09 + .055 * sin(corner.x * .74 + corner.y * .43) + .035 * sin(corner.y * .91), .025, .18)
+	# A crag's cap is shared by every received rock touching this corner.
+	# The old per-cell base left a staircase even inside one continuous mass.
+	for d: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.UP, -Vector2i.ONE]:
+		var neighbor := corner + d
+		if _rock_at(neighbor) and not _rock_cliff(neighbor):
+			ground = maxf(ground, terrain.cell(neighbor))
 	return ground + RockCells3D.top(corner)
 
 ## The land's shape: rock and chasms stand no corner (the ground round them is
@@ -518,6 +526,7 @@ func _build_row(deadline_us := 0) -> void:
 			if id != "":
 				_add_object(cell, id, layer, c.get_props(x, y))
 		_add_decorative_grass(cell, ground, c, x, y)
+		_add_rock_scree(cell, ground, c, x, y)
 		if _drawing_location == client.location and c.get_props(x, y).get("stairs_down", false):
 			_add_object(cell, "base:stairs_down", "transition", {})
 		# Life over the land, by what lies there ("ambient"): a cell in AMBIENT_EVERY.
@@ -579,6 +588,30 @@ func _quad(p: Array[Vector3], color: Color, target: Dictionary) -> void:
 	_job["targets"].append(target)
 	_job["targets"].append(target)
 
+func _add_rock_scree(cell: Vector2i, ground: String, chunk: Chunk, x: int, y: int) -> void:
+	if _drawing_location != Levels.SURFACE and _drawing_z >= 0: return
+	if ground not in ["base:grass", "base:grass_dry", "base:moss", "base:forest_floor", "base:gravel", "base:cave_floor"]: return
+	for layer: String in ["cover", "structure", "roof", "ceiling"]:
+		if chunk.get_cell(layer, x, y) != "": return
+	if chunk.get_props(x, y).get("stairs_down", false) or _hollow(cell): return
+	var roll := posmod(hash([cell.x, cell.y, "scree"]), 1024)
+	if roll > 620: return
+	var toward := Vector2i.ZERO
+	for d: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+		if _rock_at(cell + d):
+			toward = d
+			break
+	if toward == Vector2i.ZERO: return
+	var at := Vector2(cell) + Vector2.ONE * .5 + Vector2(toward) * .27
+	var height := elevation(at)
+	# Small debris lies at gentle feet, not floating across steep ramps.
+	if absf(elevation(at + Vector2(.2, 0)) - elevation(at - Vector2(.2, 0))) > .18: return
+	if absf(elevation(at + Vector2(0, .2)) - elevation(at - Vector2(0, .2))) > .18: return
+	var t := Transform3D(Basis(Vector3.UP, roll * TAU / 1024), Vector3(at.x, height, at.y))
+	(_job["rock"] as SurfaceTool).append_from(RockCells3D.scree(roll % 3), 0, t)
+	_job["rock_count"] += 1
+	# Render triangles only: no extra picking target or server obstacle.
+
 func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -> void:
 	var d := content.get_def(id)
 	var model_id := "base:surface_rock" if id == "base:rock" and client.z >= 0 else id
@@ -634,7 +667,8 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 			func(c: Vector2i) -> float: return (terrain.low(c) if client.z >= 0 and terrain else 0.0) - floor_y,
 			_rock_at, func(c: Vector2i) -> bool: return client.z >= 0 and terrain != null and not _rock_at(c) and terrain.cell(c) >= terrain.cell(cell) - .5,
 			buildings.rock, func(n: Vector2i, corner: Vector2i) -> float: return _rock_top(n, corner) - floor_y,
-			_rock_cliff)
+			_rock_cliff, func(corner: Vector2i) -> float: return _rock_top(cell, corner) - floor_y,
+			RockCells3D.style_at(cell), floor_y)
 		instance_id = "rock:" + str(cell)
 		basis = Basis.IDENTITY
 	elif role == "fence" or (role == "door" and float(d.get("height", 1.0)) < 1.0):

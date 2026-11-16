@@ -507,8 +507,8 @@ func test_crags_stand_up_and_only_a_levels_edge_is_flush() -> void:
 	check(have_cliff, "the generated planet has a cliff near the spawn")
 	check(have_crag, "and a crag with level ground beside it")
 	check(view._rock_cliff(cliff), "the cliff is a level's edge")
-	check(is_equal_approx(view._rock_top(cliff, Vector2i.ZERO) - view.terrain.cell(cliff), .05),
-		"and is drawn flush with its level")
+	check(view._rock_top(cliff, Vector2i.ZERO) - view.terrain.cell(cliff) >= .025 and view._rock_top(cliff, Vector2i.ZERO) - view.terrain.cell(cliff) <= .18,
+		"the chipped lip stays above its plateau without becoming a separate crag")
 	check(not view._rock_cliff(crag_cell), "the crag is no level's edge")
 	check(view._rock_top(crag_cell, Vector2i.ZERO) - view.terrain.cell(crag_cell) > 1.0,
 		"so it is drawn standing up, not as walkable ground: %.2f m" % (view._rock_top(crag_cell, Vector2i.ZERO) - view.terrain.cell(crag_cell)))
@@ -530,6 +530,21 @@ func test_natural_rock_shared_edges_and_no_brick_gaps() -> void:
 			for w:Vector3 in vb:
 				if (v - (w+Vector3.RIGHT)).length() < .001: shared += 1
 	check(shared >= 2,"adjacent caps share exact world vertices")
+
+func test_received_crags_share_caps_at_chunk_boundary_with_different_base_heights() -> void:
+	var a := Vector2i(31, 0)
+	var b := Vector2i(32, 0)
+	for at: Vector2i in [a, b]:
+		var key := ServerWorld.chunk_key("surface", at.x >> 5, at.y >> 5)
+		var chunk: Chunk = client.chunks.get_or_add(key, Chunk.new())
+		chunk.set_cell("ground", at.x & 31, at.y & 31, "base:grass")
+		chunk.set_cell("structure", at.x & 31, at.y & 31, "base:rock")
+		view._rock_flush[at] = false
+	view.terrain = view._new_terrain()
+	view.terrain._cells[a] = 0.0
+	view.terrain._cells[b] = 2.0
+	for corner: Vector2i in [Vector2i(32, 0), Vector2i(32, 1)]:
+		eq(view._rock_top(a, corner), view._rock_top(b, corner), "received neighbors define the same actual cap height")
 
 func test_decks_clear_the_substrate_and_bridge_feet_match_top_triangles() -> void:
 	var c := Chunk.new()

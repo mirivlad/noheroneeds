@@ -1,0 +1,20 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Связанные поверхности скал, сколотые кромки, четыре материала и декоративная осыпь без изменения серверных препятствий и добычи.",
+      "sources": {
+        "src/experiment_3d/rock_cells_3d.gd": "5aa713124048038b8ef40e84dabf01b9c0e909f676302aa734ac5a069dba5e96",
+        "src/experiment_3d/rock.gdshader": "d30e478c2df118cad39ef061334ef5249aabc65bd5879622a918b374a787b860",
+        "src/experiment_3d/world_view_3d.gd": "312a63a7606c24cdf339111f60edbd68aeb69eb4a66ebbd71491835504c3809c"
+      },
+      "mechanics": [
+        "rock-presentation"
+      ],
+      "guides": {
+        "site/content/guides/nature.html": "97022dc3ce2af910f29e54d023bcb002358f26e737d3dc28e5f7cc350d506d1d"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

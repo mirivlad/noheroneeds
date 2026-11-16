@@ -30,11 +30,15 @@ void fragment() {
 		color = mix(vec3(0.19, 0.175, 0.15), vec3(0.28, 0.26, 0.215), smoothstep(-0.7, 0.8, layer));
 		color *= mix(0.82, 1.0, smoothstep(0.03, 0.14, abs(layer - 0.72)));
 	} else if (surface_kind < 1.5) {
-		// Intersecting geological joints, independent of the cell grid.
-		float a = abs(sin(dot(rock_at, vec3(1.8, 0.43, 1.25)) + warp));
-		float b = abs(sin(dot(rock_at, vec3(-0.7, 0.9, 1.3))));
-		float joint = smoothstep(0.035, 0.11, min(a, b));
-		color = vec3(0.19, 0.215, 0.23) * mix(0.70, 1.07, joint);
+		// Bend and interrupt joints: two complete regular families read as paving.
+		float bend = sin(dot(rock_at, vec3(0.31, 0.11, 0.23))) * 0.95
+			+ sin(dot(rock_at, vec3(-0.19, 0.27, 0.41))) * 0.6;
+		float a = abs(sin(dot(rock_at, vec3(1.23, 0.43, 0.81)) + bend));
+		float b = abs(sin(dot(rock_at, vec3(-0.53, 0.9, 1.05)) - bend * 0.75));
+		float broken = smoothstep(-0.15, 0.5, sin(dot(rock_at, vec3(0.23, 0.39, -0.17))));
+		float joint = min(smoothstep(0.025, 0.085, a), mix(1.0, smoothstep(0.018, 0.055, b), broken));
+		float worn_joint = mix(0.85, 0.94, smoothstep(0.55, 0.95, normal.y));
+		color = vec3(0.19, 0.215, 0.23) * mix(worn_joint, 1.04, joint);
 	} else if (surface_kind < 2.5) {
 		// Granite flecks stay subtle; silhouette and facets carry the form.
 		float speck = grain_hash(floor(rock_at * 10.0));

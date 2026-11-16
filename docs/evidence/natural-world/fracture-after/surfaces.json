@@ -1,0 +1,55 @@
+{
+  "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (23.42148, 65.55612, -25.30452)]",
+  "checks": 1,
+  "failures": [],
+  "probes": [
+    {
+      "cell": "(31, -61)",
+      "distance": 52.0279846191406,
+      "ground": "base:snow",
+      "materials": [
+        "res://src/experiment_3d/rock.gdshader"
+      ],
+      "point": "(31.34798, 25.43229, -60.13545)",
+      "screen": "(60.0, 310.0)",
+      "structure": "base:rock"
+    },
+    {
+      "cell": "(30, -57)",
+      "distance": 49.6451454162598,
+      "ground": "base:snow",
+      "materials": [
+        "res://src/experiment_3d/rock.gdshader"
+      ],
+      "point": "(30.4316, 25.5905, -56.5822)",
+      "screen": "(100.0, 390.0)",
+      "structure": "base:rock"
+    },
+    {
+      "cell": "(29, -54)",
+      "distance": 47.6814842224121,
+      "ground": "base:gravel",
+      "materials": [
+        "res://src/experiment_3d/rock.gdshader"
+      ],
+      "point": "(29.87025, 25.73987, -53.54789)",
+      "screen": "(140.0, 455.0)",
+      "structure": "base:rock"
+    },
+    {
+      "cell": "(30, -52)",
+      "distance": 46.7572784423828,
+      "ground": "base:gravel",
+      "materials": [
+        "res://src/experiment_3d/rock.gdshader"
+      ],
+      "point": "(30.09347, 25.71981, -51.66037)",
+      "screen": "(180.0, 490.0)",
+      "structure": "base:rock"
+    }
+  ],
+  "raster": "(960, 540)",
+  "rock_shader_sha256": "9ca0dfd457982f713a77873788f22ec293cebe81590eff9c210efa4161ed8cd3",
+  "scenario_sha256": "767f80f0062fbfb7cf97da3ad5ea62c47a9cf45ee112e4586f58928332781a83",
+  "world_time": 43200000
+}

@@ -13,7 +13,7 @@ func pump(n: int) -> void:
 		await super.pump(1)
 
 func run() -> void:
-	DisplayServer.window_set_size(Vector2i(1280, 720))
+	DisplayServer.window_set_size(Vector2i(960, 540))
 	output = ProjectSettings.globalize_path("res://build/vegetation/before")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--out="): output = arg.trim_prefix("--out=")
@@ -53,6 +53,7 @@ func run() -> void:
 	view = g.view as WorldView3D
 	world = g.game.world
 	world.time_rate = 0
+	g.client.time_rate = 0
 	# Freeze animation for the paired stills; gameplay checks exercise wind below.
 	if view.models.has_method("set_wind"): view.models.call("set_wind", 0.0)
 	g.game.server.wait_for_disk = true
@@ -137,6 +138,8 @@ func check_gather_and_growth(plot: Vector2i) -> void:
 	view.eye.size = 6
 	await capture("berry-harvested")
 	clock += 49 * Daylight.HOUR_MS
+	world.needs._last_time = int(clock)
+	for creature: Creature in world.creatures.creatures.values(): creature.last_time = int(clock)
 	world.world_time = clock
 	world.growth.catch_up("surface", at.x >> 5, at.y >> 5, world.chunk("surface", at.x >> 5, at.y >> 5))
 	await pump(30)
@@ -147,12 +150,12 @@ func check_gather_and_growth(plot: Vector2i) -> void:
 	await capture("berry-restored")
 	# Palette captures use the same server specimen and only the client's clock.
 	for season in 4:
-		g.client.world_time = season * Seasons.SEASON_MS + 12 * Daylight.HOUR_MS
-		view.update_view(1, 0)
-		for i in 200:
-			view.update_view(1, 0)
-			await process_frame
-			if view.pending_chunks() == 0: break
+		clock = season * Seasons.SEASON_MS + 12 * Daylight.HOUR_MS
+		world.needs._last_time = int(clock)
+		for creature: Creature in world.creatures.creatures.values(): creature.last_time = int(clock)
+		g.client.world_time = clock
+		await pump(15)
+		await settle()
 		frame_rect(Rect2i(plot + Vector2i(11, -1), Vector2i(8, 7)))
 		view.eye.size = 10
 		await capture("season-" + str(season))

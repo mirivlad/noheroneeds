@@ -1,0 +1,7 @@
+{
+  "full_run": "full-tests.json",
+  "inputs": 555,
+  "mismatches": [],
+  "sources_unchanged": true,
+  "note": "Fresh final full run includes the fractured-rock material correction."
+}

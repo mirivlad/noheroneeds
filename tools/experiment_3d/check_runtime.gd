@@ -75,13 +75,38 @@ func run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	var profile := output.path_join("profile-" + str(Time.get_unix_time_from_system()).replace(".", "-"))
 	var lib := WorldLibrary.new(profile.path_join("worlds"))
-	var world_id := lib.create("Проверка 3D", {"seed": "431", "starter_kit": true})
-	var prepared := ServerWorld.open(lib.db_path(world_id), ContentRegistry.load_packs(["res://content/base"]), {"seed": 431})
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var plan := WorldPlan.generate(431, "small", "temperate", content)
+	var world_id := lib.create("Проверка 3D", {"seed": "431", "starter_kit": true, "world_plan": plan.to_dict()})
+	var prepared := ServerWorld.open(lib.db_path(world_id), content, {"world_plan": plan.to_dict(), "require_planned": true})
+	if prepared == null:
+		printerr(ServerWorld.open_error)
+		quit(1)
+		return
+	var home := prepared.generator.settlements.home_plan()
+	if home.is_empty():
+		# A planned planet may have nearby villages without the special home
+		# flag. Pick a real generated one before starting asynchronous play.
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				for village: Dictionary in prepared.generator.settlements.villages(0, dx, dy):
+					if home.is_empty() or (village["centre"] as Vector2i).length_squared() < (home["centre"] as Vector2i).length_squared():
+						home = village
+	verify(not home.is_empty(), "a real generated village is available for the action scenario")
+	if home.is_empty():
+		prepared.close()
+		quit(1)
+		return
 	prepared.close()
 	app = App.new()
-	app.configure({"renderer": "3d", "profile_dir": profile, "world": world_id, "time": "10"})
-	root.add_child(app)
+	app.configure({"renderer": "3d", "profile_dir": profile, "world": world_id, "body": "base:human_ro_m", "time": "10"})
+	attach_app()
 	g = app.game
+	if g == null:
+		printerr("The disposable planned world did not join")
+		app.free()
+		quit(1)
+		return
 	g.set_process(false)
 	view = g.view as WorldView3D
 	world = g.game.world
@@ -95,14 +120,13 @@ func run() -> void:
 	await pump(5)
 	g.client.move = Vector2i.ZERO
 	verify(g.client.position != start, "walking through existing movement prediction and server")
-	var home := world.generator.settlements.home_plan()
 	var fire: Vector2i = home["fire"]
 	await move_to(fire + Vector2i(2, 0))
 	view.yaw = .6
 	view.tilt = 49
 	await settle()
 	verify(view._geometry.size() >= 9, "real client chunks built and retained")
-	verify(view._actors.has(g.client.character_id), "own LPC actor in 3D")
+	verify(view._actors.has(g.client.character_id), "own RO actor in 3D")
 	await capture("village")
 	# Drop/pickup travel through GameClient and the authoritative server.
 	var count := int(g.client.inventory().get("base:stone", 0))
@@ -140,7 +164,11 @@ func run() -> void:
 		g._update_hud()
 		await pump(3)
 		var at: Vector2i = tree[0]
-		var picked := hit_at(at, 1)
+		# Aim at the visible crown; a trunk behind a house is correctly occluded.
+		var tree_id := world._part_at("surface", at.x, at.y, "cover")
+		print("GAMEPLAY_MATURE_TREE ", tree_id, " ", at)
+		var tree_height := view.models.mesh_for(tree_id, g.content.get_def(tree_id)).get_aabb().size.y
+		var picked := hit_at(at, tree_height * .7)
 		verify(picked.get("cell") == at and picked.get("layer") == "cover", "3D ray picks natural tree at rotated camera")
 		verify(Actions.primary(g.actions).get("id") == "gather", "existing mouse action resolves 3D tree")
 		var click := InputEventMouseButton.new()
@@ -150,7 +178,7 @@ func run() -> void:
 		click.pressed = false
 		g._mouse(click)
 		await pump(20)
-		for i in 20:
+		for i in 60:
 			r = await request({"type": "gather", "location": "surface", "x": at.x, "y": at.y, "layer": "cover", "item": "base:axe"})
 			await pump(20)
 			if world._part_at("surface", at.x, at.y, "cover") == "base:stump":
@@ -159,13 +187,23 @@ func run() -> void:
 		await settle()
 		verify(view._cell_layer(at, "cover") == "base:stump", "changed client chunk replaces 3D tree with stump")
 		await capture("forest")
-	# Build and use a door on actual free land next to the player.
-	var me := Movement.cell_of(g.client.position)
-	var spot := me
-	for offset: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]:
-		if not world.is_solid("surface", me.x + offset.x, me.y + offset.y):
-			spot = me + offset
-			break
+	# A door needs a real wall frame (ADR-0016), not a standalone tile.
+	world.grant(g.client.character_id, "base:plank", 16)
+	await pump(8)
+	var spot := build_site(Movement.cell_of(g.client.position))
+	verify(spot != Vector2i.MAX, "a legal free construction site exists near the felled tree")
+	if spot == Vector2i.MAX:
+		app.quit()
+		app.free()
+		quit(1)
+		return
+	await move_to(spot + Vector2i.DOWN)
+	await settle()
+	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT]:
+		var jamb := spot + side
+		r = await request({"type": "build", "location": "surface", "x": jamb.x, "y": jamb.y, "part": "base:wood_wall"})
+		verify(r.get("ok", false), "ordinary build creates a wall jamb: " + str(r))
+	await settle()
 	g._blueprint = "base:wood_door"
 	g.mouse_at = (Vector2(spot) + Vector2.ONE * .5) * WorldView.CELL
 	verify(g._build_cell() == spot, "3D blueprint uses picked cell without 2D roof lift")
@@ -176,9 +214,15 @@ func run() -> void:
 	build_click.pressed = false
 	g._mouse(build_click)
 	g._blueprint = ""
-	await pump(8)
+	for i in 120:
+		await pump(1)
+		if world._part_at("surface", spot.x, spot.y, "structure") == "base:wood_door": break
 	verify(world._part_at("surface", spot.x, spot.y, "structure") == "base:wood_door", "existing blueprint mouse clicks build normal door")
 	await settle()
+	# The nearby natural ridge blocks this door at the low tree camera.
+	# Use a normal player-selectable steep angle, without bypassing geometry.
+	view.tilt = 75
+	await pump(3)
 	var door_pick := hit_at(spot, .9)
 	verify(door_pick.get("cell") == spot and door_pick.get("id") == "base:wood_door", "3D ray picks built door")
 	r = await request({"type": "use", "location": "surface", "x": spot.x, "y": spot.y})
@@ -206,8 +250,14 @@ func run() -> void:
 		var picked := hit_at(dug, 1.0)
 		verify(picked.get("cell") == dug and picked.get("kind") == "part", "3D ray picks actual underground rock")
 		var old_part := view._cell_layer(dug, "structure")
-		r = await request({"type": "gather", "location": "depth:-1", "x": dug.x, "y": dug.y, "item": "base:pickaxe"})
-		verify(r.get("ok", false), "normal pickaxe request mines natural wall: " + str(r))
+		var mined := false
+		for i in 30:
+			r = await request({"type": "gather", "location": "depth:-1", "x": dug.x, "y": dug.y, "item": "base:pickaxe"})
+			await pump(25)
+			if world._part_at("depth:-1", dug.x, dug.y, "structure") == "":
+				mined = true
+				break
+		verify(mined, "normal pickaxe work completes the natural wall's required hits")
 		await settle()
 		verify(view._cell_layer(dug, "structure") == "", "3D geometry consumes mined cell update")
 		var remains := false
@@ -244,6 +294,11 @@ func run() -> void:
 	verify(reopened._part_at("depth:-1", dug.x, dug.y, "structure") == "", "mined wall stays absent after save and reopening")
 	reopened.close()
 	var report := {"checks": checks, "failures": failures, "adapter": RenderingServer.get_video_adapter_name(), "renderer": RenderingServer.get_current_rendering_method()}
+	report["scenario_sha256"] = FileAccess.get_sha256(get_script().resource_path)
+	report["sources"] = {}
+	for path: String in ["tools/experiment_3d/check_runtime.gd", "src/experiment_3d/world_view_3d.gd", "src/experiment_3d/model_library_3d.gd", "src/experiment_3d/foliage.gdshader", "src/experiment_3d/rock_cells_3d.gd", "src/experiment_3d/ground.gdshader", "src/experiment_3d/water.gdshader", "src/server/server_world.gd", "src/world/surface_generator.gd", "content/base/underground.json"]:
+		report.sources[path] = FileAccess.get_sha256("res://" + path)
+
 	FileAccess.open(output.path_join("runtime.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "\t"))
 	print("EXPERIMENT_3D_RUNTIME " + JSON.stringify(report))
 	Art.clear()
@@ -255,9 +310,31 @@ func find_part(location: String, from: Vector2i, layer: String, tool: String) ->
 			for dx in range(-radius, radius + 1):
 				var cell := from + Vector2i(dx, dy)
 				var part := world._part_at(location, cell.x, cell.y, layer)
-				if String(g.content.get_def(part).get("gather", {}).get("tool", "")) != tool:
+				var gathering: Dictionary = g.content.get_def(part).get("gather", {})
+				if tool == "chopping" and gathering.get("becomes", "") != "base:stump":
+					continue
+				if String(gathering.get("tool", "")) != tool:
 					continue
 				for d: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN]:
 					if not world.is_solid(location, cell.x + d.x, cell.y + d.y):
 						return [cell, cell + d]
 	return []
+
+
+func build_site(from: Vector2i) -> Vector2i:
+	for radius in range(2, 13):
+		for y in range(-radius, radius + 1):
+			for x in range(-radius, radius + 1):
+				if maxi(absi(x), absi(y)) != radius: continue
+				var at := from + Vector2i(x, y)
+				if world.is_solid("surface", at.x, at.y + 1): continue
+				var clear := true
+				for side: Vector2i in [Vector2i.LEFT, Vector2i.ZERO, Vector2i.RIGHT]:
+					var p := at + side
+					clear = clear and BuildRules.check(g._build_view, g.content, "base:wood_wall", "surface", p.x, p.y, "", g.client.character_id) == ""
+				if clear: return at
+	return Vector2i.MAX
+
+
+func attach_app() -> void:
+	root.add_child(app)

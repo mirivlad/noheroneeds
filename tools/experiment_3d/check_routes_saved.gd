@@ -57,6 +57,9 @@ func run() -> void:
 	await capture("preserved-old-crossing")
 	verify(view._cell_layer(at, "ground") == "base:hanging_bridge", "the client receives the preserved old bridge")
 	var result := {"checks": checks, "failures": failures, "saved_surface_version": expected, "source_sha256": FileAccess.get_sha256(get_script().resource_path)}
+	result["sources"] = {}
+	for path: String in ["src/world/surface_generator.gd", "src/world/settlements.gd", "src/server/creature_sim.gd", "src/experiment_3d/world_view_3d.gd", "src/experiment_3d/model_library_3d.gd", "src/experiment_3d/ground.gdshader", "src/experiment_3d/water.gdshader", "src/experiment_3d/foliage.gdshader"]:
+		result.sources[path] = FileAccess.get_sha256("res://" + path)
 	FileAccess.open(output.path_join("verification.json"), FileAccess.WRITE).store_string(JSON.stringify(result, "  "))
 	app.quit()
 	app.free()

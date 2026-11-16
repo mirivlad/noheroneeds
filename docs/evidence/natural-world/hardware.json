@@ -1,0 +1,15 @@
+{
+  "kernel": "6.5.0-1mx-ahs-amd64",
+  "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+  "logical_cpus": 28,
+  "memtotal": "MemTotal:       32757456 kB",
+  "gpus": {
+    "card0": {
+      "vendor": "0x1002",
+      "device": "0x6fdf",
+      "mem_info_vram_total": "8589934592",
+      "power_dpm_force_performance_level": "auto",
+      "power_dpm_state": "performance"
+    }
+  }
+}

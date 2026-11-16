@@ -1,0 +1,16 @@
+{
+  "cell": [
+    46,
+    -61
+  ],
+  "chunk": [
+    1,
+    -2
+  ],
+  "surface_version": 18,
+  "ground": "base:gravel",
+  "cover": "",
+  "structure": "",
+  "chunk_sha256": "1ab5c877df1f2c268c017530a2c9f8eb694e7b920f671e8a5f0cb93c018b8be3",
+  "reason": "A clear saved cell beside the large fractured rock mass. The initially proposed (47,-61) is blocked in the legacy fixture and is not used."
+}

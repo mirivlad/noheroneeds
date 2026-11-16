@@ -1,0 +1,210 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (22.42148, 66.30612, -25.30452)]",
+  "cases": [
+    {
+      "actors": 6,
+      "case": "original",
+      "chunks": 27,
+      "draw_calls": 3065.0,
+      "max_ms": 12.11,
+      "mean_fps": 106.859615554723,
+      "p50_ms": 9.241,
+      "p95_ms": 10.743,
+      "p99_ms": 11.808,
+      "primitives": 1198358.0,
+      "samples": 360,
+      "sum_ms": 3368.906,
+      "viewport_cpu_ms": {
+        "max_ms": 8.85200023651123,
+        "mean_fps": 153.560754030207,
+        "p50_ms": 6.4210000038147,
+        "p95_ms": 7.65500020980835,
+        "p99_ms": 8.71700000762939,
+        "samples": 360,
+        "sum_ms": 2344.34899902344
+      },
+      "viewport_gpu_ms": {
+        "max_ms": 8.07199954986572,
+        "mean_fps": 172.902275207335,
+        "p50_ms": 5.71999979019165,
+        "p95_ms": 6.9210000038147,
+        "p99_ms": 7.93499994277954,
+        "samples": 360,
+        "sum_ms": 2082.10099935532
+      }
+    },
+    {
+      "actors": 6,
+      "case": "procedural-opaque",
+      "chunks": 27,
+      "draw_calls": 3065.0,
+      "max_ms": 12.073,
+      "mean_fps": 109.093752140207,
+      "p50_ms": 9.077,
+      "p95_ms": 10.326,
+      "p99_ms": 11.027,
+      "primitives": 1198358.0,
+      "samples": 360,
+      "sum_ms": 3299.914,
+      "viewport_cpu_ms": {
+        "max_ms": 8.02499961853027,
+        "mean_fps": 159.894753554358,
+        "p50_ms": 6.16800022125244,
+        "p95_ms": 7.16400003433228,
+        "p99_ms": 7.64499998092651,
+        "samples": 360,
+        "sum_ms": 2251.48100233078
+      },
+      "viewport_gpu_ms": {
+        "max_ms": 7.0149998664856,
+        "mean_fps": 182.488412191216,
+        "p50_ms": 5.44600009918213,
+        "p95_ms": 6.41099977493286,
+        "p99_ms": 6.84299993515015,
+        "samples": 360,
+        "sum_ms": 1972.72799777985
+      }
+    },
+    {
+      "actors": 6,
+      "case": "decor-no-shadows",
+      "chunks": 27,
+      "draw_calls": 3008.0,
+      "max_ms": 12.083,
+      "mean_fps": 108.95590282223,
+      "p50_ms": 9.041,
+      "p95_ms": 10.532,
+      "p99_ms": 11.382,
+      "primitives": 1168010.0,
+      "samples": 360,
+      "sum_ms": 3304.089,
+      "viewport_cpu_ms": {
+        "max_ms": 9.28899955749512,
+        "mean_fps": 157.598065408826,
+        "p50_ms": 6.2350001335144,
+        "p95_ms": 7.40100002288818,
+        "p99_ms": 8.42500019073486,
+        "samples": 360,
+        "sum_ms": 2284.29199981689
+      },
+      "viewport_gpu_ms": {
+        "max_ms": 8.75300025939941,
+        "mean_fps": 176.672029504556,
+        "p50_ms": 5.54099988937378,
+        "p95_ms": 6.83199977874756,
+        "p99_ms": 7.91499996185303,
+        "samples": 360,
+        "sum_ms": 2037.67399406433
+      }
+    },
+    {
+      "actors": 6,
+      "case": "low-foliage-no-shadows",
+      "chunks": 27,
+      "draw_calls": 2694.0,
+      "max_ms": 11.545,
+      "mean_fps": 116.58046189179,
+      "p50_ms": 8.533,
+      "p95_ms": 9.607,
+      "p99_ms": 10.256,
+      "primitives": 703768.0,
+      "samples": 360,
+      "sum_ms": 3087.996,
+      "viewport_cpu_ms": {
+        "max_ms": 7.02600002288818,
+        "mean_fps": 174.377966872673,
+        "p50_ms": 5.70900011062622,
+        "p95_ms": 6.38100004196167,
+        "p99_ms": 6.85799980163574,
+        "samples": 360,
+        "sum_ms": 2064.48100328445
+      },
+      "viewport_gpu_ms": {
+        "max_ms": 6.92399978637695,
+        "mean_fps": 196.626329158212,
+        "p50_ms": 4.97599983215332,
+        "p95_ms": 6.04300022125244,
+        "p99_ms": 6.42899990081787,
+        "samples": 360,
+        "sum_ms": 1830.88399982452
+      }
+    },
+    {
+      "actors": 6,
+      "case": "opaque-and-decor-no-shadows",
+      "chunks": 27,
+      "draw_calls": 3008.0,
+      "max_ms": 12.478,
+      "mean_fps": 108.772765233324,
+      "p50_ms": 8.985,
+      "p95_ms": 10.923,
+      "p99_ms": 11.944,
+      "primitives": 1168010.0,
+      "samples": 360,
+      "sum_ms": 3309.652,
+      "viewport_cpu_ms": {
+        "max_ms": 9.02000045776367,
+        "mean_fps": 156.830558683263,
+        "p50_ms": 6.20800018310547,
+        "p95_ms": 8.04800033569336,
+        "p99_ms": 8.76399993896484,
+        "samples": 360,
+        "sum_ms": 2295.47100400925
+      },
+      "viewport_gpu_ms": {
+        "max_ms": 8.70899963378906,
+        "mean_fps": 174.764832172848,
+        "p50_ms": 5.57399988174438,
+        "p95_ms": 7.16400003433228,
+        "p99_ms": 8.24400043487549,
+        "samples": 360,
+        "sum_ms": 2059.91099882126
+      }
+    },
+    {
+      "actors": 6,
+      "case": "original-repeat",
+      "chunks": 27,
+      "draw_calls": 3065.0,
+      "max_ms": 14.493,
+      "mean_fps": 107.101992632573,
+      "p50_ms": 9.175,
+      "p95_ms": 10.804,
+      "p99_ms": 11.866,
+      "primitives": 1198358.0,
+      "samples": 360,
+      "sum_ms": 3361.282,
+      "viewport_cpu_ms": {
+        "max_ms": 9.0,
+        "mean_fps": 154.319201511571,
+        "p50_ms": 6.3600001335144,
+        "p95_ms": 7.55999994277954,
+        "p99_ms": 8.85499954223633,
+        "samples": 360,
+        "sum_ms": 2332.82700061798
+      },
+      "viewport_gpu_ms": {
+        "max_ms": 8.11299991607666,
+        "mean_fps": 173.948253065818,
+        "p50_ms": 5.71600008010864,
+        "p95_ms": 6.98899984359741,
+        "p99_ms": 7.95800018310547,
+        "samples": 360,
+        "sum_ms": 2069.58100271225
+      }
+    }
+  ],
+  "decor_casters": 56,
+  "failures": [],
+  "low_foliage_casters": 426,
+  "opaque_materials": 35,
+  "raster": "(960, 540)",
+  "scenario_sha256": "e8db045d448a5811fa6f10cc3c6b1c7e52f5bcf9cad9c5b36311492d83e9e5ff",
+  "sources": {
+    "src/experiment_3d/foliage.gdshader": "9c676e63621cf4f9185f93b7d829adc2722670578e783fc0d170c625070c0998",
+    "src/experiment_3d/model_library_3d.gd": "09b5cc3cd806ed3e71367214fc4af8096f447f5fbb25cfd11adf2847aebc073b",
+    "src/experiment_3d/rock.gdshader": "9ca0dfd457982f713a77873788f22ec293cebe81590eff9c210efa4161ed8cd3",
+    "src/experiment_3d/world_view_3d.gd": "68ac909e0545b41f66ea3487ed558c6b6b28cc2d6e6e7bb03ddb4b3af99d91bf"
+  }
+}

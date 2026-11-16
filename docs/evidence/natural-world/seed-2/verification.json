@@ -1,0 +1,519 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "checks": 84,
+  "failures": [],
+  "raster": [
+    960,
+    540
+  ],
+  "scenario_sha256": "6419e7ce1274732bd2d02dc4c87614d9d1769ee2e976ddbbc628c9ac36e6dac5",
+  "scenes": {
+    "dungeon": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-39.07852, 50.55613, 21.19548)]",
+      "cell": [
+        -15,
+        -14
+      ],
+      "location": "depth:-1",
+      "time": 43200000.0
+    },
+    "forest-0": {
+      "biome": "base:forest",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-120.0785, 54.68536, 83.19548)]",
+      "cell": [
+        -96,
+        48
+      ],
+      "chunks": 29,
+      "freezing": false,
+      "ground": "base:moss",
+      "player_cell": [
+        -96,
+        48
+      ],
+      "received_chunk": true,
+      "season": 0,
+      "server_chunk_sha256": "95cc02ed95941d4f0fafc6345f1e67482c5db499f87d27518a1846b87cfae75e",
+      "time": 302400000.0,
+      "warmth": 0.0235294122248888
+    },
+    "forest-1": {
+      "biome": "base:forest",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-120.0785, 54.68536, 83.19548)]",
+      "cell": [
+        -96,
+        48
+      ],
+      "chunks": 29,
+      "freezing": false,
+      "ground": "base:moss",
+      "player_cell": [
+        -96,
+        48
+      ],
+      "received_chunk": true,
+      "season": 1,
+      "server_chunk_sha256": "95cc02ed95941d4f0fafc6345f1e67482c5db499f87d27518a1846b87cfae75e",
+      "time": 907200000.0,
+      "warmth": 0.0235294122248888
+    },
+    "forest-2": {
+      "biome": "base:forest",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-120.0785, 54.68536, 83.19548)]",
+      "cell": [
+        -96,
+        48
+      ],
+      "chunks": 29,
+      "freezing": false,
+      "ground": "base:moss",
+      "player_cell": [
+        -96,
+        48
+      ],
+      "received_chunk": true,
+      "season": 2,
+      "server_chunk_sha256": "95cc02ed95941d4f0fafc6345f1e67482c5db499f87d27518a1846b87cfae75e",
+      "time": 1512000000.0,
+      "warmth": 0.0235294122248888
+    },
+    "forest-3": {
+      "biome": "base:forest",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-120.0785, 54.68536, 83.19548)]",
+      "cell": [
+        -96,
+        48
+      ],
+      "chunks": 29,
+      "freezing": true,
+      "ground": "base:moss",
+      "player_cell": [
+        -96,
+        48
+      ],
+      "received_chunk": true,
+      "season": 3,
+      "server_chunk_sha256": "95cc02ed95941d4f0fafc6345f1e67482c5db499f87d27518a1846b87cfae75e",
+      "time": 2116800000.0,
+      "warmth": 0.0235294122248888
+    },
+    "meadow-0": {
+      "biome": "base:meadow",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-8.078524, 51.91044, 51.19548)]",
+      "cell": [
+        16,
+        16
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:grass",
+      "player_cell": [
+        16,
+        16
+      ],
+      "received_chunk": true,
+      "season": 0,
+      "server_chunk_sha256": "d6cb26ac607e9441e3861f8d81c39c739ace4b044645af11fb8089c9e1dd1d33",
+      "time": 302400000.0,
+      "warmth": 0.109803922474384
+    },
+    "meadow-1": {
+      "biome": "base:meadow",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-8.078524, 51.91044, 51.19548)]",
+      "cell": [
+        16,
+        16
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:grass",
+      "player_cell": [
+        16,
+        16
+      ],
+      "received_chunk": true,
+      "season": 1,
+      "server_chunk_sha256": "d6cb26ac607e9441e3861f8d81c39c739ace4b044645af11fb8089c9e1dd1d33",
+      "time": 907200000.0,
+      "warmth": 0.109803922474384
+    },
+    "meadow-2": {
+      "biome": "base:meadow",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-8.078524, 51.91044, 51.19548)]",
+      "cell": [
+        16,
+        16
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:grass",
+      "player_cell": [
+        16,
+        16
+      ],
+      "received_chunk": true,
+      "season": 2,
+      "server_chunk_sha256": "d6cb26ac607e9441e3861f8d81c39c739ace4b044645af11fb8089c9e1dd1d33",
+      "time": 1512000000.0,
+      "warmth": 0.109803922474384
+    },
+    "meadow-3": {
+      "biome": "base:meadow",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-8.078524, 51.91044, 51.19548)]",
+      "cell": [
+        16,
+        16
+      ],
+      "chunks": 25,
+      "freezing": true,
+      "ground": "base:grass",
+      "player_cell": [
+        16,
+        16
+      ],
+      "received_chunk": true,
+      "season": 3,
+      "server_chunk_sha256": "d6cb26ac607e9441e3861f8d81c39c739ace4b044645af11fb8089c9e1dd1d33",
+      "time": 2116800000.0,
+      "warmth": 0.109803922474384
+    },
+    "mountains-0": {
+      "biome": "base:mountains",
+      "camera": "[X: (0.825336, 0.0, 0.564643), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-80.07852, 68.55612, -380.8045)]",
+      "cell": [
+        -56,
+        -416
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:gravel",
+      "player_cell": [
+        -56,
+        -416
+      ],
+      "received_chunk": true,
+      "season": 0,
+      "server_chunk_sha256": "b4c40a5f839b5da95ee7d8592561418e62fae4dbfb2e5ccd930ff8d3564cb58e",
+      "time": 302400000.0,
+      "warmth": 0.417647063732147
+    },
+    "mountains-1": {
+      "biome": "base:mountains",
+      "camera": "[X: (0.825336, 0.0, 0.564643), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-80.07852, 68.55612, -380.8045)]",
+      "cell": [
+        -56,
+        -416
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:gravel",
+      "player_cell": [
+        -56,
+        -416
+      ],
+      "received_chunk": true,
+      "season": 1,
+      "server_chunk_sha256": "b4c40a5f839b5da95ee7d8592561418e62fae4dbfb2e5ccd930ff8d3564cb58e",
+      "time": 907200000.0,
+      "warmth": 0.417647063732147
+    },
+    "mountains-2": {
+      "biome": "base:mountains",
+      "camera": "[X: (0.825336, 0.0, 0.564643), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-80.07852, 68.55612, -380.8045)]",
+      "cell": [
+        -56,
+        -416
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:gravel",
+      "player_cell": [
+        -56,
+        -416
+      ],
+      "received_chunk": true,
+      "season": 2,
+      "server_chunk_sha256": "b4c40a5f839b5da95ee7d8592561418e62fae4dbfb2e5ccd930ff8d3564cb58e",
+      "time": 1512000000.0,
+      "warmth": 0.417647063732147
+    },
+    "mountains-3": {
+      "biome": "base:mountains",
+      "camera": "[X: (0.825336, 0.0, 0.564643), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-80.07852, 68.55612, -380.8045)]",
+      "cell": [
+        -56,
+        -416
+      ],
+      "chunks": 25,
+      "freezing": true,
+      "ground": "base:gravel",
+      "player_cell": [
+        -56,
+        -416
+      ],
+      "received_chunk": true,
+      "season": 3,
+      "server_chunk_sha256": "b4c40a5f839b5da95ee7d8592561418e62fae4dbfb2e5ccd930ff8d3564cb58e",
+      "time": 2116800000.0,
+      "warmth": 0.417647063732147
+    },
+    "river_bank-0": {
+      "biome": "base:grove",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-260.0785, 52.5594, -8.804523)]",
+      "cell": [
+        -236,
+        -44
+      ],
+      "chunks": 32,
+      "freezing": false,
+      "ground": "base:grass",
+      "player_cell": [
+        -236,
+        -44
+      ],
+      "received_chunk": true,
+      "season": 0,
+      "server_chunk_sha256": "c31ba1f94b3e9b129422b26a083e71609f457642a7075caa162470cdf0c40a1f",
+      "time": 302400000.0,
+      "warmth": 0.201225489377975
+    },
+    "river_bank-1": {
+      "biome": "base:grove",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-260.0785, 52.5594, -8.804523)]",
+      "cell": [
+        -236,
+        -44
+      ],
+      "chunks": 32,
+      "freezing": false,
+      "ground": "base:grass",
+      "player_cell": [
+        -236,
+        -44
+      ],
+      "received_chunk": true,
+      "season": 1,
+      "server_chunk_sha256": "c31ba1f94b3e9b129422b26a083e71609f457642a7075caa162470cdf0c40a1f",
+      "time": 907200000.0,
+      "warmth": 0.201225489377975
+    },
+    "river_bank-2": {
+      "biome": "base:grove",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-260.0785, 52.5594, -8.804523)]",
+      "cell": [
+        -236,
+        -44
+      ],
+      "chunks": 32,
+      "freezing": false,
+      "ground": "base:grass",
+      "player_cell": [
+        -236,
+        -44
+      ],
+      "received_chunk": true,
+      "season": 2,
+      "server_chunk_sha256": "c31ba1f94b3e9b129422b26a083e71609f457642a7075caa162470cdf0c40a1f",
+      "time": 1512000000.0,
+      "warmth": 0.201225489377975
+    },
+    "river_bank-3": {
+      "biome": "base:grove",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-260.0785, 52.5594, -8.804523)]",
+      "cell": [
+        -236,
+        -44
+      ],
+      "chunks": 32,
+      "freezing": true,
+      "ground": "base:grass",
+      "player_cell": [
+        -236,
+        -44
+      ],
+      "received_chunk": true,
+      "season": 3,
+      "server_chunk_sha256": "c31ba1f94b3e9b129422b26a083e71609f457642a7075caa162470cdf0c40a1f",
+      "time": 2116800000.0,
+      "warmth": 0.201225489377975
+    },
+    "steppe-0": {
+      "biome": "base:steppe",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (15.92148, 55.20438, -252.8045)]",
+      "cell": [
+        40,
+        -288
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:grass_dead",
+      "player_cell": [
+        40,
+        -288
+      ],
+      "received_chunk": true,
+      "season": 0,
+      "server_chunk_sha256": "5585e37fcceeef52aca749a1f420311320ccf74d3bb7a074ff0b77286a21050e",
+      "time": 302400000.0,
+      "warmth": 0.460784316062927
+    },
+    "steppe-1": {
+      "biome": "base:steppe",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (15.92148, 55.20438, -252.8045)]",
+      "cell": [
+        40,
+        -288
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:grass_dead",
+      "player_cell": [
+        40,
+        -288
+      ],
+      "received_chunk": true,
+      "season": 1,
+      "server_chunk_sha256": "5585e37fcceeef52aca749a1f420311320ccf74d3bb7a074ff0b77286a21050e",
+      "time": 907200000.0,
+      "warmth": 0.460784316062927
+    },
+    "steppe-2": {
+      "biome": "base:steppe",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (15.92148, 55.20438, -252.8045)]",
+      "cell": [
+        40,
+        -288
+      ],
+      "chunks": 25,
+      "freezing": false,
+      "ground": "base:grass_dead",
+      "player_cell": [
+        40,
+        -288
+      ],
+      "received_chunk": true,
+      "season": 2,
+      "server_chunk_sha256": "5585e37fcceeef52aca749a1f420311320ccf74d3bb7a074ff0b77286a21050e",
+      "time": 1512000000.0,
+      "warmth": 0.460784316062927
+    },
+    "steppe-3": {
+      "biome": "base:steppe",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (15.92148, 55.20438, -252.8045)]",
+      "cell": [
+        40,
+        -288
+      ],
+      "chunks": 25,
+      "freezing": true,
+      "ground": "base:grass_dead",
+      "player_cell": [
+        40,
+        -288
+      ],
+      "received_chunk": true,
+      "season": 3,
+      "server_chunk_sha256": "5585e37fcceeef52aca749a1f420311320ccf74d3bb7a074ff0b77286a21050e",
+      "time": 2116800000.0,
+      "warmth": 0.460784316062927
+    },
+    "swamp-0": {
+      "biome": "base:swamp",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-236.0785, 51.22883, 7.195477)]",
+      "cell": [
+        -212,
+        -28
+      ],
+      "chunks": 32,
+      "freezing": false,
+      "ground": "base:moss",
+      "player_cell": [
+        -212,
+        -28
+      ],
+      "received_chunk": true,
+      "season": 0,
+      "server_chunk_sha256": "4822484d76ac368bb644887b97d219cd948c46143487c59b27fa87e23102225e",
+      "time": 302400000.0,
+      "warmth": 0.177573531866074
+    },
+    "swamp-1": {
+      "biome": "base:swamp",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-236.0785, 51.22883, 7.195477)]",
+      "cell": [
+        -212,
+        -28
+      ],
+      "chunks": 32,
+      "freezing": false,
+      "ground": "base:moss",
+      "player_cell": [
+        -212,
+        -28
+      ],
+      "received_chunk": true,
+      "season": 1,
+      "server_chunk_sha256": "4822484d76ac368bb644887b97d219cd948c46143487c59b27fa87e23102225e",
+      "time": 907200000.0,
+      "warmth": 0.177573531866074
+    },
+    "swamp-2": {
+      "biome": "base:swamp",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-236.0785, 51.22883, 7.195477)]",
+      "cell": [
+        -212,
+        -28
+      ],
+      "chunks": 32,
+      "freezing": false,
+      "ground": "base:moss",
+      "player_cell": [
+        -212,
+        -28
+      ],
+      "received_chunk": true,
+      "season": 2,
+      "server_chunk_sha256": "4822484d76ac368bb644887b97d219cd948c46143487c59b27fa87e23102225e",
+      "time": 1512000000.0,
+      "warmth": 0.177573531866074
+    },
+    "swamp-3": {
+      "biome": "base:swamp",
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-236.0785, 51.22883, 7.195477)]",
+      "cell": [
+        -212,
+        -28
+      ],
+      "chunks": 32,
+      "freezing": true,
+      "ground": "base:moss",
+      "player_cell": [
+        -212,
+        -28
+      ],
+      "received_chunk": true,
+      "season": 3,
+      "server_chunk_sha256": "4822484d76ac368bb644887b97d219cd948c46143487c59b27fa87e23102225e",
+      "time": 2116800000.0,
+      "warmth": 0.177573531866074
+    }
+  },
+  "seed": 2,
+  "sources": {
+    "assets/experiment_3d/catalog.json": "fc6f9280aee0ffb28c0cab37542bcba9338caaa45d51a68f42f071387b80eb0c",
+    "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd",
+    "src/experiment_3d/foliage.gdshader": "9c676e63621cf4f9185f93b7d829adc2722670578e783fc0d170c625070c0998",
+    "src/experiment_3d/ground.gdshader": "3ea753d20145ae8bae734dc04b889caee15a6e545878dbeab2a3a2390d6534ae",
+    "src/experiment_3d/mineral_meshes_3d.gd": "f844c537d2896d22c3cf29364604c1e59c885fd0766cc68ed95aab480ce54726",
+    "src/experiment_3d/model_library_3d.gd": "09b5cc3cd806ed3e71367214fc4af8096f447f5fbb25cfd11adf2847aebc073b",
+    "src/experiment_3d/plant_meshes_3d.gd": "d694c683e136d8640e5bf3ecd7b1334cbaaa836862f962a6ef7ee6fb92f03c5b",
+    "src/experiment_3d/rock_cells_3d.gd": "5aa713124048038b8ef40e84dabf01b9c0e909f676302aa734ac5a069dba5e96",
+    "src/experiment_3d/terrain_shape_3d.gd": "072a097c2836b6b1d5ae92fabcc16f97cd81da3f5f0d37a14ac1115058cd999f",
+    "src/experiment_3d/water.gdshader": "59ee6772a1fb2bde637215fcda5cd67100ffe5b22c792ea2c574dd60d1c3a233",
+    "src/experiment_3d/world_view_3d.gd": "68ac909e0545b41f66ea3487ed558c6b6b28cc2d6e6e7bb03ddb4b3af99d91bf",
+    "src/presentation/weather_view.gd": "de2757f8a87f120ab0c4c55670bb74a1a0c6d4eddc5cddde8989dd7d56ce0cb1",
+    "src/server/creature_sim.gd": "0205132b6e580761a6a5bd846148f3c450e430b055421e73b870c1b0965992fa",
+    "src/world/settlements.gd": "f4230973e1c2bedd31f816e043dd26c72c15066578cd4da58d5bff95cfebd835",
+    "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957"
+  }
+}

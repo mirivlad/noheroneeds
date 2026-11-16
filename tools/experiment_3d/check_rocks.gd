@@ -49,7 +49,7 @@ func run() -> void:
 	prepared.close()
 	app = App.new()
 	app.configure({"profile_dir": profile, "world": wid, "body": "base:human_ro_m", "time": "12", "weather": "clear"})
-	root.add_child(app)
+	attach_app()
 	root.min_size = Vector2i(960, 540)
 	root.max_size = Vector2i(960, 540)
 	root.size = Vector2i(960, 540)
@@ -145,8 +145,7 @@ func mine_edge(at: Vector2i) -> void:
 	g._update_hud()
 	await pump(8)
 	var point := Vector2(at) + Vector2.ONE * .5
-	g.mouse_at = view.screen_point(view.eye.unproject_position(Vector3(point.x, view.elevation(point) + .6, point.y)) / view._pixel)
-	g._update_target()
+	aim_at(Vector3(point.x, view.elevation(point) + .6, point.y))
 	verify(g.target.get("cell") == at and g.target.get("layer") == "structure", "cursor selects the rock at the actual chunk boundary")
 	var mined := false
 	for i in 30:
@@ -190,3 +189,10 @@ func material_swatches(plot: Vector2i) -> void:
 			replacement.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 			replacement.surface_set_material(0, view.buildings.rock)
 			(node as MeshInstance3D).mesh = replacement
+
+func attach_app() -> void:
+	root.add_child(app)
+
+func aim_at(point: Vector3) -> void:
+	g.mouse_at = view.screen_point(view.eye.unproject_position(point) / view._pixel)
+	g._update_target()

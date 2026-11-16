@@ -1,0 +1,30 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.6 (Core Profile) Mesa 26.1.4-1~mx25ahs - Compatibility - Using Device: AMD - AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)
+
+PASS old world joins through the real client
+PASS saved recipe reaches simulation, loader and rendering
+PASS opening did not upgrade saved metadata
+PASS the original visited crossing chunk exists in the save
+PASS saved bridge remains authoritative
+PASS test crossing starts in unexplored territory
+PASS saved recipe still predicts its old distant bridge
+PASS new worlds would use a different route decision here
+PASS unexplored old land is generated with its saved recipe
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.504,"chunks":1,"fps":6.46139898147245,"location":"surface","objects":453,"renderer":"gl_compatibility","worst_frame_ms":38465.806}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.786,"chunks":2,"fps":94.646001868943,"location":"surface","objects":752,"renderer":"gl_compatibility","worst_frame_ms":87.081}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.916,"chunks":6,"fps":96.9128414360545,"location":"surface","objects":1584,"renderer":"gl_compatibility","worst_frame_ms":198.643}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.585,"chunks":7,"fps":85.0089542765171,"location":"surface","objects":2337,"renderer":"gl_compatibility","worst_frame_ms":174.56}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.839,"chunks":8,"fps":91.0119896161387,"location":"surface","objects":2546,"renderer":"gl_compatibility","worst_frame_ms":92.596}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.638,"chunks":8,"fps":95.8609785744322,"location":"surface","objects":2546,"renderer":"gl_compatibility","worst_frame_ms":101.122}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.873,"chunks":10,"fps":95.9107492931377,"location":"surface","objects":2815,"renderer":"gl_compatibility","worst_frame_ms":74.66}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.592,"chunks":10,"fps":97.1830205713778,"location":"surface","objects":2815,"renderer":"gl_compatibility","worst_frame_ms":86.754}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.683,"chunks":11,"fps":100.817190540793,"location":"surface","objects":3363,"renderer":"gl_compatibility","worst_frame_ms":74.912}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.556,"chunks":14,"fps":101.589847246119,"location":"surface","objects":3841,"renderer":"gl_compatibility","worst_frame_ms":71.211}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.809,"chunks":14,"fps":98.0025447994133,"location":"surface","objects":3841,"renderer":"gl_compatibility","worst_frame_ms":65.916}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":10.149,"chunks":15,"fps":96.5511603679372,"location":"surface","objects":4865,"renderer":"gl_compatibility","worst_frame_ms":96.205}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.665,"chunks":18,"fps":88.0128287499186,"location":"surface","objects":5807,"renderer":"gl_compatibility","worst_frame_ms":351.883}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":8.578,"chunks":22,"fps":113.43540250851,"location":"surface","objects":6432,"renderer":"gl_compatibility","worst_frame_ms":66.587}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":5.201,"chunks":22,"fps":100.365296223154,"location":"surface","objects":6432,"renderer":"gl_compatibility","worst_frame_ms":60.253}
+EXPERIMENT_3D {"adapter":"AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)","build_ms":4.534,"chunks":24,"fps":112.093716325179,"location":"surface","objects":7570,"renderer":"gl_compatibility","worst_frame_ms":82.586}
+PASS all expected chunks received and native geometry settled
+PASS the client receives the preserved old bridge

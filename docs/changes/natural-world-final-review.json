@@ -1,0 +1,18 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Финальная визуальная проверка обнаружила рисунок плитки на больших скальных площадках; трещины стали изогнутыми, прерывистыми и менее контрастными без изменения геометрии и серверных правил.",
+      "sources": {
+        "src/experiment_3d/rock.gdshader": "9ca0dfd457982f713a77873788f22ec293cebe81590eff9c210efa4161ed8cd3"
+      },
+      "mechanics": [
+        "rock-presentation"
+      ],
+      "guides": {
+        "site/content/guides/nature.html": "3a43c90f3bca4b45a038fb3880b6f6344871c527342aa0584f7862959226601b"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

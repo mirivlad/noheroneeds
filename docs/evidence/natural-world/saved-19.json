@@ -1,0 +1,16 @@
+{
+  "checks": 11,
+  "failures": [],
+  "saved_surface_version": 19,
+  "source_sha256": "38447e88066a738f86865f9343e09b204f5df344d024f712de72c6d200351bd6",
+  "sources": {
+    "src/experiment_3d/foliage.gdshader": "9c676e63621cf4f9185f93b7d829adc2722670578e783fc0d170c625070c0998",
+    "src/experiment_3d/ground.gdshader": "3ea753d20145ae8bae734dc04b889caee15a6e545878dbeab2a3a2390d6534ae",
+    "src/experiment_3d/model_library_3d.gd": "09b5cc3cd806ed3e71367214fc4af8096f447f5fbb25cfd11adf2847aebc073b",
+    "src/experiment_3d/water.gdshader": "59ee6772a1fb2bde637215fcda5cd67100ffe5b22c792ea2c574dd60d1c3a233",
+    "src/experiment_3d/world_view_3d.gd": "68ac909e0545b41f66ea3487ed558c6b6b28cc2d6e6e7bb03ddb4b3af99d91bf",
+    "src/server/creature_sim.gd": "0205132b6e580761a6a5bd846148f3c450e430b055421e73b870c1b0965992fa",
+    "src/world/settlements.gd": "f4230973e1c2bedd31f816e043dd26c72c15066578cd4da58d5bff95cfebd835",
+    "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957"
+  }
+}

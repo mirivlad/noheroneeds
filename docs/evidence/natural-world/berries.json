@@ -1,0 +1,27 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "checks": 18,
+  "failures": [],
+  "frame_p50_ms": 0.0,
+  "frame_p95_ms": 0.0,
+  "frame_worst_ms": 0.0,
+  "home": "(0, 0)",
+  "logical_size": "(960, 540)",
+  "meadow": "(24, 24)",
+  "plot": "(48, 16)",
+  "raster_size": "(960, 540)",
+  "renderer": "gl_compatibility",
+  "scenario_sha256": "94e5df66d935e650b60b5826571e0432c74c039822b4b13342fce49a10ccf8fe",
+  "seed": 431,
+  "sources": {
+    "assets/experiment_3d/catalog.json": "fc6f9280aee0ffb28c0cab37542bcba9338caaa45d51a68f42f071387b80eb0c",
+    "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd",
+    "src/app/game_settings.gd": "a1fb7114507cecc96d6576c17f9a60a3d3d54ff035806439869ec5c597c2dfe2",
+    "src/experiment_3d/foliage.gdshader": "9c676e63621cf4f9185f93b7d829adc2722670578e783fc0d170c625070c0998",
+    "src/experiment_3d/model_library_3d.gd": "09b5cc3cd806ed3e71367214fc4af8096f447f5fbb25cfd11adf2847aebc073b",
+    "src/experiment_3d/plant_meshes_3d.gd": "d694c683e136d8640e5bf3ecd7b1334cbaaa836862f962a6ef7ee6fb92f03c5b",
+    "src/experiment_3d/world_view_3d.gd": "68ac909e0545b41f66ea3487ed558c6b6b28cc2d6e6e7bb03ddb4b3af99d91bf"
+  },
+  "static_memory_bytes": 445205419,
+  "world_time": 1857600000.0
+}

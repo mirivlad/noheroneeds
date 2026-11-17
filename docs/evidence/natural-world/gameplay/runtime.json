@@ -6,12 +6,12 @@
 	"scenario_sha256": "e73d5ad66cefb1dbfc33cf197d1fdf2d5be6328b70ac5cdac2f76d3ab82238c1",
 	"sources": {
 		"content/base/underground.json": "61613107a9c1294cec370b3e5268926719c42bc598f43ecc6e4541d3e7961316",
-		"src/experiment_3d/foliage.gdshader": "9c676e63621cf4f9185f93b7d829adc2722670578e783fc0d170c625070c0998",
+		"src/experiment_3d/foliage.gdshader": "f48eebcd8fa70f7f5ea33147fe71dba61110b536fa515301bb67b7f613c20a2c",
 		"src/experiment_3d/ground.gdshader": "3ea753d20145ae8bae734dc04b889caee15a6e545878dbeab2a3a2390d6534ae",
 		"src/experiment_3d/model_library_3d.gd": "09b5cc3cd806ed3e71367214fc4af8096f447f5fbb25cfd11adf2847aebc073b",
-		"src/experiment_3d/rock_cells_3d.gd": "5aa713124048038b8ef40e84dabf01b9c0e909f676302aa734ac5a069dba5e96",
+		"src/experiment_3d/rock_cells_3d.gd": "aea1c12b1a6c2002360a127384ef1081945ce7a29bb79c61bc714eacbd803dc8",
 		"src/experiment_3d/water.gdshader": "59ee6772a1fb2bde637215fcda5cd67100ffe5b22c792ea2c574dd60d1c3a233",
-		"src/experiment_3d/world_view_3d.gd": "68ac909e0545b41f66ea3487ed558c6b6b28cc2d6e6e7bb03ddb4b3af99d91bf",
+		"src/experiment_3d/world_view_3d.gd": "69331329792f4c4b2f4f7871271ee0c8c68585d47594c60bac34934f7a967bb8",
 		"src/server/server_world.gd": "7d0313478fa28e72517200fb50d70da57402c3e9e3eb4892c1c204991c784cf3",
 		"src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
 		"tools/experiment_3d/check_runtime.gd": "bc64a4a033e3a6f1d8b27e32572cb7d7ccc850f9a5ec8d40b7051e2799452f40"

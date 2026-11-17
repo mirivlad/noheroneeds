@@ -1,0 +1,6 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS test_world_view_3d::test_direct_rock_geometry_keeps_picking_triangles_aligned_with_targets (1755 ms)
+expected engine errors: 0
+
+1 tests, 0 failed checks, 3.0s

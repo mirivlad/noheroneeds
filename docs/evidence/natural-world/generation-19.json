@@ -1,0 +1,644 @@
+{
+  "scenario_sha256": "450dfe2d05b3560a6dc31969f89d6333e838fe1f89ed496f211008cddecb0255",
+  "sources": {
+    "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd",
+    "src/world/bridge_routes.gd": "c6b53eeaf8d9672e55c9743d0e9ac3c19362f955077255c86a1ea12c38811fa2",
+    "src/world/hospitality_plans.gd": "0dbb233274351014873862fef37b038d80072e7b129a256299b7aa0b52f98e75",
+    "src/world/settlements.gd": "f4230973e1c2bedd31f816e043dd26c72c15066578cd4da58d5bff95cfebd835",
+    "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
+    "src/world/world_plan.gd": "ecf5c0c7ba3f51efbe6ddff54c92fb272d5833079e8a75297bc4d541776e62c1"
+  },
+  "surface_version": 19,
+  "worlds": {
+    "2": {
+      "chunks": [
+        {
+          "chunk": [
+            0,
+            0
+          ],
+          "cpu_ms": 12188.98,
+          "sha256": "eda6d5bf69faabbfffa2a71f6d4a281fe43f1af93a51e50f3e6bb28a6e24cf8c"
+        },
+        {
+          "chunk": [
+            0,
+            -1
+          ],
+          "cpu_ms": 87.632,
+          "sha256": "22927ba804a69a73770db9868d89a287ff244d07bd1a5e128c29bfe372689cc9"
+        },
+        {
+          "chunk": [
+            -1,
+            0
+          ],
+          "cpu_ms": 89.987,
+          "sha256": "8e6b2595b14d94ccb7126364454a8cb33ab043577bf5ba171aaf8efa9042e1d2"
+        },
+        {
+          "chunk": [
+            1,
+            0
+          ],
+          "cpu_ms": 12.828,
+          "sha256": "b29ae6f93556be1c157623a7e8afe4250008f874d8137b0cfca7dfe5662a9e2b"
+        },
+        {
+          "chunk": [
+            0,
+            1
+          ],
+          "cpu_ms": 26.813,
+          "sha256": "c03e4dca8a31229448dde39be6d7a1ce57a779b3ae7f179e61c7b91eea335dc4"
+        },
+        {
+          "chunk": [
+            -1,
+            -1
+          ],
+          "cpu_ms": 95.025,
+          "sha256": "e2e87bb9e3df2ab3912279ad0b0acbd3d2f1746a35e15120a41b041e1ace0977"
+        },
+        {
+          "chunk": [
+            1,
+            -1
+          ],
+          "cpu_ms": 68.599,
+          "sha256": "e6fced1fca1a5a4f44a5b1e79e614ee0f59a6cc339cc5bf82c102d6b94adde89"
+        },
+        {
+          "chunk": [
+            -1,
+            1
+          ],
+          "cpu_ms": 66.054,
+          "sha256": "9c482a92848f1e40173151d749b6e5be68717379cba611fd51f5601e6091788d"
+        },
+        {
+          "chunk": [
+            1,
+            1
+          ],
+          "cpu_ms": 15.641,
+          "sha256": "76299cc4e56ee67ec6ef5f35531d0f2c9477d45798440ba1b5a1734cbaa38928"
+        },
+        {
+          "chunk": [
+            0,
+            -2
+          ],
+          "cpu_ms": 69.924,
+          "sha256": "7e5b5b86f2aa0deabd773adc7a5f9c95b81e16bd55167b50fd53484e3319fb34"
+        },
+        {
+          "chunk": [
+            -2,
+            0
+          ],
+          "cpu_ms": 93.549,
+          "sha256": "7238c621e2e79b3205479113c49558331d2d67ddd9e26fdfd2a130c8afa91196"
+        },
+        {
+          "chunk": [
+            2,
+            0
+          ],
+          "cpu_ms": 17.977,
+          "sha256": "c8d12e710004ebf73147f5fcab312ef07f23d41ede7f1d2848338e8013dbf75f"
+        },
+        {
+          "chunk": [
+            0,
+            2
+          ],
+          "cpu_ms": 12.185,
+          "sha256": "13a9e40960ac35b94617b8d4afc3eed071790789614d36af260e7ba16e7a9049"
+        },
+        {
+          "chunk": [
+            -1,
+            -2
+          ],
+          "cpu_ms": 40.388,
+          "sha256": "67fde0b621b092c7bcf4ed81225c974226469d6bff115f32df6530d53cc89836"
+        },
+        {
+          "chunk": [
+            1,
+            -2
+          ],
+          "cpu_ms": 83.796,
+          "sha256": "e682f71b654fec709176359b8d3162b8e053f31acb1dc6549712389097762105"
+        },
+        {
+          "chunk": [
+            -2,
+            -1
+          ],
+          "cpu_ms": 94.444,
+          "sha256": "f36b9708bdd3ae6d74a16225189d005739e474bd2494d4eb1568ae569d660902"
+        },
+        {
+          "chunk": [
+            2,
+            -1
+          ],
+          "cpu_ms": 33.002,
+          "sha256": "1a919b60daf14eb34713d9a195d334cfd80e5c9e5ff2a327bfb66c05250317ea"
+        },
+        {
+          "chunk": [
+            -2,
+            1
+          ],
+          "cpu_ms": 85.708,
+          "sha256": "1f1dc4445643f66be2cffe7c364ea41488f165a27874e3defbe2fe52a517eaeb"
+        },
+        {
+          "chunk": [
+            2,
+            1
+          ],
+          "cpu_ms": 25.12,
+          "sha256": "6d5b28aba8458aff71b8bfcfbd8237d59613c1d8c5b83e3359d6b03c089debc2"
+        },
+        {
+          "chunk": [
+            -1,
+            2
+          ],
+          "cpu_ms": 14.847,
+          "sha256": "e24cf74d9d797ac27ec51b984876a03be83e59a5717b4fe5882c7f59798e5c96"
+        },
+        {
+          "chunk": [
+            1,
+            2
+          ],
+          "cpu_ms": 12.224,
+          "sha256": "623645d5af39c928f912fd7c2bc385c7274982c366aca2d00aa8dabb1d8abd42"
+        },
+        {
+          "chunk": [
+            -2,
+            -2
+          ],
+          "cpu_ms": 61.638,
+          "sha256": "d657b715d4c6863232f256c746f207065b7275c7a3f9ee38e610f7aeac19c82e"
+        },
+        {
+          "chunk": [
+            2,
+            -2
+          ],
+          "cpu_ms": 88.258,
+          "sha256": "57d11ca8db60533b149f718aaea0fb40ebd3ae1343a6444b5d608c36b6d610d0"
+        },
+        {
+          "chunk": [
+            -2,
+            2
+          ],
+          "cpu_ms": 71.092,
+          "sha256": "dcc6d8841ff760c80b2fb5a71ad4e7109ef339baaffa719043a02f7a7ebc0a6d"
+        },
+        {
+          "chunk": [
+            2,
+            2
+          ],
+          "cpu_ms": 12.54,
+          "sha256": "13b42bfadcd36caaa375294f0d0f10f0c92e2419443b4f4cbbe7f618ec500ab5"
+        }
+      ],
+      "max_ms": 12188.98,
+      "p50_ms": 66.054,
+      "p95_ms": 95.025,
+      "plan_ms": 1987.789,
+      "plan_sha256": "543956d4fadb4fdbcb1b2c767db4c7c6d3c6a5eb26b7d0b0bade8feb13325c07",
+      "total_cpu_ms": 13468.251
+    },
+    "431": {
+      "chunks": [
+        {
+          "chunk": [
+            0,
+            0
+          ],
+          "cpu_ms": 32633.281,
+          "sha256": "76e3d608e4967aa24eb31972bc4655781fe23344afd60e58dff44ba788ac705e"
+        },
+        {
+          "chunk": [
+            0,
+            -1
+          ],
+          "cpu_ms": 97.634,
+          "sha256": "396e25c6a90caa597239cf55643e693c7fb069f0c9201948c70c06392bd065a3"
+        },
+        {
+          "chunk": [
+            -1,
+            0
+          ],
+          "cpu_ms": 56.957,
+          "sha256": "d1dad85f992c5b61eb8b0538b3529ec0abae48a5134e76e6939732bdc5c29c1f"
+        },
+        {
+          "chunk": [
+            1,
+            0
+          ],
+          "cpu_ms": 85.449,
+          "sha256": "4395f8810b2336e1ba089d651aa8e8b4cf3307fdccd5af7c6ce961ebd38313d8"
+        },
+        {
+          "chunk": [
+            0,
+            1
+          ],
+          "cpu_ms": 13.085,
+          "sha256": "a5ddf2777b788b8b840ece3f3c6a036e66c75afa880c169297a9e7461b5cd3d2"
+        },
+        {
+          "chunk": [
+            -1,
+            -1
+          ],
+          "cpu_ms": 93.417,
+          "sha256": "2490e978fbc816cd827ed9a5afa3ae6d53ab0705c33be663d6d2c70f8ec41217"
+        },
+        {
+          "chunk": [
+            1,
+            -1
+          ],
+          "cpu_ms": 109.085,
+          "sha256": "021acb9b4b086623ba789736744a3bca79d5e65e4270d786bf6e8e9179c28731"
+        },
+        {
+          "chunk": [
+            -1,
+            1
+          ],
+          "cpu_ms": 18.22,
+          "sha256": "b14f607e9ace60234888de918a9130395e78c97901b15a786f016734aae0c6c1"
+        },
+        {
+          "chunk": [
+            1,
+            1
+          ],
+          "cpu_ms": 15.333,
+          "sha256": "2e1e7c04502c3d341578b63def2f1cf5080dfb86cce8adf42ebc3fa357d83222"
+        },
+        {
+          "chunk": [
+            0,
+            -2
+          ],
+          "cpu_ms": 86.231,
+          "sha256": "1d5b17fdb45ef8e2bb2f49ae80793187cced2877454fbd7af66481060da70566"
+        },
+        {
+          "chunk": [
+            -2,
+            0
+          ],
+          "cpu_ms": 90.607,
+          "sha256": "bceb41eb7c73621db0024ebb730578feaf9561f702f765d43e2585927c0d800c"
+        },
+        {
+          "chunk": [
+            2,
+            0
+          ],
+          "cpu_ms": 16.188,
+          "sha256": "fce283e2ae54b3d24c8af1baff241e22f9aa10d1132de1f17a12be4f71577f76"
+        },
+        {
+          "chunk": [
+            0,
+            2
+          ],
+          "cpu_ms": 15.163,
+          "sha256": "cb93feea0acb45b688dcb9d37adb25a53a121606b8565ab3478064858352f1e4"
+        },
+        {
+          "chunk": [
+            -1,
+            -2
+          ],
+          "cpu_ms": 83.859,
+          "sha256": "55e97dd2d10d20c59718bdbecf387f60c8a9a90d8ba55ebb5162c85f7cba8d8c"
+        },
+        {
+          "chunk": [
+            1,
+            -2
+          ],
+          "cpu_ms": 96.45,
+          "sha256": "82dd57e1dee1c9b099e3908749d35bff7385959ce800d589b16e5a783a349bf1"
+        },
+        {
+          "chunk": [
+            -2,
+            -1
+          ],
+          "cpu_ms": 92.909,
+          "sha256": "6537d8930f7d61c82db58edb0542d402dbead7a587265c4c04ca31198ccc9571"
+        },
+        {
+          "chunk": [
+            2,
+            -1
+          ],
+          "cpu_ms": 87.911,
+          "sha256": "0c15262a9e6b31bb2f3dc37a33abca58bbe86944001e3304b67206ee272805e5"
+        },
+        {
+          "chunk": [
+            -2,
+            1
+          ],
+          "cpu_ms": 89.528,
+          "sha256": "cdde53b39c719ad537449a6257bedf4e87dfce59db14ab261a1507000e0134c4"
+        },
+        {
+          "chunk": [
+            2,
+            1
+          ],
+          "cpu_ms": 18.554,
+          "sha256": "241d56527adbf58965e63c81cc7493887eb4454e3943c5369d904f6980b9c547"
+        },
+        {
+          "chunk": [
+            -1,
+            2
+          ],
+          "cpu_ms": 12.455,
+          "sha256": "af532175a2995552be38fb9187afdc9df50565b79cc77ebc40e29ebf13a305a3"
+        },
+        {
+          "chunk": [
+            1,
+            2
+          ],
+          "cpu_ms": 19.379,
+          "sha256": "3e3c333e5347cc26eb16344fc5cd1c8a0a7c3c77c455ed666c18c0ea3f10c997"
+        },
+        {
+          "chunk": [
+            -2,
+            -2
+          ],
+          "cpu_ms": 79.068,
+          "sha256": "e54a95e3b9d85e09caf0be5e5504436e800c39850be4a484a1fb87bead6ba8ea"
+        },
+        {
+          "chunk": [
+            2,
+            -2
+          ],
+          "cpu_ms": 85.028,
+          "sha256": "2308414e09bd13bef41473294cc58068c1ac91e2968af24469ad4ce9deadb380"
+        },
+        {
+          "chunk": [
+            -2,
+            2
+          ],
+          "cpu_ms": 94.927,
+          "sha256": "008d9120b45920af46ce1b6aad542e3b66560f924cb9da64c294a6cc970cc9bf"
+        },
+        {
+          "chunk": [
+            2,
+            2
+          ],
+          "cpu_ms": 13.335,
+          "sha256": "b357c3d4689f739fa5686502d90dc2aac4e6172821abd9f752694b215ea4fead"
+        }
+      ],
+      "max_ms": 32633.281,
+      "p50_ms": 85.028,
+      "p95_ms": 109.085,
+      "plan_ms": 1905.199,
+      "plan_sha256": "054515dc5274f81c00b7383b2b46420c17e3761dad88bcbe22d0b57dc0121036",
+      "total_cpu_ms": 34104.053
+    },
+    "991": {
+      "chunks": [
+        {
+          "chunk": [
+            0,
+            0
+          ],
+          "cpu_ms": 26507.019,
+          "sha256": "06ae501229cbcef0aca0a40bb2fe552d1cb92f8bd90613f4cee098e92ddce318"
+        },
+        {
+          "chunk": [
+            0,
+            -1
+          ],
+          "cpu_ms": 87.763,
+          "sha256": "83fc102f297c30601074651d8a10bdcc25c6ed818cf026068f93d04516fc5067"
+        },
+        {
+          "chunk": [
+            -1,
+            0
+          ],
+          "cpu_ms": 86.894,
+          "sha256": "57e039419646987aea1a1a912069c8ce9812c64e21577f6ea5c23dbeb0b346f0"
+        },
+        {
+          "chunk": [
+            1,
+            0
+          ],
+          "cpu_ms": 61.818,
+          "sha256": "9efbd79fb2aac0b24dce5791673beda47a4d9b69608ec0151614ce555cf47826"
+        },
+        {
+          "chunk": [
+            0,
+            1
+          ],
+          "cpu_ms": 61.815,
+          "sha256": "4c9049d8d867e205708be26a7a4d3edca27e998216070bae04426e7677a3efd4"
+        },
+        {
+          "chunk": [
+            -1,
+            -1
+          ],
+          "cpu_ms": 85.624,
+          "sha256": "fd63426baf4fee448cdd75c30cfd921b97f347760319681c9424a36ee2b4a199"
+        },
+        {
+          "chunk": [
+            1,
+            -1
+          ],
+          "cpu_ms": 80.864,
+          "sha256": "11311dd357645528c398e088491729952a2fe6d07e50b293c98194bb19b2fd41"
+        },
+        {
+          "chunk": [
+            -1,
+            1
+          ],
+          "cpu_ms": 85.357,
+          "sha256": "25ad44aad6a1a464a3979c7c3623732f90268a373fb0945e6396c39b8570a4ad"
+        },
+        {
+          "chunk": [
+            1,
+            1
+          ],
+          "cpu_ms": 15.37,
+          "sha256": "2b65348eadf316f7c8f2bb8eb49994ac3c7b2b82978e5090ac0a713a12b15dd6"
+        },
+        {
+          "chunk": [
+            0,
+            -2
+          ],
+          "cpu_ms": 64.711,
+          "sha256": "fd9b2eb117d7a8526fead051eb3d88e955ba0afff0fa1b8b39bcc168fe43b473"
+        },
+        {
+          "chunk": [
+            -2,
+            0
+          ],
+          "cpu_ms": 91.611,
+          "sha256": "4a8d18237c255fbb86bfebc3200340549ad2ec6fefd824e90052c7ae0ba16dd5"
+        },
+        {
+          "chunk": [
+            2,
+            0
+          ],
+          "cpu_ms": 10.16,
+          "sha256": "ddc470ee6c7405113f2414b4fe68e309dbf04583b9339d41861d930b34cb06e9"
+        },
+        {
+          "chunk": [
+            0,
+            2
+          ],
+          "cpu_ms": 90.728,
+          "sha256": "93ac39256353fc8f3329cf18a50636ab30a672f94637ef9a6c36b7b741ad827d"
+        },
+        {
+          "chunk": [
+            -1,
+            -2
+          ],
+          "cpu_ms": 72.098,
+          "sha256": "e881f2841ef2c6d91798a05716e15aef174451e28b3b132d11ea453368fb1991"
+        },
+        {
+          "chunk": [
+            1,
+            -2
+          ],
+          "cpu_ms": 37.074,
+          "sha256": "1ee4069a3cfc4e270174ecace2bcafdfb156357f09c47ff46dc0d9910eada094"
+        },
+        {
+          "chunk": [
+            -2,
+            -1
+          ],
+          "cpu_ms": 86.37,
+          "sha256": "af1ab4eefc590b9feec40150c84528c493337f3f556ec52a1925791c3bd9a6f0"
+        },
+        {
+          "chunk": [
+            2,
+            -1
+          ],
+          "cpu_ms": 10.058,
+          "sha256": "6566ee1862a6661a52de92dea3f5a9b325795b8128c59cf7cadd58ba361f74de"
+        },
+        {
+          "chunk": [
+            -2,
+            1
+          ],
+          "cpu_ms": 85.186,
+          "sha256": "75ce585d0b2ea2922e1c6da78fcbd41f51978c6bdb09a9bd735781cfa6464af9"
+        },
+        {
+          "chunk": [
+            2,
+            1
+          ],
+          "cpu_ms": 10.02,
+          "sha256": "878c70087bced28b9e3b522edfef75d4fa098a2c99260e5fd1ab954139b96e12"
+        },
+        {
+          "chunk": [
+            -1,
+            2
+          ],
+          "cpu_ms": 90.083,
+          "sha256": "44792df8521b5610ff95b9054378bba929e2325a55527ebb96337e701d055bf5"
+        },
+        {
+          "chunk": [
+            1,
+            2
+          ],
+          "cpu_ms": 79.718,
+          "sha256": "94155a3ebb612afa967618c351f2ad768fdcdc327d69164fa580ba1d8313db18"
+        },
+        {
+          "chunk": [
+            -2,
+            -2
+          ],
+          "cpu_ms": 62.082,
+          "sha256": "f8a586945210130ab6f97a8f831e4806f1e42966ec566c1cc20c3f7d149d2b97"
+        },
+        {
+          "chunk": [
+            2,
+            -2
+          ],
+          "cpu_ms": 10.709,
+          "sha256": "35ef7d4f962d713cb64893f881dfac223a12aace90c26a4ef19de9a0160bd534"
+        },
+        {
+          "chunk": [
+            -2,
+            2
+          ],
+          "cpu_ms": 62.411,
+          "sha256": "c7f9392d43bad72f20fcc43659aa380dad4a1e1222db144d4a9554ea5ee6cb3d"
+        },
+        {
+          "chunk": [
+            2,
+            2
+          ],
+          "cpu_ms": 64.077,
+          "sha256": "68db13bdd3b4e882658e7eaf5519b5d9aa171a1387083ef00db8976a3f7efc93"
+        }
+      ],
+      "max_ms": 26507.019,
+      "p50_ms": 72.098,
+      "p95_ms": 91.611,
+      "plan_ms": 1774.062,
+      "plan_sha256": "81d94ac454802bf64fd6910e5dbdf4e50a51422db24c92dfc8caf2409e4ce238",
+      "total_cpu_ms": 27999.62
+    }
+  }
+}

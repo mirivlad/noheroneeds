@@ -2,15 +2,20 @@
   "changes": [
     {
       "impact": "player-facing-change",
-      "summary": "Финальная визуальная проверка обнаружила рисунок плитки на больших скальных площадках; трещины стали изогнутыми, прерывистыми и менее контрастными без изменения геометрии и серверных правил.",
+      "summary": "Финальная визуальная проверка: изогнутые прерывистые трещины вместо плитки на скалах; близкие тени низких растений с ограничением дальних проходов. Прямая сборка скал сохраняет вершины, материал и выбор киркой; серверные правила и сохранения прежние.",
       "sources": {
-        "src/experiment_3d/rock.gdshader": "9ca0dfd457982f713a77873788f22ec293cebe81590eff9c210efa4161ed8cd3"
+        "src/experiment_3d/rock.gdshader": "9ca0dfd457982f713a77873788f22ec293cebe81590eff9c210efa4161ed8cd3",
+        "src/experiment_3d/foliage.gdshader": "f48eebcd8fa70f7f5ea33147fe71dba61110b536fa515301bb67b7f613c20a2c",
+        "src/experiment_3d/rock_cells_3d.gd": "aea1c12b1a6c2002360a127384ef1081945ce7a29bb79c61bc714eacbd803dc8",
+        "src/experiment_3d/world_view_3d.gd": "69331329792f4c4b2f4f7871271ee0c8c68585d47594c60bac34934f7a967bb8"
       },
       "mechanics": [
-        "rock-presentation"
+        "rock-presentation",
+        "vegetation-presentation",
+        "environment-presentation"
       ],
       "guides": {
-        "site/content/guides/nature.html": "3a43c90f3bca4b45a038fb3880b6f6344871c527342aa0584f7862959226601b"
+        "site/content/guides/nature.html": "72d3488515688facc3867c0c8e6f3a6e304dacaff930d27f640c0a4b052e6a5e"
       },
       "changelog": "docs/changelog/unreleased.json"
     }

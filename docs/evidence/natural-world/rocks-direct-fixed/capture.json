@@ -1,0 +1,52 @@
+{
+  "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+  "checks": 13,
+  "failures": [],
+  "preset": "small",
+  "raster": [
+    960,
+    540
+  ],
+  "scenes": {
+    "cliff": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (5.921476, 59.68054, 32.19548)]",
+      "cell": [
+        30,
+        -3
+      ],
+      "render_benchmark": {
+        "measured": false,
+        "reason": "functional surface-boundary check only"
+      }
+    },
+    "crag": {
+      "camera": "[X: (0.825336, 0.0, 0.564642), Y: (0.426141, 0.656059, -0.622889), Z: (-0.370439, 0.75471, 0.541469), O: (-46.07852, 71.55612, -7.804523)]",
+      "cell": [
+        -22,
+        -43
+      ],
+      "render_benchmark": {
+        "measured": false,
+        "reason": "functional surface-boundary check only"
+      }
+    },
+    "lithology": {
+      "render_benchmark": {
+        "measured": false,
+        "reason": "functional surface-boundary check only"
+      }
+    }
+  },
+  "seed": 431,
+  "sources": {
+    "content/base/structures.json": "735b3d62fa895c2bc474f126ecb70bb6beec50f3ccd01bb7083e338b702a196b",
+    "content/base/terrain.json": "4e16ee10a18af671796b39459f125ccd8e71949fe87b2cba1b09f03409b069cd",
+    "src/experiment_3d/rock.gdshader": "9ca0dfd457982f713a77873788f22ec293cebe81590eff9c210efa4161ed8cd3",
+    "src/experiment_3d/rock_cells_3d.gd": "aea1c12b1a6c2002360a127384ef1081945ce7a29bb79c61bc714eacbd803dc8",
+    "src/experiment_3d/world_view_3d.gd": "69331329792f4c4b2f4f7871271ee0c8c68585d47594c60bac34934f7a967bb8",
+    "src/world/surface_generator.gd": "e72a6b8ac13680554ec0e0e40e51bd6b119959445be22c50b90a5e568d7ac957",
+    "tools/experiment_3d/check_rocks.gd": "5cc24e34502079f1e333ceb2aa8293356ab1fc3c2db25896f029864ec48809f6"
+  },
+  "static_memory_bytes": 367124482,
+  "time_ms": 43200000.0
+}

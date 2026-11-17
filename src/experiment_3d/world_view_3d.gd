@@ -4,7 +4,9 @@ extends WorldView
 ## Physics bodies below are for mouse picking only. Movement still uses Terrain.
 const RADIUS := 2
 const BUILD_BUDGET_US := 4500
+const SMALL_PLANT_SHADOW_RANGE := 20.0
 const STOREY := 2.0
+var _small_shadow_cell := Vector2i(1 << 30, 0)
 var viewport := SubViewport.new()
 var space := Node3D.new()
 var eye := Camera3D.new()
@@ -265,6 +267,7 @@ func update_view(alpha: float, delta: float) -> void:
 		eye.look_at(_follow, Vector3.UP)
 	_update_interior_actors()
 	_update_own_silhouette()
+	_update_small_plant_shadows()
 	_update_lighting()
 	if _touch_left > 0:
 		_touch_left = maxf(0, _touch_left - delta)
@@ -303,6 +306,7 @@ func _update_lighting() -> void:
 	env.background_color = Color("253347").lerp(Color("a9bcc4"), daylight)
 
 func _clear_geometry() -> void:
+	_small_shadow_cell = Vector2i(1 << 30, 0)
 	_cut_from = Vector2i(1 << 30, 0)
 	for node: Node in _geometry.values():
 		node.queue_free()
@@ -698,17 +702,24 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		if model_id in PlantMeshes3D.SHRUBS:
 			basis = Basis(Vector3.UP, posmod(hash([cell.x, cell.y, "shrub", 61]), 4096) * TAU / 4096.0)
 	var role := String(d.get("role", ""))
+	var direct_rock := role == "rock" and layer == "structure"
+	var rock_faces := PackedVector3Array()
 	if role == "door":
 		var normal: Vector2i = ContentRegistry.FACINGS.get(facing, Vector2i.DOWN)
 		basis = Basis(Vector3.UP, atan2(float(normal.x), float(normal.y)))
 	if role == "rock":
 		var floor_y := position3.y - lift
-		mesh = RockCells3D.mesh(cell, (terrain.cell(cell) if client.z >= 0 and terrain else 0.0) - floor_y,
+		var rock_tool: SurfaceTool = _job["rock"] if direct_rock else SurfaceTool.new()
+		if not direct_rock: rock_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		rock_faces = RockCells3D.append_to(rock_tool, cell, (terrain.cell(cell) if client.z >= 0 and terrain else 0.0) - floor_y,
 			func(c: Vector2i) -> float: return (terrain.low(c) if client.z >= 0 and terrain else 0.0) - floor_y,
 			_rock_at, func(c: Vector2i) -> bool: return client.z >= 0 and terrain != null and not _rock_at(c) and terrain.cell(c) >= terrain.cell(cell) - .5,
-			buildings.rock, func(n: Vector2i, corner: Vector2i) -> float: return _rock_top(n, corner) - floor_y,
+			func(n: Vector2i, corner: Vector2i) -> float: return _rock_top(n, corner) - floor_y,
 			_rock_cliff, func(corner: Vector2i) -> float: return _rock_top(cell, corner) - floor_y,
-			RockCells3D.style_at(cell), floor_y)
+			RockCells3D.style_at(cell), floor_y, position3 if direct_rock else Vector3.ZERO)
+		if not direct_rock:
+			rock_tool.set_material(buildings.rock)
+			mesh = rock_tool.commit()
 		instance_id = "rock:" + str(cell)
 		basis = Basis.IDENTITY
 	elif role == "fence" or (role == "door" and float(d.get("height", 1.0)) < 1.0):
@@ -797,10 +808,10 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		var hinge := basis * Vector3(-.45, 0, 0)
 		basis = basis.rotated(Vector3.UP, PI / 2)
 		position3 += hinge - basis * Vector3(-.45, 0, 0)
-	_job["meshes"][instance_id] = mesh
+	if not direct_rock: _job["meshes"][instance_id] = mesh
 	var t := Transform3D(basis, position3)
 	if role == "rock":
-		(_job["rock"] as SurfaceTool).append_from(mesh, 0, t)
+		if not direct_rock: (_job["rock"] as SurfaceTool).append_from(mesh, 0, t)
 		_job["rock_count"] += 1
 	else:
 		var entries: Array = _job["instances"].get_or_add(instance_id, [])
@@ -820,7 +831,11 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	if layer == "ground":
 		target = {"kind": "ground", "id": id, "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location}
 	# Picking boxes are independent of movement. No physics-driven walking.
-	if role == "rock" or layer == "roof":
+	if direct_rock:
+		# Keep the Dictionary element as receiver; a PackedArray cast detaches on resize.
+		_job["faces"].append_array(rock_faces)
+		for i in rock_faces.size() / 3: _job["targets"].append(target)
+	elif role == "rock" or layer == "roof":
 		var triangles := mesh.get_faces()
 		for vertex: Vector3 in triangles:
 			_job["faces"].append(t * vertex)
@@ -1126,6 +1141,30 @@ func _add_box_faces(box: AABB, target: Dictionary) -> void:
 		_job["targets"].append(target)
 		_job["targets"].append(target)
 
+func _is_small_foliage(mesh: Mesh) -> bool:
+	for surface in mesh.get_surface_count():
+		var material := mesh.surface_get_material(surface)
+		if material is ShaderMaterial and material.shader == ModelLibrary3D.FOLIAGE:
+			var height: Variant = material.get_shader_parameter("height")
+			if height != null and float(height) < 1.8: return true
+	return false
+
+func _set_small_plant_shadow(node: GeometryInstance3D) -> void:
+	var bounds: Rect2 = node.get_meta("small_plant_bounds")
+	var p := Vector2(client.position) / Movement.UNIT
+	var nearest := Vector2(clampf(p.x, bounds.position.x, bounds.end.x), clampf(p.y, bounds.position.y, bounds.end.y))
+	var mode := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if nearest.distance_squared_to(p) <= SMALL_PLANT_SHADOW_RANGE * SMALL_PLANT_SHADOW_RANGE else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if node.cast_shadow != mode: node.cast_shadow = mode
+
+func _update_small_plant_shadows() -> void:
+	if not client.has_position: return
+	var cell := Movement.cell_of(client.position)
+	if cell == _small_shadow_cell: return
+	_small_shadow_cell = cell
+	for chunk: Node in _geometry.values():
+		for node: Node in chunk.get_children():
+			if node.has_meta("small_plant_bounds"): _set_small_plant_shadow(node as GeometryInstance3D)
+
 func _finish_chunk() -> void:
 	var root: Node3D = _job["root"]
 	var location := String(_job["key"]).get_slice("|", 0)
@@ -1152,13 +1191,24 @@ func _finish_chunk() -> void:
 		# otherwise it multiplies vertex colours by the climate data (black).
 		mm.use_colors = not tints.is_empty()
 		mm.instance_count = transforms.size()
+		var small_plant := _is_small_foliage(mm.mesh)
+		var small_bounds := Rect2()
 		for i in transforms.size():
 			mm.set_instance_transform(i, transforms[i])
+			if small_plant:
+				var transform: Transform3D = transforms[i]
+				var p := Vector2(transform.origin.x, transform.origin.z)
+				small_bounds = Rect2(p, Vector2.ZERO) if i == 0 else small_bounds.expand(p)
 			if not tints.is_empty():
 				mm.set_instance_color(i, Color.WHITE)
 				mm.set_instance_custom_data(i, tints[i])
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = mm
+		if small_plant and not transforms.is_empty():
+			# Roots are world-space. One metre conservatively includes the leaf
+			# silhouette/wind, without asking the render thread for every AABB.
+			node.set_meta("small_plant_bounds", small_bounds.grow(1.0))
+			_set_small_plant_shadow(node)
 		var parts: Array = _job["parts"].get(id, [])
 		if parts.any(func(p: Array) -> bool: return not p.is_empty()):
 			node.set_meta("parts", parts)

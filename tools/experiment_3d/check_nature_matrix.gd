@@ -5,12 +5,15 @@ var seed_value := 431
 
 func run() -> void:
 	var points_path := ""
+	var profile_copy := ""
 	output = ProjectSettings.globalize_path("res://build/nature-final/matrix-431")
 	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--profile="): profile_copy = arg.trim_prefix("--profile=").simplify_path()
 		if arg.begins_with("--seed="): seed_value = int(arg.trim_prefix("--seed="))
 		if arg.begins_with("--points="): points_path = arg.trim_prefix("--points=")
 		if arg.begins_with("--out="): output = arg.trim_prefix("--out=").simplify_path()
-	if not output.begins_with(ProjectSettings.globalize_path("res://build/nature-final/")):
+	var disposable_root := ProjectSettings.globalize_path("res://build/nature-final/")
+	if not output.begins_with(disposable_root) or (profile_copy != "" and not profile_copy.begins_with(disposable_root)):
 		printerr("A disposable output below build/nature-final is required")
 		quit(1)
 		return
@@ -21,16 +24,25 @@ func run() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(output)
 	var content := ContentRegistry.load_packs(["res://content/base"])
-	var plan := WorldPlan.generate(seed_value, "small", "temperate", content)
-	var profile := output.path_join("profile-" + str(Time.get_ticks_usec()))
+	var profile := profile_copy if profile_copy != "" else output.path_join("profile-" + str(Time.get_ticks_usec()))
 	var library := WorldLibrary.new(profile.path_join("worlds"))
-	var wid := library.create("Матрица природы", {"seed": str(seed_value), "starter_kit": true, "world_plan": plan.to_dict()})
-	var prepared := ServerWorld.open(library.db_path(wid), content, {"world_plan": plan.to_dict(), "require_planned": true})
-	if prepared == null:
-		printerr(ServerWorld.open_error)
-		quit(1)
-		return
-	prepared.close()
+	var wid := ""
+	if profile_copy != "":
+		var entries := library.list()
+		if entries.size() != 1 or WorldLibrary.seed_of(entries[0]) != seed_value:
+			printerr("The disposable profile must contain one world of the requested seed")
+			quit(1)
+			return
+		wid = String(entries[0]["id"])
+	else:
+		var plan := WorldPlan.generate(seed_value, "small", "temperate", content)
+		wid = library.create("Матрица природы", {"seed": str(seed_value), "starter_kit": true, "world_plan": plan.to_dict()})
+		var prepared := ServerWorld.open(library.db_path(wid), content, {"world_plan": plan.to_dict(), "require_planned": true})
+		if prepared == null:
+			printerr(ServerWorld.open_error)
+			quit(1)
+			return
+		prepared.close()
 	app = App.new()
 	app.configure({"profile_dir": profile, "world": wid, "body": "base:human_ro_m", "time": "12", "weather": "clear"})
 	root.add_child(app)
@@ -55,8 +67,15 @@ func run() -> void:
 	await pump(50)
 	verify(g.client.state == "playing", "native LocalGame joins seed " + str(seed_value))
 	verify(RenderingServer.get_current_rendering_method() == "gl_compatibility", "GL Compatibility retained")
+	if profile_copy != "":
+		verify(world.generator.generation_version == SurfaceGenerator.VERSION, "the copied matrix world retains the current surface recipe")
+		if g.client.location != "surface":
+			var mouth := world._spawn_way()
+			await move_to(mouth)
+			var returned := await request({"type": "climb", "location": g.client.location, "x": mouth.x, "y": mouth.y})
+			verify(returned.get("ok", false) and g.client.location == "surface", "ordinary ladder returns the copied character to the surface")
 	report = {"seed": seed_value, "raster": [960, 540], "adapter": RenderingServer.get_video_adapter_name(), "scenes": {}, "sources": {}}
-	for path: String in ["src/experiment_3d/world_view_3d.gd", "src/experiment_3d/model_library_3d.gd", "src/experiment_3d/plant_meshes_3d.gd", "src/experiment_3d/rock_cells_3d.gd", "src/experiment_3d/mineral_meshes_3d.gd", "src/experiment_3d/terrain_shape_3d.gd", "src/experiment_3d/ground.gdshader", "src/experiment_3d/water.gdshader", "src/experiment_3d/foliage.gdshader", "src/presentation/weather_view.gd", "src/world/surface_generator.gd", "src/world/settlements.gd", "src/server/creature_sim.gd", "content/base/terrain.json", "assets/experiment_3d/catalog.json"]:
+	for path: String in ["src/experiment_3d/world_view_3d.gd", "src/experiment_3d/model_library_3d.gd", "src/experiment_3d/plant_meshes_3d.gd", "src/experiment_3d/rock_cells_3d.gd", "src/experiment_3d/rock.gdshader", "src/experiment_3d/mineral_meshes_3d.gd", "src/experiment_3d/terrain_shape_3d.gd", "src/experiment_3d/ground.gdshader", "src/experiment_3d/water.gdshader", "src/experiment_3d/foliage.gdshader", "src/presentation/weather_view.gd", "src/world/surface_generator.gd", "src/world/settlements.gd", "src/server/creature_sim.gd", "content/base/terrain.json", "assets/experiment_3d/catalog.json"]:
 		report.sources[path] = FileAccess.get_sha256("res://" + path)
 	var points: Dictionary = located[str(seed_value)]["points"]
 	for name: String in ["base:forest", "base:meadow", "base:steppe", "base:mountains", "river_bank", "base:swamp"]:

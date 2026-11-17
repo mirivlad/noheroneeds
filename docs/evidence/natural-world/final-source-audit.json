@@ -1,7 +1,8 @@
 {
   "full_run": "full-tests.json",
-  "inputs": 555,
+  "inputs": 556,
   "mismatches": [],
   "sources_unchanged": true,
-  "note": "Fresh final full run includes the fractured-rock material correction."
+  "matches_current_candidate": true,
+  "note": "Fresh full run after direct rock emission, small-plant shadow distance and the picking regression fix."
 }

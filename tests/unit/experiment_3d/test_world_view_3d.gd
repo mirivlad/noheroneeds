@@ -1150,3 +1150,62 @@ func test_lighting_keeps_night_fill_and_turns_sun_off_underground() -> void:
 	view._update_lighting()
 	eq(view.sun.light_energy, 0.0)
 	check(is_equal_approx(view.environment.environment.ambient_light_energy, .28), "cave lighting retains its established fill")
+
+func test_low_plant_shadows_follow_the_player_without_hiding_geometry() -> void:
+	client.chunks["surface|0|0"] = Chunk.new()
+	view._plant_season = Seasons.of(client.world_time)
+	var chunk := Node3D.new()
+	view.space.add_child(chunk)
+	view._geometry["surface|0|0"] = chunk
+	chunk.set_meta("location", "surface")
+	chunk.set_meta("origin", Vector2i.ZERO)
+	view._location = "surface"
+	var near := MeshInstance3D.new()
+	near.mesh = BoxMesh.new()
+	near.position = Vector3(1.5, 0, 1.5)
+	near.set_meta("small_plant_bounds", Rect2(1, 1, 1, 1))
+	chunk.add_child(near)
+	var far := MeshInstance3D.new()
+	far.mesh = BoxMesh.new()
+	far.position = Vector3(50.5, 0, 1.5)
+	far.set_meta("small_plant_bounds", Rect2(50, 1, 1, 1))
+	chunk.add_child(far)
+	var tree := MeshInstance3D.new()
+	tree.mesh = BoxMesh.new()
+	chunk.add_child(tree)
+	client.has_position = true
+	client.position = Vector2i(128, 128)
+	view.update_view(1, 0)
+	eq(near.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "near low plants keep their shadows")
+	eq(far.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "distant low plants avoid shadow passes")
+	check(near.visible and far.visible, "the plants themselves remain visible")
+	eq(tree.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "trees and other ordinary geometry keep their shadows")
+	client.position = Vector2i(50 * Movement.UNIT + 128, 128)
+	view.update_view(1, 0)
+	eq(far.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "walking closer restores the same plant's shadow")
+	eq(near.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "walking away removes only the distant shadow")
+	check(near.visible and far.visible and tree.visible, "movement does not cull resources or tree geometry")
+
+func test_direct_rock_geometry_keeps_picking_triangles_aligned_with_targets() -> void:
+	view._land = null
+	var chunk := Chunk.new()
+	for y in Chunk.SIZE:
+		for x in Chunk.SIZE: chunk.set_cell("ground", x, y, "base:grass")
+	chunk.set_cell("structure", 2, 2, "base:rock")
+	chunk.set_cell("roof", 10, 2, "base:thatch_roof")
+	client.chunks["surface|0|0"] = chunk
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in 4: view._build_row()
+	var faces: PackedVector3Array = view._job.faces
+	var targets: Array = view._job.targets
+	eq(faces.size(), targets.size() * 3, "every picking target has its actual triangle, including directly emitted rocks")
+	var rocks := 0
+	for i in mini(targets.size(), faces.size() / 3):
+		if targets[i].get("id") != "base:rock": continue
+		rocks += 1
+		for j in 3:
+			var p := faces[i * 3 + j]
+			check(p.x >= 1.99999 and p.x <= 3.00001 and p.z >= 1.99999 and p.z <= 3.00001,
+				"the rock's target never labels a ground or roof triangle elsewhere")
+	check(rocks > 0, "real rock triangles were inspected")

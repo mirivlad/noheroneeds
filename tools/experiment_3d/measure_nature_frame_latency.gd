@@ -67,6 +67,7 @@ func phase(name: String, seconds: float, wait_ready := false) -> void:
 	row["objects"] = game.view.object_count()
 	row["actors"] = game.view._actors.size()
 	row["world_time_ms"] = game.client.world_time
+	row["location"] = game.client.location
 	row["player_cell"] = str(Movement.cell_of(game.client.position))
 	row["walkable_player_cell"] = not game.game.world.is_solid(game.client.location, Movement.cell_of(game.client.position).x, Movement.cell_of(game.client.position).y)
 	row["draw_calls"] = Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)
@@ -106,11 +107,13 @@ func rebuild_geometry() -> void:
 func run() -> void:
 	var profile := ""
 	var target := Vector2i(46, -61)
+	var camera_zoom := 28.0
 	var stream_to := Vector2i(224, -156)
 	output = ProjectSettings.globalize_path("res://build/nature-final/frames")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--profile="): profile = arg.trim_prefix("--profile=").simplify_path()
 		if arg.begins_with("--out="): output = arg.trim_prefix("--out=").simplify_path()
+		if arg.begins_with("--zoom="): camera_zoom = clampf(float(arg.trim_prefix("--zoom=")), 12, 48)
 		if arg.begins_with("--cell="):
 			var v := arg.trim_prefix("--cell=").split(",")
 			target = Vector2i(int(v[0]), int(v[1]))
@@ -158,7 +161,7 @@ func run() -> void:
 	if not phases[-1]["walkable_player_cell"]: failures.append("the selected comparison camera must stand on walkable ground")
 	game.view.yaw = .6
 	game.view.tilt = 49
-	game.view.zoom = 28
+	game.view.zoom = camera_zoom
 	for i in 120: await process_frame
 	await phase("steady_simulation", 10)
 	await picture("steady")
@@ -178,7 +181,7 @@ func run() -> void:
 		failures.append("the native comparison must render at 960x540")
 	var report := {"startup_cpu_ms": startup_ms, "engine": Engine.get_version_info().string, "adapter": RenderingServer.get_video_adapter_name(), "renderer": RenderingServer.get_current_rendering_method(),
 		"vsync_mode": DisplayServer.window_get_vsync_mode(), "max_fps": Engine.max_fps, "window": [root.size.x, root.size.y], "raster": [game.view.viewport.size.x, game.view.viewport.size.y], "target": [target.x, target.y], "stream_to": [stream_to.x, stream_to.y],
-		"camera": str(game.view.eye.transform), "phases": phases, "failures": failures, "scenario_sha256": FileAccess.get_sha256(get_script().resource_path), "sources": {}}
+		"camera": str(game.view.eye.transform), "camera_zoom": camera_zoom, "surface_version": game.game.world.generator.generation_version, "phases": phases, "failures": failures, "scenario_sha256": FileAccess.get_sha256(get_script().resource_path), "sources": {}}
 	for path: String in ["src/experiment_3d/world_view_3d.gd", "src/experiment_3d/model_library_3d.gd", "src/experiment_3d/ground.gdshader", "src/experiment_3d/water.gdshader", "src/experiment_3d/foliage.gdshader", "src/presentation/weather_view.gd", "src/world/surface_generator.gd", "src/world/settlements.gd", "src/server/creature_sim.gd"]:
 		report.sources[path] = FileAccess.get_sha256("res://" + path) if FileAccess.file_exists("res://" + path) else "not-present-in-baseline"
 	app.quit()

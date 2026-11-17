@@ -28,9 +28,11 @@ void vertex() {
 	float phase = dot(origin.xz, vec2(0.19, 0.13));
 	float sway = sin(TIME * 1.3 + phase) + 0.35 * sin(TIME * 2.1 + phase * 1.7);
 	vec3 wind = vec3(0.8, 0.0, 0.35) * sway * wind_strength * min(height * 0.12, 0.08) * up * up;
-	vec2 away = origin.xz - touch.xz + vec2(0.07, 0.03);
-	float impulse = touch.w * exp(-dot(away, away) * 2.5);
-	if (height < 1.8) wind.xz += normalize(away) * impulse * 0.10 * up * up;
+	if (touch.w != 0.0 && height < 1.8) {
+		vec2 away = origin.xz - touch.xz + vec2(0.07, 0.03);
+		float impulse = touch.w * exp(-dot(away, away) * 2.5);
+		wind.xz += normalize(away) * impulse * 0.10 * up * up;
+	}
 	// Project a world-space breeze into each rotated instance's local axes.
 	VERTEX += vec3(dot(wind, normalize(MODEL_MATRIX[0].xyz)), 0.0, dot(wind, normalize(MODEL_MATRIX[2].xyz)));
 }

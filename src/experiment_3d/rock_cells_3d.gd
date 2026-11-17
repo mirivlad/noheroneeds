@@ -20,6 +20,16 @@ static func mesh(cell: Vector2i, base: float, low: Callable, blocked: Callable, 
 		top_of := Callable(), shelf := Callable(), cap := Callable(), style := 0, origin_y := 0.0) -> Mesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	append_to(st, cell, base, low, blocked, flush, top_of, shelf, cap, style, origin_y)
+	st.set_material(material)
+	return st.commit()
+
+## Emit straight into a chunk's surface; avoid creating/uploading a temporary
+## ArrayMesh for each rock cell only to copy it into that same surface.
+## Returned world-space triangles are also the authoritative picking faces.
+static func append_to(st: SurfaceTool, cell: Vector2i, base: float, low: Callable, blocked: Callable, flush: Callable,
+		top_of := Callable(), shelf := Callable(), cap := Callable(), style := 0, origin_y := 0.0, offset := Vector3.ZERO) -> PackedVector3Array:
+	var faces := PackedVector3Array()
 	var occupied := {cell: true}
 	for y in range(-1, 2):
 		for x in range(-1, 2):
@@ -55,7 +65,7 @@ static func mesh(cell: Vector2i, base: float, low: Callable, blocked: Callable, 
 		rim.append(_point(cell, RIM[i], heights[i], floors[i], inward[i], origin_y))
 		mean += heights[i] / 8
 	var middle := Vector3(.09 * sin(cell.y * .79), mean + (-.025 if edge else .10 * sin(cell.x * .61 + cell.y * .37)), .09 * cos(cell.x * .63))
-	for i in 8: _triangle(st, middle, rim[i], rim[(i + 1) % 8], style)
+	for i in 8: _triangle(st, middle, rim[i], rim[(i + 1) % 8], style, offset, faces)
 	for side in 4:
 		var neighbor: Vector2i = cell + DIRECTIONS[side]
 		var rock: bool = occupied[neighbor]
@@ -72,7 +82,7 @@ static func mesh(cell: Vector2i, base: float, low: Callable, blocked: Callable, 
 				var to := lerpf(low_a, low_b, (segment + 1) * .5)
 				if heights[a] - from <= .02 and heights[b] - to <= .02: continue
 				_quad(st, [_point(cell, RIM[a], minf(from, heights[a]), floors[a], inward[a], origin_y),
-					_point(cell, RIM[b], minf(to, heights[b]), floors[b], inward[b], origin_y), rim[a], rim[b]], style)
+					_point(cell, RIM[b], minf(to, heights[b]), floors[b], inward[b], origin_y), rim[a], rim[b]], style, offset, faces)
 			else:
 				# World-height-driven ridges continue around corners. The four
 				# bands shape the rock instead of hiding a rectangular box in noise.
@@ -81,9 +91,8 @@ static func mesh(cell: Vector2i, base: float, low: Callable, blocked: Callable, 
 					for f: float in band:
 						for index: int in [a, b]:
 							points.append(_point(cell, RIM[index], lerpf(floors[index], heights[index], f), floors[index], inward[index], origin_y))
-					_quad(st, points, style)
-	st.set_material(material)
-	return st.commit()
+					_quad(st, points, style, offset, faces)
+	return faces
 
 static func _inward(at: Vector2, occupied: Dictionary) -> Vector2:
 	var direction := Vector2.ZERO
@@ -103,18 +112,20 @@ static func _point(cell: Vector2i, at: Vector2, height: float, floor_y: float, i
 	var shift := inward * recess * smoothstep(0, .22, height - floor_y)
 	return Vector3(at.x - .5 + shift.x, height, at.y - .5 + shift.y)
 
-static func _triangle(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, style: int) -> void:
+static func _triangle(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, style: int, offset := Vector3.ZERO, faces: Variant = null) -> void:
 	var normal := (c - a).cross(b - a)
 	if normal.length_squared() < .0000000001: return
 	st.set_normal(normal.normalized())
 	st.set_color(Color(style / 3.0, 0, 0, 1))  # shader data, not an sRGB colour
 	for p: Vector3 in [a, b, c]:
 		st.set_uv(Vector2(p.x + p.z, p.y))
-		st.add_vertex(p)
+		var world := p + offset
+		st.add_vertex(world)
+		if faces != null: faces.append(world)
 
-static func _quad(st: SurfaceTool, p: Array, style: int) -> void:
-	_triangle(st, p[0], p[1], p[2], style)
-	_triangle(st, p[1], p[3], p[2], style)
+static func _quad(st: SurfaceTool, p: Array, style: int, offset := Vector3.ZERO, faces: Variant = null) -> void:
+	_triangle(st, p[0], p[1], p[2], style, offset, faces)
+	_triangle(st, p[1], p[3], p[2], style, offset, faces)
 
 static func scree(variant: int) -> Mesh:
 	if _scree_meshes.has(variant): return _scree_meshes[variant]

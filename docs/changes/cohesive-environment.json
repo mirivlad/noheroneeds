@@ -19,9 +19,9 @@
         "environment-presentation"
       ],
       "guides": {
-        "site/content/guides/nature.html": "34020a38548206dc9d89e37f8705b1ac6eb8be248f20d5d4ef08899524bb7c7e"
+        "site/content/guides/nature.html": "36270cc7e66aad2d9e65f8af9764b39af4409f86e6f79b73326e6cc6a3e5f61c"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.21.0.json"
     }
   ]
 }

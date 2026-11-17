@@ -1,0 +1,8 @@
+{
+  "version": "0.21.0",
+  "prepared_at": "2026-11-17T03:38:06.580015+00:00",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "local_test_command": "GODOT=/home/mirivlad/.local/bin/godot TEST_JOBS=4 TEST_TIMEOUT=2400 tools/run_tests.sh",
+  "release_base": "v0.20.0",
+  "source_baseline": "433dfb9cdb471ae1b3a9f2763c95d73a527d15e3"
+}

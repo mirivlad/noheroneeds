@@ -18,10 +18,10 @@
         "controls"
       ],
       "guides": {
-        "site/content/guides/nature.html": "c8504b74317fa7d6d45852035f08816c7a8aafcf28e6e56488ce6a812dda5468",
+        "site/content/guides/nature.html": "36270cc7e66aad2d9e65f8af9764b39af4409f86e6f79b73326e6cc6a3e5f61c",
         "site/content/guides/controls.html": "75fbbd0dad68cbdb74735cb16634b4599a53603e418247f6ec5357823e1e293f"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.21.0.json"
     }
   ]
 }

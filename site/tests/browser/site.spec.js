@@ -50,7 +50,7 @@ test('hospitality guide has live terms and crosslinks to the host and services',
   await expect(guide).toContainText('6 монет на 12');
   await expect(guide).toContainText('15 монет на 24');
   await expect(guide).toContainText('награда 12');
-  await expect(guide).toContainText('сохранения из опубликованной v0.19.0 не открываются');
+  await expect(guide).toContainText('сохранения из опубликованной v0.20.0 и более ранних выпусков не открываются');
   await expect(guide).toContainText('автоматически не изменяются');
   await page.screenshot({ path: 'test-results/hospitality-desktop.png', fullPage: true });
   await guide.locator('a[href$="base%3Ainnkeeper"]').first().click();

@@ -20,10 +20,10 @@
         "multiplayer"
       ],
       "guides": {
-        "site/content/guides/nature.html": "21bca0adedc6925b0f2a1c50ff72a7b2f3dc21eaeb79493f1c523d22be41829e",
+        "site/content/guides/nature.html": "36270cc7e66aad2d9e65f8af9764b39af4409f86e6f79b73326e6cc6a3e5f61c",
         "site/content/guides/multiplayer.html": "d1ebacb9e05573168bd0b75ee752efd9717495d013b08f10288f9e79db11f66b"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.21.0.json"
     }
   ]
 }

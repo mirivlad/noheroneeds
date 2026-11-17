@@ -19,9 +19,9 @@
       "guides": {
         "site/content/guides/trade.html": "505b79ca7adef2ae1dfba0713c4fccd1f489c1182188c3eea63dc8014bbf0611",
         "site/content/guides/building.html": "72b7abca6f94f8e2909764353799cb00191e04245c04b4df45ef33e65c79be8d",
-        "site/content/guides/nature.html": "3dad628a8d5513cfb6fe11f561ca5b69de8844a56fafb8627936409d3ff3eab4"
+        "site/content/guides/nature.html": "36270cc7e66aad2d9e65f8af9764b39af4409f86e6f79b73326e6cc6a3e5f61c"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.21.0.json"
     }
   ]
 }

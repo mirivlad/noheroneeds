@@ -24,11 +24,11 @@
         "survival"
       ],
       "guides": {
-        "site/content/guides/controls.html": "95e421e25e56edc4a30414c13e2e8a843a4f22b83a63583a6c4e39c6f745720a",
-        "site/content/guides/nature.html": "3dad628a8d5513cfb6fe11f561ca5b69de8844a56fafb8627936409d3ff3eab4",
+        "site/content/guides/controls.html": "75fbbd0dad68cbdb74735cb16634b4599a53603e418247f6ec5357823e1e293f",
+        "site/content/guides/nature.html": "36270cc7e66aad2d9e65f8af9764b39af4409f86e6f79b73326e6cc6a3e5f61c",
         "site/content/guides/survival.html": "28c145f78cede01a6ada1db760244436954c955ef481305a1329976640bf87b9"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.21.0.json"
     }
   ]
 }

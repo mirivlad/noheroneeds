@@ -17,10 +17,10 @@
         "caravans"
       ],
       "guides": {
-        "site/content/guides/nature.html": "1033b4dc7f2be3e3755a3ca1eda8660a441ae44b1b7310448429a6afaa5072ba",
+        "site/content/guides/nature.html": "36270cc7e66aad2d9e65f8af9764b39af4409f86e6f79b73326e6cc6a3e5f61c",
         "site/content/guides/caravans.html": "9cde71bff6ccc9b581478345bff74930da503a2fff02b629af3067675a36de9a"
       },
-      "changelog": "docs/changelog/unreleased.json"
+      "changelog": "docs/changelog/v0.21.0.json"
     }
   ]
 }

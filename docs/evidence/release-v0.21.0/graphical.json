@@ -1,0 +1,18 @@
+{
+  "artifact": "noheroneeds-0.21.0",
+  "exit_code": 0,
+  "scenario": "Disposable SQLite backup of exported server seed 7; ordinary App with RO character, noon and clear weather; screenshot after 6000 frames.",
+  "last_renderer_diagnostic": {
+    "adapter": "AMD Radeon RX 580 2048SP (radeonsi, polaris10, ACO, DRM 3.54, 6.5.0-1mx-ahs-amd64)",
+    "build_ms": 0.002,
+    "chunks": 25,
+    "fps": 58.6341449558545,
+    "location": "surface",
+    "objects": 6713,
+    "renderer": "gl_compatibility",
+    "worst_frame_ms": 145.948333333335
+  },
+  "requires_visual_review": false,
+  "note": "Functional exported graphical smoke test, not an FPS benchmark.",
+  "visual_review": "Native 960x540 screenshot inspected: 3D ground/vegetation, RO character and HUD are visible; no empty or error screen."
+}

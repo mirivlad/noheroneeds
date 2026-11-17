@@ -1,0 +1,365 @@
+﻿2026-11-17T03:58:48.3934183Z Current runner version: '2.338.2'
+2026-11-17T03:58:48.3957666Z ##[group]Runner Image Provisioner
+2026-11-17T03:58:48.3958605Z Hosted Compute Agent
+2026-11-17T03:58:48.3959194Z Version: 20261103.629
+2026-11-17T03:58:48.3959899Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-17T03:58:48.3960630Z Build Date: 2026-11-03T17:26:59Z
+2026-11-17T03:58:48.3961294Z Worker ID: {d9bad782-227f-4557-8004-fe78cf9074a6}
+2026-11-17T03:58:48.3962121Z Region: westus2
+2026-11-17T03:58:48.3962659Z Cloud: Azure
+2026-11-17T03:58:48.3963412Z ##[endgroup]
+2026-11-17T03:58:48.3964924Z ##[group]Operating System
+2026-11-17T03:58:48.3965573Z Ubuntu
+2026-11-17T03:58:48.3966234Z 26.04.1
+2026-11-17T03:58:48.3966737Z LTS
+2026-11-17T03:58:48.3967284Z ##[endgroup]
+2026-11-17T03:58:48.3967850Z ##[group]Runner Image
+2026-11-17T03:58:48.3968445Z Image: ubuntu-26.04
+2026-11-17T03:58:48.3969115Z Version: 20261111.196.1
+2026-11-17T03:58:48.3970313Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261111.196/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-17T03:58:48.3971907Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261111.196
+2026-11-17T03:58:48.3972890Z ##[endgroup]
+2026-11-17T03:58:48.3974332Z ##[group]GITHUB_TOKEN Permissions
+2026-11-17T03:58:48.3976202Z Contents: write
+2026-11-17T03:58:48.3976940Z Metadata: read
+2026-11-17T03:58:48.3977505Z ##[endgroup]
+2026-11-17T03:58:48.3979976Z Secret source: Actions
+2026-11-17T03:58:48.3981043Z Cache mode: write
+2026-11-17T03:58:48.3981781Z Prepare workflow directory
+2026-11-17T03:58:48.5343943Z Prepare all required actions
+2026-11-17T03:58:48.5395672Z Getting action download info
+2026-11-17T03:58:48.8429477Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-17T03:58:48.9675858Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-11-17T03:58:49.1755511Z Uses: mirivlad/noheroneeds/.github/workflows/tests.yml@refs/tags/v0.21.0 (3c5cfcfda8423e688ccd15446d5de655b39893d4)
+2026-11-17T03:58:49.1760881Z Complete job name: tests / headless
+2026-11-17T03:58:49.3951525Z ##[group]Run actions/checkout@v4
+2026-11-17T03:58:49.3952442Z with:
+2026-11-17T03:58:49.3952900Z   repository: mirivlad/noheroneeds
+2026-11-17T03:58:49.3956853Z   token: ***
+2026-11-17T03:58:49.3957293Z   ssh-strict: true
+2026-11-17T03:58:49.3957732Z   ssh-user: git
+2026-11-17T03:58:49.3958176Z   persist-credentials: true
+2026-11-17T03:58:49.3958665Z   clean: true
+2026-11-17T03:58:49.3959118Z   sparse-checkout-cone-mode: true
+2026-11-17T03:58:49.3959678Z   fetch-depth: 1
+2026-11-17T03:58:49.3960101Z   fetch-tags: false
+2026-11-17T03:58:49.3960558Z   show-progress: true
+2026-11-17T03:58:49.3961007Z   lfs: false
+2026-11-17T03:58:49.3961422Z   submodules: false
+2026-11-17T03:58:49.3961871Z   set-safe-directory: true
+2026-11-17T03:58:49.3962386Z   allow-unsafe-pr-checkout: false
+2026-11-17T03:58:49.3963268Z env:
+2026-11-17T03:58:49.3963704Z   GODOT_VERSION: 4.7.2-stable
+2026-11-17T03:58:49.3964230Z   TEST_TIMEOUT: 2400
+2026-11-17T03:58:49.3964663Z   TEST_JOBS: 4
+2026-11-17T03:58:49.3965109Z ##[endgroup]
+2026-11-17T03:58:49.7052311Z Syncing repository: mirivlad/noheroneeds
+2026-11-17T03:58:49.7055108Z ##[group]Getting Git version info
+2026-11-17T03:58:49.7056370Z Working directory is '/home/runner/work/noheroneeds/noheroneeds'
+2026-11-17T03:58:49.7058082Z [command]/usr/bin/git version
+2026-11-17T03:58:49.7079662Z git version 2.56.1
+2026-11-17T03:58:49.7104419Z ##[endgroup]
+2026-11-17T03:58:49.7121936Z Temporarily overriding HOME='/home/runner/work/_temp/97b368cf-054c-4cb7-9b32-1600e536fcfc' before making global git config changes
+2026-11-17T03:58:49.7124451Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-17T03:58:49.7128504Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/noheroneeds/noheroneeds
+2026-11-17T03:58:49.7205222Z Deleting the contents of '/home/runner/work/noheroneeds/noheroneeds'
+2026-11-17T03:58:49.7208761Z ##[group]Initializing the repository
+2026-11-17T03:58:49.7212658Z [command]/usr/bin/git init /home/runner/work/noheroneeds/noheroneeds
+2026-11-17T03:58:49.7337972Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-17T03:58:49.7339830Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-17T03:58:49.7341579Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-17T03:58:49.7342997Z hint: call:
+2026-11-17T03:58:49.7344024Z hint:
+2026-11-17T03:58:49.7345038Z hint: 	git config --global init.defaultBranch <name>
+2026-11-17T03:58:49.7346230Z hint:
+2026-11-17T03:58:49.7347361Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-17T03:58:49.7349093Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-17T03:58:49.7350507Z hint:
+2026-11-17T03:58:49.7351359Z hint: 	git branch -m <name>
+2026-11-17T03:58:49.7352399Z hint:
+2026-11-17T03:58:49.7353807Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-17T03:58:49.7356117Z Initialized empty Git repository in /home/runner/work/noheroneeds/noheroneeds/.git/
+2026-11-17T03:58:49.7363653Z [command]/usr/bin/git remote add origin https://github.com/mirivlad/noheroneeds
+2026-11-17T03:58:49.7418289Z ##[endgroup]
+2026-11-17T03:58:49.7419642Z ##[group]Disabling automatic garbage collection
+2026-11-17T03:58:49.7422714Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-17T03:58:49.7461698Z ##[endgroup]
+2026-11-17T03:58:49.7463726Z ##[group]Setting up auth
+2026-11-17T03:58:49.7469266Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-17T03:58:49.7508097Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-17T03:58:49.8067764Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-17T03:58:49.8103398Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-17T03:58:49.8372257Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-17T03:58:49.8407114Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-17T03:58:49.8677198Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-17T03:58:49.8716746Z ##[endgroup]
+2026-11-17T03:58:49.8717556Z ##[group]Fetching the repository
+2026-11-17T03:58:49.8728269Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +3c5cfcfda8423e688ccd15446d5de655b39893d4:refs/tags/v0.21.0
+2026-11-17T03:59:04.0615956Z From https://github.com/mirivlad/noheroneeds
+2026-11-17T03:59:04.0617492Z  * [new ref]         3c5cfcfda8423e688ccd15446d5de655b39893d4 -> v0.21.0
+2026-11-17T03:59:04.0621086Z ##[endgroup]
+2026-11-17T03:59:04.0622372Z ##[group]Determining the checkout info
+2026-11-17T03:59:04.0624462Z ##[endgroup]
+2026-11-17T03:59:04.0630414Z [command]/usr/bin/git sparse-checkout disable
+2026-11-17T03:59:04.0689537Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-17T03:59:04.0721320Z ##[group]Checking out the ref
+2026-11-17T03:59:04.0723554Z [command]/usr/bin/git checkout --progress --force refs/tags/v0.21.0
+2026-11-17T03:59:05.0935095Z Updating files:  53% (1452/2737)
+2026-11-17T03:59:05.1095299Z Updating files:  54% (1478/2737)
+2026-11-17T03:59:05.1247448Z Updating files:  55% (1506/2737)
+2026-11-17T03:59:05.1346368Z Updating files:  56% (1533/2737)
+2026-11-17T03:59:05.1428460Z Updating files:  57% (1561/2737)
+2026-11-17T03:59:05.1524525Z Updating files:  58% (1588/2737)
+2026-11-17T03:59:05.1597032Z Updating files:  59% (1615/2737)
+2026-11-17T03:59:05.1742174Z Updating files:  60% (1643/2737)
+2026-11-17T03:59:05.1844103Z Updating files:  61% (1670/2737)
+2026-11-17T03:59:05.1913867Z Updating files:  62% (1697/2737)
+2026-11-17T03:59:05.2001940Z Updating files:  63% (1725/2737)
+2026-11-17T03:59:05.2197178Z Updating files:  64% (1752/2737)
+2026-11-17T03:59:05.2352568Z Updating files:  65% (1780/2737)
+2026-11-17T03:59:05.2545054Z Updating files:  66% (1807/2737)
+2026-11-17T03:59:05.2640189Z Updating files:  67% (1834/2737)
+2026-11-17T03:59:05.2789935Z Updating files:  68% (1862/2737)
+2026-11-17T03:59:05.2801985Z Updating files:  69% (1889/2737)
+2026-11-17T03:59:05.2964107Z Updating files:  70% (1916/2737)
+2026-11-17T03:59:05.3041842Z Updating files:  71% (1944/2737)
+2026-11-17T03:59:05.3102281Z Updating files:  72% (1971/2737)
+2026-11-17T03:59:05.3295904Z Updating files:  73% (1999/2737)
+2026-11-17T03:59:05.3442010Z Updating files:  74% (2026/2737)
+2026-11-17T03:59:05.3457993Z Updating files:  75% (2053/2737)
+2026-11-17T03:59:05.3473832Z Updating files:  76% (2081/2737)
+2026-11-17T03:59:05.3486116Z Updating files:  77% (2108/2737)
+2026-11-17T03:59:05.3502653Z Updating files:  78% (2135/2737)
+2026-11-17T03:59:05.3517206Z Updating files:  79% (2163/2737)
+2026-11-17T03:59:05.3536108Z Updating files:  80% (2190/2737)
+2026-11-17T03:59:05.3549551Z Updating files:  81% (2217/2737)
+2026-11-17T03:59:05.3571447Z Updating files:  82% (2245/2737)
+2026-11-17T03:59:05.3591279Z Updating files:  83% (2272/2737)
+2026-11-17T03:59:05.3604280Z Updating files:  84% (2300/2737)
+2026-11-17T03:59:05.3622443Z Updating files:  85% (2327/2737)
+2026-11-17T03:59:05.3638395Z Updating files:  86% (2354/2737)
+2026-11-17T03:59:05.3651911Z Updating files:  87% (2382/2737)
+2026-11-17T03:59:05.3668046Z Updating files:  88% (2409/2737)
+2026-11-17T03:59:05.3683277Z Updating files:  89% (2436/2737)
+2026-11-17T03:59:05.3698559Z Updating files:  90% (2464/2737)
+2026-11-17T03:59:05.3713423Z Updating files:  91% (2491/2737)
+2026-11-17T03:59:05.3729020Z Updating files:  92% (2519/2737)
+2026-11-17T03:59:05.3741144Z Updating files:  93% (2546/2737)
+2026-11-17T03:59:05.3756645Z Updating files:  94% (2573/2737)
+2026-11-17T03:59:05.3773792Z Updating files:  95% (2601/2737)
+2026-11-17T03:59:05.3793999Z Updating files:  96% (2628/2737)
+2026-11-17T03:59:05.3813716Z Updating files:  97% (2655/2737)
+2026-11-17T03:59:05.3829351Z Updating files:  98% (2683/2737)
+2026-11-17T03:59:05.3846582Z Updating files:  99% (2710/2737)
+2026-11-17T03:59:05.3847206Z Updating files: 100% (2737/2737)
+2026-11-17T03:59:05.3847791Z Updating files: 100% (2737/2737), done.
+2026-11-17T03:59:05.3877453Z Note: switching to 'refs/tags/v0.21.0'.
+2026-11-17T03:59:05.3877913Z
+2026-11-17T03:59:05.3878300Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-17T03:59:05.3878901Z changes and commit them, and you can discard any commits you make in this
+2026-11-17T03:59:05.3879464Z state without impacting any branches by switching back to a branch.
+2026-11-17T03:59:05.3879799Z
+2026-11-17T03:59:05.3880063Z If you want to create a new branch to retain commits you create, you may
+2026-11-17T03:59:05.3880636Z do so (now or later) by using -c with the switch command. Example:
+2026-11-17T03:59:05.3880944Z
+2026-11-17T03:59:05.3881086Z   git switch -c <new-branch-name>
+2026-11-17T03:59:05.3881344Z
+2026-11-17T03:59:05.3881477Z Or undo this operation with:
+2026-11-17T03:59:05.3881720Z
+2026-11-17T03:59:05.3881833Z   git switch -
+2026-11-17T03:59:05.3882022Z
+2026-11-17T03:59:05.3882286Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-17T03:59:05.3882651Z
+2026-11-17T03:59:05.3882914Z HEAD is now at 3c5cfcf Prepare verified 0.21.0 nature and routes release with wiki
+2026-11-17T03:59:05.3971180Z ##[endgroup]
+2026-11-17T03:59:05.4023500Z [command]/usr/bin/git log -1 --format=%H
+2026-11-17T03:59:05.4056772Z 3c5cfcfda8423e688ccd15446d5de655b39893d4
+2026-11-17T03:59:05.6135228Z ##[group]Run actions/cache@v4
+2026-11-17T03:59:05.6135601Z with:
+2026-11-17T03:59:05.6135885Z   path: ~/godot
+addons/godot-sqlite/bin
+
+2026-11-17T03:59:05.6136644Z   key: godot-4.7.2-stable-bae6fce206edc398586ccc6f481e69569167ef3e69c1abf60e142e1bf5f166b3
+2026-11-17T03:59:05.6137185Z   enableCrossOsArchive: false
+2026-11-17T03:59:05.6137491Z   fail-on-cache-miss: false
+2026-11-17T03:59:05.6137771Z   lookup-only: false
+2026-11-17T03:59:05.6138030Z   save-always: false
+2026-11-17T03:59:05.6138274Z env:
+2026-11-17T03:59:05.6138516Z   GODOT_VERSION: 4.7.2-stable
+2026-11-17T03:59:05.6138797Z   TEST_TIMEOUT: 2400
+2026-11-17T03:59:05.6139044Z   TEST_JOBS: 4
+2026-11-17T03:59:05.6139287Z ##[endgroup]
+2026-11-17T03:59:05.7224320Z (node:2912) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-17T03:59:05.7225337Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-17T03:59:05.9699903Z Cache not found for input keys: godot-4.7.2-stable-bae6fce206edc398586ccc6f481e69569167ef3e69c1abf60e142e1bf5f166b3
+2026-11-17T03:59:06.0030828Z ##[group]Run if [ ! -x ~/godot/godot ]; then
+2026-11-17T03:59:06.0031284Z [36;1mif [ ! -x ~/godot/godot ]; then[0m
+2026-11-17T03:59:06.0031598Z [36;1m  mkdir -p ~/godot && cd ~/godot[0m
+2026-11-17T03:59:06.0032328Z [36;1m  curl -fsSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"[0m
+2026-11-17T03:59:06.0033334Z [36;1m  unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}_linux.x86_64" godot && rm godot.zip[0m
+2026-11-17T03:59:06.0033778Z [36;1mfi[0m
+2026-11-17T03:59:06.0087698Z shell: /usr/bin/bash -e {0}
+2026-11-17T03:59:06.0087982Z env:
+2026-11-17T03:59:06.0088186Z   GODOT_VERSION: 4.7.2-stable
+2026-11-17T03:59:06.0088440Z   TEST_TIMEOUT: 2400
+2026-11-17T03:59:06.0088661Z   TEST_JOBS: 4
+2026-11-17T03:59:06.0088860Z ##[endgroup]
+2026-11-17T03:59:08.5182926Z ##[group]Run python3 -m unittest discover -s tools/tests -v
+2026-11-17T03:59:08.5183599Z [36;1mpython3 -m unittest discover -s tools/tests -v[0m
+2026-11-17T03:59:08.5183984Z [36;1mGODOT=~/godot/godot tools/run_tests.sh[0m
+2026-11-17T03:59:08.5234582Z shell: /usr/bin/bash -e {0}
+2026-11-17T03:59:08.5234846Z env:
+2026-11-17T03:59:08.5235048Z   GODOT_VERSION: 4.7.2-stable
+2026-11-17T03:59:08.5235306Z   TEST_TIMEOUT: 2400
+2026-11-17T03:59:08.5235522Z   TEST_JOBS: 4
+2026-11-17T03:59:08.5235725Z ##[endgroup]
+2026-11-17T03:59:08.6256715Z test_empty_partial_and_early_stops_cannot_pass (test_parallel_tests.ParallelTestGates.test_empty_partial_and_early_stops_cannot_pass) ... ok
+2026-11-17T03:59:08.6258676Z test_full_summary_and_expected_errors_are_required (test_parallel_tests.ParallelTestGates.test_full_summary_and_expected_errors_are_required) ... ok
+2026-11-17T03:59:08.6282930Z test_inventory_filters_match_the_godot_runner (test_parallel_tests.ParallelTestGates.test_inventory_filters_match_the_godot_runner) ... ok
+2026-11-17T03:59:08.6284160Z
+2026-11-17T03:59:08.6284407Z ----------------------------------------------------------------------
+2026-11-17T03:59:08.6284988Z Ran 3 tests in 0.003s
+2026-11-17T03:59:08.6285223Z
+2026-11-17T03:59:08.6285388Z OK
+2026-11-17T03:59:08.6600109Z fetching godot-sqlite v4.9
+2026-11-17T04:01:14.3767523Z Running 749 tests in 114 suites with 4 isolated workers; logs: /home/runner/work/noheroneeds/noheroneeds/build/test-runs/20261117-040114-3035
+2026-11-17T04:01:17.0935757Z PASS tests/unit/building/test_doors.gd: 4 tests, 2.71s
+2026-11-17T04:01:50.3594592Z PASS tests/unit/app/test_libraries.gd: 5 tests, 35.98s
+2026-11-17T04:02:05.4834440Z PASS tests/unit/building/test_door_installation.gd: 3 tests, 51.1s
+2026-11-17T04:02:12.0956177Z PASS tests/unit/building/test_levels_network.gd: 1 tests, 55.0s
+2026-11-17T04:02:19.9111037Z PASS tests/unit/characters/test_character_file.gd: 9 tests, 7.82s
+2026-11-17T04:02:32.3305150Z PASS tests/unit/building/test_levels.gd: 9 tests, 77.95s
+2026-11-17T04:02:35.1384398Z PASS tests/unit/content/test_progression.gd: 3 tests, 2.81s
+2026-11-17T04:02:37.9439371Z PASS tests/unit/core/test_cbor.gd: 6 tests, 2.81s
+2026-11-17T04:02:40.7500324Z PASS tests/unit/core/test_hash.gd: 1 tests, 2.81s
+2026-11-17T04:02:43.5614560Z PASS tests/unit/core/test_uuid.gd: 2 tests, 2.81s
+2026-11-17T04:02:46.3655755Z PASS tests/unit/experiment_3d/test_actor_shadow_3d.gd: 2 tests, 2.81s
+2026-11-17T04:02:46.7666701Z PASS tests/unit/content/test_content_registry.gd: 9 tests, 26.85s
+2026-11-17T04:02:49.1750477Z PASS tests/unit/experiment_3d/test_caravan_harness_3d.gd: 1 tests, 2.81s
+2026-11-17T04:02:49.4744553Z PASS tests/unit/experiment_3d/test_mineral_meshes_3d.gd: 2 tests, 2.71s
+2026-11-17T04:02:51.9835529Z PASS tests/unit/experiment_3d/test_plant_meshes_3d.gd: 3 tests, 2.81s
+2026-11-17T04:02:52.2820924Z PASS tests/unit/experiment_3d/test_rock_cells_3d.gd: 6 tests, 2.81s
+2026-11-17T04:03:13.0114332Z PASS tests/unit/building/test_stairs.gd: 9 tests, 67.53s
+2026-11-17T04:03:43.6694112Z PASS tests/unit/building/test_settlement_levels.gd: 3 tests, 113.31s
+2026-11-17T04:04:47.9904616Z PASS tests/unit/network/test_enet.gd: 2 tests, 94.98s
+2026-11-17T04:04:51.3004370Z PASS tests/unit/network/test_protocol.gd: 5 tests, 3.31s
+2026-11-17T04:04:54.1971958Z PASS tests/unit/network/test_dedicated_server.gd: 2 tests, 121.91s
+2026-11-17T04:04:54.4089454Z PASS tests/unit/network/test_streaming_readiness.gd: 4 tests, 3.11s
+2026-11-17T04:04:57.0066115Z PASS tests/unit/persistence/test_chunk_codec.gd: 5 tests, 2.81s
+2026-11-17T04:04:57.1151476Z PASS tests/unit/persistence/test_world_store.gd: 7 tests, 2.71s
+2026-11-17T04:05:00.8175607Z PASS tests/unit/presentation/test_actions.gd: 12 tests, 3.81s
+2026-11-17T04:05:06.6294343Z PASS tests/unit/presentation/test_animal_sprite.gd: 6 tests, 5.81s
+2026-11-17T04:05:09.5397772Z PASS tests/unit/presentation/test_beast_voices.gd: 1 tests, 2.91s
+2026-11-17T04:05:16.8490806Z PASS tests/unit/presentation/test_additional_sprites.gd: 4 tests, 19.73s
+2026-11-17T04:05:19.6562722Z PASS tests/unit/presentation/test_click_orders.gd: 2 tests, 2.81s
+2026-11-17T04:05:20.4584497Z PASS tests/unit/presentation/test_character_editor.gd: 4 tests, 10.92s
+2026-11-17T04:05:22.3610645Z PASS tests/unit/presentation/test_cursor_art.gd: 2 tests, 2.7s
+2026-11-17T04:05:23.2664604Z PASS tests/unit/presentation/test_hospitality_panel.gd: 1 tests, 2.81s
+2026-11-17T04:05:24.9704752Z PASS tests/unit/presentation/test_hotbar.gd: 4 tests, 2.61s
+2026-11-17T04:05:25.8773464Z PASS tests/unit/presentation/test_key_map.gd: 1 tests, 2.61s
+2026-11-17T04:05:28.6891248Z PASS tests/unit/presentation/test_lpc_sprite.gd: 10 tests, 3.72s
+2026-11-17T04:05:31.3966675Z PASS tests/unit/presentation/test_music.gd: 6 tests, 2.71s
+2026-11-17T04:05:38.1119659Z PASS tests/unit/presentation/test_pixel_display.gd: 3 tests, 6.72s
+2026-11-17T04:06:27.8832077Z PASS tests/unit/presentation/test_menu.gd: 6 tests, 62.01s
+2026-11-17T04:06:40.0042961Z PASS tests/unit/presentation/test_ro_sprite.gd: 13 tests, 12.12s
+2026-11-17T04:06:40.2075599Z PASS tests/unit/experiment_3d/test_world_view_3d.gd: 55 tests, 228.22s
+2026-11-17T04:06:42.8116832Z PASS tests/unit/presentation/test_ui_windows.gd: 3 tests, 2.81s
+2026-11-17T04:07:51.8294129Z PASS tests/unit/server/test_bandits.gd: 8 tests, 69.02s
+2026-11-17T04:08:03.1534235Z PASS tests/unit/server/test_animal_life.gd: 15 tests, 82.95s
+2026-11-17T04:08:19.7848178Z PASS tests/unit/server/test_boats.gd: 4 tests, 27.95s
+2026-11-17T04:08:57.8568950Z PASS tests/unit/server/test_caravan_contracts.gd: 10 tests, 54.7s
+2026-11-17T04:09:09.7840942Z PASS tests/unit/server/test_caravan_motion.gd: 5 tests, 50.0s
+2026-11-17T04:09:45.7494485Z PASS tests/unit/server/test_caravan_navigation.gd: 4 tests, 47.89s
+2026-11-17T04:10:08.7840258Z PASS tests/unit/server/test_caravan_stops.gd: 7 tests, 59.0s
+2026-11-17T04:11:27.8054211Z PASS tests/unit/server/test_combat.gd: 15 tests, 79.02s
+2026-11-17T04:11:39.4374311Z PASS tests/unit/server/test_chronicles.gd: 6 tests, 113.69s
+2026-11-17T04:11:48.8328223Z PASS tests/unit/server/test_containers.gd: 6 tests, 21.03s
+2026-11-17T04:11:57.6475110Z PASS tests/unit/server/test_crash_recovery.gd: 1 tests, 8.81s
+2026-11-17T04:12:00.3550555Z PASS tests/unit/server/test_creature_chunk_safety.gd: 3 tests, 2.71s
+2026-11-17T04:12:10.1855864Z PASS tests/unit/server/test_crafts.gd: 14 tests, 30.75s
+2026-11-17T04:13:37.2230317Z PASS tests/unit/server/test_dweller_pace.gd: 3 tests, 87.04s
+2026-11-17T04:14:58.3234408Z PASS tests/unit/server/test_creatures.gd: 27 tests, 177.97s
+2026-11-17T04:15:02.1294983Z PASS tests/unit/server/test_equipment.gd: 4 tests, 3.8s
+2026-11-17T04:15:21.9594842Z PASS tests/unit/server/test_fields.gd: 5 tests, 19.83s
+2026-11-17T04:15:42.7980972Z PASS tests/unit/server/test_fishing.gd: 4 tests, 20.84s
+2026-11-17T04:16:46.3980379Z PASS tests/unit/server/test_dwellers.gd: 6 tests, 189.17s
+2026-11-17T04:17:15.9468768Z PASS tests/unit/network/test_game_server.gd: 24 tests, 812.28s
+2026-11-17T04:17:21.2530218Z PASS tests/unit/server/test_growth.gd: 5 tests, 34.85s
+2026-11-17T04:17:34.8766848Z PASS tests/unit/server/test_held.gd: 4 tests, 18.93s
+2026-11-17T04:18:26.8704458Z PASS tests/unit/server/test_from_scratch.gd: 2 tests, 164.07s
+2026-11-17T04:18:31.7743369Z PASS tests/unit/server/test_husbandry.gd: 8 tests, 56.9s
+2026-11-17T04:19:02.7215430Z PASS tests/unit/server/test_interaction.gd: 7 tests, 35.85s
+2026-11-17T04:19:06.4265634Z PASS tests/unit/server/test_map_places.gd: 4 tests, 3.71s
+2026-11-17T04:19:22.1492247Z PASS tests/unit/server/test_hospitality.gd: 12 tests, 120.9s
+2026-11-17T04:19:30.3625487Z PASS tests/unit/server/test_mastery.gd: 7 tests, 23.94s
+2026-11-17T04:19:33.7734162Z PASS tests/unit/server/test_looters.gd: 3 tests, 62.0s
+2026-11-17T04:19:56.5015784Z PASS tests/unit/server/test_ownership.gd: 5 tests, 22.73s
+2026-11-17T04:20:21.2344552Z PASS tests/unit/server/test_npc_equipment.gd: 6 tests, 50.87s
+2026-11-17T04:20:24.0400513Z PASS tests/unit/server/test_server_world.gd: 6 tests, 2.81s
+2026-11-17T04:20:37.0586417Z PASS tests/unit/server/test_needs.gd: 9 tests, 74.91s
+2026-11-17T04:20:46.4814386Z PASS tests/unit/server/test_road_audit.gd: 3 tests, 49.98s
+2026-11-17T04:21:05.4090294Z PASS tests/unit/server/test_swimming.gd: 4 tests, 18.93s
+2026-11-17T04:21:36.9604291Z PASS tests/unit/presentation/test_play.gd: 17 tests, 958.85s
+2026-11-17T04:21:53.0890063Z PASS tests/unit/server/test_settlement_life.gd: 11 tests, 89.05s
+2026-11-17T04:21:53.9852286Z PASS tests/unit/server/test_settlement_population.gd: 10 tests, 76.93s
+2026-11-17T04:21:55.6894294Z PASS tests/unit/server/test_things.gd: 5 tests, 18.73s
+2026-11-17T04:22:08.4113444Z PASS tests/unit/server/test_teaching.gd: 2 tests, 63.0s
+2026-11-17T04:22:15.4206987Z PASS tests/unit/server/test_village_development.gd: 10 tests, 19.73s
+2026-11-17T04:22:21.8280647Z PASS tests/unit/server/test_unload.gd: 3 tests, 27.84s
+2026-11-17T04:22:45.6791762Z PASS tests/unit/server/test_underground.gd: 10 tests, 52.59s
+2026-11-17T04:22:48.3918537Z PASS tests/unit/sim/test_bag.gd: 2 tests, 2.71s
+2026-11-17T04:22:49.6665432Z PASS tests/unit/server/test_world_time.gd: 3 tests, 27.84s
+2026-11-17T04:22:50.5945751Z PASS tests/unit/sim/test_daylight.gd: 2 tests, 2.2s
+2026-11-17T04:22:52.3724767Z PASS tests/unit/sim/test_mastery.gd: 7 tests, 2.71s
+2026-11-17T04:22:53.4006793Z PASS tests/unit/sim/test_reach.gd: 1 tests, 2.81s
+2026-11-17T04:22:56.1074028Z PASS tests/unit/sim/test_wear.gd: 4 tests, 2.71s
+2026-11-17T04:22:58.9160467Z PASS tests/unit/sim/test_weather.gd: 6 tests, 2.81s
+2026-11-17T04:23:01.2846080Z PASS tests/unit/server/test_wear.gd: 5 tests, 45.86s
+2026-11-17T04:23:01.7240382Z PASS tests/unit/test_sqlite_extension.gd: 2 tests, 2.81s
+2026-11-17T04:23:04.5330540Z PASS tests/unit/world/test_bridge_routes.gd: 6 tests, 2.81s
+2026-11-17T04:23:08.3421460Z PASS tests/unit/world/test_chunk_handoff.gd: 5 tests, 3.81s
+2026-11-17T04:23:45.2571959Z PASS tests/unit/sim/test_sight.gd: 5 tests, 52.89s
+2026-11-17T04:23:54.1792488Z PASS tests/unit/world/test_bandit_camp_plans.gd: 3 tests, 52.89s
+2026-11-17T04:24:20.1186723Z PASS tests/unit/world/test_local_weather.gd: 6 tests, 25.94s
+2026-11-17T04:24:20.3184527Z PASS tests/unit/server/test_village_economy.gd: 13 tests, 131.91s
+2026-11-17T04:24:22.2504167Z PASS tests/unit/world/test_geography.gd: 9 tests, 73.91s
+2026-11-17T04:24:28.0335800Z PASS tests/unit/world/test_planet_topology.gd: 4 tests, 7.71s
+2026-11-17T04:24:31.9441873Z PASS tests/unit/world/test_roads.gd: 17 tests, 3.91s
+2026-11-17T04:24:32.1344201Z PASS tests/unit/world/test_hospitality_plans.gd: 3 tests, 46.88s
+2026-11-17T04:24:34.6514333Z PASS tests/unit/world/test_settlement_architecture.gd: 6 tests, 2.71s
+2026-11-17T04:24:40.8478367Z PASS tests/unit/world/test_settlement_layout.gd: 5 tests, 8.71s
+2026-11-17T04:24:43.5567862Z PASS tests/unit/world/test_settlement_terrain_layout.gd: 3 tests, 2.71s
+2026-11-17T04:25:01.8824911Z PASS tests/unit/world/test_minerals.gd: 4 tests, 41.76s
+2026-11-17T04:25:35.9603847Z PASS tests/unit/world/test_planet_world.gd: 8 tests, 73.71s
+2026-11-17T04:26:36.8414362Z PASS tests/unit/world/test_surface_routes.gd: 5 tests, 60.88s
+2026-11-17T04:26:49.5401560Z PASS tests/unit/world/test_settlement_planets.gd: 4 tests, 134.89s
+2026-11-17T04:29:00.1089911Z PASS tests/unit/world/test_surface.gd: 9 tests, 238.23s
+2026-11-17T04:29:50.6990591Z PASS tests/unit/world/test_settlements.gd: 14 tests, 307.14s
+2026-11-17T04:30:07.8166657Z PASS tests/unit/world/test_surface_versions.gd: 5 tests, 210.98s
+2026-11-17T04:31:02.3475571Z PASS tests/unit/world/test_world_plan.gd: 23 tests, 252.81s
+2026-11-17T04:31:02.5296474Z {"ok": true, "tests": 749, "suites": 114, "sources_unchanged": true, "wall_seconds": 1788.03}
+2026-11-17T04:31:02.6782585Z Post job cleanup.
+2026-11-17T04:31:02.7878057Z (node:6101) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-17T04:31:02.7878906Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-17T04:31:02.8067130Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/noheroneeds/noheroneeds --files-from manifest.txt --use-compress-program zstdmt
+2026-11-17T04:31:03.6075596Z (node:6101) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-17T04:31:04.6001307Z Sent 24510464 of 84276712 (29.1%), 23.4 MBs/sec
+2026-11-17T04:31:05.5997999Z Sent 80674816 of 84276712 (95.7%), 38.5 MBs/sec
+2026-11-17T04:31:05.9990254Z Sent 84276712 of 84276712 (100.0%), 33.5 MBs/sec
+2026-11-17T04:31:06.1805666Z Cache saved with key: godot-4.7.2-stable-bae6fce206edc398586ccc6f481e69569167ef3e69c1abf60e142e1bf5f166b3
+2026-11-17T04:31:06.2264474Z Post job cleanup.
+2026-11-17T04:31:06.3130012Z [command]/usr/bin/git version
+2026-11-17T04:31:06.3173610Z git version 2.56.1
+2026-11-17T04:31:06.3218096Z Temporarily overriding HOME='/home/runner/work/_temp/f9babe75-1c2b-406d-9c43-3d01fc2ed835' before making global git config changes
+2026-11-17T04:31:06.3219455Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-17T04:31:06.3224817Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/noheroneeds/noheroneeds
+2026-11-17T04:31:06.3265499Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-17T04:31:06.3302810Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-17T04:31:06.3605190Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-17T04:31:06.3632858Z http.https://github.com/.extraheader
+2026-11-17T04:31:06.3643963Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-17T04:31:06.3680635Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-17T04:31:06.4070518Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-17T04:31:06.4143072Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-17T04:31:06.4568374Z Cleaning up orphan processes
+2026-11-17T04:31:06.5084408Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -37,6 +37,7 @@ var _height_around := Vector2i(1 << 30, 0)
 var _rock_flush := {}
 var _land: SurfaceGenerator
 var _cursor := {}
+var _ray_missed := false
 var _ghost_root := Node3D.new()
 var _last_build_ms := 0.0
 var _follow := Vector3.ZERO
@@ -1273,6 +1274,9 @@ func sprite_count() -> int:
 func pending_chunks() -> int:
 	return _queued.size() + (0 if _job.is_empty() else 1)
 
+func has_geometry_at(location: String, cell: Vector2i) -> bool:
+	return _geometry.has(ServerWorld.chunk_key(location, cell.x >> 5, cell.y >> 5))
+
 func _update_actors(alpha: float, delta: float) -> void:
 	var entities := client.entities.duplicate()
 	if client.has_position:
@@ -1507,6 +1511,7 @@ func _update_item(id: String, e: Dictionary, at: Vector3) -> void:
 
 func screen_point(screen: Vector2) -> Vector2:
 	_cursor = {}
+	_ray_missed = true
 	if not eye.is_inside_tree() or eye.get_world_3d() == null:
 		return Vector2.ZERO
 	# A being whose figure is under the pointer is what one points at, whatever
@@ -1535,6 +1540,7 @@ func screen_point(screen: Vector2) -> Vector2:
 		_cursor = {}
 		hit = {}
 	if not hit.is_empty():
+		_ray_missed = false
 		if _cursor.get("roof_group", false):
 			_cursor = _cursor.duplicate()
 			var roof_hit: Vector3 = hit["position"]
@@ -1559,6 +1565,9 @@ func _actor_at(at: Vector2) -> String:
 		# Its figure as drawn (a hare small, a cow big): the picture's own
 		# opaque part about its feet (the author: pointing at a hare took the grass).
 		var e: Dictionary = client.entities[id]
+		var cell := Movement.cell_of(Vector2i(int(e.get("x", 0)), int(e.get("y", 0))))
+		if not has_geometry_at(Levels.SURFACE if int(e.get("z", client.z)) == 0 else client.location, cell):
+			continue
 		var looks: Dictionary = e.get("appearance", {})
 		if e.get("kind") == "creature" and looks.is_empty():
 			looks = {"body_plan": String(e.get("creature", ""))}
@@ -1647,6 +1656,7 @@ func covers_shown(cell: Vector2i) -> bool:
 ## Where the mouse is not over the 3D view (a point given outright): pick by the point.
 func point_at(_point: Vector2) -> void:
 	_cursor = {}
+	_ray_missed = false
 
 func pick_target(point: Vector2) -> Dictionary:
 	if not _cursor.is_empty():
@@ -1658,7 +1668,7 @@ func pick_target(point: Vector2) -> Dictionary:
 				if int(worn.get(key, 0)) > 0:
 					target[key] = int(worn[key])
 		return target
-	return super(point)
+	return {} if _ray_missed else super(point)
 
 ## The current-floor cut follows the live floor, including its partitions and stair
 ## openings. Only the two exterior facades facing the camera are removed.

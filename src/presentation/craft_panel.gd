@@ -16,6 +16,7 @@ extends PanelContainer
 ## the chance and mastery; with no line a skill's card.
 
 signal craft(recipe: String, count: int)
+signal place_workbench
 ## Mend a thing: the request's fields ({"item", "copy"} or {"slot"}).
 signal mend(request: Dictionary)
 ## Any other ask: by a blueprint, studying one, drafting one (a request).
@@ -26,6 +27,7 @@ const ALL := "all"
 const SHEETS := "sheets"
 const MENDING := "mending"
 const BLUEPRINT := "base:blueprint"
+const WORKBENCH_ITEM := "base:workbench_item"
 var content: ContentRegistry
 var view: WorldView
 var client: GameClient
@@ -40,6 +42,8 @@ var _mends := {}
 var _sheets := {}
 var _make: Button
 var _second: Button
+var _place_workbench: Button
+var _workbench_made := false
 ## How many to make: so many as asked, or as many as the things allow.
 var count: SpinBox
 var _note := Label.new()
@@ -130,6 +134,16 @@ func setup(registry: ContentRegistry, world_view: WorldView, game_client: GameCl
 	row.add_child(_second)
 	_note.add_theme_color_override("font_color", Art.TEXT_DIM)
 	right.add_child(_note)
+	_place_workbench = Button.new()
+	_place_workbench.name = "PlaceWorkbench"
+	_place_workbench.text = "Поставить верстак"
+	_place_workbench.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_place_workbench.add_theme_color_override("font_color", Art.TEXT_HOT)
+	_place_workbench.hide()
+	_place_workbench.pressed.connect(func() -> void:
+		if int(client.inventory().get(WORKBENCH_ITEM, 0)) > 0:
+			place_workbench.emit())
+	right.add_child(_place_workbench)
 	visible = false
 
 
@@ -186,11 +200,16 @@ func station_near(kind: String) -> bool:
 func open(at_station := "", on := ALL) -> void:
 	station = at_station
 	chosen = on
+	_workbench_made = false
 	_title.text = "Ремёсла и навыки" if station == "" else "Ремёсла — " + String(STATIONS.get(station, station))
 	count.value = 1
 	search.text = ""
 	refresh()
 	visible = true
+
+
+func offer_workbench_placement() -> void:
+	_workbench_made = true
 
 
 ## The chance one makes a recipe now, and one's mastery of it.
@@ -204,6 +223,7 @@ func refresh() -> void:
 	_fill_skills()
 	var keep := selected()
 	var inventory := client.inventory()
+	_place_workbench.visible = _workbench_made and int(inventory.get(WORKBENCH_ITEM, 0)) > 0
 	_list.clear()
 	_ids.clear()
 	_can.clear()

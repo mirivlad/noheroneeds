@@ -179,7 +179,7 @@ const TOOLS := {"": "glove", "chopping": "axe", "mining": "pick", "fishing": "ro
 
 ## Which picture the actions call for.
 static func kind_of(actions: Array[Dictionary]) -> String:
-	var p := Actions.primary(actions)
+	var p := Actions.left_click(actions)
 	match String(p.get("id", "")):
 		"shoot":
 			return "bow"
@@ -187,18 +187,12 @@ static func kind_of(actions: Array[Dictionary]) -> String:
 			return "hammer"
 		"till":
 			return "hoe"
-		"sow":
+		"sow", "pickup":
 			return "glove"
 		"gather":
 			return TOOLS.get(String(p.get("tool", "")), "corners")
-	if actions.any(func(a: Dictionary) -> bool: return a["id"] == "pickup"):
-		return "glove"
-	if String(p.get("id", "")) == "strike":
-		return "sword"  # (a blow at the air is no target: the ground is walked to, corners)
-	# A beast or a foe, whatever is in the hands: walked up to and struck (RO, ADR-0065).
-	if actions.any(func(a: Dictionary) -> bool: return a["id"] == "strike") \
-			and not actions.any(func(a: Dictionary) -> bool: return a["id"] == "talk"):
-		return "sword"
+		"strike":
+			return "sword"
 	return "corners"
 
 

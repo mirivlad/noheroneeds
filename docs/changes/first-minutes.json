@@ -1,0 +1,26 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Вход ждёт отрисовки земли у персонажа, подсказка отражает настоящий щелчок мышью, а готовый верстак ставится из окна ремёсел.",
+      "sources": {
+        "src/experiment_3d/world_view_3d.gd": "8c37326e31dd0dcc7a015131715447f879b55c4a6d3e408e54c2803c483160cc",
+        "src/presentation/actions.gd": "f70596497765bab22f330c12618c20754e8c4c703beb9da0df54a79a224b1c90",
+        "src/presentation/craft_panel.gd": "65a9709e0ea3300c563ef0e294263e2d523fd3bd659f9c46ae3ab3b8e00ce005",
+        "src/presentation/cursor_art.gd": "964d505903c13c787adefbc20ccf7191b2888b775637d69540c3f5c80594a7b2",
+        "src/presentation/game_screen.gd": "97bcdc75689a579d2a41fea9f335ef1c329077362acedc9ba284f1e282173ee0"
+      },
+      "mechanics": [
+        "start",
+        "controls",
+        "craft"
+      ],
+      "guides": {
+        "site/content/guides/start.html": "8e15787166ed38b5bef9ca4ba6c1f4b89cc619544c942375c769121699a20c86",
+        "site/content/guides/controls.html": "88d1c1a28ccb6b3727e68076418b9e4c6a2a4abc786716e5bd582710315bbaac",
+        "site/content/guides/craft.html": "829011f0d752893080bb471b3727fd0b502d6ace4ee5fbcff456544ae0ae1ebc"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

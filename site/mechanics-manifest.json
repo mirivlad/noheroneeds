@@ -6,6 +6,7 @@
       "guide": "start",
       "sources": [
         "src/app/world_library.gd",
+        "src/presentation/game_screen.gd",
         "src/characters/*.gd",
         "src/app/character_library.gd",
         "content/base/pack.json"
@@ -71,6 +72,7 @@
       "sources": [
         "src/server/knowledge.gd",
         "src/server/server_world.gd",
+        "src/presentation/craft_panel.gd",
         "src/content/*.gd",
         "content/base/recipes.json",
         "content/base/professions.json",

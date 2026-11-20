@@ -226,6 +226,27 @@ static func primary(actions: Array[Dictionary]) -> Dictionary:
 	return {}
 
 
+## The RO click order (ADR-0065). An empty action means walking to the point.
+static func left_click(actions: Array[Dictionary]) -> Dictionary:
+	var p := primary(actions)
+	if p.get("id") == "shoot":
+		return p
+	var strike := {}
+	for a: Dictionary in actions:
+		if not a.get("enabled", true):
+			continue
+		if a["id"] == "talk":
+			return a
+		if a["id"] == "strike":
+			strike = a
+	if not p.is_empty() and p["id"] not in ["inspect", "swing"]:
+		return p
+	if not strike.is_empty():
+		return strike
+	var q := quick(actions)
+	return q if q.get("id") != "inspect" else {}
+
+
 static func quick(actions: Array[Dictionary]) -> Dictionary:
 	for a in actions:
 		if a.get("quick", false) and a.get("enabled", true):

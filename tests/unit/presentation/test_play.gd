@@ -21,6 +21,7 @@ func before_each() -> void:
 	# covered by streaming readiness and the native runtime probe.
 	w.prepare_spawn_view(g.game.server.view_chunks)
 	_frames(120, true)
+	_frames_until(func() -> bool: return not g.loading.visible)
 	# A clear field round the player, things to build with and to use.
 	var me := _me()
 	for y in range(me.y - 12, me.y + 13):
@@ -428,6 +429,28 @@ func test_crafts_at_a_workbench_and_food_in_the_hands() -> void:
 	check(g.needs_box.row_text("satiety").begins_with("Сытость 75"), "the screen shows one's own satiety: " + g.needs_box.row_text("satiety"))
 
 
+func test_crafting_a_workbench_offers_its_regular_build_preview() -> void:
+	w.knowledge.never_fail = true
+	_key(KEY_K)
+	var place := g.crafts.find_child("PlaceWorkbench", true, false) as Button
+	check(not place.visible, "placement is offered after crafting")
+	g.crafts.craft.emit("base:make_workbench", 1)
+	_frames_until(func() -> bool: return place.visible, 15.0)
+	check(place.is_visible_in_tree(), "the finished workbench can be placed from the crafts window")
+	# Let Godot lay out the newly visible row before clicking it.
+	for i in 2:
+		await (Engine.get_main_loop() as SceneTree).process_frame
+	_click(place.get_global_transform_with_canvas() * (place.size / 2.0))
+	eq(g._blueprint, "base:workbench", "the shortcut selects the standard blueprint")
+	check(not g.crafts.visible, "only the build preview remains")
+	var cell := _me() + Vector2i(1, 0)
+	_click(_screen(cell))
+	_frames_until(func() -> bool: return _part(cell) == "base:workbench", 15.0)
+	eq(_part(cell), "base:workbench", "the server places the crafted item")
+	_frames_until(func() -> bool: return not g.client.inventory().has(CraftPanel.WORKBENCH_ITEM), 15.0)
+	check(not g.client.inventory().has(CraftPanel.WORKBENCH_ITEM), "the usual build cost consumes the item")
+
+
 func test_a_field_grows_on_the_screen_and_a_hoe_ploughs() -> void:
 	var me := _me()
 	var cell := me + Vector2i(2, 0)
@@ -641,10 +664,10 @@ func test_clicks_walk_dig_and_strike_as_in_ro() -> void:
 	_move_mouse(_screen(Vector2i(int(e["x"]), int(e["y"])) / Movement.UNIT))
 	_frames(3)
 	eq(CursorArt.kind_of(g.actions), "sword", "a sword's cursor on a beast, even bare-handed")
-	g._click_order(Actions.primary(g.actions))
+	g._click_order()
 	check(g.orders.acting() and not g.orders.repeat, "one blow, followed till it lands")
 	g.settings.set_value("auto_attack", true)
-	g._click_order(Actions.primary(g.actions))
+	g._click_order()
 	check(g.orders.repeat, "with auto-attack: again and again")
 
 

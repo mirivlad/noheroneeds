@@ -190,6 +190,14 @@ func test_a_dweller_is_talked_and_traded_with() -> void:
 	var a := Actions.of(content, client, view, "", smith, Vector2i.ZERO)
 	eq(Actions.quick(a).get("id"), "talk", "E: to talk (ADR-0042)")
 	eq(Actions.quick(a)["request"], {"type": "talk", "creature": "v1"})
+	var with_axe := Actions.of(content, client, view, "base:axe", smith, Vector2i.ZERO)
+	eq(Actions.left_click(with_axe).get("id"), "talk", "even with an axe, a click talks to the dweller")
+	eq(CursorArt.kind_of(with_axe), "corners", "the cursor does not promise a strike")
+	var with_bow := Actions.of(content, client, view, "base:bow", smith, Vector2i.ZERO)
+	eq(Actions.left_click(with_bow).get("id"), "shoot", "the drawn bow still takes precedence")
+	var grass := {"kind": "ground", "id": "base:grass", "cell": Vector2i.ZERO}
+	eq(Actions.left_click(Actions.of(content, client, view, "base:axe", grass, Vector2i.ZERO)), {},
+		"an axe in the hands still allows a ground click to walk")
 	check(_ids(a).has("trade"), "and to trade, from the menu")
 	eq(a.filter(func(x: Dictionary) -> bool: return x["id"] == "trade")[0]["request"], {"type": "trade_look", "creature": "v1"})
 	eq(Actions.describe(content, smith), "Житель — кузнец")

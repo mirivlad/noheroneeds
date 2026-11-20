@@ -150,6 +150,9 @@ var build_bar := HudBoxes.BuildBar.new()
 var _bar_part := ""
 var _bar_picture: Texture2D
 var status := Label.new()
+## Covers the initial entry until the client's immediate ground is drawn.
+var loading: ColorRect
+var _loading_status: Label
 ## The second HUD line: hosting address, frame rate, control hints.
 var _info := Label.new()
 var _accum := 0.0
@@ -331,11 +334,56 @@ func start(cfg: Dictionary, registry: ContentRegistry, me: PlayerIdentity, serve
 	add_child(map_layer)
 	world_map.setup(painter, client)
 	map_layer.add_child(world_map)
+	_setup_loading(map_layer)
 	get_viewport().size_changed.connect(_layout_hud)
 	_layout_hud()
 	_set_cursor()
 	apply_settings()
 	return ""
+
+
+func _setup_loading(layer: CanvasLayer) -> void:
+	loading = ColorRect.new()
+	loading.color = Color("1b1720")
+	loading.theme = Art.theme()
+	loading.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(loading)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	loading.add_child(center)
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size.x = 260
+	center.add_child(frame)
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 6)
+	frame.add_child(lines)
+	var title := Label.new()
+	title.text = "Вход в мир"
+	title.add_theme_color_override("font_color", Art.TEXT_HOT)
+	_loading_status = Label.new()
+	_loading_status.text = "Подключаемся…"
+	var help := Label.new()
+	help.text = "Esc — меню"
+	help.add_theme_color_override("font_color", Art.TEXT_DIM)
+	for line: Label in [title, _loading_status, help]:
+		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lines.add_child(line)
+
+
+func _update_loading() -> void:
+	if not loading.visible or client.state != "playing":
+		return
+	_loading_status.text = "Готовим местность…"
+	if not client.has_position:
+		return
+	var cell := Movement.cell_of(client.position)
+	# At a chunk seam the player needs the ground on both sides. Distant
+	# terrain still streams after entry.
+	for cy in range((cell.y - 1) >> 5, ((cell.y + 1) >> 5) + 1):
+		for cx in range((cell.x - 1) >> 5, ((cell.x + 1) >> 5) + 1):
+			if not view.has_geometry_at(client.location, Vector2i(cx, cy) * Chunk.SIZE):
+				return
+	loading.hide()
 
 
 ## The cursor: what a click (or E) will do (CursorArt), its pixels the
@@ -485,7 +533,7 @@ func _process(delta: float) -> void:
 			_places_wait = 1.0
 			_places_rid = client.request({"type": "places"})
 	var t_map := Time.get_ticks_usec()
-	client.move = _steer(delta) if not paused and not world_map.visible else Vector2i.ZERO
+	client.move = _steer(delta) if not paused and not loading.visible and not world_map.visible else Vector2i.ZERO
 	if client.move != Vector2i.ZERO:
 		_last_dir = client.move
 	# Tired, one does not run (ADR-0035): the server would not let it, so neither does the guess.
@@ -517,9 +565,12 @@ func _process(delta: float) -> void:
 		_hold_walk -= delta
 		if _hold_walk <= 0.0:
 			_hold_walk = 0.2
-			orders.walk_to(Movement.cell_of(Vector2i(_mouse_world() * WorldView.UNITS_PER_PIXEL)), Movement.cell_of(client.position), client.is_solid)
+			var at := _mouse_world()
+			if not view.pick_target(at).is_empty():
+				orders.walk_to(Movement.cell_of(Vector2i(at * WorldView.UNITS_PER_PIXEL)), Movement.cell_of(client.position), client.is_solid)
 	var t_view := Time.get_ticks_usec()
 	view.update_view(_accum / tick, delta)
+	_update_loading()
 	var t_drawn := Time.get_ticks_usec()
 	if client.has_position:
 		camera.position = view.own_pixel_position(_accum / tick).round()
@@ -541,7 +592,7 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if paused or client == null:
 		return
-	if not world_map.visible and view.camera_input(event):
+	if not loading.visible and not world_map.visible and view.camera_input(event):
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and world_map.visible:
@@ -561,6 +612,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close_tools()
 			return
 		menu_requested.emit()
+		return
+	if loading.visible:
+		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo:
 		var e := event as InputEventKey  # by its place (KeyMap): the same on any layout
@@ -683,7 +737,8 @@ func _mouse(b: InputEventMouseButton) -> void:
 		_hold_walk = 0.2
 		# A bow: drawn while the button is held, the arrow loosed when it is let go.
 		if not b.pressed and _bow_drawn:
-			var shot := Actions.primary(actions)
+			_update_target()
+			var shot := Actions.left_click(actions)
 			if String(shot.get("id", "")) == "shoot":
 				_do(shot)
 			view.loose_own(_mouse_world() - view.own_pixel_position(1.0))  # let go even before the bow is ready
@@ -691,34 +746,29 @@ func _mouse(b: InputEventMouseButton) -> void:
 			return
 	# The right button: the menu on a click (a drag turns the camera: the view took it).
 	if b.button_index == MOUSE_BUTTON_RIGHT and not b.pressed:
-		_open_menu()
+		_update_target()
+		if not target.is_empty():
+			_open_menu()
 		return
 	if not b.pressed or b.button_index != MOUSE_BUTTON_LEFT:
 		return
 	_update_target()  # what is under the pointer at the click itself
-	var p := Actions.primary(actions)
-	if String(p.get("id", "")) == "shoot" and p.get("enabled", true):
-		_bow_drawn = true  # aiming the held button walks nowhere (the keys still walk)
-		view.draw_own(_mouse_world() - view.own_pixel_position(1.0))
+	if target.is_empty():
 		return
-	_click_order(p)
+	_click_order()
 
 
 ## A left click as in RO: a dweller is talked with, a thing or a being gets
 ## what the left button does there (walked up to first), else one walks there.
-func _click_order(p: Dictionary) -> void:
-	var talk := actions.filter(func(a: Dictionary) -> bool: return a["id"] == "talk")
-	var strike := actions.filter(func(a: Dictionary) -> bool: return a["id"] == "strike")
-	var q := Actions.quick(actions)
+func _click_order() -> void:
+	var left := Actions.left_click(actions)
+	if left.get("id") == "shoot":
+		_bow_drawn = true  # aiming the held button walks nowhere (the keys still walk)
+		view.draw_own(_mouse_world() - view.own_pixel_position(1.0))
+		return
 	view.mark_walk(Vector2i.MAX)  # a new target: the old mark goes
-	if not talk.is_empty():
-		_order(talk[0], target)
-	elif not p.is_empty() and not p["id"] in ["inspect", "swing"]:  # a blow at the air: the ground is walked to
-		_order(p, target)
-	elif not strike.is_empty():
-		_order(strike[0], target)  # a beast or a foe: struck with what is in the hands
-	elif not q.is_empty() and q["id"] != "inspect":
-		_order(q, target)  # a way up or down, a door, a thing lying: walked up to and used
+	if not left.is_empty():
+		_order(left, target)
 	elif client.has_position:
 		var cell: Vector2i = target.get("cell", Movement.cell_of(Vector2i(_mouse_world() * WorldView.UNITS_PER_PIXEL)))
 		if target.get("kind") == "entity":
@@ -946,9 +996,12 @@ func _do(a: Dictionary) -> void:
 func _open_menu() -> void:
 	_menu_actions = actions.duplicate()
 	_menu_target = target.duplicate()
+	var left := Actions.left_click(actions)
+	var quick := Actions.quick(actions)
+	var use_key := KeyMap.key_name(KeyMap.key(settings, "use"))
 	var lines: Array[Dictionary] = []
 	for a: Dictionary in _menu_actions:
-		lines.append({"text": String(a["name"]) + ("  (E)" if a.get("quick", false) else "") + ("  (ЛКМ)" if a.get("primary", false) else ""),
+		lines.append({"text": String(a["name"]) + ("  (%s)" % use_key if a == quick else "") + ("  (ЛКМ)" if a == left else ""),
 			"disabled": not a.get("enabled", true), "why": String(a.get("why", ""))})
 	_menu.open(get_viewport().get_mouse_position(), Actions.describe(content, target, client.character_id), lines)
 
@@ -990,17 +1043,25 @@ func _close_tools() -> void:
 	_drag_from = NO_CELL
 
 
+func _choose_blueprint(part: String) -> void:
+	_blueprint = part
+	_facing = 0
+	_drag_from = NO_CELL
+
+
 ## The quick slots, the catalogue, the things, the context menu.
 func _build_tools(layer: CanvasLayer) -> void:
 	hotbar.setup(content, view)
 	layer.add_child(hotbar)
 	catalog.setup(content, view)
 	catalog.chosen.connect(func(part: String) -> void:
-		_blueprint = part
-		_facing = 0
+		_choose_blueprint(part)
 		catalog.visible = false)
 	layer.add_child(catalog)
 	crafts.setup(content, view, client)
+	crafts.place_workbench.connect(func() -> void:
+		crafts.hide()
+		_choose_blueprint("base:workbench"))
 	crafts.craft.connect(func(recipe: String, count: int) -> void:
 		var crid := client.request({"type": "craft", "recipe": recipe, "count": count})
 		_craft_rids[crid] = true
@@ -1214,6 +1275,8 @@ func _turns() -> Array:
 	var def := content.get_def(_blueprint)
 	if def.get("role") == "door":
 		var cell := _build_cell()
+		if cell == NO_CELL:
+			return []
 		var facing := BuildRules.placement_facing(_build_view, content, _blueprint, client.location, cell.x, cell.y, "")
 		return ["e", "w"] if facing in ["e", "w"] else ["s", "n"]
 	return def.get("rotations", [])
@@ -1223,6 +1286,8 @@ func _turns() -> Array:
 ## roofs the cell whose cover would be drawn there (covers sit a storey higher).
 func _build_cell() -> Vector2i:
 	var m := _mouse_world()
+	if view.pick_target(m).is_empty():
+		return NO_CELL
 	return Vector2i(floori(m.x / WorldView.CELL), floori(m.y / WorldView.CELL))
 
 
@@ -1231,12 +1296,15 @@ func _build_cell() -> Vector2i:
 ## server will use (BuildRules), with reach and the materials as they run out
 ## along the drag. [[cell, reason or ""], ...]
 func _plan_cells() -> Array:
+	var at := _build_cell()
+	if at == NO_CELL:
+		return []
 	var out := []
 	var cells: Array[Vector2i] = []
 	if _drag_from != NO_CELL:
-		cells = _drag_cells(_drag_from, _build_cell())
+		cells = _drag_cells(_drag_from, at)
 	else:
-		cells.append(_build_cell())
+		cells.append(at)
 	var have := client.inventory().duplicate()
 	var facing := String(_turns()[_facing % _turns().size()]) if not _turns().is_empty() else ""
 	for cell: Vector2i in cells:
@@ -1406,6 +1474,8 @@ func _update_hud() -> void:
 			else:
 				_note = "нельзя: " + String(REASONS.get(r.get("reason", ""), r.get("reason", "?")))
 			if crafts.visible:
+				if r.get("ok") and int((r.get("made", {}) as Dictionary).get(CraftPanel.WORKBENCH_ITEM, 0)) > 0:
+					crafts.offer_workbench_placement()
 				crafts.refresh()
 			_craft_rids_recipe.erase(rid)
 			continue
@@ -1534,15 +1604,18 @@ func _update_hud() -> void:
 			if p[1] != "":
 				doing = "нельзя: " + String(REASONS.get(p[1], p[1]))
 				break
-	elif not _over_ui():
+	elif not target.is_empty() and not _over_ui() and not windows.any_open():
 		# What is under the cursor, then what the left button and E do there.
-		var p := Actions.primary(actions)
+		var p := Actions.left_click(actions)
 		var q := Actions.quick(actions)
 		var does := PackedStringArray()
-		if not p.is_empty() and p["id"] != "inspect":
-			does.append("ЛКМ: %s" % p["name"])
+		var use_key := KeyMap.key_name(KeyMap.key(settings, "use"))
+		if not p.is_empty():
+			does.append("%s: %s" % ["ЛКМ / " + use_key if q == p else "ЛКМ", p["name"]])
+		elif target.get("kind") == "ground" and target.get("id", "") != "":
+			does.append("ЛКМ: Идти")
 		if not q.is_empty() and q != p:
-			does.append("E: %s" % q["name"])
+			does.append("%s: %s" % [use_key, q["name"]])
 		if ammo != "" and not does.is_empty():
 			does.append(ammo)
 		var what := Actions.describe(content, target, client.character_id)
@@ -1580,10 +1653,16 @@ func _update_hud() -> void:
 ## What the cursor points at and what can be done there (each frame), and
 ## the cursor that says so.
 func _update_target() -> void:
-	if client.state != "playing" or world_map.visible:
+	var mouse := Vector2.ZERO
+	target = {}
+	if not loading.visible and client.state == "playing" and client.has_position and not world_map.visible:
+		mouse = _mouse_world()
+		target = view.pick_target(mouse)
+	if target.is_empty():
+		actions.clear()
+		_cursor_kind = "corners"
+		_set_cursor()
 		return
-	var mouse := _mouse_world()
-	target = view.pick_target(mouse)
 	var aim := Vector2i(mouse * WorldView.UNITS_PER_PIXEL)
 	var held := hotbar.held(client.inventory())
 	# What is under the pointer is the target (RO, ADR-0065): the ground is

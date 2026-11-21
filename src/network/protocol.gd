@@ -35,7 +35,7 @@ class_name Protocol
 ##    server with a password lets in only with one of them, ADR-0060).
 ## 14: WELCOME names the saved surface recipe; client and server sample the
 ##     same terrain even when new worlds use a newer generator.
-const VERSION := 14
+const VERSION := 15
 
 
 ## A refusal's reason as a player reads it.
@@ -57,6 +57,9 @@ const REQUEST := "request"
 const RESULT := "result"
 const SNAPSHOT := "snapshot"
 const CHUNK := "chunk"
+const CHUNK_DELTA := "chunk_delta"
+const CHUNK_RESYNC := "chunk_resync"
+const MAX_CHUNK_DELTA_CELLS := 32
 const LOCATION := "location"
 const MAP_KNOWN := "map_known"
 const MAP_REQUEST := "map_request"
@@ -70,6 +73,7 @@ const CLIENT_FIELDS := {
 	# inputs: [[seq, dx, dy], ...] newest last; ack: newest snapshot id received
 	INPUT: {"inputs": TYPE_ARRAY, "ack": TYPE_INT},
 	REQUEST: {"request": TYPE_DICTIONARY},
+	CHUNK_RESYNC: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT},
 	# chunks: int32 [cx, cy, ...] of seen chunks whose map tiles it wants
 	MAP_REQUEST: {"location": TYPE_STRING, "chunks": TYPE_PACKED_BYTE_ARRAY},
 }
@@ -88,7 +92,8 @@ const SERVER_FIELDS := {
 		"entities": TYPE_DICTIONARY,
 		"removed": TYPE_PACKED_BYTE_ARRAY, "input_ack": TYPE_INT, "time": TYPE_INT, "rate": TYPE_INT},
 	RESULT: {"request_id": TYPE_STRING, "result": TYPE_DICTIONARY},
-	CHUNK: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT, "data": TYPE_PACKED_BYTE_ARRAY},
+	CHUNK: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT, "rev": TYPE_INT, "data": TYPE_PACKED_BYTE_ARRAY},
+	CHUNK_DELTA: {"location": TYPE_STRING, "cx": TYPE_INT, "cy": TYPE_INT, "base": TYPE_INT, "rev": TYPE_INT, "cells": TYPE_DICTIONARY},
 	# z: the level label (0 surface, +1 first floor...); identity is the id.
 	LOCATION: {"location": TYPE_STRING, "z": TYPE_INT},
 	# chunks: int32 [cx, cy, ...]; z: the location's level label

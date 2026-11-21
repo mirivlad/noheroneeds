@@ -31,11 +31,22 @@ static func make(chosen: Array, kind: String, seed_value: int, land: Callable, c
 			if not terrain_cache.has(at): terrain_cache[at] = land.call(x, y)
 			return terrain_cache[at]
 	var buildings := []
+	var reserved: Array[Rect2i] = [Rect2i(-160, 0, 320, 3).grow(1)]
+	for street: Rect2i in streets: reserved.append(street.grow(1))
+	if square.has_area(): reserved.append(square.grow(2))
 	var plots: Array[Rect2i] = []
 	var street_usage := {}
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	for template: Dictionary in chosen:
+		var variants := []
+		for turns in 4:
+			var design: Dictionary = template["architecture"].duplicate()
+			design["turns"] = turns
+			var body := SettlementArchitecture.local_rect(design, Rect2i(Vector2i.ZERO, design["size"]))
+			var yard: Rect2i = design["yard"]
+			var plot := body.merge(SettlementArchitecture.local_rect(design, yard)) if yard.has_area() else body
+			variants.append([design, body, plot, SettlementArchitecture.local_cell(design, design["door"])])
 		var best := {}
 		var score := INF
 		for street_index in streets.size():
@@ -44,23 +55,18 @@ static func make(chosen: Array, kind: String, seed_value: int, land: Callable, c
 			var length := street.size.x if horizontal else street.size.y
 			for distance in range(2, length - 2, 2):
 				for side: int in [-1, 1]:
-					var design: Dictionary = template["architecture"].duplicate()
-					design["turns"] = (0 if side < 0 else 2) if horizontal else (3 if side < 0 else 1)
-					var door := SettlementArchitecture.local_cell(design, design["door"])
+					var turns := (0 if side < 0 else 2) if horizontal else (3 if side < 0 else 1)
+					var variant: Array = variants[turns]
 					var step := Vector2i(street.position.x + distance, street.position.y - 2 if side < 0 else street.end.y + 1) if horizontal else Vector2i(street.position.x - 2 if side < 0 else street.end.x + 1, street.position.y + distance)
-					var origin := step - door
-					var body := SettlementArchitecture.local_rect(design, Rect2i(Vector2i.ZERO, design["size"]))
-					body.position += origin
-					var plot := body
-					var yard: Rect2i = design["yard"]
-					if yard.has_area():
-						yard = SettlementArchitecture.local_rect(design, yard)
-						yard.position += origin
-						plot = plot.merge(yard)
-					if plots.any(func(p: Rect2i) -> bool: return p.grow(2).intersects(plot)):
-						continue
-					if Rect2i(-160, 0, 320, 3).grow(1).intersects(plot) or streets.any(func(s: Rect2i) -> bool: return s.grow(1).intersects(plot)) or (square.has_area() and square.grow(2).intersects(plot)):
-						continue
+					var origin: Vector2i = step - variant[3]
+					var plot: Rect2i = variant[2]
+					plot.position += origin
+					var blocked := false
+					for occupied: Rect2i in reserved:
+						if occupied.intersects(plot):
+							blocked = true
+							break
+					if blocked: continue
 					var focus := square.get_center() if kind == "square" else Vector2i.ZERO
 					var value := Vector2(step - focus).length() * .03 + rng.randf() * 1.5 + float(street_usage.get(street_index, 0)) * .8
 					if street_index == 0 and kind in ["square", "bend", "shore", "terraces"]: value += 1.5
@@ -71,7 +77,9 @@ static func make(chosen: Array, kind: String, seed_value: int, land: Callable, c
 					if value >= score: continue
 					score = value
 					var built := template.duplicate()
-					built["architecture"] = design
+					built["architecture"] = variant[0]
+					var body: Rect2i = variant[1]
+					body.position += origin
 					built["size"] = [body.size.x, body.size.y]
 					best = {"template": built, "rect": body, "plot": plot, "street": street_index}
 		if best.is_empty():
@@ -80,6 +88,7 @@ static func make(chosen: Array, kind: String, seed_value: int, land: Callable, c
 		buildings.append(best)
 		street_usage[best["street"]] = int(street_usage.get(best["street"], 0)) + 1
 		plots.append(best["plot"])
+		reserved.append((best["plot"] as Rect2i).grow(2))
 	var bounds := arterial
 	for plot: Rect2i in plots: bounds = bounds.merge(plot)
 	for street: Rect2i in streets: bounds = bounds.merge(street)

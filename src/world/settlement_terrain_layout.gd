@@ -5,6 +5,7 @@ extends RefCounted
 
 const STEP := 4
 const RADIUS := 140
+const ROW_WORDS := (RADIUS * 2 + 33) / 32
 var _land: Callable
 var _cache := {}
 var _grid := AStarGrid2D.new()
@@ -14,6 +15,10 @@ var _streets: Array[Rect2i] = []
 var _root := Vector2i.ZERO
 var _centre := Vector2i.ZERO
 var _cancel: Callable
+var _bounds: Rect2i
+var _reserved := PackedInt64Array()
+var _dry_rows := PackedInt64Array()
+var _wet_rows := PackedInt64Array()
 
 
 static func make(chosen: Array, fields: Array, pen: Dictionary, land: Callable, centre: Vector2i, seed_value: int, cancel := Callable()) -> Dictionary:
@@ -34,20 +39,47 @@ func _walkable(at: Vector2i) -> bool:
 	return sample.what == "land" or (sample.what == "rock" and sample.get("cliff", false))
 
 
+## A bit represents a cell in a 32-cell row. Search the same candidate
+## sites in the same order; a tested cell need not sample relief twice.
+func _row_mask(first: int, end: int, word: int) -> int:
+	return ((1 << mini(32, end - word * 32)) - 1) ^ ((1 << maxi(0, first - word * 32)) - 1)
+
+
+func _reserve(rect: Rect2i) -> void:
+	var clipped := _bounds.intersection(rect)
+	if not clipped.has_area(): return
+	var first := clipped.position - _bounds.position + Vector2i.ONE
+	var end := first + clipped.size
+	for y in range(first.y, end.y):
+		for word in range(first.x >> 5, ((end.x - 1) >> 5) + 1):
+			_reserved[y * ROW_WORDS + word] |= _row_mask(first.x, end.x, word)
+
+
 func _clear(rect: Rect2i) -> bool:
-	if _cancelled(): return false
-	var box := Rect2i(_centre - Vector2i(RADIUS, RADIUS), Vector2i(RADIUS * 2, RADIUS * 2))
-	if not box.encloses(rect): return false
-	for plot: Rect2i in _plots:
-		if plot.grow(2).intersects(rect): return false
-	for street: Rect2i in _streets:
-		if street.grow(1).intersects(rect): return false
-	# Reject quickly before checking every cell, including narrow streams.
+	if _cancelled() or not _bounds.encloses(rect): return false
+	var first := rect.position - _bounds.position + Vector2i.ONE
+	var end := first + rect.size
+	for y in range(first.y, end.y):
+		for word in range(first.x >> 5, ((end.x - 1) >> 5) + 1):
+			var slot := y * ROW_WORDS + word
+			if _reserved[slot] & _row_mask(first.x, end.x, word) != 0: return false
+	# Reject quickly before checking for narrow streams across the whole site.
 	for at: Vector2i in [rect.position, rect.end - Vector2i.ONE, Vector2i(rect.position.x, rect.end.y - 1), Vector2i(rect.end.x - 1, rect.position.y), rect.get_center()]:
 		if _sample(at).what != "land": return false
-	for y in range(rect.position.y - 1, rect.end.y + 1):
-		for x in range(rect.position.x - 1, rect.end.x + 1):
-			if _sample(Vector2i(x, y)).what != "land": return false
+	for y in range(first.y - 1, end.y + 1):
+		for word in range((first.x - 1) >> 5, (end.x >> 5) + 1):
+			var slot := y * ROW_WORDS + word
+			var mask := _row_mask(first.x - 1, end.x + 1, word)
+			if _wet_rows[slot] & mask != 0: return false
+			var unseen := mask & ~_dry_rows[slot]
+			if unseen == 0: continue
+			for x in range(maxi(first.x - 1, word * 32), mini(end.x + 1, (word + 1) * 32)):
+				var bit := 1 << (x & 31)
+				if unseen & bit == 0: continue
+				if _sample(_bounds.position + Vector2i(x - 1, y - 1)).what != "land":
+					_wet_rows[slot] |= bit
+					return false
+				_dry_rows[slot] |= bit
 	return true
 
 
@@ -71,10 +103,12 @@ func _prepare(seed_value: int) -> void:
 			var at := id * STEP
 			# The full width is validated on the chosen paths below; avoid
 			# sampling nine cells at every unused point of the search region.
-			var clear := _walkable(at)
+			var sample := _sample(at)
+			var dry: bool = sample.what == "land"
+			var clear: bool = dry or (sample.what == "rock" and sample.get("cliff", false))
 			_grid.set_point_solid(id, not clear)
 			if clear:
-				_grid.set_point_weight_scale(id, 3.0 if _sample(at).what == "land" else 8.0)
+				_grid.set_point_weight_scale(id, 3.0 if dry else 8.0)
 				candidates.append({"id": id, "score": Vector2(at - _centre).length() + float(absi(hash([seed_value, id])) % 1000) / 1000.0})
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score < b.score)
 	for candidate: Dictionary in candidates: _nodes.append(candidate.id)
@@ -130,13 +164,23 @@ func _street(path: Array[Vector2i]) -> void:
 	for i in range(1, path.size()):
 		var next := path[i] - path[i - 1]
 		if direction != Vector2i.ZERO and next != direction:
-			_streets.append(Rect2i(begin.min(path[i - 1]) - Vector2i.ONE, (begin - path[i - 1]).abs() + Vector2i(3, 3)))
+			_add_street(Rect2i(begin.min(path[i - 1]) - Vector2i.ONE, (begin - path[i - 1]).abs() + Vector2i(3, 3)))
 			begin = path[i - 1]
 		direction = next
-	_streets.append(Rect2i(begin.min(path[-1]) - Vector2i.ONE, (begin - path[-1]).abs() + Vector2i(3, 3)))
+	_add_street(Rect2i(begin.min(path[-1]) - Vector2i.ONE, (begin - path[-1]).abs() + Vector2i(3, 3)))
 	for at: Vector2i in path:
 		if posmod(at.x, STEP) == 0 and posmod(at.y, STEP) == 0:
 			_grid.set_point_weight_scale(at / STEP, 1.0)
+
+
+func _add_street(rect: Rect2i) -> void:
+	_streets.append(rect)
+	_reserve(rect.grow(1))
+
+
+func _add_plot(rect: Rect2i) -> void:
+	_plots.append(rect)
+	_reserve(rect.grow(2))
 
 
 func _rect(size: Vector2i, bottom: bool) -> Rect2i:
@@ -154,7 +198,7 @@ func _rect(size: Vector2i, bottom: bool) -> Rect2i:
 			at.y += signi(end.y - at.y)
 		path.push_front(end)
 		_mask(rect)
-		_plots.append(rect)
+		_add_plot(rect)
 		_street(path)
 		return rect
 	return Rect2i()
@@ -187,7 +231,7 @@ func _building(template: Dictionary, index: int, seed_value: int) -> Dictionary:
 			var path := _path(gate, plot)
 			if path.is_empty(): continue
 			_mask(plot)
-			_plots.append(plot)
+			_add_plot(plot)
 			_street(path)
 			var built := template.duplicate()
 			built.architecture = design
@@ -225,6 +269,11 @@ func _approaches() -> Array:
 
 
 func _make(chosen: Array, fields: Array, pen: Dictionary, seed_value: int) -> Dictionary:
+	_bounds = Rect2i(_centre - Vector2i.ONE * RADIUS, Vector2i.ONE * RADIUS * 2)
+	var words := (RADIUS * 2 + 2) * ROW_WORDS
+	_reserved.resize(words)
+	_dry_rows.resize(words)
+	_wet_rows.resize(words)
 	_prepare(seed_value)
 	if _cancelled(): return {}
 	var yard := Rect2i()
@@ -237,7 +286,7 @@ func _make(chosen: Array, fields: Array, pen: Dictionary, seed_value: int) -> Di
 			_root = id * STEP
 			break
 	if not yard.has_area(): return {}
-	_plots.append(yard)
+	_add_plot(yard)
 	_mask(yard)
 	for id: Vector2i in _nodes:
 		var at := id * STEP

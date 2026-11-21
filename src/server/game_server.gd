@@ -364,6 +364,10 @@ func _on_message(s: Session, m: Dictionary) -> void:
 			match t:
 				Protocol.INPUT:
 					_take_input(s, m)
+				Protocol.CHUNK_RESYNC:
+					var key := ServerWorld.chunk_key(String(m["location"]), int(m["cx"]), int(m["cy"]))
+					# Streaming still checks the current interest set before sending.
+					if s.chunks.erase(key): s.streaming_unfinished = true
 				Protocol.MAP_REQUEST:
 					_queue_map_tiles(s, String(m["location"]), (m["chunks"] as PackedByteArray).to_int32_array())
 				Protocol.REQUEST:
@@ -1033,14 +1037,19 @@ func _stream_chunks(s: Session) -> void:
 						s.streaming_unfinished = true
 						return
 					budget -= 1
+					var base: int = s.chunks.get(key, -1)
 					s.chunks[key] = rev
 					world.explore(s.character_id, shown, cx, cy)
-					var data := world.encoded_chunk(shown, cx, cy)
+					var fields := {"location": shown, "cx": cx, "cy": cy, "rev": rev}
 					if world.levels.kind(shown) == Levels.BUILDING_LEVEL:
-						var floor_chunk := ChunkCodec.decode(data)
+						var floor_chunk := ChunkCodec.decode(world.encoded_chunk(shown, cx, cy))
 						floor_chunk.meta.merge({"building_z": world.levels.z(shown), "building": world.levels.building(shown)}, true)
-						data = ChunkCodec.encode(floor_chunk)
-					_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": shown, "cx": cx, "cy": cy, "data": data})
+						fields["data"] = ChunkCodec.encode(floor_chunk)
+					elif world.reflected_chunk(cy):
+						fields["data"] = world.encoded_chunk(shown, cx, cy)
+					else:
+						fields.merge(world.visible_chunk_update(shown, cx, cy, base), true)
+					_send(s, Transport.Channel.BULK, Protocol.CHUNK_DELTA if fields.has("base") else Protocol.CHUNK, fields)
 
 	if _on_plan(loc):
 		var exterior_keys := {}
@@ -1073,7 +1082,7 @@ func _stream_chunks(s: Session) -> void:
 			var c := world.chunk(parts[0], cx, cy)
 			s.chunks[key] = exterior_revision
 			_send(s, Transport.Channel.BULK, Protocol.CHUNK, {"location": parts[0], "cx": cx, "cy": cy,
-				"data": ChunkCodec.encode(_exterior_chunk(c, level, world.levels.building(parts[0])))})
+				"rev": exterior_revision, "data": ChunkCodec.encode(_exterior_chunk(c, level, world.levels.building(parts[0])))})
 
 ## Street clients receive the actual exterior, not a closed floor's contents.
 ## Its revision namespace differs from the full chunk sent after climbing.

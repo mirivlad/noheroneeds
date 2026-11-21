@@ -1,0 +1,39 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Рубка, добыча и строительство обновляют затронутые участки рендера и выбора, а визуально неизменённые клетки сохраняют свои меши. Сетевой протокол передаёт небольшие изменения с проверкой ревизии, а генерация поселений повторно использует проверки участков.",
+      "sources": {
+        "src/client/game_client.gd": "89288b3e27b31249462ba1ed06449ecf86edc5fcbef09bb7ccbc041f52086ec2",
+        "src/experiment_3d/ground_material_3d.gd": "43819110de73beb2c2ab198bedee1969caaf411211bdcf46223f0b3e644ce984",
+        "src/experiment_3d/terrain_shape_3d.gd": "4d4f9e7612aaa9ae011eaef3e180c2165037967ab6e4c1bcb7327206bd8e6036",
+        "src/experiment_3d/world_view_3d.gd": "f1c7e2fe9ebb34b233be656ff6e270a7e0f61e4be40ea9ae773fccaf21d369a7",
+        "src/network/protocol.gd": "f7a261f65b7b0ae24a9b79a425657281ed43be187c214be08d0f026330b5ce3f",
+        "src/server/game_server.gd": "0212b40f0c00173d8a840f16334eae8effe445e2a9f20e0485fb43bafe8a900b",
+        "src/server/server_world.gd": "4653ccee7a5f7bcbc8e9d1e1f03ceefd61cd489e3d73f916c54a6dca6f075bee",
+        "src/world/chunk.gd": "8df51eb24098030252632cf9b5715678e87d8033e5c05fb4c975d83da96f8ac0",
+        "src/world/settlement_layout.gd": "3052e304842101f0d7ae3b032f565627fd940875687ec05436d5838970645953",
+        "src/world/settlement_terrain_layout.gd": "591428c0c750a9e8b628dd1c624e1cf024c04e28e3830d15aeb12691363c7dcd",
+        "src/world/settlements.gd": "01a631ee4f804a55a2dc21f2c867042fa2fbb771bcfe1067eea2b804dba18a2b",
+        "src/world/surface_generator.gd": "e3bdb6039c6e297a5482b06e542f8563fdfeb93196424a9824e69159ca3ae2e2"
+      },
+      "mechanics": [
+        "start",
+        "controls",
+        "building",
+        "mining",
+        "nature",
+        "multiplayer"
+      ],
+      "guides": {
+        "site/content/guides/start.html": "572aefc2bd43b01492de8d6c72681f9ebd436eade7abffc23bc2577f17f1fb9e",
+        "site/content/guides/controls.html": "002e6ec7b06c36071c207ac712f6c48a654dedb520f61e6c6011f5acaff386e4",
+        "site/content/guides/building.html": "f62014cde47882c21b21812ff09df5cfe212bf9e5e8d4a2522b98d5ec87df241",
+        "site/content/guides/mining.html": "6c557b2b1ca53b2971228b36758946d843dbcd439b6da19936bce189c2432c7b",
+        "site/content/guides/nature.html": "8d1d0621122bc313108d28ff43c58489b7df484af7faa6cd479a47a556535335",
+        "site/content/guides/multiplayer.html": "fd49ca2a4e7474c69477d92f89b89acb808e835604744ea8ae7548721f446c4b"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

@@ -437,7 +437,7 @@ func is_unfit(x: int, y: int) -> bool:
 func _route_land(x: int, y: int, bridges := true) -> Dictionary:
 	if _topology.canonical_cell(Vector2i(x, y)) != Vector2i(x, y):
 		return {"what": "deep", "height": -1.0, "biome": 0}
-	return land_at(x, y, bridges)
+	return _land_sample(x, y, bridges)
 
 
 ## What a world cell is (ADR-0049), from the land as a whole and a little
@@ -449,6 +449,29 @@ func _route_land(x: int, y: int, bridges := true) -> Dictionary:
 ## chasm there, and no bridge is judged (so judging one cannot start judging
 ## another, and the answer is the same whichever cell one asks first).
 func land_at(x: int, y: int, bridges := true) -> Dictionary:
+	return _with_biome(_land_sample(x, y, bridges), x, y).duplicate()
+
+
+## Read-only relief for shoreline geometry. The renderer does not need to
+## evaluate a biome or copy the land sample for each corner.
+func surface_relief(x: int, y: int) -> Dictionary:
+	return _land_sample(x, y, true)
+
+
+func _with_biome(sample: Dictionary, x: int, y: int) -> Dictionary:
+	if not sample.has("biome"):
+		sample["biome"] = _biome_at(x, y, sample["height"], sample["by_water"])
+		sample.erase("by_water")
+	return sample
+
+
+func _land_at_uncached(x: int, y: int, bridges: bool) -> Dictionary:
+	return _with_biome(_sample_relief(x, y, bridges), x, y)
+
+
+## Routes and building sites only need relief and passability. Resolve the
+## climate and biome on demand, when generation actually paints a cell.
+func _land_sample(x: int, y: int, bridges: bool) -> Dictionary:
 	if _cancelled(): return {"what": "deep", "height": -1.0, "biome": 0}
 	var key := Vector3i(x >> 5, y >> 5, 1 if bridges else 0)
 	if not _land_samples.has(key):
@@ -457,13 +480,13 @@ func land_at(x: int, y: int, bridges := true) -> Dictionary:
 	var samples: Dictionary = _land_samples[key]
 	var cell := (y & 31) * Chunk.SIZE + (x & 31)
 	if not samples.has(cell):
-		var sample := _land_at_uncached(x, y, bridges)
+		var sample := _sample_relief(x, y, bridges)
 		if _cancelled(): return {"what": "deep", "height": -1.0, "biome": 0}
 		samples[cell] = sample
-	return (samples[cell] as Dictionary).duplicate()
+	return samples[cell]
 
 
-func _land_at_uncached(x: int, y: int, bridges: bool) -> Dictionary:
+func _sample_relief(x: int, y: int, bridges: bool) -> Dictionary:
 	var geo := geography
 	if geo == null:
 		return {"what": "land", "height": 0.1, "biome": _biome_at(x, y, 0.1, false)} if _flat else {"what": "water", "height": -1.0, "biome": 0}
@@ -484,21 +507,20 @@ func _land_at_uncached(x: int, y: int, bridges: bool) -> Dictionary:
 		return {"what": "shallows" if ford and _shallows != "" else "water", "height": h, "biome": 0}
 	if near < 1.0 and _hash(x, y, 8) < 0.6:
 		return {"what": "shore", "height": h, "biome": 0}
-	var biome := _biome_at(x, y, h, near < 10.0)
 	var chasm := (chasm_at(x, y, near) if bridges else _chasm_kind(x, y, near)) if _chasm != "" else NO_CHASM
 	# Old recipes cut an approach even when its bridge was later rejected.
 	# New crossings use real dry land; no neighbouring candidate may create
 	# an imaginary pass for this one's route planner.
 	if generation_version >= 20 and chasm == APPROACH: chasm = NO_CHASM
 	if chasm == BRIDGE and not bridges:
-		return {"what": "chasm", "height": h, "biome": biome}
+		return {"what": "chasm", "height": h, "by_water": near < 10.0}
 	if chasm == CHASM or chasm == BRIDGE:
-		return {"what": "chasm" if chasm == CHASM else "bridge", "height": h, "biome": biome}
+		return {"what": "chasm" if chasm == CHASM else "bridge", "height": h, "by_water": near < 10.0}
 	if chasm != APPROACH and _rock != "":
 		var cliff := is_cliff(x, y, h)
 		if h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or cliff:
-			return {"what": "rock", "height": h, "biome": biome, "cliff": cliff}
-	return {"what": "land", "height": h, "biome": biome}
+			return {"what": "rock", "height": h, "by_water": near < 10.0, "cliff": cliff}
+	return {"what": "land", "height": h, "by_water": near < 10.0}
 
 
 ## [distance to the nearest river's bank (cells, negative in the water), whether

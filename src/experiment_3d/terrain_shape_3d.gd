@@ -32,14 +32,14 @@ func natural(c: Vector2i) -> float:
 	return cell(c)
 
 func water(c: Vector2i) -> float:
-	var h := float(land.land_at(c.x, c.y)["height"])
+	var h := float(land.surface_relief(c.x, c.y)["height"])
 	var lake := land.geography.lake_level_at(c.x, c.y)
 	if h < Geography.SEA: return 0
 	if h < lake: return (lake - Geography.SEA) * SurfaceGenerator.RELIEF_METRES
 	# A river runs at its banks' foot: never above the lowest dry cell beside it.
 	var bank := INF
 	for d: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		if not land.land_at(c.x + d.x, c.y + d.y)["what"] in ["water", "deep", "shallows"]:
+		if not land.surface_relief(c.x + d.x, c.y + d.y)["what"] in ["water", "deep", "shallows"]:
 			bank = minf(bank, cell(c + d))
 	return minf(cell(c), bank) - .12
 
@@ -91,7 +91,7 @@ func height(c: Vector2i) -> float:
 	var wet := 0
 	var level := 0.0
 	for d: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.UP, -Vector2i.ONE]:
-		var sample := land.land_at(c.x + d.x, c.y + d.y)
+		var sample := land.surface_relief(c.x + d.x, c.y + d.y)
 		if sample["what"] in ["water", "deep", "shallows"]:
 			level += water(c + d)
 			wet += 1

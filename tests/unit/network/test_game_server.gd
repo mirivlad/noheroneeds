@@ -708,3 +708,19 @@ func test_walking_across_the_seam_of_a_planet() -> void:
 	check(Movement.cell_of(a.position).x < west, "and past the western edge of the map, into the next lap of it: %s" % [Movement.cell_of(a.position)])
 	check(not a.chunks.is_empty(), "the ground across the seam was streamed")
 	check(a.corrections <= 1, "no rubber-banding at the seam: %d" % a.corrections)
+
+
+func test_two_players_build_in_one_chunk_before_either_result() -> void:
+	var a := _client("owner", _character("Аня", 10))
+	var b := _client("other", _character("Боря", 10))
+	_run(30, [a, b])
+	var ar := a.request({"type": "build", "location": "surface", "x": 1, "y": 2, "part": "base:wood_wall"})
+	var br := b.request({"type": "build", "location": "surface", "x": 2, "y": 1, "part": "base:wood_wall"})
+	_run(10, [a, b])
+	eq(a.results.get(ar), {"ok": true})
+	eq(b.results.get(br), {"ok": true})
+	for client: GameClient in [a, b]:
+		eq(client.cell_at("surface", Vector2i(1, 2), "structure"), "base:wood_wall")
+		eq(client.cell_at("surface", Vector2i(2, 1), "structure"), "base:wood_wall")
+	var saved := ChunkCodec.decode(world.store.get_chunk("surface", 0, 0))
+	check(saved != null and saved.same_as(world.chunk("surface", 0, 0)), "both requests committed to the same SQLite chunk")

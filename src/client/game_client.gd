@@ -59,6 +59,10 @@ var results := {}
 var previous_position := Vector2i.ZERO
 ## Chunk keys received since the presentation last asked.
 var changed_chunks: Array[String] = []
+## First version replaced in this frame, for views that refresh only changed cells.
+var previous_chunks := {}
+var _chunk_revisions := {}
+var _resync_pending := {}
 ## Changes seen in the world since the view last took them (see _note_changes).
 var world_events: Array[Dictionary] = []
 ## What the player has in the hands (ADR-0021), as told to the server with
@@ -177,6 +181,9 @@ func reconnect(net: Transport) -> void:
 	entities.clear()
 	own = {}
 	chunks.clear()
+	previous_chunks.clear()
+	_chunk_revisions.clear()
+	_resync_pending.clear()
 	_map_asked.clear()
 	_uid_of.clear()
 	_latest_snapshot = 0
@@ -248,6 +255,8 @@ func _on_message(m: Dictionary) -> void:
 			_send(Transport.Channel.RELIABLE, Protocol.JOIN, join)
 			state = "joining"
 		Protocol.WELCOME:
+			_chunk_revisions.clear()
+			_resync_pending.clear()
 			character_id = m["character_id"]
 			location = m["location"]
 			max_levels = int(m["max_levels"])
@@ -293,20 +302,8 @@ func _on_message(m: Dictionary) -> void:
 				return
 			results[m["request_id"]] = m["result"]
 			_requests.erase(m["request_id"])
-		Protocol.CHUNK:
-			var c := ChunkCodec.decode(m["data"])
-			if c:
-				# The chunk is kept under the name the server gave it: a planet
-				# may name the same place from either side of its seam, and both
-				# names are drawn where they belong in the continuous world.
-				var key := chunk_key(String(m["location"]), int(m["cx"]), int(m["cy"]))
-				var old: Chunk = chunks.get(key)
-				if old:
-					_note_changes(String(m["location"]), Vector2i(int(m["cx"]), int(m["cy"])) * Chunk.SIZE, old, c)
-				chunks[key] = c
-				changed_chunks.append(key)
-				if m["location"] == location or not c.meta.has("building_z"):
-					_known_on_map(String(m["location"]), int(m["cx"]), int(m["cy"]), MapTile.of(c))
+		Protocol.CHUNK, Protocol.CHUNK_DELTA:
+			_receive_chunk(m)
 		Protocol.MAP_KNOWN:
 			var known: Dictionary = map_known.get_or_add(String(m["location"]), {"z": int(m["z"]), "chunks": {}})
 			known["z"] = int(m["z"])
@@ -324,36 +321,64 @@ func _on_message(m: Dictionary) -> void:
 			_on_snapshot(m)
 
 
+func _receive_chunk(m: Dictionary) -> void:
+	var loc := String(m["location"])
+	var at := Vector2i(int(m["cx"]), int(m["cy"]))
+	var key := chunk_key(loc, at.x, at.y)
+	var old: Chunk = chunks.get(key)
+	var chunk: Chunk
+	var rev := int(m.get("rev", 0))
+	if m["t"] == Protocol.CHUNK_DELTA:
+		var known: int = _chunk_revisions.get(key, -1)
+		if _resync_pending.has(key) or (known >= 0 and rev <= known): return
+		var edits: Dictionary = m["cells"]
+		if old != null and known == int(m["base"]) and rev > known and edits.size() <= Protocol.MAX_CHUNK_DELTA_CELLS:
+			chunk = old.with_cell_values(edits)
+		if chunk == null:
+			_resync_pending[key] = true
+			_send(Transport.Channel.RELIABLE, Protocol.CHUNK_RESYNC, {"location": loc, "cx": at.x, "cy": at.y})
+			return
+	else:
+		chunk = ChunkCodec.decode(m["data"])
+		if chunk == null:
+			_send(Transport.Channel.RELIABLE, Protocol.CHUNK_RESYNC, {"location": loc, "cx": at.x, "cy": at.y})
+			return
+		_resync_pending.erase(key)
+	_chunk_revisions[key] = rev
+	var edits := chunk.changed_cells(old) if old else {}
+	if old and edits.is_empty() and chunk.meta == old.meta: return
+	if old:
+		previous_chunks.get_or_add(key, old)
+		_note_changes(loc, at * Chunk.SIZE, old, chunk, edits)
+	chunks[key] = chunk
+	changed_chunks.append(key)
+	if (not old or edits.values().any(func(layers: Array) -> bool: return layers != ["props"])
+			or old.meta != chunk.meta) and (loc == location or not chunk.meta.has("building_z")):
+		_known_on_map(loc, at.x, at.y, MapTile.of(chunk))
+
+
 ## What changed in a chunk the client already had, for sounds and effects:
 ## {"type": "build"|"dismantle"|"open"|"close", "location", "cell", "part"}.
 ## A chunk seen for the first time is no news.
-func _note_changes(loc: String, origin: Vector2i, old: Chunk, new: Chunk) -> void:
-	for layer: String in ["structure", "cover", "ceiling", "roof"]:
-		var a: PackedInt32Array = old.layers.get(layer, PackedInt32Array())
-		var b: PackedInt32Array = new.layers.get(layer, PackedInt32Array())
-		if a.is_empty() and b.is_empty():
-			continue
-		for i in Chunk.CELLS:
-			var was := old.palette[a[i]] if not a.is_empty() else ""
-			var now := new.palette[b[i]] if not b.is_empty() else ""
-			if was == now:
+func _note_changes(loc: String, origin: Vector2i, old: Chunk, new: Chunk, edits: Dictionary) -> void:
+	for i: int in edits:
+		var local := Vector2i(i % Chunk.SIZE, i / Chunk.SIZE)
+		var cell := origin + local
+		for layer: String in edits[i]:
+			if layer not in ["structure", "cover", "ceiling", "roof"]:
 				continue
-			var cell := origin + Vector2i(i % Chunk.SIZE, i / Chunk.SIZE)
+			var was := old.get_cell(layer, local.x, local.y)
+			var now := new.get_cell(layer, local.x, local.y)
 			if was != "":
 				world_events.append({"type": "dismantle", "location": loc, "cell": cell, "part": was})
 			if now != "":
 				world_events.append({"type": "build", "location": loc, "cell": cell, "part": now})
-	var seen := {}
-	for i: int in new.props.keys() + old.props.keys():
-		if seen.has(i):
-			continue
-		seen[i] = true
-		var was_open := bool((old.props.get(i, {}) as Dictionary).get("open", false))
-		var now_open := bool((new.props.get(i, {}) as Dictionary).get("open", false))
-		if was_open != now_open:
-			var cell := origin + Vector2i(i % Chunk.SIZE, i / Chunk.SIZE)
-			var part := new.get_cell("structure", i % Chunk.SIZE, i / Chunk.SIZE)
-			world_events.append({"type": "open" if now_open else "close", "location": loc, "cell": cell, "part": part})
+		if "props" in edits[i]:
+			var was_open := bool(old.get_props(local.x, local.y).get("open", false))
+			var now_open := bool(new.get_props(local.x, local.y).get("open", false))
+			if was_open != now_open:
+				var part := new.get_cell("structure", local.x, local.y)
+				world_events.append({"type": "open" if now_open else "close", "location": loc, "cell": cell, "part": part})
 
 
 func _known_on_map(location: String, cx: int, cy: int, tile: Dictionary) -> void:

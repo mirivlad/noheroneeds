@@ -77,6 +77,66 @@ func layer_ids(layer: String) -> PackedStringArray:
 	return out
 
 
+## Sparse cell indices whose layers or properties differ. Palettes may be
+## reordered by the wire codec even when the cells are identical.
+func changed_cells(previous: Chunk) -> Dictionary:
+	var cells := {}
+	var names := previous.layers.duplicate()
+	names.merge(layers, true)
+	var same_palette := palette == previous.palette
+	for layer: String in names:
+		var before: PackedInt32Array = previous.layers.get(layer, PackedInt32Array())
+		var after: PackedInt32Array = layers.get(layer, PackedInt32Array())
+		if same_palette and before == after:
+			continue
+		for i in CELLS:
+			var a := before[i] if not before.is_empty() else 0
+			var b := after[i] if not after.is_empty() else 0
+			if (a != b if same_palette else previous.palette[a] != palette[b]):
+				(cells.get_or_add(i, []) as Array).append(layer)
+	var properties := previous.props.duplicate()
+	properties.merge(props, true)
+	for i: int in properties:
+		if previous.props.get(i, {}) != props.get(i, {}):
+			(cells.get_or_add(i, []) as Array).append("props")
+	return cells
+
+
+## Encode only the values that differ from a known base, using content IDs
+## because the receiver's palette can have another order.
+func cell_values(edits: Dictionary) -> Dictionary:
+	var updates := {}
+	for i: int in edits:
+		var values := {}
+		for layer: String in edits[i]:
+			values[layer] = props.get(i, {}) if layer == "props" else get_cell(layer, i % SIZE, i / SIZE)
+		updates[i] = values
+	return updates
+
+
+## Returns a new view; a malformed update leaves the old base intact.
+func with_cell_values(updates: Dictionary) -> Chunk:
+	for raw: Variant in updates:
+		if typeof(raw) != TYPE_INT or raw < 0 or raw >= CELLS or typeof(updates[raw]) != TYPE_DICTIONARY:
+			return null
+		var values: Dictionary = updates[raw]
+		for layer: Variant in values:
+			if typeof(layer) != TYPE_STRING or typeof(values[layer]) != (TYPE_DICTIONARY if layer == "props" else TYPE_STRING):
+				return null
+	var next := snapshot()
+	# Walking and sight for unchanged cells keep their cached traits.
+	next.traits = traits
+	for i: int in updates:
+		var local := Vector2i(i % SIZE, i / SIZE)
+		var values: Dictionary = updates[i]
+		for layer: String in values:
+			if layer == "props":
+				next.set_props(local.x, local.y, values[layer])
+			else:
+				next.set_cell(layer, local.x, local.y, values[layer])
+	return next
+
+
 ## Same cells, props and meta, regardless of palette order.
 func same_as(other: Chunk) -> bool:
 	if props != other.props or meta != other.meta:

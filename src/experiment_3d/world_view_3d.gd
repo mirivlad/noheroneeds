@@ -6,6 +6,15 @@ const RADIUS := 2
 const BUILD_BUDGET_US := 4500
 const SMALL_PLANT_SHADOW_RANGE := 20.0
 const STOREY := 2.0
+const PICK_REGION := 8
+const GROUND_REGION := 16
+const DRAW_OBJECTS := 1
+const DRAW_ROCK := 2
+const DRAW_GROUND := 4
+const DRAW_ALL := DRAW_OBJECTS | DRAW_ROCK | DRAW_GROUND
+const OBJECT_PROPS := ["facing", "open", "wall_height", "window_scale", "decor",
+	"hospitality", "inn_bed", "bed_kind", "building"]
+const ROOF_PROPS := ["section", "sections", "axis", "pitch", "eaves", "gable"]
 var _small_shadow_cell := Vector2i(1 << 30, 0)
 var viewport := SubViewport.new()
 var space := Node3D.new()
@@ -30,6 +39,11 @@ var _location := ""
 var _geometry := {}
 var _queued := {}
 var _job := {}
+## Chunk key -> world cells to refresh; mesh surfaces and picking have their
+## own region sizes. MultiMeshes still batch across the whole chunk.
+var _patches := {}
+var _seam_only := {}
+var _dirty_ground_material := {}
 var _actors := {}
 var _height_around := Vector2i(1 << 30, 0)
 ## Rock cell -> whether it is a cliff (the edge of a level): the mesh is drawn
@@ -203,19 +217,32 @@ func update_view(alpha: float, delta: float) -> void:
 	client.changed_chunks.clear()
 	if changed.has("*"):
 		_clear_geometry()
-	if _land and client.z >= 0: _refresh_foundations(changed)
-	if terrain and not changed.is_empty():
-		terrain.heights.clear()  # rock dug out (or laid) moves the ground at its corners
-		terrain.pads.clear()  # received foundations can replace an empty chunk edge
-	if not changed.is_empty():
-		_cut_from = Vector2i(1 << 30, 0)  # a roof laid or taken off: the cut again
+		_following = false
+	var before := client.previous_chunks
+	client.previous_chunks = {}
+	var foundations := []
 	for key: String in changed:
-		var split := key.split("|")
-		if split.size() != 3: continue
-		# Normals, texture blending and connected walls read adjacent cells.
-		for dy in range(-1, 2):
-			for dx in range(-1, 2):
-				_queued[ServerWorld.chunk_key(split[0], int(split[1]) + dx, int(split[2]) + dy)] = true
+		var old: Chunk = before.get(key)
+		if old != null and client.chunks.has(key):
+			if _queue_delta(key, old, client.chunks[key]): foundations.append(key)
+			continue
+		if key == "*" or _is_surface(key): foundations.append(key)
+		_queue_new_chunk(key)
+	if _land and client.z >= 0 and not foundations.is_empty():
+		_refresh_foundations(foundations)
+	if terrain:
+		for key: String in foundations:
+			if key == "*": continue
+			var point := Vector2i(int(key.get_slice("|", 1)), int(key.get_slice("|", 2)))
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					terrain.pads.erase(point + Vector2i(dx, dy))
+			# Received foundation rows can affect corners across a seam.
+			var low := point * Chunk.SIZE - Vector2i.ONE * 2
+			for y in range(low.y, low.y + Chunk.SIZE + 5):
+				for x in range(low.x, low.x + Chunk.SIZE + 5):
+					terrain.heights.erase(Vector2i(x, y))
+		if not foundations.is_empty(): _job.erase("ground_normals")
 	# Floor division matters west and north of the origin.
 	var around := Vector2i(floori(float(client.position.x) / Movement.UNIT / Chunk.SIZE), floori(float(client.position.y) / Movement.UNIT / Chunk.SIZE))
 	if around != _height_around:
@@ -236,10 +263,19 @@ func update_view(alpha: float, delta: float) -> void:
 		if not _draws_chunk(key) or absi(int(k[1]) - around.x) > RADIUS or absi(int(k[2]) - around.y) > RADIUS:
 			(_geometry[key] as Node).queue_free()
 			_geometry.erase(key)
+			_patches.erase(key)
+			_seam_only.erase(key)
+			_dirty_ground_material.erase(key)
+			if _job.get("key") == key and _job.has("edits"):
+				(_job["root"] as Node).free()
+				_job = {}
 	var start := Time.get_ticks_usec()
 	while Time.get_ticks_usec() - start < BUILD_BUDGET_US:
 		if _job.is_empty():
-			_begin_chunk(around)
+			_begin_patch(true)
+			if _job.is_empty(): _begin_chunk(around, true)
+			if _job.is_empty(): _begin_patch()
+			if _job.is_empty(): _begin_chunk(around)
 			if _job.is_empty():
 				break
 		_build_row(start + BUILD_BUDGET_US)
@@ -313,8 +349,11 @@ func _clear_geometry() -> void:
 		node.queue_free()
 	_geometry.clear()
 	_queued.clear()
+	_patches.clear()
+	_seam_only.clear()
+	_dirty_ground_material.clear()
 	if not _job.is_empty():
-		(_job["root"] as Node).queue_free()
+		(_job["root"] as Node).free()
 	_job.clear()
 	_floor_chunks.clear()
 	if terrain:
@@ -492,7 +531,178 @@ func slab_bounds(cell: Vector2i, layer: String) -> Rect2:
 		if offset.y > 0: high.y = .08
 	return Rect2(low, high - low)
 
-func _begin_chunk(around: Vector2i) -> void:
+func _is_surface(key: String) -> bool:
+	return key.begins_with("surface|")
+
+
+func _queue_whole_neighborhood(key: String) -> void:
+	var split := key.split("|")
+	if split.size() != 3: return
+	_cut_from = Vector2i.MAX
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			_queued[ServerWorld.chunk_key(split[0], int(split[1]) + dx, int(split[2]) + dy)] = true
+
+
+## A newly streamed neighbor can change seams only within their shared edge.
+func _queue_new_chunk(key: String) -> void:
+	if not client.chunks.has(key): return
+	var loc := key.get_slice("|", 0)
+	var at := Vector2i(int(key.get_slice("|", 1)), int(key.get_slice("|", 2)))
+	var bounds := Rect2i(at * Chunk.SIZE, Vector2i.ONE * Chunk.SIZE)
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			if dx == 0 and dy == 0: continue
+			var neighbor := at + Vector2i(dx, dy)
+			var target := ServerWorld.chunk_key(loc, neighbor.x, neighbor.y)
+			if not _geometry.has(target) and _job.get("key") != target: continue
+			var edge := bounds.grow(2).intersection(Rect2i(neighbor * Chunk.SIZE, bounds.size))
+			_dirty_ground_material[target] = true
+			if not _patches.has(target):
+				_patches[target] = {}
+				_seam_only[target] = true
+			var received: Chunk = client.chunks[key]
+			var existing: Chunk = client.chunks[target]
+			if not _seam_has_geometry(received, existing, loc, edge, Vector2i(dx, dy)): continue
+			for y in range(edge.position.y, edge.end.y):
+				for x in range(edge.position.x, edge.end.x):
+					_queue_cell(loc, Vector2i(x, y), DRAW_ALL, false)
+
+
+## Empty surface joins only change the ground texture blend. Structures,
+## cut ground, underground walls and pads can change the seam's triangles.
+func _seam_has_geometry(source: Chunk, existing: Chunk, loc: String, edge: Rect2i, step: Vector2i) -> bool:
+	if loc != Levels.SURFACE or not (source.meta.get("terrain_pads", []) as Array).is_empty():
+		return true
+	var change := step * 2
+	var generator := content.get_def(SurfaceGenerator.ID)
+	var cut := [generator.get("chasm", ""), generator.get("hanging_bridge", ""), "base:bridge"]
+	for y in range(edge.position.y, edge.end.y):
+		for x in range(edge.position.x, edge.end.x):
+			for chunk: Chunk in [existing, source]:
+				var cell := Vector2i(x, y) if chunk == existing else Vector2i(x, y) - change
+				var lx := cell.x & 31
+				var ly := cell.y & 31
+				if chunk.get_cell("structure", lx, ly) != "" or chunk.get_cell("roof", lx, ly) != "" or chunk.get_cell("ceiling", lx, ly) != "":
+					return true
+				var ground := chunk.get_cell("ground", lx, ly)
+				if ground != "" and ground in cut: return true
+	return false
+
+
+## Only properties consumed by the renderer enter the invalidation mask.
+## Work, damage and ownership still reach the client and its inspection UI.
+func _queue_delta(key: String, old: Chunk, current: Chunk) -> bool:
+	if old.meta != current.meta:
+		_queue_whole_neighborhood(key)
+		return _is_surface(key)
+	var origin := Vector2i(int(key.get_slice("|", 1)), int(key.get_slice("|", 2))) * Chunk.SIZE
+	var location := key.get_slice("|", 0)
+	var foundation_changed := false
+	var edits := current.changed_cells(old)
+	for i: int in edits:
+		var layers: Array = edits[i]
+		var local := Vector2i(i % Chunk.SIZE, i / Chunk.SIZE)
+		var cell := origin + local
+		var a := old.get_props(local.x, local.y)
+		var b := current.get_props(local.x, local.y)
+		var ground: bool = "ground" in layers or a.get("stairs_down", false) != b.get("stairs_down", false)
+		var structure := "structure" in layers
+		var old_part := content.get_def(old.get_cell("structure", local.x, local.y)) if structure else {}
+		var new_part := content.get_def(current.get_cell("structure", local.x, local.y)) if structure else {}
+		var rock: bool = structure and (old_part.get("role") == "rock" or new_part.get("role") == "rock")
+		ground = ground or (structure and (old_part.get("leads") == "down") != (new_part.get("leads") == "down"))
+		if _is_surface(key) and ("ground" in layers or a.get("construction") != b.get("construction") or a.get("village") != b.get("village")):
+			foundation_changed = true
+		var roof: bool = "roof" in layers or "ceiling" in layers
+		if "props" in layers:
+			var old_roof: Dictionary = a.get("roof", {})
+			var new_roof: Dictionary = b.get("roof", {})
+			for name: String in ROOF_PROPS:
+				if old_roof.get(name) != new_roof.get(name):
+					roof = true
+					break
+		var visual: bool = layers != ["props"] or ground or roof
+		if "props" in layers:
+			for name: String in OBJECT_PROPS:
+				if a.get(name) != b.get(name):
+					visual = true
+					break
+			visual = visual or (a.get("cover", {}) as Dictionary).get("planted") != (b.get("cover", {}) as Dictionary).get("planted")
+		if not visual: continue
+		if ground or structure or roof or a.get("building") != b.get("building"):
+			_cut_from = Vector2i.MAX
+		var radius := 2 if rock or ground else (1 if structure or roof else 0)
+		for y in range(-radius, radius + 1):
+			for x in range(-radius, radius + 1):
+				var at := cell + Vector2i(x, y)
+				var mask := DRAW_OBJECTS
+				if rock or ground: mask |= DRAW_ROCK
+				if ground or (rock and terrain != null and _is_surface(key)) or (structure and location != Levels.SURFACE and not Levels.is_depth(location)):
+					mask |= DRAW_GROUND
+				_queue_cell(location, at, mask)
+				if "ground" in layers:
+					_dirty_ground_material[ServerWorld.chunk_key(location, at.x >> 5, at.y >> 5)] = true
+				if terrain and mask & DRAW_GROUND != 0:
+					terrain.heights.erase(at)
+					terrain.heights.erase(at + Vector2i.RIGHT)
+					terrain.heights.erase(at + Vector2i.DOWN)
+					terrain.heights.erase(at + Vector2i.ONE)
+		# All cells in a connected roof can use the live floor footprint.
+		if ground:
+			for drawn: String in _geometry:
+				if drawn.get_slice("|", 0) != location: continue
+				var source: Chunk = client.chunks.get(drawn)
+				if source == null or not source.layers.has("roof"): continue
+				var roof_origin := Vector2i(int(drawn.get_slice("|", 1)), int(drawn.get_slice("|", 2))) * Chunk.SIZE
+				if not Rect2i(roof_origin, Vector2i.ONE * Chunk.SIZE).grow(256).has_point(cell): continue
+				for index in Chunk.CELLS:
+					var c := Vector2i(index % Chunk.SIZE, index / Chunk.SIZE)
+					if source.get_cell("roof", c.x, c.y) == "": continue
+					var options: Dictionary = source.get_props(c.x, c.y).get("roof", {})
+					if not options.has("section") and not options.has("sections"):
+						_queue_cell(location, roof_origin + c, DRAW_OBJECTS)
+	return foundation_changed
+
+
+func _queue_cell(location: String, cell: Vector2i, mask: int, urgent := true) -> void:
+	var key := ServerWorld.chunk_key(location, cell.x >> 5, cell.y >> 5)
+	if not _geometry.has(key) and _job.get("key") != key: return
+	var edits: Dictionary = _patches.get_or_add(key, {})
+	if urgent: _seam_only.erase(key)
+	if urgent and _job.get("key") == key and _job.has("edits"):
+		for pending: Vector2i in _job["edits"]:
+			edits[pending] = int(edits.get(pending, 0)) | int(_job["edits"][pending])
+		(_job["root"] as Node).free()
+		_job = {}
+	edits[cell] = int(edits.get(cell, 0)) | mask
+
+
+func _begin_patch(urgent_only := false) -> void:
+	for key: String in _patches.keys():
+		if urgent_only and _seam_only.has(key): continue
+		var edits: Dictionary = _patches[key]
+		_patches.erase(key)
+		_seam_only.erase(key)
+		if not _geometry.has(key) or not _draws_chunk(key): continue
+		_start_job(key)
+		_job["edits"] = edits
+		var rocks := {}
+		var ground := {}
+		for cell: Vector2i in edits:
+			var mask: int = edits[cell]
+			if mask & DRAW_GROUND != 0: ground[_region(cell, GROUND_REGION)] = true
+			if mask & DRAW_ROCK != 0: rocks[_region(cell)] = true
+		_job["ground_dirty"] = ground
+		_job["rock_dirty"] = rocks
+		return
+
+
+func _region(cell: Vector2i, size := PICK_REGION) -> Vector2i:
+	return Vector2i(floori(float(cell.x) / size), floori(float(cell.y) / size))
+
+
+func _begin_chunk(around: Vector2i, nearby_only := false) -> void:
 	var best := ""
 	var distance := INF
 	for key: String in _queued:
@@ -500,24 +710,42 @@ func _begin_chunk(around: Vector2i) -> void:
 		if k.size() != 3 or not _draws_chunk(key):
 			continue
 		var at := Vector2i(int(k[1]), int(k[2]))
+		if nearby_only and (_geometry.has(key) or (at - around).abs().x > 1 or (at - around).abs().y > 1):
+			continue
 		var d := Vector2(at - around).length_squared()
 		if absi(at.x - around.x) <= RADIUS and absi(at.y - around.y) <= RADIUS and d < distance:
 			best = key
 			distance = d
 	if best == "":
-		_queued.clear()
+		if not nearby_only: _queued.clear()
 		return
 	_queued.erase(best)
-	var k := best.split("|")
+	_start_job(best)
+
+
+func _start_job(key: String) -> void:
+	var k := key.split("|")
 	var root := Node3D.new()
+	# Keep ownership of the staging root until the job is integrated.
+	root.visible = false
 	space.add_child(root)
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rock_surface := SurfaceTool.new()
-	rock_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var water_surface := SurfaceTool.new()
-	water_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_job = {"water": water_surface, "water_count": 0, "ground_count": 0, "rock": rock_surface, "rock_count": 0, "key": best, "chunk": client.chunks[best], "origin": Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE, "row": 0, "root": root, "ground": st, "faces": PackedVector3Array(), "targets": [], "instances": {}, "meshes": {}, "parts": {}, "crops": [], "ambient": {}, "count": 0}
+	var origin := Vector2i(int(k[1]), int(k[2])) * Chunk.SIZE
+	_job = {"water": true, "key": key, "chunk": client.chunks[key],
+		"origin": origin, "row": 0, "root": root, "ground_regions": {},
+		"rock": {}, "faces": PackedVector3Array(), "targets": [], "instances": {},
+		"meshes": {}, "parts": {}, "crops": [], "ambient": {}, "count": 0}
+
+
+func _triangles() -> SurfaceTool:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	return tool
+
+func _rock_tool(cell: Vector2i) -> SurfaceTool:
+	var region := _region(cell)
+	var tools: Dictionary = _job["rock"]
+	if not tools.has(region): tools[region] = _triangles()
+	return tools[region]
 
 func _build_row(deadline_us := 0) -> void:
 	var c: Chunk = _job["chunk"]
@@ -531,54 +759,66 @@ func _build_row(deadline_us := 0) -> void:
 			_drawing_location = ""
 			return
 		var cell := origin + Vector2i(x, y)
-		var ground := c.get_cell("ground", x, y)
-		if ground == "" and not c.get_props(x, y).get("stairs_down", false) \
-				and c.get_cell("roof", x, y) == "" and c.get_cell("ceiling", x, y) == "":
-			continue  # a stair opening removes the floor, not the roof above it
-		var level := 0.0 if _drawing_z < 0 else _drawing_z * STOREY
-		var points: Array[Vector3] = []
-		var slab := slab_bounds(cell, "ground") if _drawing_z > 0 and ground in ["base:wood_floor", "base:stone_floor"] else Rect2(-.5, -.5, 1, 1)
-		for d: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
-			var at := Vector2(cell) + Vector2.ONE * .5 + slab.position + Vector2(d) * slab.size
-			# Keep the substrate below laid floors and any ground drawn by a model
-			# (a cave's floor too). Coplanar top faces cause stripes/z-fighting.
-			var bed := .14 if ground in ["base:wood_floor", "base:stone_floor", "base:bridge"] or models.catalog.has(ground) else 0.0
-			points.append(Vector3(at.x, surface_elevation(at) + level - bed, at.y))
-		var color := ground_color(ground)
-		# A way down is a hole in the ground (hole_mesh), not a floor with stairs on it.
-		if _hollow(cell):
-			_add_object(cell, ground, "chasm", {})
-			if _ground_is(cell, "hanging_bridge"):
-				_add_object(cell, ground, "ground", {})
-		elif content.get_def(c.get_cell("structure", x, y)).get("leads") != "down" and not c.get_props(x, y).get("stairs_down", false):
-			_quad(points, color, {"kind": "ground", "id": ground, "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location})
-		if models.catalog.has(ground) and not content.get_def(c.get_cell("structure", x, y)).get("role") == "rock":
-			_add_object(cell, ground, "ground", {})
-		for layer: String in ["cover", "structure", "ceiling", "roof"]:
-			var id := c.get_cell(layer, x, y)
-			if id != "":
-				_add_object(cell, id, layer, c.get_props(x, y))
-		_add_decorative_grass(cell, ground, c, x, y)
-		_add_rock_scree(cell, ground, c, x, y)
-		if _drawing_location == client.location and c.get_props(x, y).get("stairs_down", false):
-			_add_object(cell, "base:stairs_down", "transition", {})
-		# Life over the land, by what lies there ("ambient"): a cell in AMBIENT_EVERY.
-		if absi(hash([cell.x, cell.y, 31])) % AMBIENT_EVERY == 0:
-			for layer: String in ["ground", "cover"]:
-				var a := String(content.get_def(c.get_cell(layer, x, y)).get("ambient", ""))
-				if a != "":
-					var at := Vector2(cell) + Vector2.ONE * .5
-					(_job["ambient"].get_or_add(a, []) as Array).append(Vector3(at.x, elevation(at) + level, at.y))
+		var mask := DRAW_ALL
+		if _job.has("edits"):
+			mask = int(_job["edits"].get(cell, 0)) & DRAW_OBJECTS
+			if _job["ground_dirty"].has(_region(cell, GROUND_REGION)): mask |= DRAW_GROUND
+			if _job["rock_dirty"].has(_region(cell)): mask |= DRAW_ROCK
+		if mask != 0: _draw_cell(c, cell, x, y, mask)
 	_job["column"] = 0
 	_job["row"] = y + 1
 	if y + 1 == Chunk.SIZE:
 		_finish_chunk()
 	_drawing_location = ""
 
+func _draw_cell(c: Chunk, cell: Vector2i, x: int, y: int, mask: int) -> void:
+	var ground := c.get_cell("ground", x, y)
+	var props := c.get_props(x, y)
+	var structure := c.get_cell("structure", x, y)
+	if ground == "" and not props.get("stairs_down", false) \
+			and c.get_cell("roof", x, y) == "" and c.get_cell("ceiling", x, y) == "":
+		return
+	var role := String(content.get_def(structure).get("role", ""))
+	var level := 0.0 if _drawing_z < 0 else _drawing_z * STOREY
+	var ground_model := models.catalog.has(ground)
+	var hollow := _hollow(cell)
+	if mask & DRAW_GROUND != 0 and not hollow and content.get_def(structure).get("leads") != "down" and not props.get("stairs_down", false):
+		var points: Array[Vector3] = []
+		var slab := slab_bounds(cell, "ground") if _drawing_z > 0 and ground in ["base:wood_floor", "base:stone_floor"] else Rect2(-.5, -.5, 1, 1)
+		var bed := .14 if ground in ["base:wood_floor", "base:stone_floor", "base:bridge"] or ground_model else 0.0
+		for d: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
+			var at := Vector2(cell) + Vector2.ONE * .5 + slab.position + Vector2(d) * slab.size
+			points.append(Vector3(at.x, surface_elevation(at) + level - bed, at.y))
+		_quad(points, ground_color(ground), {"kind": "ground", "id": ground, "cell": cell, "location": _drawing_location, "surface": true})
+	if mask & DRAW_OBJECTS != 0:
+		if hollow:
+			_add_object(cell, ground, "chasm", {})
+			if _ground_is(cell, "hanging_bridge"): _add_object(cell, ground, "ground", {})
+		if ground_model and role != "rock":
+			_add_object(cell, ground, "ground", {})
+		for layer: String in ["cover", "structure", "ceiling", "roof"]:
+			var id := c.get_cell(layer, x, y)
+			if id != "" and (layer != "structure" or role != "rock"): _add_object(cell, id, layer, props)
+		_add_decorative_grass(cell, ground, c, x, y)
+		if _drawing_location == client.location and props.get("stairs_down", false):
+			_add_object(cell, "base:stairs_down", "transition", {})
+		if absi(hash([cell.x, cell.y, 31])) % AMBIENT_EVERY == 0:
+			for layer: String in ["ground", "cover"]:
+				var a := String(content.get_def(c.get_cell(layer, x, y)).get("ambient", ""))
+				if a != "":
+					var at := Vector2(cell) + Vector2.ONE * .5
+					(_job["ambient"].get_or_add(a, []) as Array).append(Vector3(at.x, elevation(at) + level, at.y))
+	if mask & DRAW_ROCK != 0 and role == "rock":
+		_add_object(cell, structure, "structure", props)
+	elif mask & DRAW_OBJECTS != 0:
+		_add_rock_scree(cell, ground, c, x, y)
+
+
+const GROUND_COLORS := {"base:grass": "739956", "base:grass_dry": "a8a065", "base:dirt": "aa8a65", "base:forest_floor": "657752", "base:moss": "688365", "base:sand": "d4c39b", "base:snow": "e0e6e4", "base:mud": "7c7661", "base:gravel": "92928b", "base:farmland": "725844", "base:water": "4a8eac", "base:shallows": "7baba9", "base:deep_water": "356b8d", "base:stone_floor": "797d83", "base:cave_floor": "737278"}
+
 func ground_color(id: String) -> Color:
-	var colors := {"base:grass": "739956", "base:grass_dry": "a8a065", "base:dirt": "aa8a65", "base:forest_floor": "657752", "base:moss": "688365", "base:sand": "d4c39b", "base:snow": "e0e6e4", "base:mud": "7c7661", "base:gravel": "92928b", "base:farmland": "725844", "base:water": "4a8eac", "base:shallows": "7baba9", "base:deep_water": "356b8d", "base:stone_floor": "797d83", "base:cave_floor": "737278"}
-	var base := Color(String(colors.get(id, "93947b")))
-	return base
+	return Color(String(GROUND_COLORS.get(id, "93947b")))
+
 
 func _plant_tint(cell: Vector2i, ground: String) -> Color:
 	var climate := client.climate_at(cell)
@@ -608,9 +848,17 @@ func _add_decorative_grass(cell: Vector2i, ground: String, chunk: Chunk, x: int,
 	# No faces, picking target, collision, cover or network entity is created.
 
 func _quad(p: Array[Vector3], color: Color, target: Dictionary) -> void:
-	var water := String(target.get("id", "")) in GroundMaterial3D.WATER and _job.has("water")
-	var st: SurfaceTool = _job["water"] if water else _job["ground"]
-	var counter := "water_count" if water else "ground_count"
+	var id := String(target.get("id", ""))
+	var kind := "water" if id in GroundMaterial3D.WATER and _job.has("water") else "ground"
+	var st: SurfaceTool
+	if _job.has("ground_regions"):
+		var region := _region(target["cell"], GROUND_REGION)
+		var surfaces: Dictionary = _job["ground_regions"].get_or_add(region, {})
+		if not surfaces.has(kind): surfaces[kind] = _triangles()
+		st = surfaces[kind]
+	else:
+		st = _job[kind]
+	var counter := kind + "_count"
 	_job[counter] = int(_job.get(counter, 0)) + 1
 	var normal := (p[2] - p[0]).cross(p[1] - p[0]).normalized()
 	for i in [0, 1, 2, 1, 3, 2]:
@@ -644,24 +892,32 @@ func _add_rock_scree(cell: Vector2i, ground: String, chunk: Chunk, x: int, y: in
 	if absf(elevation(at + Vector2(.2, 0)) - elevation(at - Vector2(.2, 0))) > .18: return
 	if absf(elevation(at + Vector2(0, .2)) - elevation(at - Vector2(0, .2))) > .18: return
 	var t := Transform3D(Basis(Vector3.UP, roll * TAU / 1024), Vector3(at.x, height, at.y))
-	(_job["rock"] as SurfaceTool).append_from(RockCells3D.scree(roll % 3), 0, t)
-	_job["rock_count"] += 1
+	var variant := roll % 3
+	var key := "decoration:scree:" + str(variant)
+	_job["meshes"][key] = RockCells3D.scree(variant)
+	(_job["instances"].get_or_add(key, []) as Array).append(t)
+	(_job["parts"].get_or_add(key, []) as Array).append([cell, "object", _drawing_location])
 	# Render triangles only: no extra picking target or server obstacle.
 
 func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -> void:
 	var d := content.get_def(id)
+	var role := String(d.get("role", ""))
+	var wall_module := (role in ["wall", "window", "door"] and not id.contains("rock")
+			and (role != "door" or float(d.get("height", 1.0)) >= 1.0))
 	var model_id := "base:surface_rock" if id == "base:rock" and client.z >= 0 else id
 	var variant := PlantMeshes3D.variant_at(model_id, cell) if PlantMeshes3D.supports(model_id) else 0
 	var mineral := MineralMeshes3D.supports(model_id)
 	var model_cell := client.topology.canonical_cell(cell) if client.topology else cell
 	if mineral: variant = MineralMeshes3D.variant_at(model_id, model_cell)
-	var mesh := models.mesh_for(model_id, d, variant)
+	# The procedural wall supplies all geometry and bounds. Its imported
+	# counterpart must never be prepared for this instance.
+	var mesh: Mesh = null if wall_module else models.mesh_for(model_id, d, variant)
 	var at := Vector2(cell) + Vector2.ONE * .5
 	var lift := (0.0 if _drawing_z < 0 else _drawing_z * STOREY) + (STOREY if layer in ["ceiling", "roof"] else 0.0)
 	if layer == "roof" and props.has("wall_height"):
 		lift += float(props["wall_height"]) - STOREY
 	var position3 := Vector3(at.x, elevation(at) + lift, at.y)
-	if not models.catalog.has(model_id):
+	if mesh and not models.catalog.has(model_id):
 		position3.y -= mesh.get_aabb().position.y
 	if layer == "ground":
 		position3.y -= .1  # Imported floor's upper face meets the foot plane.
@@ -702,7 +958,6 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		basis = Basis(Vector3.UP, posmod(hash([cell.x, cell.y, id, 61]), 4096) * TAU / 4096.0) * basis
 		if model_id in PlantMeshes3D.SHRUBS:
 			basis = Basis(Vector3.UP, posmod(hash([cell.x, cell.y, "shrub", 61]), 4096) * TAU / 4096.0)
-	var role := String(d.get("role", ""))
 	var direct_rock := role == "rock" and layer == "structure"
 	var rock_faces := PackedVector3Array()
 	if role == "door":
@@ -710,8 +965,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		basis = Basis(Vector3.UP, atan2(float(normal.x), float(normal.y)))
 	if role == "rock":
 		var floor_y := position3.y - lift
-		var rock_tool: SurfaceTool = _job["rock"] if direct_rock else SurfaceTool.new()
-		if not direct_rock: rock_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var rock_tool := _rock_tool(cell) if direct_rock else _triangles()
 		rock_faces = RockCells3D.append_to(rock_tool, cell, (terrain.cell(cell) if client.z >= 0 and terrain else 0.0) - floor_y,
 			func(c: Vector2i) -> float: return (terrain.low(c) if client.z >= 0 and terrain else 0.0) - floor_y,
 			_rock_at, func(c: Vector2i) -> bool: return client.z >= 0 and terrain != null and not _rock_at(c) and terrain.cell(c) >= terrain.cell(cell) - .5,
@@ -750,7 +1004,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		mesh = buildings.campfire()
 		basis = Basis.IDENTITY
 		instance_id = "module:campfire"
-	elif role in ["wall", "window", "door"] and not id.contains("rock"):
+	elif wall_module:
 		# Authored modules already have their feet at y=0. Discard the
 		# placeholder box's normalization before replacing its geometry.
 		position3.y = elevation(at) + lift
@@ -812,8 +1066,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 	if not direct_rock: _job["meshes"][instance_id] = mesh
 	var t := Transform3D(basis, position3)
 	if role == "rock":
-		if not direct_rock: (_job["rock"] as SurfaceTool).append_from(mesh, 0, t)
-		_job["rock_count"] += 1
+		if not direct_rock: _rock_tool(cell).append_from(mesh, 0, t)
 	else:
 		var entries: Array = _job["instances"].get_or_add(instance_id, [])
 		entries.append(t)
@@ -833,6 +1086,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		target = {"kind": "ground", "id": id, "cell": cell, "location": _drawing_location if _drawing_location != "" else client.location}
 	# Picking boxes are independent of movement. No physics-driven walking.
 	if direct_rock:
+		target["rock"] = true
 		# Keep the Dictionary element as receiver; a PackedArray cast detaches on resize.
 		_job["faces"].append_array(rock_faces)
 		for i in rock_faces.size() / 3: _job["targets"].append(target)
@@ -848,7 +1102,7 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		var nugget_id := "base:" + ore + "_outcrop"
 		var nuggets: Array = _job["instances"].get_or_add(nugget_id, [])
 		nuggets.append(Transform3D(Basis.from_scale(Vector3.ONE * .6), position3 + Vector3.UP * 1.65))
-		(_job["parts"].get_or_add(nugget_id, []) as Array).append([cell, "object", _drawing_location])
+		(_job["parts"].get_or_add(nugget_id, []) as Array).append([cell, "object", _drawing_location, "rock"])
 	if d.has("light"):
 		var light := OmniLight3D.new()
 		light.position = position3 + Vector3.UP
@@ -859,9 +1113,9 @@ func _add_object(cell: Vector2i, id: String, layer: String, props: Dictionary) -
 		(_job["root"] as Node).add_child(light)
 	# What it gives off (sparks, smoke, embers) from the top of its model; the
 	# content's offsets (pixels up from the cell's foot) only order them there.
-	var top := (t * mesh.get_aabb()).end.y
 	var fx: Dictionary = d.get("effects", {}) if layer == "structure" else {}
 	for kind: String in fx:
+		var top := (t * mesh.get_aabb()).end.y
 		var p := Effects3D.of(kind)
 		if p:
 			p.position = Vector3(position3.x + float(fx[kind][0]) / CELL, top + maxf(0, -float(fx[kind][1])) / CELL * .15, position3.z)
@@ -1090,16 +1344,18 @@ func roof_mesh(cell: Vector2i, props := {}) -> Mesh:
 		if _cell_layer(neighbor, "roof") == "" and content.get_def(_cell_layer(neighbor, "structure")).get("role") in ["wall", "window", "door"]:
 			eaves |= 1 << i
 	var options: Dictionary = (props.get("roof", {}) as Dictionary).duplicate()
-	var footprint := building_footprint(cell)
+	var footprint := Rect2i(cell, Vector2i.ONE)
 	var section: Array = options.get("section", [])
 	if section.size() == 4:
 		footprint = Rect2i(int(section[0]), int(section[1]), int(section[2]), int(section[3]))
+	elif (options.get("sections", []) as Array).is_empty():
+		footprint = building_footprint(cell)
 	options["material"] = {"base:thatch_roof": "thatch", "base:shingle_roof": "wood", "base:slate_roof": "stone", "base:flat_roof": "flat"}.get(_cell_layer(cell, "roof"), "tile")
 	return buildings.roof(cell, footprint, eaves, options)
 
 func building_footprint(cell: Vector2i) -> Rect2i:
 	# Existing village footprints keep their ridge when a part is removed.
-	if _land:
+	if _land and props_at(cell).has("village"):
 		for plan: Dictionary in _land.settlements.plans_touching(floori(cell.x / 32.0), floori(cell.y / 32.0)):
 			for home: Dictionary in plan.get("homes", []):
 				if (home["rect"] as Rect2i).has_point(cell): return home["rect"]
@@ -1167,83 +1423,247 @@ func _update_small_plant_shadows() -> void:
 			if node.has_meta("small_plant_bounds"): _set_small_plant_shadow(node as GeometryInstance3D)
 
 func _finish_chunk() -> void:
-	var root: Node3D = _job["root"]
-	var location := String(_job["key"]).get_slice("|", 0)
-	for kind: String in ["ground", "water"]:
-		if not _job.has(kind) or int(_job.get(kind + "_count", 0)) == 0: continue
-		var st: SurfaceTool = _job[kind]
-		st.set_material(ground_material.make(_job["origin"], func(at: Vector2i) -> String: return client.cell_at(location, at, "ground"), kind == "water"))
-		var mesh := MeshInstance3D.new()
-		mesh.mesh = st.commit()
-		root.add_child(mesh)
-	if int(_job["rock_count"]) > 0:
+	var key: String = _job["key"]
+	var location := key.get_slice("|", 0)
+	var staged: Node3D = _job["root"]
+	var partial := _job.has("edits")
+	var root: Node3D = _geometry.get(key) if partial else staged
+	var edits: Dictionary = _job.get("edits", {})
+	var rock_dirty: Dictionary = _job.get("rock_dirty", {})
+	root.set_meta("location", location)
+	root.set_meta("origin", _job["origin"])
+	_commit_surface(root, key, location)
+	if partial:
+		for node: Node in root.get_children():
+			if node.has_meta("rock_region") and rock_dirty.has(node.get_meta("rock_region")):
+				_remove_visual(root, node)
+	for region: Vector2i in _job["rock"]:
 		var rock := MeshInstance3D.new()
-		(_job["rock"] as SurfaceTool).set_material(buildings.rock)
-		rock.mesh = (_job["rock"] as SurfaceTool).commit()
+		var tool: SurfaceTool = _job["rock"][region]
+		tool.set_material(buildings.rock)
+		rock.mesh = tool.commit()
+		rock.set_meta("rock_region", region)
 		root.add_child(rock)
-	for id: String in _job["instances"]:
-		var transforms: Array = _job["instances"][id]
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = _job["meshes"][id] if _job["meshes"].has(id) else models.mesh_for(id, content.get_def(id))
-		var tints: Array = _job.get("plant_tints", {}).get(id, [])
-		mm.use_custom_data = not tints.is_empty()
-		# GL Compatibility needs the colour slot when custom data is present;
-		# otherwise it multiplies vertex colours by the climate data (black).
-		mm.use_colors = not tints.is_empty()
-		mm.instance_count = transforms.size()
-		var small_plant := _is_small_foliage(mm.mesh)
-		var small_bounds := Rect2()
-		for i in transforms.size():
-			mm.set_instance_transform(i, transforms[i])
-			if small_plant:
-				var transform: Transform3D = transforms[i]
-				var p := Vector2(transform.origin.x, transform.origin.z)
-				small_bounds = Rect2(p, Vector2.ZERO) if i == 0 else small_bounds.expand(p)
-			if not tints.is_empty():
-				mm.set_instance_color(i, Color.WHITE)
-				mm.set_instance_custom_data(i, tints[i])
-		var node := MultiMeshInstance3D.new()
-		node.multimesh = mm
-		if small_plant and not transforms.is_empty():
-			# Roots are world-space. One metre conservatively includes the leaf
-			# silhouette/wind, without asking the render thread for every AABB.
-			node.set_meta("small_plant_bounds", small_bounds.grow(1.0))
-			_set_small_plant_shadow(node)
-		var parts: Array = _job["parts"].get(id, [])
-		if parts.any(func(p: Array) -> bool: return not p.is_empty()):
-			node.set_meta("parts", parts)
-			node.set_meta("transforms", transforms)
-			_cut_away(node)
-		root.add_child(node)
-	if not (_job["faces"] as PackedVector3Array).is_empty():
+	_commit_batches(root, edits, rock_dirty)
+	_commit_picking(root, edits, rock_dirty)
+	_commit_effects(root, staged, edits)
+	var crops: Array = root.get_meta("crops", [])
+	crops = crops.filter(func(crop: Array) -> bool: return not edits.has(crop[0]))
+	crops.append_array(_job["crops"])
+	root.set_meta("crops", crops)
+	root.set_meta("count", _job["count"] if not partial else _object_total(root))
+	if partial:
+		for node: Node in staged.get_children(): node.reparent(root, false)
+		staged.free()
+	else:
+		if _geometry.has(key): _remove_visual(space, _geometry[key])
+		_geometry[key] = root
+		_apply_cut_root(root, false)
+	_job = {}
+
+
+func _commit_surface(root: Node3D, key: String, location: String) -> void:
+	var dirty: Dictionary = _job.get("ground_dirty", {})
+	var regions: Dictionary = _job["ground_regions"]
+	var materials: Dictionary = root.get_meta("ground_materials", {})
+	var remap := _dirty_ground_material.erase(key)
+	if remap: materials = {}
+	if _job.has("edits"):
+		for node: Node in root.get_children():
+			if not node.has_meta("ground_region"): continue
+			if dirty.has(node.get_meta("ground_region")):
+				_remove_visual(root, node)
+			elif remap:
+				(node as MeshInstance3D).material_override = _surface_material(materials, node.get_meta("ground_kind"), location)
+	for region: Vector2i in regions:
+		for kind: String in regions[region]:
+			var tool: SurfaceTool = regions[region][kind]
+			var mesh := MeshInstance3D.new()
+			tool.set_material(_surface_material(materials, kind, location))
+			mesh.mesh = tool.commit()
+			mesh.set_meta("ground_region", region)
+			mesh.set_meta("ground_kind", kind)
+			root.add_child(mesh)
+	root.set_meta("ground_materials", materials)
+
+
+func _surface_material(materials: Dictionary, kind: String, location: String) -> Material:
+	if not materials.has(kind):
+		materials[kind] = ground_material.make(_job["origin"], func(at: Vector2i) -> String: return client.cell_at(location, at, "ground"), kind == "water")
+	return materials[kind]
+
+
+func _remove_visual(parent: Node, node: Node) -> void:
+	parent.remove_child(node)
+	node.queue_free()
+
+
+func _changed_part(part: Array, edits: Dictionary, rock_dirty: Dictionary) -> bool:
+	return rock_dirty.has(_region(part[0])) if part.size() == 4 else edits.has(part[0])
+
+
+func _commit_batches(root: Node3D, edits: Dictionary, rock_dirty: Dictionary) -> void:
+	var transforms: Dictionary = _job["instances"]
+	var meshes: Dictionary = _job["meshes"]
+	var groups: Dictionary = _job["parts"]
+	var tints: Dictionary = _job.get("plant_tints", {})
+	if not edits.is_empty():
+		for old: Node in root.get_children():
+			if not old.has_meta("batch"): continue
+			var parts: Array = old.get_meta("parts")
+			if not parts.any(func(part: Array) -> bool: return _changed_part(part, edits, rock_dirty)): continue
+			var id := String(old.get_meta("batch"))
+			var poses: Array = old.get_meta("transforms")
+			var colors: Array = old.get_meta("tints")
+			if _batch_unchanged(parts, poses, colors, groups.get(id, []), transforms.get(id, []),
+					tints.get(id, []), edits, rock_dirty):
+				transforms.erase(id)
+				continue
+			var next_poses: Array = transforms.get_or_add(id, [])
+			var next_parts: Array = groups.get_or_add(id, [])
+			var next_colors: Array = tints.get_or_add(id, [])
+			for i in parts.size():
+				if _changed_part(parts[i], edits, rock_dirty): continue
+				next_parts.append(parts[i])
+				next_poses.append(poses[i])
+				if not colors.is_empty(): next_colors.append(colors[i])
+			meshes.get_or_add(id, (old as MultiMeshInstance3D).multimesh.mesh)
+			_remove_visual(root, old)
+	for id: String in transforms:
+		if not (transforms[id] as Array).is_empty():
+			_add_batch(root, id, transforms[id], meshes.get(id), groups[id], tints.get(id, []))
+
+
+func _batch_unchanged(parts: Array, poses: Array, colors: Array, fresh: Array, transforms: Array,
+		tints: Array, edits: Dictionary, rock_dirty: Dictionary) -> bool:
+	var old := {}
+	var current := {}
+	for i in parts.size():
+		if _changed_part(parts[i], edits, rock_dirty):
+			(old.get_or_add(parts[i], []) as Array).append([poses[i], colors[i] if not colors.is_empty() else null])
+	for i in fresh.size():
+		(current.get_or_add(fresh[i], []) as Array).append([transforms[i], tints[i] if not tints.is_empty() else null])
+	return old == current
+
+
+func _add_batch(root: Node3D, id: String, transforms: Array, mesh: Mesh, parts: Array, tints: Array) -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh if mesh else models.mesh_for(id, content.get_def(id))
+	mm.use_custom_data = not tints.is_empty()
+	# GL Compatibility needs the colour slot when custom data is present.
+	mm.use_colors = mm.use_custom_data
+	mm.instance_count = transforms.size()
+	var small_plant := _is_small_foliage(mm.mesh)
+	var small_bounds := Rect2()
+	for i in transforms.size():
+		var transform: Transform3D = transforms[i]
+		mm.set_instance_transform(i, cut_transform(transform, parts[i]))
+		if small_plant:
+			var p := Vector2(transform.origin.x, transform.origin.z)
+			small_bounds = Rect2(p, Vector2.ZERO) if i == 0 else small_bounds.expand(p)
+		if not tints.is_empty():
+			mm.set_instance_color(i, Color.WHITE)
+			mm.set_instance_custom_data(i, tints[i])
+	var node := MultiMeshInstance3D.new()
+	node.multimesh = mm
+	if id.begins_with("decoration:scree:"):
+		node.material_override = buildings.rock
+	if small_plant:
+		node.set_meta("small_plant_bounds", small_bounds.grow(1.0))
+		_set_small_plant_shadow(node)
+	node.set_meta("batch", id)
+	node.set_meta("parts", parts)
+	node.set_meta("transforms", transforms)
+	node.set_meta("tints", tints)
+	root.add_child(node)
+
+
+func _pick_region(target: Dictionary) -> Vector3i:
+	if target.get("surface", false):
+		var ground := _region(target["cell"], GROUND_REGION)
+		return Vector3i(ground.x, ground.y, DRAW_GROUND)
+	var section := _region(target["cell"])
+	return Vector3i(section.x, section.y, DRAW_ROCK if target.get("rock", false) else DRAW_OBJECTS)
+
+
+func _commit_picking(root: Node3D, edits: Dictionary, rock_dirty: Dictionary) -> void:
+	var picking := {}
+	var fresh_faces: PackedVector3Array = _job["faces"]
+	var fresh_targets: Array = _job["targets"]
+	for i in fresh_targets.size():
+		var region := _pick_region(fresh_targets[i])
+		var group: Array = picking.get_or_add(region, [PackedVector3Array(), []])
+		for j in 3: group[0].append(fresh_faces[i * 3 + j])
+		group[1].append(fresh_targets[i])
+	if _job.has("edits"):
+		var object_regions := {}
+		for cell: Vector2i in edits: object_regions[_region(cell)] = true
+		for old: Node in root.get_children():
+			if not old.has_meta("pick_region"): continue
+			var region: Vector3i = old.get_meta("pick_region")
+			if region.z == DRAW_GROUND and not _job["ground_dirty"].has(Vector2i(region.x, region.y)): continue
+			if region.z == DRAW_ROCK and not rock_dirty.has(Vector2i(region.x, region.y)): continue
+			if region.z == DRAW_OBJECTS:
+				if not object_regions.has(Vector2i(region.x, region.y)): continue
+				var targets: Array = old.get_meta("targets")
+				var shape: ConcavePolygonShape3D = (old.get_child(0) as CollisionShape3D).shape
+				var faces := shape.get_faces()
+				var group: Array = picking.get_or_add(region, [PackedVector3Array(), []])
+				for i in targets.size():
+					if edits.has(targets[i]["cell"]): continue
+					for j in 3: group[0].append(faces[i * 3 + j])
+					group[1].append(targets[i])
+			_remove_visual(root, old)
+	for region: Vector3i in picking:
+		var group: Array = picking[region]
+		if (group[1] as Array).is_empty(): continue
 		var shape := ConcavePolygonShape3D.new()
 		shape.backface_collision = true
-		shape.set_faces(_job["faces"])
+		shape.set_faces(group[0])
 		var collider := CollisionShape3D.new()
 		collider.shape = shape
 		var body := StaticBody3D.new()
 		body.add_child(collider)
-		body.set_meta("targets", _job["targets"])
+		body.set_meta("targets", group[1])
+		body.set_meta("pick_region", region)
 		root.add_child(body)
-	for kind: String in _job["ambient"]:
-		var life := Effects3D.ambient(kind, PackedVector3Array(_job["ambient"][kind]))
+
+
+func _commit_effects(root: Node3D, staged: Node3D, edits: Dictionary) -> void:
+	var ambient: Dictionary = _job["ambient"]
+	if root != staged:
+		for node: Node in root.get_children():
+			if node.has_meta("cut_cell") and edits.has(node.get_meta("cut_cell")):
+				_remove_visual(root, node)
+			elif node.has_meta("ambient_points"):
+				var points: PackedVector3Array = node.get_meta("ambient_points")
+				var keep := []
+				for point: Vector3 in points:
+					if not edits.has(Vector2i(floori(point.x), floori(point.z))): keep.append(point)
+				if keep.size() == points.size(): continue
+				(ambient.get_or_add(node.get_meta("cut_ambient"), []) as Array).append_array(keep)
+				_remove_visual(root, node)
+		for effect: Node3D in staged.get_children():
+			effect.visible = not _part_hidden(effect.get_meta("cut_cell"), "object", root.get_meta("location"))
+	for kind: String in ambient:
+		var points := PackedVector3Array(ambient[kind])
+		if points.is_empty(): continue
+		var life := Effects3D.ambient(kind, points)
 		if life:
 			life.add_to_group("ambient_" + kind)
 			life.set_meta("cut_ambient", kind)
+			life.set_meta("ambient_points", points)
 			life.visible = kind != "fireflies" or _night
 			root.add_child(life)
-	root.set_meta("location", String(_job["key"]).get_slice("|", 0))
-	root.set_meta("origin", _job["origin"])
-	_apply_cut_root(root)
-	root.set_meta("count", _job["count"])
-	if not (_job["crops"] as Array).is_empty():
-		root.set_meta("crops", _job["crops"])
-	var key: String = _job["key"]
-	if _geometry.has(key):
-		(_geometry[key] as Node).queue_free()
-	_geometry[key] = root
-	_job = {}
+
+
+func _object_total(root: Node3D) -> int:
+	var count := 0
+	for node: Node in root.get_children():
+		if node.has_meta("batch") and not String(node.get_meta("batch")).begins_with("decoration:"):
+			count += (node as MultiMeshInstance3D).multimesh.instance_count
+	return count
 
 ## Chunks whose crops have grown a stage since they were built are built again.
 var _crops_seen := 0.0
@@ -1255,8 +1675,7 @@ func _grow_crops() -> void:
 	for key: String in _geometry:
 		for c: Array in (_geometry[key] as Node).get_meta("crops", []):
 			if _crop_stage(c[1], c[2], c[0]) != int(c[3]):
-				_queued[key] = true
-				break
+				_queue_cell(key.get_slice("|", 0), c[0], DRAW_OBJECTS)
 
 ## The stage of a crop sown at `planted` on a cell (under the sky the rain waters it).
 func _crop_stage(def: Dictionary, planted: float, cell: Vector2i) -> int:
@@ -1272,7 +1691,7 @@ func sprite_count() -> int:
 	return _actors.size()
 
 func pending_chunks() -> int:
-	return _queued.size() + (0 if _job.is_empty() else 1)
+	return _queued.size() + _patches.size() + (0 if _job.is_empty() else 1)
 
 func has_geometry_at(location: String, cell: Vector2i) -> bool:
 	return _geometry.has(ServerWorld.chunk_key(location, cell.x >> 5, cell.y >> 5))
@@ -1752,11 +2171,11 @@ func _part_hidden(cell: Vector2i, kind: String, location: String) -> bool:
 	var chunk := client.chunk_at(location, cell.x, cell.y)
 	return chunk != null and _cut_building != "" and chunk.meta.get("building", "") == _cut_building and int(chunk.meta.get("building_z", 0)) > client.z
 
-func _apply_cut_root(root: Node) -> void:
+func _apply_cut_root(root: Node, update_batches := true) -> void:
 	var location := String(root.get_meta("location", client.location))
 	(root as Node3D).visible = not _part_hidden(root.get_meta("origin", Vector2i.ZERO), "object", location)
 	for node: Node in root.get_children():
-		if node.has_meta("parts"): _cut_away(node as MultiMeshInstance3D)
+		if update_batches and node.has_meta("parts"): _cut_away(node as MultiMeshInstance3D)
 		elif node.has_meta("cut_cell"):
 			(node as Node3D).visible = not _part_hidden(node.get_meta("cut_cell"), "object", location)
 		elif node.has_meta("cut_ambient"):

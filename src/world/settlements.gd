@@ -582,7 +582,10 @@ func _layout(k: int, rx: int, ry: int, d: Dictionary, village_id: String, adapti
 		designed.append(b)
 	chosen = designed
 	var kind := _layout_kind(d, scale, village_id)
-	var placed := SettlementLayout.make(chosen, kind, hash([world_seed, village_id, "streets"]), _land if kind == "terraces" else Callable(), d.get("site_centre", Vector2i.ZERO), environment.get("shore_normal", Vector2.ZERO))
+	var placed := {"buildings": [], "streets": [], "low": 0, "left": 0,
+		"half": 0, "square": Rect2i(), "yard": Rect2i()}
+	if not adaptive:
+		placed = SettlementLayout.make(chosen, kind, hash([world_seed, village_id, "streets"]), _land if kind == "terraces" else Callable(), d.get("site_centre", Vector2i.ZERO), environment.get("shore_normal", Vector2.ZERO))
 	var buildings: Array = placed["buildings"]
 	var streets: Array = placed["streets"]
 	var low := int(placed["low"])

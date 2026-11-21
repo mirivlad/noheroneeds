@@ -95,3 +95,83 @@ func test_initial_prepared_view_survives_the_prejoin_unload_tick() -> void:
 	eq(world.unload_idle(GameServer.TICK_RATE * 60), 0, "preparing the view grants its ordinary idle grace before a session exists")
 	check(world.has_chunk("surface", 0, 0), "tick zero does not discard prepared terrain and force loading it again")
 	world.creatures.detach()
+
+
+func test_chunk_delta_base_gap_requests_full_snapshot_then_resumes() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var world := TracedWorld.new(null, content, null)
+	world.present["reader"] = {"location": "surface", "pos": Vector2i.ZERO}
+	var chunk := Chunk.new()
+	chunk.set_cell("ground", 0, 0, "base:grass")
+	world._chunks["surface|0|0"] = chunk
+	var net := MemoryTransport.MemoryNetwork.new()
+	var wire := net.server()
+	var client := GameClient.new(net.client(), null, PackedByteArray(), content)
+	var server := CapturingServer.new(world, wire, null)
+	var session := GameServer.Session.new()
+	session.character_id = "reader"
+	session.state = "playing"
+	server.view_chunks = 0
+	server._stream_chunks(session)
+	eq(server.packets[0].type, Protocol.CHUNK)
+	_receive_packet(client, server.packets.pop_front())
+
+	chunk.set_cell("cover", 0, 0, "base:oak")
+	world._changed("surface|0|0")
+	server._stream_chunks(session)
+	var lost: Dictionary = server.packets.pop_front()
+	eq(lost.type, Protocol.CHUNK_DELTA)
+	eq(lost.fields.base, 0)
+	chunk.set_cell("cover", 0, 0, "base:stump")
+	world._changed("surface|0|0")
+	server._stream_chunks(session)
+	var next: Dictionary = server.packets.pop_front()
+	eq(next.type, Protocol.CHUNK_DELTA)
+	eq(next.fields.base, 1)
+	_receive_packet(client, next)
+	eq(client.cell_at("surface", Vector2i.ZERO, "cover"), "", "gap cannot modify the cached base")
+	for event: Transport.Event in wire.poll():
+		if event.kind == Transport.Kind.PACKET:
+			var msg := Protocol.decode(event.data, true)
+			eq(msg.get("t"), Protocol.CHUNK_RESYNC)
+			server._on_message(session, msg)
+	server._stream_chunks(session)
+	eq(server.packets[0].type, Protocol.CHUNK)
+	_receive_packet(client, server.packets.pop_front())
+	eq(client.cell_at("surface", Vector2i.ZERO, "cover"), "base:stump")
+	_receive_packet(client, lost)
+	eq(client.cell_at("surface", Vector2i.ZERO, "cover"), "base:stump", "late update is ignored")
+	chunk.set_cell("cover", 0, 0, "")
+	world._changed("surface|0|0")
+	server._stream_chunks(session)
+	_receive_packet(client, server.packets.pop_front())
+	eq(client.cell_at("surface", Vector2i.ZERO, "cover"), "", "deltas continue from the restored base")
+
+
+func _receive_packet(client: GameClient, packet: Dictionary) -> void:
+	client._on_message(Protocol.decode(Protocol.encode(packet.type, packet.fields), false))
+
+
+func test_wire_projection_reveals_ore_when_neighbor_arrives_without_loading_it() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var world := TracedWorld.new(null, content, null)
+	var cave := Levels.depth_id(-1)
+	var c := Chunk.new()
+	for x in [30, 31]:
+		for y in [14, 15, 16]:
+			c.set_cell("ground", x, y, "base:cave_floor")
+			c.set_cell("structure", x, y, "base:rock")
+	c.set_cell("structure", 31, 15, "base:iron_ore_rock")
+	world._chunks[ServerWorld.chunk_key(cave, 0, 0)] = c
+	var exposed := world.visible_chunk_update(cave, 0, 0, -1)
+	var received := ChunkCodec.decode(exposed.data)
+	eq(world.missed_chunks, 0, "stream projection must never load a missing edge synchronously")
+	eq(received.get_cell("structure", 31, 15), "base:rock", "closed stone hides its ore")
+	var edge := Chunk.new()
+	edge.set_cell("ground", 0, 15, "base:cave_floor")
+	var key := ServerWorld.chunk_key(cave, 1, 0)
+	world._chunks[key] = edge
+	world._invalidate_wire_neighbors(cave, 1, 0, key)
+	var delta := world.visible_chunk_update(cave, 0, 0, exposed.rev)
+	eq(delta.base, exposed.rev)
+	eq(received.with_cell_values(delta.cells).get_cell("structure", 31, 15), "base:iron_ore_rock")

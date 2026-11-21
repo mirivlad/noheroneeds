@@ -294,12 +294,15 @@ func test_ray_uses_viewports_actual_world_and_content_cells_after_rotation() -> 
 	client.previous_position = client.position
 	client.has_position = true
 	client.character_id = "own-ray-test"
-	for i in 120:
+	var tree := Engine.get_main_loop() as SceneTree
+	var deadline := Time.get_ticks_msec() + 10000
+	while not view.has_geometry_at("surface", Vector2i(10, 10)) and Time.get_ticks_msec() < deadline:
 		view.update_view(1, .016)
-		if view._geometry.size() > 0 and view.pending_chunks() == 0:
-			break
-	await (Engine.get_main_loop() as SceneTree).physics_frame
-	await (Engine.get_main_loop() as SceneTree).physics_frame
+		await tree.process_frame
+	if not check(view.has_geometry_at("surface", Vector2i(10, 10)), "the chunk is built before casting rays"):
+		return
+	await tree.physics_frame
+	await tree.physics_frame
 	for yaw: float in [0.0, .6, PI / 2, PI]:
 		view.yaw = yaw
 		view.update_view(1, .016)
@@ -1209,3 +1212,73 @@ func test_direct_rock_geometry_keeps_picking_triangles_aligned_with_targets() ->
 			check(p.x >= 1.99999 and p.x <= 3.00001 and p.z >= 1.99999 and p.z <= 3.00001,
 				"the rock's target never labels a ground or roof triangle elsewhere")
 	check(rocks > 0, "real rock triangles were inspected")
+
+
+func test_world_edit_reuses_ground_picking_and_unrelated_model_batches() -> void:
+	view._land = null
+	client.geography = null
+	view._location = "surface"
+	view._plant_season = Seasons.of(client.world_time)
+	var key := "surface|0|0"
+	var initial := Chunk.new()
+	for cell: Vector2i in [Vector2i(2, 2), Vector2i(4, 2), Vector2i(10, 10)]:
+		initial.set_cell("ground", cell.x, cell.y, "base:grass")
+	initial.set_cell("cover", 2, 2, "base:oak")
+	initial.set_cell("cover", 4, 2, "base:spruce")
+	initial.set_cell("structure", 10, 10, "base:wood_wall")
+	client.chunks[key] = initial
+	view._queued[key] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in Chunk.SIZE: view._build_row()
+	var root: Node3D = view._geometry[key]
+	var ground := root.get_children().filter(func(n: Node) -> bool: return n.has_meta("ground_region"))
+	var picks := root.get_children().filter(func(n: Node) -> bool:
+		return n.has_meta("pick_region") and n.get_meta("pick_region").z == WorldView3D.DRAW_GROUND)
+	var spruce := root.get_children().filter(func(n: Node) -> bool: return String(n.get_meta("batch", "")).begins_with("base:spruce"))
+	var wall := root.get_children().filter(func(n: Node) -> bool: return n.has_meta("batch") and n.get_meta("parts")[0][0] == Vector2i(10, 10))
+	check(ground.size() > 0 and picks.size() > 0 and spruce.size() == 1 and wall.size() == 1, "all fixture groups exist")
+	var worked := initial.snapshot()
+	worked.set_props(2, 2, {"cover": {"work": 1}})
+	view._queue_delta(key, initial, worked)
+	eq(view.pending_chunks(), 0, "progress without destruction queues no graphics or picking")
+	var felled := worked.snapshot()
+	felled.set_cell("cover", 2, 2, "base:stump")
+	client.chunks[key] = felled
+	view._queue_delta(key, worked, felled)
+	view._begin_patch()
+	for i in Chunk.SIZE: view._build_row()
+	eq(view._geometry[key], root)
+	for node: Node in ground + picks + spruce + wall:
+		eq(node.get_parent(), root, "unaffected render or picking node is reused")
+	check(root.get_children().any(func(n: Node) -> bool: return n.get_meta("batch", "") == "module:stump"), "a stump is now visible")
+	for node: Node in root.get_children():
+		if not node.has_meta("targets"): continue
+		check(not node.get_meta("targets").any(func(t: Dictionary) -> bool: return t.get("id") == "base:oak"),
+			"no remaining trunk collider at the changed cell")
+
+
+func test_unbuilt_ground_takes_priority_over_an_existing_plain_seam() -> void:
+	view._land = null
+	client.geography = null
+	var left := Chunk.new()
+	left.set_cell("ground", 31, 15, "base:grass")
+	var right := Chunk.new()
+	right.set_cell("ground", 0, 15, "base:dirt")
+	client.chunks["surface|0|0"] = left
+	client.chunks["surface|1|0"] = right
+	view._queued["surface|0|0"] = true
+	view._begin_chunk(Vector2i.ZERO)
+	for i in Chunk.SIZE: view._build_row()
+	var existing: Node3D = view._geometry["surface|0|0"]
+	var ground := existing.get_children().filter(func(n: Node) -> bool: return n.has_meta("ground_region"))
+	view._queue_new_chunk("surface|1|0")
+	view._begin_patch(true)
+	eq(view._job, {}, "a texture seam does not interrupt nearby missing ground")
+	view._queued["surface|1|0"] = true
+	view._begin_chunk(Vector2i.ZERO, true)
+	eq(view._job.key, "surface|1|0")
+	for i in Chunk.SIZE: view._build_row()
+	view._begin_patch()
+	for i in Chunk.SIZE: view._build_row()
+	check(not ground.is_empty(), "the original ground mesh exists")
+	eq(ground[0].get_parent(), existing, "a plain ground seam updates only the material")

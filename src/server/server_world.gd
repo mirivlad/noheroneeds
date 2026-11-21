@@ -120,6 +120,9 @@ var revision_epoch := 0
 var _chunk_rev := {}
 ## chunk key -> [revision, encoded bytes], shared by all clients
 var _encoded := {}
+## Last public chunk and its transition from the preceding transmitted revision.
+## Never built from a private cave or exterior-floor view.
+var _visible_chunks := {}
 ## How the world's places are named (a planet folds at the seam and the
 ## poles; a continent does not). Null while no plan is known.
 var topology: PlanetTopology
@@ -568,6 +571,7 @@ func _chunk(location: String, cx: int, cy: int) -> Chunk:
 		_settle_stairs(location, cx, cy, c)
 		growth.arrived(location, cx, cy, c)  # what grew while it was away (ADR-0056)
 		chronicles.lie_lost(location, cx, cy)  # a thing lost in a cave lies there again (ADR-0042)
+		_invalidate_wire_neighbors(location, cx, cy, key)
 		sync_loads += 1
 	return c
 
@@ -709,6 +713,7 @@ func unload_idle(idle_ticks: int) -> int:
 		_last_chunk = null
 		chunks_epoch += 1
 		_encoded.erase(key)
+		_visible_chunks.erase(key)
 		_map_tiles.erase(key)
 		_needed.erase(key)
 		_written_by.erase(key)
@@ -797,6 +802,7 @@ func poll_loaded(limit := -1) -> void:
 		_settle_stairs(r[0], r[1], r[2], r[3])  # after its encoding is kept: a change makes it stale
 		growth.arrived(r[0], r[1], r[2], r[3])
 		chronicles.lie_lost(r[0], r[1], r[2])  # the same as _chunk: a lost thing lies again
+		_invalidate_wire_neighbors(r[0], r[1], r[2], key)
 
 
 func inventory(owner: String) -> Inventory:
@@ -1191,6 +1197,52 @@ func encoded_chunk(location: String, cx: int, cy: int) -> PackedByteArray:
 			func(x: int, y: int) -> bool: return is_solid(location, x, y)))]
 		_encoded[key] = cached
 	return cached[1]
+
+
+## A bounded delta is shared among clients that have its base revision.
+## The same shown_chunk projection feeds both forms, including hidden ore.
+func visible_chunk_update(location: String, cx: int, cy: int, base: int) -> Dictionary:
+	var key := storage_key(location, cx, cy)
+	var rev := chunk_revision(location, cx, cy)
+	var previous: Dictionary = _visible_chunks.get(key, {})
+	var current := previous
+	if previous.get("rev", -1) != rev:
+		var waiting := {}
+		var solid := solid_in(location, true)
+		var source := chunk(location, cx, cy)
+		var visible := shown_chunk(location, cx, cy, source, func(x: int, y: int) -> bool:
+			var at := Vector2i(x >> 5, y >> 5)
+			if not has_chunk(location, at.x, at.y):
+				waiting[storage_key(location, at.x, at.y)] = true
+				return true
+			return solid.solid(x, y))
+		var public_chunk := source.snapshot() if visible == source else visible
+		current = {"rev": rev, "chunk": public_chunk, "waiting": waiting}
+		var encoded: Array = _encoded.get(key, [])
+		if visible == source and not encoded.is_empty() and encoded[0] == rev:
+			current["data"] = encoded[1]
+		if not previous.is_empty() and (previous["chunk"] as Chunk).meta == public_chunk.meta:
+			var edits := public_chunk.changed_cells(previous["chunk"])
+			if edits.size() <= Protocol.MAX_CHUNK_DELTA_CELLS:
+				current["base"] = previous["rev"]
+				current["cells"] = public_chunk.cell_values(edits)
+		_visible_chunks[key] = current
+	if base >= 0 and current.get("base", -1) == base:
+		return {"base": base, "rev": rev, "cells": current["cells"]}
+	if not current.has("data"):
+		current["data"] = ChunkCodec.encode(current["chunk"])
+	return {"rev": rev, "data": current["data"]}
+
+
+## A missing neighbour was treated as closed stone. Only projections that
+## actually consulted this edge need another revision when it arrives.
+func _invalidate_wire_neighbors(location: String, cx: int, cy: int, loaded: String) -> void:
+	for offset: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var key := storage_key(location, cx + offset.x, cy + offset.y)
+		var cached: Dictionary = _visible_chunks.get(key, {})
+		if not (cached.get("waiting", {}) as Dictionary).has(loaded): continue
+		_chunk_rev[key] = _chunk_rev.get(key, 0) + 1
+		revision_epoch += 1
 
 
 ## A chunk as clients may know it: a part with "hidden_as" (ore in the rock)
@@ -2897,6 +2949,7 @@ func _move_location(from: String, to: String) -> void:
 		_last_chunk = null
 		chunks_epoch += 1
 		_encoded.erase(key)
+		_visible_chunks.erase(key)
 		_dirty_chunks.erase(key)
 		gone.append([cx, cy])
 	for id: String in present:

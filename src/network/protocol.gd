@@ -35,7 +35,9 @@ class_name Protocol
 ##    server with a password lets in only with one of them, ADR-0060).
 ## 14: WELCOME names the saved surface recipe; client and server sample the
 ##     same terrain even when new worlds use a newer generator.
-const VERSION := 15
+## 16: INPUT may describe the nearby surface chunks needed by its camera.
+const VERSION := 16
+const MAX_TERRAIN_CHUNK_RADIUS := 4
 
 
 ## A refusal's reason as a player reads it.

@@ -4,6 +4,8 @@ extends WorldView
 ## Physics bodies below are for mouse picking only. Movement still uses Terrain.
 const RADIUS := 2
 const BUILD_BUDGET_US := 4500
+const TERRAIN_LOOKAHEAD := float(Chunk.SIZE)
+const TERRAIN_MARGIN := 4.0
 const SMALL_PLANT_SHADOW_RANGE := 20.0
 const STOREY := 2.0
 const PICK_REGION := 8
@@ -39,12 +41,16 @@ var _location := ""
 var _geometry := {}
 var _queued := {}
 var _job := {}
+var _visible_bounds := Rect2i()
+var _build_bounds := Rect2i()
+var travel_direction := Vector2i.ZERO
 ## Chunk key -> world cells to refresh; mesh surfaces and picking have their
 ## own region sizes. MultiMeshes still batch across the whole chunk.
 var _patches := {}
 var _seam_only := {}
 var _dirty_ground_material := {}
 var _actors := {}
+var _npc_textures := Art.TextureQueue.new()
 var _height_around := Vector2i(1 << 30, 0)
 ## Rock cell -> whether it is a cliff (the edge of a level): the mesh is drawn
 ## flush there, and a crag elsewhere. Decided once per cell, like the heights.
@@ -55,7 +61,9 @@ var _ray_missed := false
 var _ghost_root := Node3D.new()
 var _last_build_ms := 0.0
 var _follow := Vector3.ZERO
+var _last_camera_target := Vector3.ZERO
 var _following := false
+var _camera_pose := Vector3(0.0, 55.0, 16.875)
 var _rotate := false
 var _report_frames := 0
 var _delta_sum := 0.0
@@ -107,6 +115,7 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	# The scene made up front but never placed (a start that failed before setup()) is freed too.
 	if what == NOTIFICATION_PREDELETE:
+		_npc_textures.finish()
 		for n: Node in [panel, viewport, space, eye, sun, environment, _ghost_root]:
 			if is_instance_valid(n) and n.get_parent() == null:
 				n.free()
@@ -189,8 +198,12 @@ func _save_camera() -> void:
 		camera_settings.values["experiment_3d_zoom"] = zoom
 		camera_settings.save()
 
+func _shown_yaw() -> float:
+	return _camera_pose.x if _following else yaw
+
+
 func world_direction(screen: Vector2i) -> Vector2i:
-	var d := Vector2(screen).rotated(yaw)
+	var d := Vector2(screen).rotated(_shown_yaw())
 	# The existing transport accepts the eight discrete directions.
 	return Vector2i(0 if absf(d.x) < .38 else signi(int(signf(d.x))), 0 if absf(d.y) < .38 else signi(int(signf(d.y))))
 
@@ -244,7 +257,26 @@ func update_view(alpha: float, delta: float) -> void:
 					terrain.heights.erase(Vector2i(x, y))
 		if not foundations.is_empty(): _job.erase("ground_normals")
 	# Floor division matters west and north of the origin.
-	var around := Vector2i(floori(float(client.position.x) / Movement.UNIT / Chunk.SIZE), floori(float(client.position.y) / Movement.UNIT / Chunk.SIZE))
+	var position := Vector2(client.position) / Movement.UNIT
+	var around := Vector2i((position / Chunk.SIZE).floor())
+	var streamed := Rect2i(around - Vector2i.ONE * RADIUS, Vector2i.ONE * (RADIUS * 2 + 1))
+	var pose := Vector3(yaw, tilt, zoom)
+	_visible_bounds = _camera_bounds(position, pose) if client.z >= 0 else streamed
+	var bounds := _visible_bounds
+	if client.z >= 0:
+		var ahead := position + Vector2(travel_direction).normalized() * TERRAIN_LOOKAHEAD
+		bounds = bounds.merge(_camera_bounds(ahead, pose))
+		client.terrain_bounds = bounds
+		if _following:
+			bounds = bounds.merge(_camera_bounds(Vector2(_follow.x, _follow.z), _camera_pose))
+	else:
+		client.terrain_bounds = Rect2i()
+	if bounds != _build_bounds or not changed.is_empty():
+		_build_bounds = bounds
+		for key: String in client.chunks:
+			if _geometry.has(key) or _job.get("key", "") == key or not _draws_chunk(key): continue
+			var at := Vector2i(int(key.get_slice("|", 1)), int(key.get_slice("|", 2)))
+			if bounds.has_point(at): _queued[key] = true
 	if around != _height_around:
 		_height_around = around
 		if terrain: terrain.prune(around * Chunk.SIZE, (RADIUS + 2) * Chunk.SIZE)
@@ -253,14 +285,9 @@ func update_view(alpha: float, delta: float) -> void:
 				if absi(c.x - around.x * Chunk.SIZE) > (RADIUS + 2) * Chunk.SIZE or absi(c.y - around.y * Chunk.SIZE) > (RADIUS + 2) * Chunk.SIZE:
 					_rock_flush.erase(c)
 
-	for key: String in client.chunks:
-		var k := key.split("|")
-		if _draws_chunk(key) and absi(int(k[1]) - around.x) <= RADIUS and absi(int(k[2]) - around.y) <= RADIUS:
-			if not _geometry.has(key) and _job.get("key", "") != key:
-				_queued[key] = true
 	for key: String in _geometry.keys():
-		var k := key.split("|")
-		if not _draws_chunk(key) or absi(int(k[1]) - around.x) > RADIUS or absi(int(k[2]) - around.y) > RADIUS:
+		var at := Vector2i(int(key.get_slice("|", 1)), int(key.get_slice("|", 2)))
+		if not _draws_chunk(key) or (not streamed.has_point(at) and not bounds.has_point(at)):
 			(_geometry[key] as Node).queue_free()
 			_geometry.erase(key)
 			_patches.erase(key)
@@ -295,13 +322,25 @@ func update_view(alpha: float, delta: float) -> void:
 		_update_cutaway()
 	if client.has_position:
 		var p := own_pixel_position(alpha) / CELL
-		var target := Vector3(p.x, elevation(p) + (0 if client.z < 0 else client.z * STOREY), p.y)
-		_follow = target if not _following else _follow.lerp(target, 1.0 - exp(-delta * 9))
-		_following = true
-		eye.size = zoom
-		var offset := Vector3(0, sin(deg_to_rad(tilt)), cos(deg_to_rad(tilt))).rotated(Vector3.UP, -yaw) * 65
-		eye.position = _follow + offset
-		eye.look_at(_follow, Vector3.UP)
+		var target := Vector3(p.x, elevation(p) + maxi(0, client.z) * STOREY, p.y)
+		var jump := not _following or _last_camera_target.distance_squared_to(target) > Chunk.SIZE * Chunk.SIZE
+		_last_camera_target = target
+		var next := target if jump else _follow.lerp(target, 1.0 - exp(-delta * 9))
+		var center := Vector2(next.x, next.z)
+		if client.z < 0 or _surface_covers(_camera_bounds(center, pose)):
+			_follow = next
+			_camera_pose = pose
+			_following = true
+		elif jump:
+			_following = false
+		elif _surface_covers(_camera_bounds(center, _camera_pose)):
+			_follow = next
+		eye.size = _camera_pose.z if _following else zoom
+		var angle := deg_to_rad(_camera_pose.y if _following else tilt)
+		var offset := Vector3(0, sin(angle), cos(angle)).rotated(Vector3.UP, -(_camera_pose.x if _following else yaw)) * 65
+		var focus := _follow if _following else target
+		eye.position = focus + offset
+		eye.look_at(focus, Vector3.UP)
 	_update_interior_actors()
 	_update_own_silhouette()
 	_update_small_plant_shadows()
@@ -349,6 +388,7 @@ func _clear_geometry() -> void:
 		node.queue_free()
 	_geometry.clear()
 	_queued.clear()
+	_build_bounds = Rect2i()
 	_patches.clear()
 	_seam_only.clear()
 	_dirty_ground_material.clear()
@@ -704,24 +744,28 @@ func _region(cell: Vector2i, size := PICK_REGION) -> Vector2i:
 
 func _begin_chunk(around: Vector2i, nearby_only := false) -> void:
 	var best := ""
+	var priority := -1
 	var distance := INF
 	for key: String in _queued:
-		var k := key.split("|")
-		if k.size() != 3 or not _draws_chunk(key):
-			continue
-		var at := Vector2i(int(k[1]), int(k[2]))
-		if nearby_only and (_geometry.has(key) or (at - around).abs().x > 1 or (at - around).abs().y > 1):
-			continue
+		if not _draws_chunk(key): continue
+		var at := Vector2i(int(key.get_slice("|", 1)), int(key.get_slice("|", 2)))
+		var offset := (at - around).abs()
+		var missing := not _geometry.has(key)
+		if missing and _build_bounds.has_area() and not _build_bounds.has_point(at): continue
+		if not missing and not _build_bounds.has_point(at) and maxi(offset.x, offset.y) > RADIUS: continue
+		var visible := missing and _visible_bounds.has_point(at)
+		if nearby_only and (not missing or (not visible and maxi(offset.x, offset.y) > 1)): continue
+		var score := 2 if visible else (1 if missing else 0)
 		var d := Vector2(at - around).length_squared()
-		if absi(at.x - around.x) <= RADIUS and absi(at.y - around.y) <= RADIUS and d < distance:
+		if score > priority or (score == priority and d < distance):
 			best = key
+			priority = score
 			distance = d
 	if best == "":
 		if not nearby_only: _queued.clear()
 		return
 	_queued.erase(best)
 	_start_job(best)
-
 
 func _start_job(key: String) -> void:
 	var k := key.split("|")
@@ -1696,7 +1740,50 @@ func pending_chunks() -> int:
 func has_geometry_at(location: String, cell: Vector2i) -> bool:
 	return _geometry.has(ServerWorld.chunk_key(location, cell.x >> 5, cell.y >> 5))
 
+## Bounds of the orthographic raster on the ground, with headroom for relief
+## and for looking down from an upper floor. Width follows the fixed 16:9 view.
+func _camera_bounds(center: Vector2, pose: Vector3) -> Rect2i:
+	var aspect := maxf(1.0, float(viewport.size.x) / maxf(1.0, viewport.size.y))
+	var angle := deg_to_rad(pose.y)
+	var width := pose.z * aspect * .5
+	var depth := pose.z * .5 / sin(angle) + (8.0 + maxi(0, client.z) * STOREY) / tan(angle)
+	var right := Vector2.RIGHT.rotated(pose.x).abs()
+	var forward := Vector2.DOWN.rotated(pose.x).abs()
+	var half := right * width + forward * depth + Vector2.ONE * TERRAIN_MARGIN
+	var low := Vector2i(((center - half) / Chunk.SIZE).floor())
+	var high := Vector2i(((center + half) / Chunk.SIZE).floor())
+	return Rect2i(low, high - low + Vector2i.ONE)
+
+
+func _surface_covers(bounds: Rect2i) -> bool:
+	for cy in range(bounds.position.y, bounds.end.y):
+		for cx in range(bounds.position.x, bounds.end.x):
+			if not has_geometry_at(Levels.SURFACE, Vector2i(cx, cy) * Chunk.SIZE):
+				return false
+	return true
+
+
+func surface_view_ready(center: Vector2) -> bool:
+	return _surface_covers(_camera_bounds(center, Vector3(yaw, tilt, zoom)))
+
+
+func move_view_ready(direction: Vector2i) -> bool:
+	var next_pos := Vector2i(Vector2(client.position) + Vector2(direction) * Movement.RUN)
+	if client.state == "playing" and client.z >= 0 and _following:
+		var p := Vector2(next_pos) / Movement.UNIT
+		var feet := Vector3(p.x, elevation(p) + client.z * STOREY, p.y)
+		if not Rect2(Vector2.ZERO, Vector2(viewport.size)).grow(-12.0).has_point(eye.unproject_position(feet)):
+			return false
+	var low := Movement.cell_of(client.position.min(next_pos) - Vector2i(Movement.HALF_X, Movement.HALF_Y))
+	var high := Movement.cell_of(client.position.max(next_pos) + Vector2i(Movement.HALF_X, Movement.HALF_Y) - Vector2i.ONE)
+	for cy in range(low.y >> 5, (high.y >> 5) + 1):
+		for cx in range(low.x >> 5, (high.x >> 5) + 1):
+			if not has_geometry_at(client.location, Vector2i(cx, cy) * Chunk.SIZE): return false
+	return true
+
+
 func _update_actors(alpha: float, delta: float) -> void:
+	_npc_textures.pump()
 	var entities := client.entities.duplicate()
 	if client.has_position:
 		entities[client.character_id] = client.own.merged({"kind": "character", "x": client.position.x, "y": client.position.y}, true)
@@ -1721,7 +1808,15 @@ func _update_actors(alpha: float, delta: float) -> void:
 		if kind == "creature" and looks.is_empty():
 			looks = {"body_plan": String(e.get("creature", ""))}
 		var actor := _actors.get(id) as BillboardActor3D
-		if actor and actor.looks != looks:
+		var ready := true
+		var equipped := String(e.get("held", ""))
+		if client.state == "playing" and id != client.character_id \
+				and (actor == null or actor.looks != looks or actor.ready_equipped != equipped):
+			var visual := visual_for(id, looks)
+			if visual.get("format") == "ro":
+				ready = _npc_textures.ready(Art.ro_atlas_paths(visual, Art.presentation_look(looks), equipped))
+		if actor == null and not ready: continue
+		if ready and actor and actor.looks != looks:
 			# Dressed anew where it can be (its walk and blow go on), else made again.
 			if doll_for(id, looks, actor.doll) == actor.doll:
 				actor.looks = looks.duplicate(true)
@@ -1769,7 +1864,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 			var directions := {"s": Vector2.DOWN, "w": Vector2.LEFT, "n": Vector2.UP, "e": Vector2.RIGHT}
 			actor.facing = directions.get(String(props_at(bed).get("facing", "s")), Vector2.DOWN)
 		actor.doll.running_hint = int(bool(e["running"])) if e.has("running") else -1
-		actor.show_actor(at, yaw, delta, id == client.character_id)
+		actor.show_actor(at, _shown_yaw(), delta, id == client.character_id)
 		actor.lie(in_bed, BED_TOP)
 		# Interpolate XZ first, then sample the rendered triangle under the
 		# interpolated feet. Interpolating target Y cuts through convex hills.
@@ -1785,7 +1880,9 @@ func _update_actors(alpha: float, delta: float) -> void:
 		var held := own_held if id == client.character_id else String(e.get("held", ""))
 		if actor.doll.submerged or bool(e.get("asleep", false)):
 			held = ""  # (nothing in the hands in the water, nor asleep)
-		actor.doll.hold(item_picture(held), item_grip(held), held)
+		if ready:
+			actor.ready_equipped = equipped
+			actor.doll.hold(item_picture(held), item_grip(held), held)
 		_speech(id, actor, e, delta)
 		# Asleep in a bed (ADR-0035): lying, as one who fell lies, until it wakes.
 		if asleep != bool(_asleep.get(id, false)):
@@ -2134,7 +2231,8 @@ func _interior_cells(me: Vector2i) -> Dictionary:
 
 func _update_cutaway() -> void:
 	var me := Movement.cell_of(client.position) if client.has_position else Vector2i(1 << 30, 0)
-	var camera := Vector2i(1 if -sin(yaw) >= 0 else -1, 1 if cos(yaw) >= 0 else -1)
+	var facing_yaw := _shown_yaw()
+	var camera := Vector2i(1 if -sin(facing_yaw) >= 0 else -1, 1 if cos(facing_yaw) >= 0 else -1)
 	var changed := me != _cut_from
 	var turned := camera != _cut_camera
 	if not changed and not turned: return

@@ -43,6 +43,81 @@ static func texture(path: String) -> Texture2D:
 	return _textures[path]
 
 
+## Decode cold NPC atlases without holding up the frame. Only the main thread
+## touches the texture cache and uploads at most one decoded atlas per frame.
+class AtlasRead:
+	var path: String
+	var image: Image
+	var imported: Texture2D
+	func read() -> void:
+		if path.begins_with("res://") and not Art._from_source(path):
+			imported = load(path)
+		else:
+			var decoded := Image.new()
+			if decoded.load_png_from_buffer(FileAccess.get_file_as_bytes(path)) == OK:
+				image = decoded
+
+
+class TextureQueue:
+	var queued := {}
+	var reading := {}
+	var failed := {}
+
+	func ready(paths: Array[String]) -> bool:
+		var all_ready := true
+		for path: String in paths:
+			if path.is_empty() or Art._textures.has(path) or failed.has(path): continue
+			all_ready = false
+			if not reading.has(path): queued[path] = true
+		return all_ready
+
+	func pump() -> void:
+		for path: String in reading:
+			var entry: Array = reading[path]
+			if not WorkerThreadPool.is_task_completed(entry[0]): continue
+			WorkerThreadPool.wait_for_task_completion(entry[0])
+			var read: AtlasRead = entry[1]
+			if not Art._textures.has(path):
+				if read.image != null:
+					var texture := ImageTexture.create_from_image(read.image)
+					texture.resource_name = path
+					Art._textures[path] = texture
+				elif read.imported != null:
+					Art._textures[path] = read.imported
+				else:
+					failed[path] = true
+			reading.erase(path)
+			break
+		while reading.size() < 2 and not queued.is_empty():
+			var path: String = queued.keys()[0]
+			queued.erase(path)
+			if Art._textures.has(path): continue
+			var read := AtlasRead.new()
+			read.path = path
+			reading[path] = [WorkerThreadPool.add_task(read.read), read]
+
+	func finish() -> void:
+		for entry: Array in reading.values():
+			WorkerThreadPool.wait_for_task_completion(entry[0])
+		reading.clear()
+		queued.clear()
+
+
+static func ro_atlas_paths(visual: Dictionary, look: Dictionary, held := "") -> Array[String]:
+	var paths: Array[String] = [String(visual.get("atlas_path", ""))]
+	for style: Variant in look.get("styles", {}).values():
+		var style_data: Dictionary = visual.get("style_overrides", {}).get(style, {})
+		for sheet: Dictionary in style_data.get("sheets", []): paths.append(sheet["atlas_path"])
+	for item: Variant in look.get("worn", {}).values():
+		var worn: Dictionary = visual.get("worn_overrides", {}).get(item, {})
+		for sheet: Dictionary in worn.get("sheets", []): paths.append(sheet["atlas_path"])
+	var head: Dictionary = visual.get("worn_overrides", {}).get(look.get("worn", {}).get("headwear", ""), {})
+	if head.has("keep_out"): paths.append(head["keep_out"]["atlas_path"])
+	for sheet: Dictionary in visual.get("held_overrides", {}).get(held, {}).get("sheets", []):
+		paths.append(sheet["atlas_path"])
+	return paths
+
+
 ## A sound by path (WAV, OGG, MP3), the same way as pictures: from the file
 ## itself when run from the sources. loop: plays around (ambience, music).
 static func audio(path: String, loop := false) -> AudioStream:

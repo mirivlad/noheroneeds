@@ -175,3 +175,30 @@ func test_wire_projection_reveals_ore_when_neighbor_arrives_without_loading_it()
 	var delta := world.visible_chunk_update(cave, 0, 0, exposed.rev)
 	eq(delta.base, exposed.rev)
 	eq(received.with_cell_values(delta.cells).get_cell("structure", 31, 15), "base:iron_ore_rock")
+
+
+func test_camera_interest_streams_a_nearby_corner_and_rejects_a_stale_hint() -> void:
+	var content := ContentRegistry.load_packs(["res://content/base"])
+	var world := TracedWorld.new(null, content, null)
+	world.present["reader"] = {"location": "surface", "pos": Vector2i.ZERO}
+	var server := CapturingServer.new(world, null, null)
+	server.view_chunks = 0
+	var session := GameServer.Session.new()
+	session.character_id = "reader"
+	var c := Chunk.new()
+	for x in [0, 3, 5]: world._chunks["surface|%d|0" % x] = c
+	server._take_input(session, {"inputs": [[2, 0, 0, 0]], "ack": 0,
+		"terrain": PackedInt32Array([3, 0, 3, 1]).to_byte_array()})
+	server._take_input(session, {"inputs": [[1, 0, 0, 0]], "ack": 0,
+		"terrain": PackedInt32Array([-2, 0, 1, 1]).to_byte_array()})
+	eq(server._camera_interest(session, Vector2i.ZERO), Rect2i(3, 0, 2, 1))
+	server._stream_chunks(session)
+	check((server.packets as Array).any(func(packet: Dictionary) -> bool: return packet.fields.cx == 3),
+		"the visible corner outside the usual radius is streamed")
+	check(not (server.packets as Array).any(func(packet: Dictionary) -> bool: return packet.fields.cx == 5),
+		"the server limits camera requests to the nearby surface")
+	eq(world.missed_chunks, 0, "a request cannot force a synchronous load")
+	check(not world.explored("reader").get("surface", {}).has(Vector2i(3, 0)), "camera prefetch does not reveal the map")
+	world.present.reader.pos = Vector2i(3 * Chunk.SIZE, 0) * Movement.UNIT
+	server._stream_chunks(session)
+	check(world.explored("reader").get("surface", {}).has(Vector2i(3, 0)), "the normal view reveals already streamed land on arrival")

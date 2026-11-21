@@ -61,6 +61,7 @@ var previous_position := Vector2i.ZERO
 var changed_chunks: Array[String] = []
 ## First version replaced in this frame, for views that refresh only changed cells.
 var previous_chunks := {}
+var terrain_bounds := Rect2i()
 var _chunk_revisions := {}
 var _resync_pending := {}
 ## Changes seen in the world since the view last took them (see _note_changes).
@@ -117,8 +118,11 @@ func step() -> void:
 		_unacked_inputs.append([_input_seq, move.x, move.y, 1 if run else 0])
 		previous_position = position
 		position = _step(position, move.x, move.y, run)
-		_send(Transport.Channel.STATE, Protocol.INPUT, {"inputs": _unacked_inputs.slice(-Protocol.INPUT_REDUNDANCY),
-			"ack": _latest_snapshot})
+		var input := {"inputs": _unacked_inputs.slice(-Protocol.INPUT_REDUNDANCY), "ack": _latest_snapshot}
+		if terrain_bounds.has_area():
+			input["terrain"] = PackedInt32Array([terrain_bounds.position.x, terrain_bounds.position.y,
+				terrain_bounds.size.x, terrain_bounds.size.y]).to_byte_array()
+		_send(Transport.Channel.STATE, Protocol.INPUT, input)
 
 
 ## Takes `item` into the hands ("" empty) and tells the server, if it changed.

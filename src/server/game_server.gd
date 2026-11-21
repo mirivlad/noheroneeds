@@ -158,6 +158,8 @@ class Session:
 	var prefetched_at := Vector2i(1 << 30, 0)
 	var streamed_at := Vector2i(1 << 30, 0)
 	var streamed_epoch := -1
+	var terrain_bounds := Rect2i()
+	var terrain_seq := 0
 	var streaming_unfinished := true
 	var acked := 0
 	var next_snapshot := 1
@@ -408,12 +410,30 @@ func _tell_location(s: Session) -> void:
 	var loc: String = world.present[s.character_id]["location"]
 	s.prefetched_at = Vector2i(1 << 30, 0)
 	s.streamed_at = Vector2i(1 << 30, 0)
+	s.terrain_bounds = Rect2i()
 	s.inputs.clear()
 	_send(s, Transport.Channel.RELIABLE, Protocol.LOCATION, {"location": loc, "z": world.levels.z(loc)})
 
 
 func _take_input(s: Session, m: Dictionary) -> void:
-	for e: Array in Protocol.clean_inputs(m["inputs"]):
+	var inputs := Protocol.clean_inputs(m["inputs"])
+	if not inputs.is_empty() and int(inputs[-1][0]) > s.terrain_seq:
+		s.terrain_seq = int(inputs[-1][0])
+		var requested := Rect2i()
+		var packed: Variant = m.get("terrain")
+		if packed is PackedByteArray and packed.size() == 16:
+			var values: PackedInt32Array = packed.to_int32_array()
+			var width := Protocol.MAX_TERRAIN_CHUNK_RADIUS * 2 + 1
+			var p: Dictionary = world.present.get(s.character_id, {})
+			var cell := Movement.cell_of(p.get("pos", Vector2i.ZERO))
+			var allowance := width + Protocol.MAX_TERRAIN_CHUNK_RADIUS
+			if (absi(values[0] - (cell.x >> 5)) <= allowance and absi(values[1] - (cell.y >> 5)) <= allowance
+					and values[2] >= 1 and values[2] <= width and values[3] >= 1 and values[3] <= width):
+				requested = Rect2i(values[0], values[1], values[2], values[3])
+		if requested != s.terrain_bounds:
+			s.terrain_bounds = requested
+			s.streaming_unfinished = true
+	for e: Array in inputs:
 		if e[0] > s.last_input_seq and (s.inputs.is_empty() or e[0] > s.inputs[-1][0]):
 			s.inputs.append(e)
 	while s.inputs.size() > MAX_QUEUED_INPUTS:
@@ -762,6 +782,12 @@ func _mark_needed(s: Session) -> void:
 				world.mark_needed(loc, cx, cy)
 
 	if _on_plan(p["location"]):
+		var camera := _camera_interest(s, mc)
+		for cy in range(camera.position.y, camera.end.y):
+			for cx in range(camera.position.x, camera.end.x):
+				world.mark_needed(ServerWorld.SURFACE, cx, cy)
+
+	if _on_plan(p["location"]):
 		for key: String in world._chunks:
 			var parts := key.split("|")
 			if world.levels.z(parts[0]) < 1:
@@ -1004,6 +1030,11 @@ func _net_id(s: Session, id: String) -> int:
 	return s.net_ids[id]
 
 
+func _camera_interest(s: Session, center: Vector2i) -> Rect2i:
+	var limit := Vector2i.ONE * Protocol.MAX_TERRAIN_CHUNK_RADIUS
+	return s.terrain_bounds.intersection(Rect2i(center - limit, limit * 2 + Vector2i.ONE))
+
+
 func _stream_chunks(s: Session) -> void:
 	var p: Dictionary = world.present[s.character_id]
 	var loc: String = p["location"]
@@ -1019,37 +1050,56 @@ func _stream_chunks(s: Session) -> void:
 	# the player's own location before the surface seen below it.
 	# The names are the player's own: the world is a covering space, so a
 	# chunk past the seam is the one next to the player, not a lap away.
+	var visible: Array[Vector2i] = []
+	for r in view_chunks + 1:
+		for cy in range(mc.y - r, mc.y + r + 1):
+			for cx in range(mc.x - r, mc.x + r + 1):
+				if maxi(absi(cx - mc.x), absi(cy - mc.y)) == r: visible.append(Vector2i(cx, cy))
+	var camera := _camera_interest(s, mc) if _on_plan(loc) else Rect2i()
 	for shown: String in _shown_locations(loc):
-		for r in view_chunks + 1:
-			for cy in range(mc.y - r, mc.y + r + 1):
-				for cx in range(mc.x - r, mc.x + r + 1):
-					if maxi(absi(cx - mc.x), absi(cy - mc.y)) != r:
-						continue
-					var key := ServerWorld.chunk_key(shown, cx, cy)
-					var rev := world.chunk_revision(shown, cx, cy)
-					if s.chunks.get(key, -1) == rev:
-						continue
-					if not world.has_chunk(shown, cx, cy):
-						world.prefetch(shown, cx, cy)
-						s.streaming_unfinished = true
-						continue
-					if budget == 0:
-						s.streaming_unfinished = true
-						return
-					budget -= 1
-					var base: int = s.chunks.get(key, -1)
-					s.chunks[key] = rev
-					world.explore(s.character_id, shown, cx, cy)
-					var fields := {"location": shown, "cx": cx, "cy": cy, "rev": rev}
-					if world.levels.kind(shown) == Levels.BUILDING_LEVEL:
-						var floor_chunk := ChunkCodec.decode(world.encoded_chunk(shown, cx, cy))
-						floor_chunk.meta.merge({"building_z": world.levels.z(shown), "building": world.levels.building(shown)}, true)
-						fields["data"] = ChunkCodec.encode(floor_chunk)
-					elif world.reflected_chunk(cy):
-						fields["data"] = world.encoded_chunk(shown, cx, cy)
-					else:
-						fields.merge(world.visible_chunk_update(shown, cx, cy, base), true)
-					_send(s, Transport.Channel.BULK, Protocol.CHUNK_DELTA if fields.has("base") else Protocol.CHUNK, fields)
+		var positions := visible
+		if shown == ServerWorld.SURFACE and camera.has_area():
+			var preferred: Array[Vector2i] = []
+			for y in range(camera.position.y, camera.end.y):
+				for x in range(camera.position.x, camera.end.x):
+					preferred.append(Vector2i(x, y))
+			preferred.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+				return a.distance_squared_to(mc) < b.distance_squared_to(mc))
+			for at: Vector2i in positions:
+				if not camera.has_point(at): preferred.append(at)
+			positions = preferred
+		var explored: Dictionary = world.explored(s.character_id).get(shown, {})
+		for at: Vector2i in positions:
+			var cx := at.x
+			var cy := at.y
+			var key := ServerWorld.chunk_key(shown, cx, cy)
+			var rev := world.chunk_revision(shown, cx, cy)
+			var offset := (at - mc).abs()
+			var discover := (maxi(offset.x, offset.y) <= view_chunks) and not explored.has(at)
+			if s.chunks.get(key, -1) == rev:
+				if discover: world.explore(s.character_id, shown, cx, cy)
+				continue
+			if not world.has_chunk(shown, cx, cy):
+				world.prefetch(shown, cx, cy)
+				s.streaming_unfinished = true
+				continue
+			if budget == 0:
+				s.streaming_unfinished = true
+				return
+			budget -= 1
+			var base: int = s.chunks.get(key, -1)
+			s.chunks[key] = rev
+			if discover: world.explore(s.character_id, shown, cx, cy)
+			var fields := {"location": shown, "cx": cx, "cy": cy, "rev": rev}
+			if world.levels.kind(shown) == Levels.BUILDING_LEVEL:
+				var floor_chunk := ChunkCodec.decode(world.encoded_chunk(shown, cx, cy))
+				floor_chunk.meta.merge({"building_z": world.levels.z(shown), "building": world.levels.building(shown)}, true)
+				fields["data"] = ChunkCodec.encode(floor_chunk)
+			elif world.reflected_chunk(cy):
+				fields["data"] = world.encoded_chunk(shown, cx, cy)
+			else:
+				fields.merge(world.visible_chunk_update(shown, cx, cy, base), true)
+			_send(s, Transport.Channel.BULK, Protocol.CHUNK_DELTA if fields.has("base") else Protocol.CHUNK, fields)
 
 	if _on_plan(loc):
 		var exterior_keys := {}

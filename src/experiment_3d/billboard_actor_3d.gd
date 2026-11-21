@@ -24,6 +24,7 @@ const HEAD_EASE := 8.0
 var placed := false
 var animation_at := Vector2.ZERO
 var looks := {}
+var ready_equipped := ""
 var target := {}
 var cart: Node3D
 var harness: CaravanHarness3D

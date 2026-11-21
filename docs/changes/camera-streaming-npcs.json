@@ -1,0 +1,28 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Земля для полного обзора камеры получает приоритет при подгрузке. Холодная подготовка атласов персонажей распределяется по кадрам.",
+      "sources": {
+        "src/client/game_client.gd": "1070cbe58c43e5936138c9d850ac59a1ec2b4e5b3b3b7e0013c791adf4530d0a",
+        "src/experiment_3d/billboard_actor_3d.gd": "4404fc8f17c448fdb046d58428299aa5730fd18b9cdb39e9186aa3ac85075dad",
+        "src/experiment_3d/world_view_3d.gd": "39fdbf5050e2a48be6511a62b4977d2907d64adf07644a4452dac069f7539ebf",
+        "src/network/protocol.gd": "f504139c6247e1ff3c10e203661720cc5d8bf20f2de30c17b8808dc44812140e",
+        "src/presentation/art.gd": "2f23ebc8992375a330876eeb4a08908816bd6f38c3fecab83bc55bddcc1be3b2",
+        "src/presentation/game_screen.gd": "cfbe96475e0de0006e5ccd8fc8bffeb82de74a57e69bda1e57b4f53612e9b46d",
+        "src/server/game_server.gd": "89d55e6b7c3323aa3dfa46d42c46d77e87a138fec598e3043192e701bdb4edc9"
+      },
+      "mechanics": [
+        "start",
+        "controls",
+        "multiplayer"
+      ],
+      "guides": {
+        "site/content/guides/start.html": "5a058d978a80420ba446dd10aa5625f737be7d0003f42018918c856d43ad44e8",
+        "site/content/guides/controls.html": "80db4de2a219e9fe5efe11d67f4bdb389488b3a8546527a3cd04ff8602f0e43f",
+        "site/content/guides/multiplayer.html": "561beea82454dee68f3aaec60eb56bc7cfce9356aae3aab8d9d49c0c7b403c8e"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 extends SceneTree
 ## Native client/server startup and movement on a disposable small planet.
 ## Run with two absolute arguments: output directory, then profile directory.
-## Repeat with the same disposable profile and a third argument "warm".
+## Optional "warm" reuses the disposable profile. "wide" tests the edge at maximum zoom.
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -15,13 +15,14 @@ func wait_until(predicate: Callable, timeout_s: float) -> bool:
 
 func run() -> void:
 	var args := OS.get_cmdline_user_args()
-	if args.size() < 2 or args.size() > 3 or (args.size() == 3 and args[2] != "warm"):
-		printerr("Usage: measure_world_loading.gd -- OUTPUT PROFILE [warm]")
+	if args.size() < 2 or args.size() > 4 or Array(args.slice(2)).any(func(arg: String) -> bool: return arg not in ["warm", "wide"]):
+		printerr("Usage: measure_world_loading.gd -- OUTPUT PROFILE [warm] [wide]")
 		quit(2)
 		return
 	var output := String(args[0])
 	var profile := String(args[1])
-	var warm := args.size() == 3
+	var warm := "warm" in args.slice(2)
+	var wide := "wide" in args.slice(2)
 	DirAccess.make_dir_recursive_absolute(output)
 	var lib := WorldLibrary.new(profile.path_join("worlds"))
 	var existing := lib.list()
@@ -42,7 +43,7 @@ func run() -> void:
 	var app := App.new()
 	app.configure({"profile_dir": profile, "world": id, "body": "base:human_ro_m", "time": "12", "weather": "clear", "run": true})
 	root.add_child(app)
-	root.size = Vector2i(960, 540)
+	root.size = Vector2i(1800, 1012) if wide else Vector2i(960, 540)
 	root.unresizable = true
 	Engine.max_fps = 60
 	var game := app.game
@@ -51,6 +52,10 @@ func run() -> void:
 		quit(1)
 		return
 	var view := game.view
+	if wide:
+		view.zoom = 48.0
+		view.yaw = .66
+		view.tilt = 55.0
 	game._opts["perf"] = true
 	var client := game.client
 	var world := game.game.world
@@ -85,7 +90,20 @@ func run() -> void:
 			max_meshes = maxi(max_meshes, view._geometry.size())
 			min_zoom = minf(min_zoom, view.eye.size)
 			var center := Vector2(view._follow.x, view._follow.z)
-			if not view.has_geometry_at(client.location, Vector2i(center.floor())): wrong += 1
+			if wide:
+				for uv: Vector2 in [Vector2(.01, .01), Vector2(.99, .01), Vector2(.01, .99), Vector2(.99, .99)]:
+					var pixel := uv * Vector2(view.viewport.size)
+					var ray := view.eye.project_ray_normal(pixel)
+					var ray_origin := view.eye.project_ray_origin(pixel)
+					var point := ray_origin + ray * ((view._follow.y - ray_origin.y) / ray.y)
+					if not view.has_geometry_at(client.location, Vector2i(floori(point.x), floori(point.z))):
+						wrong += 1
+						if wrong == 1:
+							await RenderingServer.frame_post_draw
+							view.viewport.get_texture().get_image().save_png(output.path_join("missing-corner.png"))
+						break
+			elif not view.has_geometry_at(client.location, Vector2i(center.floor())):
+				wrong += 1
 			if not game.orders.active(): break
 	var end := Movement.cell_of(client.position)
 	await RenderingServer.frame_post_draw
@@ -102,4 +120,4 @@ func run() -> void:
 	FileAccess.open(output.path_join("runtime.json"), FileAccess.WRITE).store_string(JSON.stringify(result, "  "))
 	app.quit()
 	app.free()
-	quit(0 if warm or (end - start_cell).length() > 64.0 else 1)
+	quit(0 if warm or (wrong == 0 and (end - start_cell).length() > (80.0 if wide else 64.0)) else 1)

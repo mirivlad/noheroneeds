@@ -145,6 +145,7 @@ var _reported := false
 ## The world, in 3D (ADR-0063: the 2D view is gone).
 var view := WorldView3D.new()
 var camera := Camera2D.new()
+var _terrain_wait := false
 ## The build bar above the quick slots while a blueprint is chosen (UI 2.0).
 var build_bar := HudBoxes.BuildBar.new()
 var _bar_part := ""
@@ -371,12 +372,14 @@ func _setup_loading(layer: CanvasLayer) -> void:
 
 
 func _update_loading() -> void:
-	if not loading.visible or client.state != "playing":
-		return
-	_loading_status.text = "Готовим местность…"
-	if not client.has_position:
-		return
+	if client.state != "playing" or not client.has_position: return
 	var cell := Movement.cell_of(client.position)
+	if client.z >= 0 and not view._following:
+		_loading_status.text = "Готовим местность…"
+		loading.show()
+		return
+	if not loading.visible: return
+	_loading_status.text = "Готовим местность…"
 	# At a chunk seam the player needs the ground on both sides. Distant
 	# terrain still streams after entry.
 	for cy in range((cell.y - 1) >> 5, ((cell.y + 1) >> 5) + 1):
@@ -533,9 +536,10 @@ func _process(delta: float) -> void:
 			_places_wait = 1.0
 			_places_rid = client.request({"type": "places"})
 	var t_map := Time.get_ticks_usec()
-	client.move = _steer(delta) if not paused and not loading.visible and not world_map.visible else Vector2i.ZERO
-	if client.move != Vector2i.ZERO:
-		_last_dir = client.move
+	var direction := _steer(delta) if not paused and not loading.visible and not world_map.visible else Vector2i.ZERO
+	if direction != Vector2i.ZERO:
+		_last_dir = direction
+		view.travel_direction = direction
 	# Tired, one does not run (ADR-0035): the server would not let it, so neither does the guess.
 	client.run = not paused and (_opts.has("run") or Input.is_physical_key_pressed(KEY_CTRL)) \
 		and int(client.own.get("needs", {}).get("energy", 100)) >= int(Needs.TIRED)
@@ -544,7 +548,11 @@ func _process(delta: float) -> void:
 	_accum += 0.0 if paused and game else delta
 	var tick := 1.0 / Movement.TICK_RATE
 	var steps := 0
+	if direction == Vector2i.ZERO:
+		_terrain_wait = false
 	while _accum >= tick and steps < 4:
+		_terrain_wait = direction != Vector2i.ZERO and client.has_position and not view.move_view_ready(direction)
+		client.move = Vector2i.ZERO if _terrain_wait else direction
 		if game:
 			game.step()
 		elif hosted:
@@ -1392,7 +1400,7 @@ func _direction() -> Vector2i:
 
 
 func _update_hud() -> void:
-	minimap.yaw = view.yaw
+	minimap.yaw = view._shown_yaw()
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
 		if rid == _places_rid:

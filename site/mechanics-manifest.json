@@ -9,7 +9,8 @@
         "src/presentation/game_screen.gd",
         "src/characters/*.gd",
         "src/app/character_library.gd",
-        "content/base/pack.json"
+        "content/base/pack.json",
+        "src/world/surface_generator.gd"
       ],
       "kinds": [
         "item",

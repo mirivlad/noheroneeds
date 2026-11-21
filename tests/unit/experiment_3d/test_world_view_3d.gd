@@ -1284,50 +1284,38 @@ func test_unbuilt_ground_takes_priority_over_an_existing_plain_seam() -> void:
 	eq(ground[0].get_parent(), existing, "a plain ground seam updates only the material")
 
 
-func test_camera_keeps_covered_view_until_the_missing_corner_arrives() -> void:
-	view._land = null
-	client.geography = null
-	client.location = Levels.SURFACE
+func test_water_and_land_materials_share_the_control_texture() -> void:
+	var origin := Vector2i.ZERO
+	var control := view.ground_material.control_texture(origin, func(_at: Vector2i) -> String:
+		return "base:water")
+	var land := view.ground_material.from_control(origin, control, false)
+	var water := view.ground_material.from_control(origin, control, true)
+	eq(water.get_shader_parameter("control_map"), land.get_shader_parameter("control_map"))
+	eq(control.get_image().get_data()[0], GroundMaterial3D.IDS.find("base:water"), "the packed texture preserves material IDs")
+
+
+func test_camera_follows_across_a_missing_detailed_chunk() -> void:
 	client.has_position = true
-	view._location = client.location
-	view._plant_season = Seasons.of(client.world_time)
+	view._location = Levels.SURFACE
 	view.viewport.size = Vector2i(1800, 1012)
-	var point := Vector2i(31, 31)
-	client.position = point * Movement.UNIT
-	client.previous_position = client.position
-	var old_bounds := view._camera_bounds(Vector2(point), Vector3(view.yaw, view.tilt, view.zoom))
-	for y in range(old_bounds.position.y, old_bounds.end.y):
-		for x in range(old_bounds.position.x, old_bounds.end.x):
-			var key := ServerWorld.chunk_key(Levels.SURFACE, x, y)
-			client.chunks[key] = Chunk.new()
-			var chunk_root := Node3D.new()
-			view.space.add_child(chunk_root)
-			view._geometry[key] = chunk_root
 	view.update_view(1.0, .05)
-	var old_zoom := view.eye.size
 	view.zoom = 48.0
 	view.yaw = .66
 	view.tilt = 25.0
-	view.update_view(1.0, .05)
-	eq(view.eye.size, old_zoom, "a zoom request must not expose the pending outer chunks")
-	check(not view.surface_view_ready(Vector2(point)), "the full requested raster extends past the ready terrain")
-	var bounds := view._camera_bounds(Vector2(point), Vector3(view.yaw, view.tilt, view.zoom))
+	var point := Vector2i(64, -32)
+	client.position = point * Movement.UNIT
+	client.previous_position = client.position
+	view.update_view(1.0, .25)
+	eq(view.eye.size, view.zoom, "a pending chunk cannot defer camera settings")
+	check(Vector2(view._follow.x, view._follow.z).distance_to(Vector2(point)) < 8.0, "the camera follows the player over unfinished terrain")
+	var bounds := view._camera_bounds(Vector2(view._follow.x, view._follow.z), Vector3(view.yaw, view.tilt, view.zoom))
 	var corner := bounds.end - Vector2i.ONE
-	for y in range(bounds.position.y, bounds.end.y):
-		for x in range(bounds.position.x, bounds.end.x):
-			if Vector2i(x, y) == corner: continue
-			var key := ServerWorld.chunk_key(Levels.SURFACE, x, y)
-			if view._geometry.has(key): continue
-			client.chunks[key] = Chunk.new()
-			var chunk_root := Node3D.new()
-			view.space.add_child(chunk_root)
-			view._geometry[key] = chunk_root
-	view.update_view(1.0, .05)
-	eq(view.eye.size, old_zoom, "one missing corner is enough to defer the new camera")
-	var key := ServerWorld.chunk_key(Levels.SURFACE, corner.x, corner.y)
-	var chunk_root := Node3D.new()
-	view.space.add_child(chunk_root)
-	view._geometry[key] = chunk_root
-	client.chunks[key] = Chunk.new()
-	view.update_view(1.0, .05)
-	eq(view.eye.size, 48.0, "the selected zoom becomes visible when the full raster is covered")
+	var ground := view._distant_ground.get(corner) as MeshInstance3D
+	check(is_instance_valid(ground), "the far corner has an inexpensive surface")
+	check(ground.get_child_count() == 0, "the fallback surface has no picking or objects")
+	check(not view.has_geometry_at(Levels.SURFACE, corner * Chunk.SIZE), "the fallback is not detailed geometry")
+	var detailed := Node3D.new()
+	view.space.add_child(detailed)
+	view._geometry[ServerWorld.chunk_key(Levels.SURFACE, corner.x, corner.y)] = detailed
+	view._update_distant_ground(bounds)
+	check(not view._distant_ground.has(corner), "the same tile discards its fallback when the proper mesh arrives")

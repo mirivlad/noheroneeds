@@ -1,0 +1,24 @@
+{
+  "changes": [
+    {
+      "impact": "player-facing-change",
+      "summary": "Камера показывает поверхность по рельефу планеты, пока строятся точные меши. Готовность мешей больше не блокирует ходьбу.",
+      "sources": {
+        "src/experiment_3d/ground_material_3d.gd": "45ba8996b3d6f68dc13a613b7058dbab0bbc42d1711d63a93c6baeccfec09e74",
+        "src/experiment_3d/terrain_shape_3d.gd": "796d7a265b3e1b77d42b858edfd0dab817c8c7e595cebeec06274d699134eaa1",
+        "src/experiment_3d/world_view_3d.gd": "8a56292304c4e667ce2f2a3abf90f1f2bd290e695e56d8eed212945aea3e4e21",
+        "src/presentation/game_screen.gd": "ac34260ec3b0d83898bfd613ea987e6b0e77f0262c43f780c4a4ecb13b04e566",
+        "src/world/surface_generator.gd": "1551203ba1a2b91c3ff17d2c54ea96e30207663ca66c48677d3b1406a13e4c63"
+      },
+      "mechanics": [
+        "start",
+        "controls"
+      ],
+      "guides": {
+        "site/content/guides/start.html": "71cd83ea8902b05e49bbd5b7d974e267fa509a6a297103fc128ed4af9d931abb",
+        "site/content/guides/controls.html": "9f253024e8b85f253d24884bab054ad5b88002141e9c6c9a6f4b0d4372e99063"
+      },
+      "changelog": "docs/changelog/unreleased.json"
+    }
+  ]
+}

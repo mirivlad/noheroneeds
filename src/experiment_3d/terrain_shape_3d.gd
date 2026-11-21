@@ -16,6 +16,7 @@ var extra_pads: Array = []
 ## Runtime clients supply foundations from received chunk metadata.
 var foundation_source: Callable
 var _cells := {}
+var _water_cells := {}
 
 func _init(source: SurfaceGenerator, is_solid := Callable()) -> void:
 	land = source
@@ -32,16 +33,24 @@ func natural(c: Vector2i) -> float:
 	return cell(c)
 
 func water(c: Vector2i) -> float:
-	var h := float(land.surface_relief(c.x, c.y)["height"])
+	if land.geography == null: return 0.0
+	var h := land.height_at(c.x, c.y)
 	var lake := land.geography.lake_level_at(c.x, c.y)
 	if h < Geography.SEA: return 0
 	if h < lake: return (lake - Geography.SEA) * SurfaceGenerator.RELIEF_METRES
 	# A river runs at its banks' foot: never above the lowest dry cell beside it.
 	var bank := INF
 	for d: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		if not land.surface_relief(c.x + d.x, c.y + d.y)["what"] in ["water", "deep", "shallows"]:
+		if not _wet(c + d):
 			bank = minf(bank, cell(c + d))
 	return minf(cell(c), bank) - .12
+
+## Coarse visual surface uses samples of the same relief and water.
+func coarse_height(c: Vector2i, ground: String) -> float:
+	if ground in GroundMaterial3D.WATER:
+		return water(c)
+	return cell(c)
+
 
 ## The four cells round a corner (the corner is the top left one of cell c).
 func _around(c: Vector2i) -> Array[Vector2i]:
@@ -91,13 +100,17 @@ func height(c: Vector2i) -> float:
 	var wet := 0
 	var level := 0.0
 	for d: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.UP, -Vector2i.ONE]:
-		var sample := land.surface_relief(c.x + d.x, c.y + d.y)
-		if sample["what"] in ["water", "deep", "shallows"]:
+		if _wet(c + d):
 			level += water(c + d)
 			wet += 1
 	if wet > 0: h = level / wet
 	heights[c] = h
 	return h
+
+func _wet(c: Vector2i) -> bool:
+	if not _water_cells.has(c):
+		_water_cells[c] = land.is_natural_water(c.x, c.y)
+	return _water_cells[c]
 
 func prune(around: Vector2i, radius: int) -> void:
 	for c: Vector2i in heights.keys():
@@ -106,5 +119,8 @@ func prune(around: Vector2i, radius: int) -> void:
 	for c: Vector2i in _cells.keys():
 		if absi(c.x - around.x) > radius or absi(c.y - around.y) > radius:
 			_cells.erase(c)
+	for c: Vector2i in _water_cells.keys():
+		if absi(c.x - around.x) > radius or absi(c.y - around.y) > radius:
+			_water_cells.erase(c)
 	for c: Vector2i in pads.keys():
 		if Vector2(c * 32 - around).length() > radius + 64: pads.erase(c)

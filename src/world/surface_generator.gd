@@ -204,6 +204,22 @@ func can_generate() -> bool:
 	return not _biomes.is_empty() and _water != ""
 
 
+## Base material for distant surface rendering, before a chunk arrives.
+## It omits structures, formations and player changes. Received ground wins.
+func visual_ground_at(x: int, y: int, received: String) -> String:
+	if not received.is_empty(): return received
+	var land := land_at(x, y, false)
+	var clearing := absi(x) <= _clearing and absi(y) <= _clearing
+	if not clearing:
+		match land["what"]:
+			"deep": return _deep
+			"water": return _water
+			"shallows": return _shallows
+			"shore": return _shore
+	if _biomes.is_empty(): return ""
+	return _ground_at(_biomes[int(land["biome"])]["ground"], x, y)
+
+
 func generate(cx: int, cy: int) -> Chunk:
 	var c := Chunk.new()
 	c.meta = {"gen": ID, "gen_version": generation_version}
@@ -491,6 +507,36 @@ func _sample_relief(x: int, y: int, bridges: bool) -> Dictionary:
 	if geo == null:
 		return {"what": "land", "height": 0.1, "biome": _biome_at(x, y, 0.1, false)} if _flat else {"what": "water", "height": -1.0, "biome": 0}
 	var h := height_at(x, y)
+	var water: Variant = _water_relief(x, y, h)
+	if water is Dictionary: return water
+	var near: float = water
+	var chasm := (chasm_at(x, y, near) if bridges else _chasm_kind(x, y, near)) if _chasm != "" else NO_CHASM
+	# Old recipes cut an approach even when its bridge was later rejected.
+	# New crossings use real dry land; no neighbouring candidate may create
+	# an imaginary pass for this one's route planner.
+	if generation_version >= 20 and chasm == APPROACH: chasm = NO_CHASM
+	if chasm == BRIDGE and not bridges:
+		return {"what": "chasm", "height": h, "by_water": near < 10.0}
+	if chasm == CHASM or chasm == BRIDGE:
+		return {"what": "chasm" if chasm == CHASM else "bridge", "height": h, "by_water": near < 10.0}
+	if chasm != APPROACH and _rock != "":
+		var cliff := is_cliff(x, y, h)
+		if h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or cliff:
+			return {"what": "rock", "height": h, "by_water": near < 10.0, "cliff": cliff}
+	return {"what": "land", "height": h, "by_water": near < 10.0}
+
+
+## Only the shoreline decision is needed for a ground mesh. Do not resolve
+## cliffs, chasms, bridge approaches or biomes for a wet/dry lookup.
+func is_natural_water(x: int, y: int) -> bool:
+	if geography == null: return not _flat
+	var relief: Variant = _water_relief(x, y, height_at(x, y))
+	return relief is Dictionary and relief["what"] != "shore"
+
+
+## A classified water/shore sample, or distance to the river bank on dry land.
+func _water_relief(x: int, y: int, h: float) -> Variant:
+	var geo := geography
 	if h < Geography.SEA:
 		return {"what": _water_by_depth(Geography.SEA - h), "height": h, "biome": 0}
 	if h < Geography.SEA + 0.012:
@@ -507,21 +553,7 @@ func _sample_relief(x: int, y: int, bridges: bool) -> Dictionary:
 		return {"what": "shallows" if ford and _shallows != "" else "water", "height": h, "biome": 0}
 	if near < 1.0 and _hash(x, y, 8) < 0.6:
 		return {"what": "shore", "height": h, "biome": 0}
-	var chasm := (chasm_at(x, y, near) if bridges else _chasm_kind(x, y, near)) if _chasm != "" else NO_CHASM
-	# Old recipes cut an approach even when its bridge was later rejected.
-	# New crossings use real dry land; no neighbouring candidate may create
-	# an imaginary pass for this one's route planner.
-	if generation_version >= 20 and chasm == APPROACH: chasm = NO_CHASM
-	if chasm == BRIDGE and not bridges:
-		return {"what": "chasm", "height": h, "by_water": near < 10.0}
-	if chasm == CHASM or chasm == BRIDGE:
-		return {"what": "chasm" if chasm == CHASM else "bridge", "height": h, "by_water": near < 10.0}
-	if chasm != APPROACH and _rock != "":
-		var cliff := is_cliff(x, y, h)
-		if h + _rock_noise.get_noise_2d(x, y) * 0.07 > Geography.PEAKS - 0.06 or cliff:
-			return {"what": "rock", "height": h, "by_water": near < 10.0, "cliff": cliff}
-	return {"what": "land", "height": h, "by_water": near < 10.0}
-
+	return near
 
 ## [distance to the nearest river's bank (cells, negative in the water), whether
 ## a ford lies there]. Only the courses that come within reach of the chunk.

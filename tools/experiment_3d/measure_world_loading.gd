@@ -68,15 +68,21 @@ func run() -> void:
 	if not first:
 		quit(1)
 		return
-	await RenderingServer.frame_post_draw
-	view.viewport.get_texture().get_image().save_png(output.path_join("entry.png"))
+	await process_frame
+	capture(view, output.path_join("entry.png"))
 	var start_cell := Movement.cell_of(client.position)
 	var target := start_cell + Vector2i(82, 6)
 	var frame_ms: Array[float] = []
 	var wrong := 0
 	var wait_frames := 0
+	var missing_walk_data := 0
+	var outside := 0
+	var draw_calls: Array[float] = []
+	var primitives: Array[float] = []
+	var memory_peak := 0.0
 	var max_meshes := 0
 	var min_zoom := view.zoom
+	var supports_preview := view.has_method("has_surface_at")
 	if not warm:
 		game.orders.walk_to(target, start_cell, client.is_solid)
 		var began := Time.get_ticks_usec()
@@ -86,7 +92,21 @@ func run() -> void:
 			var now := Time.get_ticks_usec()
 			frame_ms.append((now - prior) / 1000.0)
 			prior = now
-			if game.get("_terrain_wait") == true: wait_frames += 1
+			var direction := game._last_dir
+			if game.get("_terrain_wait") == true:
+				wait_frames += 1
+				var a := Movement.cell_of(client.position)
+				var b := Movement.cell_of(client.position + direction * Movement.RUN)
+				if not client.chunks.has(client.chunk_key(client.location, a.x >> 5, a.y >> 5)) \
+						or not client.chunks.has(client.chunk_key(client.location, b.x >> 5, b.y >> 5)):
+					missing_walk_data += 1
+			var own := Vector2(client.position) / Movement.UNIT
+			var feet := Vector3(own.x, view.elevation(own), own.y)
+			if not Rect2(Vector2.ZERO, Vector2(view.viewport.size)).has_point(view.eye.unproject_position(feet)):
+				outside += 1
+			draw_calls.append(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+			primitives.append(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+			memory_peak = maxf(memory_peak, Performance.get_monitor(Performance.MEMORY_STATIC))
 			max_meshes = maxi(max_meshes, view._geometry.size())
 			min_zoom = minf(min_zoom, view.eye.size)
 			var center := Vector2(view._follow.x, view._follow.z)
@@ -96,28 +116,38 @@ func run() -> void:
 					var ray := view.eye.project_ray_normal(pixel)
 					var ray_origin := view.eye.project_ray_origin(pixel)
 					var point := ray_origin + ray * ((view._follow.y - ray_origin.y) / ray.y)
-					if not view.has_geometry_at(client.location, Vector2i(floori(point.x), floori(point.z))):
+					var sample := Vector2i(floori(point.x), floori(point.z))
+					var covered: bool = view.call("has_surface_at", sample) if supports_preview else view.has_geometry_at(client.location, sample)
+					if not covered:
 						wrong += 1
-						if wrong == 1:
-							await RenderingServer.frame_post_draw
-							view.viewport.get_texture().get_image().save_png(output.path_join("missing-corner.png"))
+						if wrong == 1: capture(view, output.path_join("missing-corner.png"))
 						break
+			elif supports_preview:
+				if not view.call("has_surface_at", Vector2i(center.floor())): wrong += 1
 			elif not view.has_geometry_at(client.location, Vector2i(center.floor())):
 				wrong += 1
 			if not game.orders.active(): break
 	var end := Movement.cell_of(client.position)
-	await RenderingServer.frame_post_draw
-	view.viewport.get_texture().get_image().save_png(output.path_join("exploration.png"))
+	capture(view, output.path_join("exploration.png"))
 	frame_ms.sort()
+	draw_calls.sort()
+	primitives.sort()
 	var result := {"entry": entry, "start": [start_cell.x, start_cell.y], "end": [end.x, end.y],
 		"target": [target.x, target.y], "insufficient_ground_frames": wrong, "waiting_frames": wait_frames, "max_meshes": max_meshes,
 		"p95_frame_ms": frame_ms[int(frame_ms.size() * .95)] if not frame_ms.is_empty() else 0,
 		"p99_frame_ms": frame_ms[int(frame_ms.size() * .99)] if not frame_ms.is_empty() else 0,
-		"frames": frame_ms.size(),
+		"frames": frame_ms.size(), "movement_wait_missing_data": missing_walk_data,
+		"player_outside_frames": outside, "godot_memory_peak_mib": memory_peak / 1048576.0,
+		"p95_draw_calls": draw_calls[int(draw_calls.size() * .95)] if not draw_calls.is_empty() else 0,
+		"p95_primitives": primitives[int(primitives.size() * .95)] if not primitives.is_empty() else 0,
 		"max_frame_ms": frame_ms[-1] if not frame_ms.is_empty() else 0,
 		"terrain_zoom": view.eye.size, "minimum_zoom": min_zoom, "window": str(root.size), "viewport": str(view.viewport.size)}
 	print("RESULT ", JSON.stringify(result))
 	FileAccess.open(output.path_join("runtime.json"), FileAccess.WRITE).store_string(JSON.stringify(result, "  "))
 	app.quit()
 	app.free()
-	quit(0 if warm or (wrong == 0 and (end - start_cell).length() > (80.0 if wide else 64.0)) else 1)
+	quit(0 if warm or (wrong == 0 and outside == 0 and (end - start_cell).length() > (80.0 if wide else 64.0)) else 1)
+
+func capture(view: WorldView3D, path: String) -> void:
+	var image := view.viewport.get_texture().get_image()
+	if image and not image.is_empty(): image.save_png(path)

@@ -20,15 +20,23 @@ func _init() -> void:
 	_atlas = ImageTexture.create_from_image(image)
 
 func make(origin: Vector2i, ground_at: Callable, water := false) -> ShaderMaterial:
-	var control := Image.create(34, 34, false, Image.FORMAT_RGBA8)
+	return from_control(origin, control_texture(origin, ground_at), water)
+
+
+func control_texture(origin: Vector2i, ground_at: Callable) -> ImageTexture:
+	var cells := PackedByteArray()
+	cells.resize(34 * 34)
 	for y in 34:
 		for x in 34:
 			var id: String = ground_at.call(origin + Vector2i(x - 1, y - 1))
-			var index := IDS.find(id)
-			control.set_pixel(x, y, Color(maxi(index, 0) / 255.0, 0, 0, 1))
+			cells[y * 34 + x] = maxi(IDS.find(id), 0)
+	return ImageTexture.create_from_image(Image.create_from_data(34, 34, false, Image.FORMAT_R8, cells))
+
+
+func from_control(origin: Vector2i, control: ImageTexture, water: bool) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://src/experiment_3d/water.gdshader") if water else shader
 	mat.set_shader_parameter("atlas", _atlas)
-	mat.set_shader_parameter("control_map", ImageTexture.create_from_image(control))
+	mat.set_shader_parameter("control_map", control)
 	mat.set_shader_parameter("chunk_origin", Vector2(origin))
 	return mat

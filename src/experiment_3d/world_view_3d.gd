@@ -6,6 +6,8 @@ const RADIUS := 2
 const BUILD_BUDGET_US := 4500
 const TERRAIN_LOOKAHEAD := float(Chunk.SIZE)
 const TERRAIN_MARGIN := 4.0
+const DISTANT_GROUND_STEP := 4
+const DISTANT_NEIGHBORS := [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
 const SMALL_PLANT_SHADOW_RANGE := 20.0
 const STOREY := 2.0
 const PICK_REGION := 8
@@ -39,6 +41,8 @@ var _touch_left := 0.0
 var _touch_at := Vector3.ZERO
 var _location := ""
 var _geometry := {}
+## Coarse render-only terrain, keyed by the same surface chunks as the detailed meshes.
+var _distant_ground := {}
 var _queued := {}
 var _job := {}
 var _visible_bounds := Rect2i()
@@ -63,7 +67,6 @@ var _last_build_ms := 0.0
 var _follow := Vector3.ZERO
 var _last_camera_target := Vector3.ZERO
 var _following := false
-var _camera_pose := Vector3(0.0, 55.0, 16.875)
 var _rotate := false
 var _report_frames := 0
 var _delta_sum := 0.0
@@ -198,12 +201,8 @@ func _save_camera() -> void:
 		camera_settings.values["experiment_3d_zoom"] = zoom
 		camera_settings.save()
 
-func _shown_yaw() -> float:
-	return _camera_pose.x if _following else yaw
-
-
 func world_direction(screen: Vector2i) -> Vector2i:
-	var d := Vector2(screen).rotated(_shown_yaw())
+	var d := Vector2(screen).rotated(yaw)
 	# The existing transport accepts the eight discrete directions.
 	return Vector2i(0 if absf(d.x) < .38 else signi(int(signf(d.x))), 0 if absf(d.y) < .38 else signi(int(signf(d.y))))
 
@@ -267,8 +266,6 @@ func update_view(alpha: float, delta: float) -> void:
 		var ahead := position + Vector2(travel_direction).normalized() * TERRAIN_LOOKAHEAD
 		bounds = bounds.merge(_camera_bounds(ahead, pose))
 		client.terrain_bounds = bounds
-		if _following:
-			bounds = bounds.merge(_camera_bounds(Vector2(_follow.x, _follow.z), _camera_pose))
 	else:
 		client.terrain_bounds = Rect2i()
 	if bounds != _build_bounds or not changed.is_empty():
@@ -323,24 +320,17 @@ func update_view(alpha: float, delta: float) -> void:
 	if client.has_position:
 		var p := own_pixel_position(alpha) / CELL
 		var target := Vector3(p.x, elevation(p) + maxi(0, client.z) * STOREY, p.y)
-		var jump := not _following or _last_camera_target.distance_squared_to(target) > Chunk.SIZE * Chunk.SIZE
+		var snap := not _following or _last_camera_target.distance_squared_to(target) > Chunk.SIZE * Chunk.SIZE
 		_last_camera_target = target
-		var next := target if jump else _follow.lerp(target, 1.0 - exp(-delta * 9))
-		var center := Vector2(next.x, next.z)
-		if client.z < 0 or _surface_covers(_camera_bounds(center, pose)):
-			_follow = next
-			_camera_pose = pose
-			_following = true
-		elif jump:
-			_following = false
-		elif _surface_covers(_camera_bounds(center, _camera_pose)):
-			_follow = next
-		eye.size = _camera_pose.z if _following else zoom
-		var angle := deg_to_rad(_camera_pose.y if _following else tilt)
-		var offset := Vector3(0, sin(angle), cos(angle)).rotated(Vector3.UP, -(_camera_pose.x if _following else yaw)) * 65
-		var focus := _follow if _following else target
-		eye.position = focus + offset
-		eye.look_at(focus, Vector3.UP)
+		_follow = target if snap else _follow.lerp(target, 1.0 - exp(-delta * 9))
+		_following = true
+		eye.size = zoom
+		var angle := deg_to_rad(tilt)
+		var offset := Vector3(0, sin(angle), cos(angle)).rotated(Vector3.UP, -yaw) * 65
+		eye.position = _follow + offset
+		eye.look_at(_follow, Vector3.UP)
+		if client.z >= 0 and _land:
+			_update_distant_ground(_camera_bounds(Vector2(_follow.x, _follow.z), pose))
 	_update_interior_actors()
 	_update_own_silhouette()
 	_update_small_plant_shadows()
@@ -387,6 +377,8 @@ func _clear_geometry() -> void:
 	for node: Node in _geometry.values():
 		node.queue_free()
 	_geometry.clear()
+	for node: Node in _distant_ground.values(): node.queue_free()
+	_distant_ground.clear()
 	_queued.clear()
 	_build_bounds = Rect2i()
 	_patches.clear()
@@ -1533,7 +1525,11 @@ func _commit_surface(root: Node3D, key: String, location: String) -> void:
 
 func _surface_material(materials: Dictionary, kind: String, location: String) -> Material:
 	if not materials.has(kind):
-		materials[kind] = ground_material.make(_job["origin"], func(at: Vector2i) -> String: return client.cell_at(location, at, "ground"), kind == "water")
+		var origin: Vector2i = _job["origin"]
+		if not materials.has("control"):
+			materials["control"] = ground_material.control_texture(origin, func(at: Vector2i) -> String:
+				return client.cell_at(location, at, "ground"))
+		materials[kind] = ground_material.from_control(origin, materials["control"], kind == "water")
 	return materials[kind]
 
 
@@ -1755,31 +1751,105 @@ func _camera_bounds(center: Vector2, pose: Vector3) -> Rect2i:
 	return Rect2i(low, high - low + Vector2i.ONE)
 
 
-func _surface_covers(bounds: Rect2i) -> bool:
-	for cy in range(bounds.position.y, bounds.end.y):
-		for cx in range(bounds.position.x, bounds.end.x):
-			if not has_geometry_at(Levels.SURFACE, Vector2i(cx, cy) * Chunk.SIZE):
-				return false
-	return true
+## The low-detail surface has no physics or objects. It keeps the camera independent
+## of mesh assembly and never supplies gameplay data or picking.
+func _update_distant_ground(bounds: Rect2i) -> void:
+	for key: Vector2i in _distant_ground.keys():
+		if not bounds.has_point(key) or has_geometry_at(Levels.SURFACE, key * Chunk.SIZE):
+			_remove_visual(space, _distant_ground[key])
+			_distant_ground.erase(key)
+	var refresh := true
+	for y in range(bounds.position.y, bounds.end.y):
+		for x in range(bounds.position.x, bounds.end.x):
+			var at := Vector2i(x, y)
+			var origin := at * Chunk.SIZE
+			if has_geometry_at(Levels.SURFACE, origin): continue
+			var preview: MeshInstance3D = _distant_ground.get(at)
+			var source: Chunk = client.chunk_at(Levels.SURFACE, origin.x, origin.y)
+			var edges := 0
+			for side in 4:
+				if has_geometry_at(Levels.SURFACE, origin + DISTANT_NEIGHBORS[side] * Chunk.SIZE):
+					edges |= 1 << side
+			if preview == null:
+				_distant_ground[at] = _make_distant_ground(origin, source, edges)
+			elif int(preview.get_meta("edges")) != edges:
+				_remove_visual(space, preview)
+				_distant_ground[at] = _make_distant_ground(origin, source, edges)
+			elif refresh and int(preview.get_meta("source_id", 0)) != (source.get_instance_id() if source else 0):
+				_remove_visual(space, preview)
+				_distant_ground[at] = _make_distant_ground(origin, source, edges)
+				refresh = false
 
 
-func surface_view_ready(center: Vector2) -> bool:
-	return _surface_covers(_camera_bounds(center, Vector3(yaw, tilt, zoom)))
+func _make_distant_ground(origin: Vector2i, source: Chunk, edges: int) -> MeshInstance3D:
+	var vertices := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var coarse_ground := PackedStringArray()
+	var indices := PackedInt32Array()
+	var width := Chunk.SIZE / DISTANT_GROUND_STEP + 1
+	for y in width:
+		for x in width:
+			var at := origin + Vector2i(x, y) * DISTANT_GROUND_STEP
+			var known := client.cell_at(Levels.SURFACE, at, "ground")
+			var base := _land.visual_ground_at(at.x, at.y, known)
+			var h := terrain.coarse_height(at, base)
+			vertices.append(Vector3(at.x, h, at.y))
+			normals.append(Vector3.UP)
+			coarse_ground.append(base)
+			if x == width - 1 or y == width - 1: continue
+			var i := y * width + x
+			indices.append_array(PackedInt32Array([i, i + 1, i + width, i + 1, i + width + 1, i + width]))
+	# Join the simplified edge to the neighbouring mesh's full-resolution
+	# edge, so a difference in heights cannot open a slit onto the backdrop.
+	for side in 4:
+		if edges & (1 << side) == 0: continue
+		var along := Vector2i.RIGHT if side < 2 else Vector2i.DOWN
+		var across: Vector2i = DISTANT_NEIGHBORS[side]
+		var adjacent := across.min(Vector2i.ZERO)
+		var start := Vector2i(0, Chunk.SIZE) if side == 1 else (Vector2i(Chunk.SIZE, 0) if side == 3 else Vector2i.ZERO)
+		var first := vertices.size()
+		for i in Chunk.SIZE + 1:
+			var edge_cell := start + along * i
+			var coarse_cell := (start + along * (i / DISTANT_GROUND_STEP) * DISTANT_GROUND_STEP) / DISTANT_GROUND_STEP
+			var coarse := vertices[coarse_cell.y * width + coarse_cell.x]
+			if i % DISTANT_GROUND_STEP != 0:
+				var next := coarse_cell + along
+				coarse = coarse.lerp(vertices[next.y * width + next.x], float(i % DISTANT_GROUND_STEP) / DISTANT_GROUND_STEP)
+			var cell := origin + edge_cell
+			# A detailed chasm has its floor below the ordinary ground edge.
+			var cut := _hollow(cell + adjacent) or _hollow(cell + adjacent - along)
+			var floor_height := corner_height(cell) - (CHASM_DEPTH if cut else 0.0)
+			vertices.append(coarse)
+			vertices.append(Vector3(cell.x, floor_height, cell.y))
+			normals.append(Vector3.UP)
+			normals.append(Vector3.UP)
+			if i < Chunk.SIZE:
+				var a := first + i * 2
+				indices.append_array(PackedInt32Array([a, a + 1, a + 2, a + 1, a + 3, a + 2]))
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.set_meta("edges", edges)
+	instance.material_override = ground_material.make(origin, func(cell: Vector2i) -> String:
+		var local := cell - origin
+		if source != null and Rect2i(Vector2i.ZERO, Vector2i.ONE * Chunk.SIZE).has_point(local):
+			return source.get_cell("ground", local.x, local.y)
+		var sample := Vector2i((Vector2(local) / DISTANT_GROUND_STEP).round()).clamp(Vector2i.ZERO, Vector2i.ONE * (width - 1))
+		return coarse_ground[sample.y * width + sample.x])
+	if source: instance.set_meta("source_id", source.get_instance_id())
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	space.add_child(instance)
+	return instance
 
 
-func move_view_ready(direction: Vector2i) -> bool:
-	var next_pos := Vector2i(Vector2(client.position) + Vector2(direction) * Movement.RUN)
-	if client.state == "playing" and client.z >= 0 and _following:
-		var p := Vector2(next_pos) / Movement.UNIT
-		var feet := Vector3(p.x, elevation(p) + client.z * STOREY, p.y)
-		if not Rect2(Vector2.ZERO, Vector2(viewport.size)).grow(-12.0).has_point(eye.unproject_position(feet)):
-			return false
-	var low := Movement.cell_of(client.position.min(next_pos) - Vector2i(Movement.HALF_X, Movement.HALF_Y))
-	var high := Movement.cell_of(client.position.max(next_pos) + Vector2i(Movement.HALF_X, Movement.HALF_Y) - Vector2i.ONE)
-	for cy in range(low.y >> 5, (high.y >> 5) + 1):
-		for cx in range(low.x >> 5, (high.x >> 5) + 1):
-			if not has_geometry_at(client.location, Vector2i(cx, cy) * Chunk.SIZE): return false
-	return true
+func has_surface_at(cell: Vector2i) -> bool:
+	return has_geometry_at(Levels.SURFACE, cell) or _distant_ground.has(Vector2i(cell.x >> 5, cell.y >> 5))
 
 
 func _update_actors(alpha: float, delta: float) -> void:
@@ -1864,7 +1934,7 @@ func _update_actors(alpha: float, delta: float) -> void:
 			var directions := {"s": Vector2.DOWN, "w": Vector2.LEFT, "n": Vector2.UP, "e": Vector2.RIGHT}
 			actor.facing = directions.get(String(props_at(bed).get("facing", "s")), Vector2.DOWN)
 		actor.doll.running_hint = int(bool(e["running"])) if e.has("running") else -1
-		actor.show_actor(at, _shown_yaw(), delta, id == client.character_id)
+		actor.show_actor(at, yaw, delta, id == client.character_id)
 		actor.lie(in_bed, BED_TOP)
 		# Interpolate XZ first, then sample the rendered triangle under the
 		# interpolated feet. Interpolating target Y cuts through convex hills.
@@ -2231,8 +2301,7 @@ func _interior_cells(me: Vector2i) -> Dictionary:
 
 func _update_cutaway() -> void:
 	var me := Movement.cell_of(client.position) if client.has_position else Vector2i(1 << 30, 0)
-	var facing_yaw := _shown_yaw()
-	var camera := Vector2i(1 if -sin(facing_yaw) >= 0 else -1, 1 if cos(facing_yaw) >= 0 else -1)
+	var camera := Vector2i(1 if -sin(yaw) >= 0 else -1, 1 if cos(yaw) >= 0 else -1)
 	var changed := me != _cut_from
 	var turned := camera != _cut_camera
 	if not changed and not turned: return

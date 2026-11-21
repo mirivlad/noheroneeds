@@ -145,7 +145,6 @@ var _reported := false
 ## The world, in 3D (ADR-0063: the 2D view is gone).
 var view := WorldView3D.new()
 var camera := Camera2D.new()
-var _terrain_wait := false
 ## The build bar above the quick slots while a blueprint is chosen (UI 2.0).
 var build_bar := HudBoxes.BuildBar.new()
 var _bar_part := ""
@@ -372,16 +371,11 @@ func _setup_loading(layer: CanvasLayer) -> void:
 
 
 func _update_loading() -> void:
-	if client.state != "playing" or not client.has_position: return
-	var cell := Movement.cell_of(client.position)
-	if client.z >= 0 and not view._following:
-		_loading_status.text = "Готовим местность…"
-		loading.show()
-		return
-	if not loading.visible: return
+	if not loading.visible or client.state != "playing" or not client.has_position: return
 	_loading_status.text = "Готовим местность…"
-	# At a chunk seam the player needs the ground on both sides. Distant
-	# terrain still streams after entry.
+	var cell := Movement.cell_of(client.position)
+	# Open after the starting ground and its picking geometry are ready.
+	# The outer parts of the view can already use the low-detail surface.
 	for cy in range((cell.y - 1) >> 5, ((cell.y + 1) >> 5) + 1):
 		for cx in range((cell.x - 1) >> 5, ((cell.x + 1) >> 5) + 1):
 			if not view.has_geometry_at(client.location, Vector2i(cx, cy) * Chunk.SIZE):
@@ -548,11 +542,8 @@ func _process(delta: float) -> void:
 	_accum += 0.0 if paused and game else delta
 	var tick := 1.0 / Movement.TICK_RATE
 	var steps := 0
-	if direction == Vector2i.ZERO:
-		_terrain_wait = false
+	client.move = direction
 	while _accum >= tick and steps < 4:
-		_terrain_wait = direction != Vector2i.ZERO and client.has_position and not view.move_view_ready(direction)
-		client.move = Vector2i.ZERO if _terrain_wait else direction
 		if game:
 			game.step()
 		elif hosted:
@@ -1400,7 +1391,7 @@ func _direction() -> Vector2i:
 
 
 func _update_hud() -> void:
-	minimap.yaw = view._shown_yaw()
+	minimap.yaw = view.yaw
 	for rid: String in client.results.keys():
 		var r: Dictionary = client.results[rid]
 		if rid == _places_rid:
